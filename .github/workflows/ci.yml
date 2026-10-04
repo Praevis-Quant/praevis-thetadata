@@ -37,6 +37,10 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Tests
         run: cargo test --workspace --locked
+      - name: Native EOD benchmark checks
+        run: cargo test --locked -p thetadata-client --example eod_benchmark
+      - name: Credential-free EOD benchmark smoke test
+        run: cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke.json
       - name: Install Linux keyring fixture
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends dbus gnome-keyring

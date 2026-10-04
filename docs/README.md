@@ -30,6 +30,8 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Artifact inventory](research/vendor-1.0.12.json) | Reproducible local artifact hashes and API inventory |
 | [Performance baseline](performance/auth.md) | Synthetic measurements and how to interpret them |
 | [CLI startup evaluation](performance/cli-startup.md) | Before/after release comparisons for runtime startup |
+| [Synthetic EOD baseline](performance/eod-baseline.md) | Rust-native loopback fixture, decoder/delivery measurements, scope and comparison procedure |
+| [Initial EOD measurements](performance/eod-results.md) | Repeated Windows/WSL baseline, variability, allocation evidence and artifact hashes |
 | [Roadmap](ROADMAP.md) | Forward-looking candidates and the preserved original review |
 | [Upstream compatibility monitor](upstream-monitor.md) | Scheduled PyPI version comparison and baseline policy |
 

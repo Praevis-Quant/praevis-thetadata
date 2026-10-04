@@ -6,7 +6,7 @@ The next round is implementing the stock EOD slice's [defined L1/L2/L3 requireme
 
 ## Next round: implement and verify stock EOD
 
-Implement the typed one-symbol EOD request and pull stream against [the L3 contracts](requirements/L3-stock-eod.md). Build Rust-native local gRPC/codec fixtures, capture the release decoder baseline before changing its behavior, and use measurements to choose finite resource defaults and the decoding execution strategy. Enforce bounds before large allocations, then repeat equivalent measurements and report regressions as well as improvements. A raw generated binding is not acceptance evidence for a supported product feature.
+Implement the typed one-symbol EOD request and pull stream against [the L3 contracts](requirements/L3-stock-eod.md). Extend the [Rust-native mock and retained decoder baseline](performance/eod-baseline.md) to the typed/numeric path. Use the [initial measurements](performance/eod-results.md) to design pre-allocation accounting and numeric timestamp/layout experiments, then choose finite resource defaults and bounded scheduling from equivalent before/after evidence. Report regressions and fixture/instrumentation effects as well as improvements. A raw generated binding is not acceptance evidence for a supported product feature.
 
 Verify validation/wire mapping, exact values, session use, stream/schema/empty-result behavior, deadlines/cancellation, and partial-stream errors on Windows and Linux. Link implementation and passing evidence to each requirement before accepting the slice. Retain open service-column, date-inclusivity, ordering/adjustment, entitlement, and token-lifecycle questions until supported by authorized live evidence or vendor confirmation. Future optional-field endpoints need explicit false/zero-presence contracts when selected; they are not part of the three-field EOD query.
 
@@ -18,7 +18,7 @@ Implement [ADRs 0013-0016](adr/README.md) and the [ARCH](requirements/architectu
 [PERF](requirements/performance.md), and [EXT](requirements/enhancements.md)
 contracts alongside the EOD slice. Performance is the leading optimization
 objective within correctness, security and bounded-resource/lifecycle contracts.
-Start with Rust-native decoder-to-consumer baseline measurements, then select
+Build on the retained Rust-native decoder-to-consumer baseline to select
 finite limits, numeric DataBatch layout and bounded scheduling. Keep formatted
 Table output as an explicit compatibility adapter. Evaluate capped buffer/schema
 reuse from original recommendations #4/#5 under these measurement gates.

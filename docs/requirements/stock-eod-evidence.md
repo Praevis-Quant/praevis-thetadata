@@ -63,3 +63,16 @@ measurements to the resource-policy gate. This resolves the direction toward
 lazy presentation without claiming implementation or choosing an unmeasured
 layout. [Origin classification](origins.md) protects both inherited wire behavior
 and deliberate Rust semantics during later upstream updates.
+
+## Initial raw-client fixture evidence (2026-10-04)
+
+The [Rust mock and benchmark](../performance/eod-baseline.md) now exercise the
+existing raw EOD helper and unchanged Table decoder without a vendor account.
+The linked integration tests cover exact NONE/ZSTD values, request mapping,
+multiple/empty batches, partial remote failure, malformed responses and idle
+timeout. This is partial foundation evidence, not acceptance of the typed EOD
+slice. Typed validation, fused/cancelled lifecycle, cross-batch schema checking,
+safe error wrapping and pre-allocation resource enforcement remain planned.
+The benchmark establishes before-change measurements; numeric layout, offload,
+complete memory accounting and calibrated limits still require implementation
+and equivalent after-change evidence. Live checks remain optional and separate.

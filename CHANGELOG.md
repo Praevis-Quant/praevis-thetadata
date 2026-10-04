@@ -15,6 +15,19 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Credential-free Rust EOD HTTP/gRPC fixtures with deterministic NONE/ZSTD
+  batches and exact-value, wire-request, empty/partial/error and timeout tests.
+  Tests exercise the current raw client; they do not claim typed EOD acceptance
+  or vendor-service validation.
+- Rust-native release decoder/delivery benchmark with raw latency/throughput
+  samples, a separate allocation/peak requested Rust heap probe, executor-delay
+  observations, embedded source/compiler and executable hashes, and guarded
+  report comparisons. Added Windows/Linux CI smoke checks and a manual artifact
+  workflow. Production decoding remains unchanged for the before baseline.
+- Repeated Windows/WSL decoder baseline results with retained raw-report/binary
+  hashes, explicit measurement boundaries and variability. Corrected mock TCP
+  coalescing before retaining small-message delivery results; no production
+  decoder optimization or live-service performance claim is made.
 - Architecture review against Fowler separation, ports/adapters and applicable
   Twelve-Factor principles. Proposed ADRs 0013-0016 and 36 ARCH/PERF/EXT
   requirements define optional persistence boundaries, numeric batch delivery

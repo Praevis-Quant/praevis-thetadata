@@ -22,3 +22,7 @@ heck = "0.5"
 
 [dev-dependencies]
 tokio-stream = { version = "0.1", features = ["net"] }
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10"

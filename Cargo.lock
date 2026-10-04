@@ -2229,9 +2229,13 @@ dependencies = [
 name = "thetadata-client"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "heck",
  "prost",
  "prost-types",
+ "serde",
+ "serde_json",
+ "sha2",
  "thetadata-auth",
  "thetadata-core",
  "thetadata-proto",

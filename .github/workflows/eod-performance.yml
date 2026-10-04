@@ -1,0 +1,37 @@
+name: Synthetic EOD performance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: EOD baseline (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+      - name: Native fixture and benchmark tests
+        run: |
+          cargo test --locked -p thetadata-client --test eod_fixture
+          cargo test --locked -p thetadata-client --example eod_benchmark
+      - name: Release baseline repetitions (no vendor credentials)
+        run: |
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --output artifacts/eod-1.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --output artifacts/eod-2.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- compare --baseline artifacts/eod-1.json --candidate artifacts/eod-2.json --output artifacts/eod-repeatability.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: synthetic-eod-${{ runner.os }}-${{ github.sha }}
+          path: artifacts/eod-*.json
+          if-no-files-found: error
+          retention-days: 30
