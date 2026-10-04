@@ -17,13 +17,17 @@ on 2026-10-04. The runner supports an explicit STAGE choice for separately
 selected checks, but does not silently switch environments or reuse a stored
 session from another environment.
 
-Create a local file outside the repository, for example
-`C:\Users\Joey\.thetadata\live-test.credentials`, containing only an API key
-from the ThetaData user portal. Use a text editor, not a shell command containing
-the key. The alternative `--credentials-file` accepts email on line one and
-password on line two. Exactly one credential-file option is required. There is
-no automatic file/environment discovery. Never put a key/password in command
-arguments, chat, Git, fixture metadata or a bug report.
+Select `--api-key-env` to read `THETADATA_API_KEY` from the process environment.
+On Windows, an existing terminal may not inherit a recently saved user-level
+variable. Load that one variable explicitly as shown below; never print its value.
+No credential file is required for this mode.
+
+Alternatively, `--api-key-file` reads a local file containing only an API key;
+`--credentials-file` reads email on line one and password on line two. Keep files
+outside the repository. Exactly one of these three credential sources is required;
+there is no automatic discovery or fallback. The auth library still receives
+explicit credentials and never reads environment variables itself. Never put a
+key/password in command arguments, chat, Git, fixture metadata or a bug report.
 
 The [current vendor getting-started documentation](https://docs.thetadata.us/Articles/Getting-Started/Getting-Started.html)
 describes portal API keys and the two-line credential format. Actual account
@@ -38,8 +42,15 @@ without observing them.
 Run from this source checkout with a current Rust toolchain and Git available:
 
 ```powershell
-cargo run --locked -p thetadata-client --features live-tests --example live_eod -- capture --confirm-live --environment PROD --api-key-file C:\Users\Joey\.thetadata\live-test.credentials --run-id prod-aapl-001 --symbol AAPL --start 2024-01-02 --end 2024-01-02
+cargo build --locked -p thetadata-client --features live-tests --example live_eod
+$env:THETADATA_API_KEY = [Environment]::GetEnvironmentVariable('THETADATA_API_KEY', 'User')
+if ([string]::IsNullOrWhiteSpace($env:THETADATA_API_KEY)) { throw 'User-level THETADATA_API_KEY is missing' }
+.\target\debug\examples\live_eod.exe capture --confirm-live --environment PROD --api-key-env --run-id prod-aapl-001 --symbol AAPL --start 2024-01-02 --end 2024-01-02
 ```
+
+On other platforms, inherit the variable through your usual local secret setup
+and use the same `--api-key-env` flag. The value is never a CLI argument or report
+field. Missing/empty/oversized/multiline keys fail without echoing the value.
 
 Start with a historical **single trading day** within the account's coverage.
 The example date is a candidate, not a promise of entitlement or returned rows.

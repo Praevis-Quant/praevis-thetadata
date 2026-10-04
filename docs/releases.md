@@ -35,7 +35,7 @@ crate-version policy needs a release decision and dependency compatibility plan.
 ## Immediate execution order
 
 1. Prepare the manual Rust capture/replay path and this release checklist.
-2. With the account holder's local credential file, run one small **PROD** stock
+2. With the account holder's environment key or local credential file, run one small **PROD** stock
    EOD query. Authenticate once; collect the raw response envelopes and compare
    numeric/Table delivery using the same in-memory session. Keep all live
    execution outside CI and do not automatically retry a rejection.

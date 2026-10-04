@@ -13,7 +13,7 @@ a reviewed stable Rust API. PyO3 remains a separate later adapter release.
 Version targets are gate-based, not promises of dates or full Python parity.
 
 Next, run the [optional manual PROD verification](live-verification.md) using the
-account holder's explicitly selected local credential file. Collect a bounded
+account holder's explicitly selected environment key or local credential file. Collect a bounded
 single-day EOD capture, compare raw/numeric/Table delivery and replay it through
 the synthetic service. Review actual schema/value/date/completion behavior and
 record [observations](research/live-observations.md); retain private original

@@ -29,7 +29,10 @@ enum Command {
 
 #[derive(Args)]
 #[group(id = "credentials", required = true, multiple = false)]
-struct CredentialFiles {
+struct CredentialSources {
+    /// Read THETADATA_API_KEY from this process environment (no automatic fallback).
+    #[arg(long)]
+    api_key_env: bool,
     /// Existing two-line email/password file. Never pass secrets as arguments.
     #[arg(long)]
     credentials_file: Option<PathBuf>,
@@ -45,7 +48,7 @@ struct Live {
     #[arg(long, value_parser = ["PROD", "STAGE"])]
     environment: String,
     #[command(flatten)]
-    credentials: CredentialFiles,
+    credentials: CredentialSources,
     #[arg(long)]
     run_id: String,
     #[arg(long)]
@@ -95,25 +98,29 @@ async fn run(cli: Cli) -> Result<(), &'static str> {
             let mut evidence = Capture::new(query, &options.environment)?;
             evidence.save(&directory)?;
             let result = async {
-                let credentials = match options.credentials.api_key_file {
-                    Some(path) => {
-                        let key = live_support::read_limited(&path, 16384)?;
-                        let key = std::str::from_utf8(&key).map_err(|_| "credential file")?;
-                        if key.trim().is_empty() || key.trim().chars().any(char::is_control) {
-                            return Err("credential file");
+                let credentials = if options.credentials.api_key_env {
+                    environment_credentials(std::env::var("THETADATA_API_KEY").ok())?
+                } else {
+                    match options.credentials.api_key_file {
+                        Some(path) => {
+                            let key = live_support::read_limited(&path, 16384)?;
+                            let key = std::str::from_utf8(&key).map_err(|_| "credential file")?;
+                            if key.trim().is_empty() || key.trim().chars().any(char::is_control) {
+                                return Err("credential file");
+                            }
+                            Credentials::api_key(key.trim())
                         }
-                        Credentials::api_key(key.trim())
-                    }
-                    None => {
-                        let path = options
-                            .credentials
-                            .credentials_file
-                            .ok_or("credential file")?;
-                        let bytes = live_support::read_limited(&path, 16384)?;
-                        Credentials::from_file_contents(
-                            std::str::from_utf8(&bytes).map_err(|_| "credential file")?,
-                        )
-                        .map_err(|_| "credential file")?
+                        None => {
+                            let path = options
+                                .credentials
+                                .credentials_file
+                                .ok_or("credential file")?;
+                            let bytes = live_support::read_limited(&path, 16384)?;
+                            Credentials::from_file_contents(
+                                std::str::from_utf8(&bytes).map_err(|_| "credential file")?,
+                            )
+                            .map_err(|_| "credential file")?
+                        }
                     }
                 };
                 let auth = AuthClient::new(AuthConfig {
@@ -164,11 +171,19 @@ fn check_live_consent(confirmed: bool, in_ci: bool) -> Result<(), &'static str> 
     Ok(())
 }
 
+fn environment_credentials(value: Option<String>) -> Result<Credentials, &'static str> {
+    let key = value.ok_or("THETADATA_API_KEY is missing or not Unicode")?;
+    if key.len() > 16384 || key.trim().is_empty() || key.trim().chars().any(char::is_control) {
+        return Err("THETADATA_API_KEY is invalid");
+    }
+    Ok(Credentials::api_key(key.trim()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn live_command_requires_consent_environment_and_exactly_one_credential_file() {
+    fn live_command_requires_consent_environment_and_exactly_one_credential_source() {
         assert!(check_live_consent(true, true).is_err());
         assert!(check_live_consent(false, false).is_err());
         assert!(check_live_consent(true, false).is_ok());
@@ -192,8 +207,28 @@ mod tests {
         let mut consent = args.to_vec();
         consent.push("--confirm-live");
         assert!(Cli::try_parse_from(&consent).is_ok());
+        let mut environment = consent[..consent.len() - 3].to_vec();
+        environment.extend(["--api-key-env", "--confirm-live"]);
+        assert!(Cli::try_parse_from(&environment).is_ok());
+        environment.extend(["--api-key-file", "not-read.credentials"]);
+        assert!(Cli::try_parse_from(&environment).is_err());
         consent.extend(["--credentials-file", "also-not-read.credentials"]);
         assert!(Cli::try_parse_from(&consent).is_err());
         assert!(Cli::try_parse_from(["live_eod", "replay", "--run-id", "test"]).is_ok());
+    }
+
+    #[test]
+    fn environment_key_validation_never_echoes_the_value() {
+        for value in [
+            None,
+            Some(String::new()),
+            Some("  ".into()),
+            Some("SECRET\nSECOND-LINE".into()),
+            Some("X".repeat(16385)),
+        ] {
+            assert!(environment_credentials(value).is_err());
+        }
+        let key = environment_credentials(Some("synthetic-env-key".into())).unwrap();
+        assert_eq!(format!("{key:?}"), "Credentials([REDACTED])");
     }
 }

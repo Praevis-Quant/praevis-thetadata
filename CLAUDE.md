@@ -70,7 +70,9 @@ feature-to-test traceability checker.
 Optional real-service checks use the [manual Rust runner](docs/live-verification.md)
 and [LIVE requirements](docs/requirements/live-verification.md). They require the
 `live-tests` feature, explicit capture command/consent/environment/query and one
-local credential file. Keep them outside every CI workflow. PROD is selected for
+credential source (`--api-key-env` for process `THETADATA_API_KEY`, or a local
+credential file). No discovery/fallback; auth itself still takes explicit inputs.
+Keep them outside every CI workflow. PROD is selected for
 initial integration; STAGE is an independent vendor connection, not an assumed
 sandbox. Captures stay private under ignored `artifacts/live`; no automatic
 fixture promotion or uploads. Test the runner locally with

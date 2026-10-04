@@ -15,6 +15,9 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Explicit `--api-key-env` support for the manual live runner, reading only
+  process `THETADATA_API_KEY` without requiring a file or exposing its value.
+
 - Concrete versioned release milestones and exit gates, plus an optional
   feature-gated Rust live EOD capture/replay runner. Manual account checks use
   explicit credential files and retain private response/provenance artifacts;
