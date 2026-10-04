@@ -24,7 +24,9 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
       - name: Repository and documentation checks
-        run: python tools/check_repository.py
+        run: |
+          python tools/check_repository.py
+          python tools/research_python.py --check
       - name: Install Python check dependencies
         run: python -m pip install -r tools/requirements.txt
       - name: Test Python tooling without network

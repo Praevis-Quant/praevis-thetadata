@@ -7,6 +7,7 @@ NOTICE text eol=lf
 *.txt text eol=lf
 *.rs text eol=lf
 *.toml text eol=lf
+*.json text eol=lf
 *.lock text eol=lf
 *.md text eol=lf
 # Preserve the verbatim review's Markdown hard line breaks.

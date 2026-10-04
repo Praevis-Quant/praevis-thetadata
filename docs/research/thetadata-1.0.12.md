@@ -94,3 +94,648 @@ These are artifact observations and future backlog candidates, not additional au
 ## Expansion order after auth
 
 First close the live auth lifecycle questions and remaining auth test gaps. Next introduce a small validated data query and end-to-end protocol fixtures; then request defaults/presence and error taxonomy; then concurrency and bounded export; then flat files and real-time streaming as separately designed applications/adapters. Approve new L1/L2/L3 requirements and ADRs when those scopes are selected. No market-data feature is committed to a delivery date by this research.
+
+<a id="deep-analysis-2026-10-04"></a>
+
+## Deep analysis: 2026-10-04
+
+The original report above is retained byte-for-byte. This expansion adds an
+exhaustive artifact catalogue and distinguishes complete source enumeration
+from supported Rust behavior. No vendor module was imported or executed, no
+credentials were used, and no live identity or data requests were made.
+Public-document claims in the earlier review remain dated evidence; this
+round does not claim to have revalidated the entire documentation website.
+
+Start with the interpretation below, then use the
+[complete Markdown catalogue and coverage matrix](python-1.0.12-catalog.md)
+for each symbol, signature, default, request assignment, field number, and
+vendor endpoint description. The [machine-readable inventory](python-1.0.12-inventory.json)
+retains source ranges/hashes, imports, environment reads, literal constants,
+metadata, examples, wrapper logging/error construction, and descriptor detail.
+The [disposition ledger](python-1.0.12-dispositions.json) records feature
+decisions, gaps, and links to existing ADRs, requirements, implementation, and
+verification. None of these documents approves additional market-data scope.
+
+### Coverage and evidence boundaries
+
+| Inventory unit | Count | Coverage |
+| --- | ---: | --- |
+| Wheel members | 14 | Exact member names, byte sizes, SHA-256; all RECORD paths reconciled |
+| Python modules | 9 | Includes both empty package initializers, runtime code, and generated modules |
+| Lexical classes | 6 | Client, two exceptions, generated stub/servicer/experimental helper |
+| Lexical functions/methods | 251 | 85 in client.py, including 80 endpoint wrappers; 166 generated gRPC functions |
+| Public endpoint wrappers | 80 | Every signature/default, wire assignment/condition, metadata construction, error expression, source description, RPC |
+| RPCs | 82 | All unary-request/server-streaming; 80 mapped wrappers and two explicit unmatched RPCs |
+| Descriptor messages | 176 | 175 top-level messages plus QueryInfo's nested map-entry message |
+| Descriptor fields | 778 | Name, field number, type, label, explicit optional presence, oneof |
+| Descriptor enums | 2 | All four named values, including zero-valued NEW_YORK |
+| Embedded Python examples | 11 | Preserved verbatim in the inventory; reviewed below without execution |
+| Top-level coverage rows | 531 | Files, classes, functions/wrappers, messages, enums, and RPCs, each with a stable ID |
+| Feature dispositions | 26 | Shared behavioral concerns with research and downstream traceability |
+
+Function parameters belong to their function's coverage row; fields and oneofs
+belong to their message's row; imports/configuration/constants belong to their
+module's file row. Generated protobuf classes do not appear as Python `class`
+syntax: their descriptor messages/enums are counted separately. Counting only
+Python AST definitions would miss those runtime-created types.
+
+`supported` means the specifically stated Rust capability has implementation
+and verification/inspection evidence. It does not mean all Python behaviors
+of the surrounding module are supported. `planned` retains a candidate for
+future selection; `intentionally excluded` records an explicit boundary and
+rationale; `unresolved` records missing evidence or a decision. Unassigned
+market-data requirements remain unassigned. Existing auth links apply only
+to the auth behavior named in the ledger.
+
+### Reproduce and detect omissions
+
+```text
+# No vendor archive, network, or protobuf dependency needed for this CI check:
+python tools/research_python.py --check
+
+# Research-only dependency; never installs/imports the ThetaData package:
+python -m pip install -r tools/research-requirements.txt
+
+# Independently rebuild the inventory from the exact original artifact:
+python tools/research_python.py --archive thetadata-1.0.12-py3-none-any.zip --check
+
+# After an intentional change to research dispositions:
+python tools/research_python.py --render
+```
+
+The archive check validates the original archive hash, all member hashes,
+RECORD coverage/checksums/sizes, lexical definition traversal, and recovered
+descriptors against the checked-in descriptor set. It regenerates the full
+inventory and compares it with the committed inventory. It does not extract
+or execute archive contents. Each function/class has a source range and a
+hash of its AST source span; full member hashes also cover comments and
+module-level behavior outside those spans.
+
+The offline check reconciles files with the previous inventory, symbol lists
+with their modules, wrapper/RPC names with both earlier evidence and the
+protocol manifest, referenced messages, counts, feature dispositions, document
+anchors, requirements, and evidence paths. It regenerates the entire Markdown
+catalogue and requires an exact match, so dropping a row or altering a default
+in the Markdown fails. Deletion/mutation tests exercise these failures.
+The original research prefix (14,455 bytes, SHA-256
+`b942827128d49dd0b986bec6c26e9dfa8f7a12a27c45215e278f642d2280534e`)
+and original inventory are checked against their recorded hashes (the older
+JSON inventory is normalized to Git's LF newlines before hashing, so Windows
+checkout conversion cannot create a false difference). The original
+review/table in the roadmap remains unchanged as well.
+
+These checks make coverage of this inspected distribution auditable. Offline
+CI trusts the committed source-derived inventory; only regeneration with the
+matching archive can re-establish its source correspondence. Neither mode
+proves undocumented service behavior, correctness of every prose conclusion,
+or future-version compatibility. A coordinated change to evidence and its
+expected hashes still requires human review. Preserve corrections as explicit
+reconciliation rather than silently rewriting the retained initial report.
+
+<a id="artifact-and-packaging"></a>
+
+### Artifact, module, dependency, and platform analysis
+
+| Source member | Role and observable behavior |
+| --- | --- |
+| `thetadata/__init__.py` | Imports ThetaClient eagerly and attaches a NullHandler to the package logger; no explicit `__all__` |
+| `thetadata/client.py` | Two formatting helpers, price-factor constant, client construction/authentication, conversion, 80 synchronous wrappers |
+| `thetadata/errors.py` | AuthenticationError and NoDataFoundError directly subclass Exception with no custom methods |
+| `thetadata/_proto/__init__.py` | Empty package initializer |
+| `thetadata/_proto/endpoints_pb2.py` | Generated shared messages/enums, descriptor registration, protobuf runtime compatibility check |
+| `thetadata/_proto/endpoints_pb2_grpc.py` | gRPC version check only; the shared schema declares no service |
+| `thetadata/_proto/v3grpc/__init__.py` | Empty package initializer |
+| `thetadata/_proto/v3grpc/endpoints_pb2.py` | QueryInfo, 82 query/request pairs, service descriptor, protobuf runtime compatibility check |
+| `thetadata/_proto/v3grpc/endpoints_pb2_grpc.py` | Client stub, server skeleton, registration helper, experimental static RPC helpers, gRPC runtime check |
+| `thetadata/py.typed` | Empty typing marker; annotations do not establish runtime validation |
+| `.dist-info/METADATA` | Name/version, Python minimum, dependency declarations, license, URLs, descriptions and examples |
+| `.dist-info/WHEEL` | Pure Python wheel tag and hatchling generator identity |
+| `.dist-info/RECORD` | 13 checksum/size-bearing members and its own unhashed entry |
+| `.dist-info/licenses/LICENSE` | Upstream Apache-2.0 text; exact full path is retained in the catalogue |
+
+METADATA describes an alpha release, Python >=3.12, and these mandatory
+dependencies. There are no declared extras, platform markers, or console
+entry-point file in this wheel.
+
+| Dependency | Declared minimum | Observed use and qualification |
+| --- | --- | --- |
+| grpcio | 1.75.0 | Imported at module load; generated v3 client checks for >=1.80.0 and raises RuntimeError otherwise. Metadata permits versions the imported generated code rejects. |
+| httpx | 0.28.1 | Imported only for a new login, not the existing-client branch; synchronous HTTP POST |
+| pandas | 2.3.2 | Imported eagerly even when Polars output is selected |
+| polars | 1.33.1 | Imported eagerly even when Pandas output is selected; default output |
+| protobuf | 6.32.1 | Generated code declares generator/runtime-check version 6.31.1; metadata minimum is higher. This is distinct from the gRPC mismatch. |
+| zstandard | 0.25.0 | Imported eagerly; one decompressor per conversion call |
+| python-dotenv | **Not declared** | `from dotenv import load_dotenv` occurs at module import. A clean environment without an independently installed provider cannot satisfy this import. Source defect, not an installation experiment. |
+
+Standard-library dependencies are inventoried too: datetime, json, logging,
+os, collections.defaultdict, pathlib.Path, typing, zoneinfo, and generated-code
+warnings. ZoneInfo('America/New_York') needs host or separately supplied IANA
+timezone data; the wheel declares no tzdata dependency. This data-source
+behavior is documented by [Python 3.12](https://docs.python.org/3.12/library/zoneinfo.html#data-sources).
+File reads use the
+platform's default text encoding, paths are relative to the current process,
+and datetime conversion inherits platform/runtime supported ranges. TLS roots,
+HTTPX/gRPC proxy behavior, default message sizes, and dataframe inference are
+dependency behavior, not explicitly configured package guarantees. The wheel
+has no OS-specific credential backend, native persistence, Java launcher,
+Terminal subprocess manager, WebSocket client, or CLI entry point.
+
+The package root imports its client, which imports gRPC, both dataframe
+libraries, zstandard, dotenv, and generated protobuf code before constructing
+a client. Reusing a client avoids an HTTP login; it does not avoid that import
+dependency surface. Rust's isolated authentication crate deliberately avoids
+these dataframe/protobuf dependencies.
+
+<a id="constructor-and-configuration"></a>
+
+### Constructor, helpers, and configuration
+
+The catalogue preserves the exact long `ThetaClient.__init__` signature. Its
+parameters are `creds_file`, `email`, `password`, `api_key`,
+`existing_authorized_client`, `dataframe_type='polars'`, `mdds_host`,
+`mdds_port`, `mdds_type`, `dotenv_path`, `auth_url`, and
+`insecure_channel=False`; the other defaults are None. Constructor type hints
+are not validation. In particular, `dataframe_type` uses string forward
+references inside Union rather than an enforced enum/Literal.
+
+The constructor chooses MDDS type first, then reuses or acquires identity,
+then selects dataframe mode and creates a fresh channel/stub. Consequently
+authentication can succeed before a later channel/configuration failure.
+There is no client `close`, context-manager implementation, or retained public
+channel property in this class; the local channel is passed to the stub.
+
+| Input | Python selection/default | Difference or trap |
+| --- | --- | --- |
+| `mdds_type` / THETADATA_MDDS_TYPE | Explicit argument when not None; otherwise inherited type when reusing; otherwise environment or PROD | Selected before dotenv loading. No validation/uppercasing; only exact STAGE chooses staging host, while the original string is sent to auth. |
+| `existing_authorized_client` | Any non-None value selects reuse before credential discovery | Copies token object, email, optional API-key/credential-file attributes, and three subscription attributes; no server validation. Missing required attributes can raise AttributeError. |
+| `creds_file` | A truthy explicit path wins over every API key/email argument and skips dotenv | Empty path is treated as absent. Invalid/empty/missing selected file raises AuthenticationError with a misleading not-found description; other I/O errors propagate. |
+| `dotenv_path` | Passed to load_dotenv only on a new login without an explicit file | No override argument is supplied. Its exact search/mutation behavior belongs to python-dotenv, which is not declared by this artifact. |
+| `api_key` / THETADATA_API_KEY | Truthy argument, otherwise environment after dotenv; then truthiness decides use | No whitespace trimming or validation in this branch; an empty argument can fall through. |
+| `email`, `password` | Both must be truthy; email is stripped, explicit password is retained | Python does not read THETADATA_EMAIL or THETADATA_PASSWORD. Those variables are a Rust CLI feature. An incomplete pair falls through to default-file discovery. |
+| THETADATA_CREDENTIALS_FILE | Used only for Python's final fallback, default `./creds.txt` | Rust deliberately treats this environment-selected file like an explicit file at highest precedence. Do not describe the precedence as identical. |
+| `auth_url` / THETADATA_AUTH_URL | Truthy argument, otherwise environment or the bundled identity HTTPS URL | Python does not enforce HTTPS or URL shape itself; Rust does. Reuse does not consult this input. |
+| `mdds_host` / THETADATA_MDDS_HOST | Truthy argument, otherwise environment, otherwise inherited/default host | Default PROD host mdds-01.thetadata.us; exact STAGE host mdds-stage.thetadata.us. |
+| `mdds_port` / THETADATA_MDDS_PORT | Truthy argument, otherwise environment, otherwise inherited/default string `443` | Inherit host/port only when reusing and `mdds_type` was not explicitly passed. Even passing the same type explicitly resets inherited defaults. |
+| `insecure_channel` / THETADATA_INSECURE_CHANNEL | Truthy flag OR lowercased environment value in `1`, `true` | Explicit False cannot override an inherited true environment setting. Leading/trailing whitespace is not stripped; prior client's insecure choice is not copied. |
+| `dataframe_type` | Exactly `polars` uses Polars; every other value selects Pandas | A typo silently chooses Pandas; mode is not inherited from an existing client. |
+
+`_read_creds_from_file` opens the path in text mode, reads exactly two lines,
+strips both, returns an email/password dictionary only when both are nonempty,
+and ignores later lines. It catches FileNotFoundError alone; permission,
+directory, decode, and other failures are not converted to AuthenticationError.
+Python stores the input API key on the client in one discovery branch; a file
+or explicit-email branch need not create that attribute. Reuse uses getattr
+for those optional attributes, but direct access for subscription fields.
+
+The seven THETADATA environment reads and their exact source lines are in the
+catalogue. No additional ThetaData environment keys were found in these nine
+modules. Environment discovery is package-specific; transitive dependencies
+can separately read proxy/certificate settings.
+
+<a id="authentication-detail"></a>
+
+### Authentication, reuse, logging, and deliberate Rust differences
+
+`httpx.post` receives a JSON dictionary containing either `apiKey` or
+`email`/`password`, plus `authEnv.envType`, and the bundled terminal
+identification header. It is a blocking constructor call; the package does
+not create a Python async/thread executor for authentication. It passes no
+timeout, retry, redirect, or connection-pool options, leaving dependency
+defaults in effect. Absence of an explicit timeout is not proof of an
+infinite timeout. The Rust auth client remains asynchronous and needs a
+runtime to drive HTTP, but this single request needs no Tokio worker pool.
+
+Non-success HTTP status logs the entire response body and raises
+AuthenticationError with it. Successful status leads to JSON parsing, then
+an INFO dump of that JSON, then direct indexing of sessionId/user/email and
+the stock/options/indices subscription fields. Invalid JSON or missing fields
+can escape as generic parsing/indexing errors; there is no response schema or
+expiry inference. The package's null logging handler avoids installing an
+application output handler but does not prevent propagation to a caller's
+configured root logger. The bundled INFO-logging example can therefore expose
+the session token. Rust intentionally does not reproduce that behavior.
+
+The client wraps the opaque session string in AuthToken and embeds it in
+QueryInfo. Reuse copies the AuthToken reference without cloning or validating
+it, copies selected metadata, and creates a new channel. Mutating that shared
+Python protobuf object could affect both clients; the package offers no
+thread-safety or immutable-session guarantee. It does not save a session to
+disk, renew it, inspect server validity, or revoke it. Those absences remain
+separate from this project's explicit local persistence/lifecycle design.
+
+| Topic | Observed Python | Rust baseline or foundation |
+| --- | --- | --- |
+| Discovery | Constructor reads environment/files, loads dotenv conditionally | CLI discovers credentials; library takes explicit configuration; no implicit dotenv |
+| URL security and deadlines | Delegated to HTTPX defaults and caller-supplied URL | HTTPS validation, no redirects, explicit connect/request timeouts |
+| Identity response | Requires subscription keys by indexing | Requires nonempty token/email; retains subscription JSON, missing subscription becomes null |
+| Persistence | In-memory client reuse only | Versioned native Windows/Linux storage, profile/environment isolation |
+| Status/logout | No such package functions | Offline status with validity not_checked; local deletion without revocation |
+| Secrets | Retains API-key attribute in some branches; logs auth JSON/body | No password/API key in persisted record; redacted output and errors |
+| Runtime | Blocking login and synchronous wrappers | Async reusable library; CLI creates a current-thread runtime only around login |
+
+These differences are project choices already documented in auth ADRs, not
+new discoveries of guaranteed vendor behavior. Native storage does not expand
+the vendor's permitted connection/session policy.
+
+<a id="wrapper-semantics"></a>
+
+### Complete query families and common wrapper behavior
+
+The catalogue gives all 80 individual functions, not just family counts.
+Every wrapper is synchronous and follows the same overall sequence:
+
+1. Construct a query_parameters dictionary with `client=python`, required
+   arguments stringified, and optional arguments included when not None.
+   This is transmitted inside QueryInfo, not merely local logging. A broad
+   exception during this metadata conversion logs a warning and falls back
+   to only `client=python`; it does not skip the subsequent real query.
+2. Construct QueryInfo with the existing token, email hint, and that map.
+   The descriptor's client_type, terminal_git_commit, and terminal_version
+   fields are left unset/default. This refines the earlier report's general
+   statement about version metadata: those fields exist on the wire, but
+   these Python wrappers do not populate them.
+3. Construct the method-specific query and request. Some option methods use
+   ContractSpec for symbol/expiration/strike/right. Assign optional query
+   fields under truthiness checks; required assignments are unconditional.
+4. Call exactly one matching stub method with the request and no explicit
+   per-call options, consume its entire stream into a dataframe, and return.
+5. Catch grpc.RpcError from both starting and consuming the stream; translate
+   NOT_FOUND into NoDataFoundError containing method/argument values. Reraise
+   other gRPC errors. Request construction occurs before this catch.
+
+| Family | Included functions/capabilities | Behavioral qualifications |
+| --- | --- | --- |
+| Stock discovery | stock_list_symbols, stock_list_dates | Dates adds request_type; symbol accepts scalar string or list. No local request-type validation. |
+| Stock snapshots | OHLC, trade, quote, market_value | Scalar/list symbols, venue defaults nqb, optional min_time. These are queries against a changing snapshot, not subscription callbacks. |
+| Stock history | EOD, OHLC, trade, quote, trade_quote | EOD uses start/end dates. Intraday methods accept date and/or start/end dates; intervals occur only on methods declaring them. trade_quote adds exclusive=True. |
+| Stock at-time | trade, quote | Required date range and time_of_day; venue defaults nqb. |
+| Option discovery | symbols, dates, expirations, strikes, contracts | Dates includes request_type and ContractSpec; strikes includes expiration; contracts includes request_type/date plus optional symbols/max_dte. |
+| Option snapshots | OHLC, trade, quote, open_interest, market_value | ContractSpec; wildcard support and max_dte differ per method. Snapshot trade accepts a date expiration and has no max_dte parameter. |
+| Option snapshot analytics | implied_volatility, all/first_order/second_order/third_order Greeks; binomial all/first/second/third | Dividend/rate/stock-price inputs, version, selection filters, min_time, and use_market_value. Binomial variants add binomial_steps. No Greek calculation occurs locally. |
+| Option history | EOD, OHLC, trade, quote, trade_quote, open_interest | Contract/date selection differs by method; open_interest has no time-window/interval arguments. |
+| Option history analytics | Greeks EOD and binomial EOD; interval-based all/first/second/third and binomial counterparts; trade-based counterparts; interval/trade implied volatility | EOD variants add underlyer_use_nbbo; trade Greeks add perf_boost_intraday; binomial variants add binomial_steps. See each signature for max_dte and interval differences. |
+| Option at-time | trade, quote | Required range/time/expiration, optional strike/right/max_dte/strike_range. |
+| Index discovery/snapshots | symbols, dates; OHLC, price, market_value | Scalar/list discovery/snapshot symbols; optional min_time; no stock venue parameter. |
+| Index history/at-time | EOD, OHLC, price; at_time_price | EOD/OHLC use required ranges; history_price supports date or range. OHLC/price interval default 1s. |
+| Calendar | open_today, on_date, year | Today has an empty query; on_date formats a date; year is passed as a string, not validated as a numeric year. |
+| Interest rates | interest_rate_history_eod | Symbol plus required date range; no local interest-rate model. |
+| Flat files | Four option, two stock, one index wrapper | Date-only queries sent through the same dataframe converter despite a distinct manifest capability. |
+
+Descriptions preceding the generated methods are class-body string expressions,
+not method docstrings. The inventory deliberately captures those adjacent
+strings: ast.get_docstring(function) alone would lose the endpoint usage,
+exchange/tier claims, restrictions, links, examples, and cautions. The
+catalogue reproduces them as labeled artifact descriptions, not verified
+current service promises. In particular, vendor descriptions of overnight
+updates, exchange feeds, delayed data, trading sessions, and Greek models
+are server-side claims; this client does not enforce or compute them.
+
+Repeated symbol fields normalize a Python string to a one-element list and
+otherwise pass the object to `.extend`. They do not split comma-delimited
+strings, despite option_list_contracts' text describing comma-separated symbols.
+The server's interpretation of a single string containing commas is unknown.
+Scalar-symbol methods use direct assignment, so accepting a list elsewhere
+does not imply every endpoint accepts one. Type annotations do not validate
+allowed venues, rights, strikes, request types, intervals, dates, or ranges.
+
+<a id="date-and-presence"></a>
+
+### Date formatting, defaults, presence, and hidden wire fields
+
+`_fmt_time` returns strings unchanged. Otherwise it formats hours/minutes/
+seconds and appends three digits from microsecond integer division by 1000.
+It truncates sub-millisecond precision and does not convert timezone or date.
+For example, a time with 123456 microseconds becomes a string ending `.123`;
+the literal default `'09:30:00'` stays without a `.000` suffix. The helper
+assumes the object's microsecond/strftime attributes exist and validates no
+string syntax. `_fmt_if_date` similarly returns any string unchanged and
+otherwise invokes strftime('%Y-%m-%d'), enabling wildcard expiration strings
+only in wrappers that actually use it.
+
+All ordinary date/start_date/end_date arguments are formatted directly with
+strftime when assigned. A string may therefore work for expiration in one
+method and fail in another. Option list dates/strikes, snapshot trade,
+history OHLC, and interval-based Greeks (including binomial and implied
+volatility) use direct expiration.strftime. Other snapshot methods, EOD,
+trade/quote/trade_quote/open_interest, trade Greeks, and at-time wrappers use
+_fmt_if_date for expiration. The individual assignment table is authoritative.
+
+| Common optional input | Python signature default | Request construction |
+| --- | --- | --- |
+| interval | `'1s'` where present | Assigned unconditionally; a None argument is not omitted by the wrapper |
+| start_time / end_time | `_fmt_time('09:30:00')` / `_fmt_time('16:00:00')` | Defaults evaluate when the module defines the function; assigned only if truthy |
+| venue | `'nqb'` on relevant stock requests | Assigned only if truthy |
+| strike / right | `'*'` / `'both'` | Passed to ContractSpec constructor where used, not through the same query truthiness guards |
+| annual_dividend / rate_value / stock_price | None | Explicit numeric zero is omitted; negative nonzero values pass through |
+| rate_type / version | `'sofr'` / `'latest'` | Assigned only if truthy; server interpretation is not locally validated |
+| binomial_steps | 101 | Assigned only if truthy; no local numerical/model validation |
+| exclusive | True | True is sent; False and None are both omitted |
+| use_market_value / underlyer_use_nbbo / perf_boost_intraday | False | Default False is omitted; only truthy values are assigned |
+| max_dte / strike_range | None | Explicit 0 is omitted; no local bounds check |
+| min_time / date / start_date / end_date | None where optional | Assigned only if truthy; mutually inconsistent date/range combinations are not locally rejected |
+
+The metadata map includes optional values when they are not None, while wire
+query fields usually use truthiness. Thus `exclusive=False` or `rate_value=0`
+may appear in query_parameters while the corresponding optional field is
+absent. The server receives both representations; the artifact does not prove
+which one the service uses. A future Rust API should preserve explicit
+false/zero presence and record any intentional departure from Python omission
+behavior rather than assuming an omitted field has the desired server default.
+
+Many ContractSpec-based option query messages also contain a separate scalar
+`expiration` field. The Python wrappers put expiration into ContractSpec and
+leave that sibling field unset/default. The catalogue retains both the full
+descriptor and actual assignments so a Rust port does not accidentally fill
+both or select the unused field based solely on its name. Wire fields are not
+evidence that all possible combinations are supported.
+
+<a id="transport-and-errors"></a>
+
+### Transport, resource lifecycle, and complete error paths
+
+The constructor uses grpc.secure_channel(target, grpc.ssl_channel_credentials())
+unless its flag/environment requests grpc.insecure_channel. It creates no
+explicit channel options, credentials plugin, interceptors, application
+retry/backoff, request scheduler, rate limiter, or reconnect/session-refresh
+loop. Stub construction does not itself establish successful authorization or
+service availability. High-level methods expose no timeout/metadata/
+cancellation argument and call synchronous unary-stream methods. Streaming
+here means multiple response batches for one finite query.
+
+The converter iterates and accumulates all batches. An error after some batches
+still raises; no partial dataframe is returned and no resume position is
+exposed. An empty successful stream goes through dataframe construction and
+is not automatically NoDataFoundError. NOT_FOUND is a gRPC status rule, not a
+rule for empty rows, HTTP 404, authorization failure, or malformed data.
+
+| Stage | Observed errors and propagation |
+| --- | --- |
+| Import | Missing dependencies; generated gRPC/protobuf version checks; annotations/import assumptions |
+| Credential file | FileNotFoundError caught as None; invalid lines become None; other file/decode errors propagate |
+| Credential selection | Missing/invalid selected file or no usable auth dictionary raises AuthenticationError |
+| HTTP login | HTTPX transport/TLS/timeouts propagate; non-success status becomes AuthenticationError with raw body |
+| Identity parsing | JSON parse errors, missing nested keys, invalid AuthToken construction propagate; no custom validation of all response types |
+| Existing-client reuse/config | Missing attributes, invalid targets, credential/channel failures propagate |
+| Metadata map | Broad Exception is caught, warning logged, map falls back to client=python |
+| Request construction | AttributeError from unsupported date/time objects; protobuf type/range errors; no wrapper gRPC catch yet |
+| RPC call or stream iteration | grpc.RpcError NOT_FOUND becomes NoDataFoundError; other codes reraised |
+| Compression/protobuf | Unsupported algorithm raises NotImplementedError; ZSTD/protobuf decode errors propagate |
+| Rows/prices/timestamps | Short rows, invalid factor index, timestamp range/zone-data failures can raise generic errors |
+| Dataframes | Incompatible column lengths/types/timezone inference/casts can fail in Pandas/Polars; no package-level normalization |
+
+Neither custom exception defines fields, stable numeric codes, retryability,
+or a hierarchy beyond Exception. NoDataFoundError includes query argument
+values in a human-readable message. Rust already distinguishes many of these
+errors, but its full market-data error contract is not yet an approved baseline.
+Future fixtures should test a failure after one successful batch, successful
+zero rows, NOT_FOUND, other statuses, corrupt compression, malformed protobuf,
+and invalid shape separately.
+
+<a id="conversion-and-output"></a>
+
+### Response conversion and output semantics
+
+`_convert_response_stream` is annotated as receiving a List of responses and
+returning Dict[str, List[Any]], but actually consumes an iterable gRPC stream
+and returns a Polars or Pandas dataframe. It creates one ZstdDecompressor and
+one defaultdict(list) per call, plus a set of timestamp column names. It has
+no yielding interface, callback, incremental export, or caller-configured
+memory bound.
+
+For ZSTD it decompresses compressed_data in one call and parses DataTable;
+for NONE it parses compressed_data directly. Any other algorithm raises
+NotImplementedError. It does not consult compression level, original_size,
+flat_file_manifest, a total byte/row budget, or a maximum ZSTD window. Whether
+a particular incomplete/unknown-size ZSTD frame is accepted depends on the
+zstandard library behavior; the package supplies no fallback streaming decoder.
+
+For each row it iterates headers and indexes row.values at the same position.
+Rows shorter than headers fail; extra values beyond header count are silently
+ignored. Repeated header names append multiple cells into the same dictionary
+column, destroying their original column distinction. Headers with no rows
+never create a dictionary key, so an empty table can lose its column names.
+Column keys keep first-encountered order across batches; schema changes or
+missing columns can create unequal lengths or merge unrelated values. No
+schema continuity check occurs. Rust's existing Table validation rejects
+duplicate names and width mismatches, an intentional foundation difference.
+
+| DataValue case | Python conversion | Rust representation / question |
+| --- | --- | --- |
+| text | Python string | Value::Text |
+| number | Python integer from signed int64 | Value::Integer; no local float conversion needed |
+| price | int32 value multiplied by indexed float factor; scale zero gives NaN | Exact mantissa/exponent; scale zero gives Null; decide exported missing-value policy |
+| boolean | Python bool, including explicit false | Value::Boolean |
+| timestamp | UTC-aware datetime from epoch_ms / 1000; convert to America/New_York only for zone 0 | Current Rust RFC3339 string; future numeric representation is a roadmap candidate |
+| explicit null_value | No handled branch, appends None | Value::Null |
+| unset/unknown-only oneof | No handled branch, also appends None | Need explicit forward-compatibility policy; absence is not necessarily a valid semantic null |
+
+The 20-element price array contains 0 followed by powers from 10^-9 through
+10^9. Positive scale 1..19 therefore corresponds to exponent scale-10.
+Python's negative list indices are accepted: a negative wire scale can select
+an unintended factor instead of failing; scales outside list index range
+raise IndexError. Float multiplication introduces normal floating-point
+rounding; there is no decimal/exact-money abstraction. Rust rejects scales
+outside 0..19 and has tests for exact signed values and missing price.
+
+Timestamp epoch_ms is unsigned uint64, converted through floating-point
+division in Python before datetime construction. Large values can lose
+precision or exceed supported bounds. Zone 0 is New York, including DST;
+every value other than 0 is treated as UTC, even unknown enum values. Rust
+currently accepts only 0/1 and rejects unknown zones/range overflow. The
+Python source has no explicit timezone-database fallback. Mixing zones or
+types within a column delegates resulting behavior to the chosen dataframe.
+
+Exactly `dataframe_type == 'polars'` constructs a Polars dataframe, then
+repeatedly replaces each timestamp column with a cast to millisecond units.
+The timestamp-name set has no source-order guarantee. Other mode values use
+Pandas without that explicit cast. Neither branch specifies a full dtype
+schema or stable empty-frame schema. Both accumulate every row before
+construction, potentially creating additional allocations/copies. No pandas/
+polars version pin above the minimum guarantees identical dtype inference.
+
+Future output requirements need to decide schema, column order, null versus
+NaN, duplicate/empty headers, malformed row policy, timezone representation,
+timestamp precision, batch-to-table assembly, partial failure, and bounds.
+The Rust 64 MiB encoded/decompressed batch limit is not a total heap guarantee;
+row/cell budgets, concurrent decoding limits, and CPU scheduling remain
+performance candidates. A benchmark must measure these behaviors before
+choosing representation or buffering changes.
+
+<a id="protocol-surface"></a>
+
+### Protocol inventory and request coverage
+
+The shared endpoints.proto descriptor declares ten messages and two enums.
+The v3grpc/endpoints.proto descriptor declares QueryInfo, 82 request-query
+messages, 82 request envelopes, its nested QueryParametersEntry map message,
+and BetaThetaTerminal with 82 methods. Both use proto3 and depend on protobuf
+Struct definitions; the checked-in descriptor set carries that dependency.
+The external Google descriptor is a dependency, not a tenth Python source
+module or a vendor-owned endpoint.
+
+| Shared message | Fields and significance |
+| --- | --- |
+| AuthToken | session_uuid string; no refresh/expiry fields |
+| ContractSpec | symbol, expiration, optional strike/right strings; explicit presence on the latter pair |
+| CompressionDescription | algorithm enum and signed int32 level |
+| Price | signed int32 value and signed int32 type/scale |
+| ZonedDateTime | unsigned uint64 epoch_ms and TimeZone enum |
+| DataValue | oneof text/string, number/int64, Price, ZonedDateTime, protobuf NullValue, boolean |
+| DataValueList | repeated DataValue values |
+| DataTable | repeated string headers and repeated DataValueList rows |
+| ResponseData | bytes, compression description, signed int32 original_size, optional FlatFileManifest |
+| FlatFileManifest | signed int32 contracts/roots, signed int64 compressed_bytes; no URL, local path, checksum, or explicit frame parser |
+
+CompressionAlgo is NONE=0/ZSTD=1; TimeZone is NEW_YORK=0/UTC=1. The catalogue
+lists all 778 field numbers/types and all oneofs, including proto3 optional
+synthetic oneofs. A descriptor's optional scalar label alone does not imply
+presence: explicit proto3_optional, message fields, and real oneof membership
+must be considered. Repeated values and map entries have different semantics.
+See [protobuf field-presence rules](https://protobuf.dev/programming-guides/field_presence/)
+for the distinction between implicit and explicit presence.
+
+Every request envelope contains query_info field 1 and params field 2. Every
+RPC receives one envelope and streams Endpoints.ResponseData at the path
+`/BetaEndpoints.BetaThetaTerminal/<method>`. Python sends AuthToken in the
+body's QueryInfo, not through an HTTP bearer header. There is no auth RPC,
+client-streaming RPC, or bidirectional-streaming RPC in this descriptor.
+
+This review reconciles both descriptor source modules to the committed binary
+descriptor and existing manifest, rather than assuming similar names imply
+equivalence. Raw Rust bindings preserve the extra methods too; the presence
+of their generated helpers does not establish product support.
+
+<a id="flat-files-and-corporate-actions"></a>
+
+### Flat files and the two unmatched RPCs
+
+The seven flat-file wrappers are option_flat_file_trade_quote,
+option_flat_file_eod, option_flat_file_open_interest, option_flat_file_quote,
+stock_flat_file_trade_quote, stock_flat_file_eod, and index_flat_file_eod.
+Each accepts a date, formats it as YYYY-MM-DD, constructs a normal QueryInfo
+and request, then passes the response through the ordinary table converter.
+No URL downloader, disk writer, archive reader, special stream frame handling,
+or manifest-driven loop exists in the inspected Python source.
+
+The shared response can contain an optional manifest reporting contract/root
+counts and compressed bytes. Python ignores it. A default/manifest-only
+response can parse empty compressed_data as an empty table when compression
+defaults to NONE, yielding an empty dataframe rather than evidence of a
+completed export. Other compression/framing combinations can fail. It is not
+safe to generalize this observation to every live flat-file response. Rust's
+decoder explicitly rejects manifests until a downloader design is selected.
+
+| Unmatched RPC | Request query fields | Established / unresolved |
+| --- | --- | --- |
+| GetCorporateActionDividend | symbol #1, start_date #2, end_date #3; all scalar strings | Request envelope, service path, server stream of ResponseData, generated stub/server/experimental functions exist. No high-level Python wrapper or reviewed OpenAPI operation. |
+| GetCorporateActionSplit | symbol #1, start_date #2, end_date #3; all scalar strings | Same structural evidence; no artifact examples, public-wrapper defaults, result schema, entitlement, or live availability established. |
+
+Their exact request/query types are CorporateActionDividendRequest/RequestQuery
+and CorporateActionSplitRequest/RequestQuery. Do not quietly drop them to make
+an 80-method inventory look complete, or promote them into supported features
+just because they generate successfully. Both carry an unresolved disposition.
+
+<a id="generated-code"></a>
+
+### Generated Python functions and scaffolding
+
+The v3 gRPC module contains three classes and 166 lexical functions:
+
+- BetaThetaTerminalStub.__init__ assigns 82 channel.unary_stream callables
+  with request serialization, ResponseData deserialization, full service
+  paths, and registered-method behavior. These dynamically assigned callables
+  are covered by the RPC inventory rather than counted as 82 lexical defs.
+- BetaThetaTerminalServicer defines 82 methods taking request/context. Each
+  sets UNIMPLEMENTED, sets details, and raises NotImplementedError. This is
+  a generated server skeleton, not a server implementation in the product.
+- add_BetaThetaTerminalServicer_to_server builds 82 unary-stream handlers
+  with the matching request deserializer/response serializer and registers
+  generic and named handlers.
+- BetaThetaTerminal supplies 82 static experimental helpers with request,
+  target, options=(), channel_credentials=None, call_credentials=None,
+  insecure=False, compression=None, wait_for_ready=None, timeout=None, and
+  metadata=None. Each delegates to grpc.experimental.unary_stream. Those
+  controls exist at this low level, even though ThetaClient's wrappers do
+  not expose them.
+
+Both generated gRPC modules include a grpcio >=1.80.0 compatibility check;
+failure to import its version utility is itself treated as unsupported. The
+protobuf modules register serialized descriptors and ask protobuf's runtime
+validator to check the 6.31.1 generated-code version, then build message/enum
+objects and descriptor offsets/options. No handwritten business logic hides
+in an empty initializer. All these files and symbols remain individually
+inventoried even though Python-language scaffolding is excluded from the Rust
+client implementation; its wire contracts are preserved separately.
+
+<a id="examples-and-doc-conflicts"></a>
+
+### Examples and documentation reconciliation
+
+The METADATA body has eleven Python code blocks. The inventory preserves
+each block in source order; none was executed. They cover:
+
+| Example | Behavior exercised conceptually | Limit |
+| --- | --- | --- |
+| 1 | Default constructor/file discovery | Requires working dependency installation and real identity service |
+| 2 | Explicit email/password | Must keep example credentials synthetic; actual constructor precedence still applies |
+| 3 | Stock EOD for AAPL over a date range | Historical availability/entitlements are not demonstrated by an example |
+| 4 | Pandas stock quote output for a date with interval 1m | Pandas is selected by mode string; dataframe types inferred |
+| 5 | Reuse one client's auth with a different dataframe mode | New channel, shared token object, no remote validity check |
+| 6 | List stock symbols | Empty query plus authenticated QueryInfo |
+| 7 | Stock intraday OHLC with date, interval, start/end times | Time objects gain millisecond suffixes; string defaults do not |
+| 8 | Option snapshot Greeks with SPY expiration/strike wildcard/right both | Server analytics, not a locally computed model |
+| 9 | Index EOD for SPX over a range | Different symbol/request types from stock APIs |
+| 10 | logging.basicConfig(level=INFO) | Can reveal successful identity JSON and token; deliberately not recommended for the Rust port |
+| 11 | Catch AuthenticationError and NoDataFoundError | Does not catch the complete transport/parsing/conversion error surface |
+
+The embedded authentication guide describes default/explicit credentials and
+the credentials-file environment variable, but omits API-key/dotenv options
+implemented by the constructor. The constructor's API-key-precedence prose
+conflicts with explicit-file precedence. Its type hints overstate uniformity
+of accepted date/string inputs, and conversion return annotations do not match
+actual dataframes. Method descriptions are not attached method docstrings.
+Preserve these contradictions rather than merging them into a falsely
+consistent specification.
+
+The earlier public-document conflicts (FAQ versus v3 API keys/flat files,
+Terminal versus direct gRPC, empty OpenAPI security versus hosted identity,
+REST concurrency/error codes versus direct gRPC) remain unresolved as vendor
+documentation discrepancies. This expansion adds a correction to the initial
+query-metadata wording: version fields are available in QueryInfo but are
+not populated by these wrappers. It also makes explicit that Python does not
+read email/password environment variables and that Rust's credentials-file
+environment precedence intentionally differs.
+
+<a id="remaining-contracts"></a>
+
+### Requirements candidates, open contracts, and next work
+
+The ledger links already-baselined auth behavior to the existing ADRs and
+L1/L2/L3 hierarchy through the referenced L3 parents. New feature requirements
+should be written from the inventory rows selected for implementation, with
+explicit success/error behavior and an evidence link, rather than turning
+every Python quirk into a mandatory Rust contract.
+
+| Candidate decision / L1 outcome | L2/L3 details supported by this research | Evidence still needed |
+| --- | --- | --- |
+| Auth lifecycle for unattended applications | Separate local persistence from server validity; explicit errors and reauthentication | Expiry, refresh/revocation, account/IP/session limits, subscription semantics |
+| One initial supported market-data query | Typed inputs, exact request mapping, authenticated transport, incremental result/error behavior | Scope choice, recorded protocol fixtures and authorized live confirmation |
+| Predictable request defaults | Optional presence, date/time formatting, scalar/repeated symbols, ContractSpec versus sibling fields | Server defaults/validation and deliberate deviations from Python truthiness |
+| Stable data/output model | Prices, nulls, booleans, int64, timestamps/timezones, schemas/empty data, dataframe/export adapters | Output consumers and acceptance fixtures; memory/throughput benchmarks |
+| Bounded streaming resource use | Batch/row/cell limits, backpressure, cancellation, timeouts, partial failures | Measured decoding/heap/concurrent-stream workloads and direct-gRPC policy |
+| Flat-file export | Manifest handling, counts, byte accounting, streaming download/write, cancellation | Actual framing, output format, limits/entitlements, integrity/resume contracts |
+| Corporate-action queries | Preserve the two request/RPC shapes and gaps | Supported service status, response schema, docs/examples, entitlement |
+| Real-time event subscriptions | Distinct adapter/lifecycle from finite query streams | WebSocket/FPSS source and service contracts absent from this distribution |
+
+Keep L1 product outcomes and L2 system behavior central. Keep cross-component
+L3 central; place substantial component-specific L3 beside its crate only
+when that scope exists, with permanent IDs and one canonical definition.
+The catalogue's stable semantic IDs can serve as requirement source links;
+its generated row anchors remain stable when other rows are inserted.
+
+Next, select the first market-data scope and resolve the decisions it needs,
+then write its ADRs and requirements before implementation. The existing
+proposal is one small query with captured synthetic protocol fixtures, not
+all 80 wrappers at once. Native Rust tooling migration remains a separate
+roadmap candidate. Unverified vendor contracts require authoritative evidence
+or an authorized live account; enumeration of source does not resolve them.
