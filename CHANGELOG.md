@@ -15,6 +15,13 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Defined stock EOD requirements: six L1 outcomes, twelve L2 system contracts,
+  and twenty-nine L3 acceptance contracts with owners, source/ADR links,
+  intentional Python deviations, Rust-native fixture/benchmark obligations,
+  and explicit measurement/vendor-evidence gates. Runtime acceptance remains
+  planned. Added a selected-slice disposition while retaining all 531 source items.
+- Requirement audit coverage for new namespaces, duplicate definitions,
+  undefined references, and immediate-level parents, with mutation tests.
 - Proposed ADRs 0007-0012 for a first stock EOD library slice, typed request
   presence/validation, exact values and batch schemas, stream lifecycle and
   resource limits, Rust-native protocol verification, and hybrid requirements

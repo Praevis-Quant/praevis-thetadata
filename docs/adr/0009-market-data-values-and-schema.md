@@ -1,7 +1,10 @@
 # ADR-0009: exact values and explicit batch schemas
 
 Status: Proposed. Date: 2026-10-04. Owner: thetadata-core and thetadata-client maintainers.
-Requirements: market-data output L1/L2/L3 definitions pending.
+Requirements: [EOD-L1-002](../requirements/L1-stock-eod.md),
+[EOD-L2-003 and EOD-L2-004](../requirements/L2-stock-eod.md),
+[EOD-L3-006 through EOD-L3-012](../requirements/L3-stock-eod.md).
+Defined contracts, implementation/acceptance planned.
 
 ## Context
 

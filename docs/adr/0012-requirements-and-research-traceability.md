@@ -1,12 +1,14 @@
 # ADR-0012: central outcomes, component detail, and source traceability
 
 Status: Proposed. Date: 2026-10-04. Owner: Praevis-Quant maintainers.
-Requirements: organizational decision for the next market-data baseline;
+Requirements: [EOD-L2-012](../requirements/L2-stock-eod.md) and
+[EOD-L3-028](../requirements/L3-stock-eod.md);
 existing AUTH requirement IDs and definitions remain unchanged.
 
 ## Context
 
-The research has 531 inventory items and 26 feature dispositions. A large
+The initial research had 531 inventory items and 26 feature dispositions;
+the selected EOD slice adds a 27th disposition without removing inventory. A large
 catalogue can still lose behavior during implementation if requirements and
 tests do not trace back to it. Duplicating L1/L2/L3 trees in every crate would
 split cross-component outcomes and create conflicting definitions. Placing
@@ -35,9 +37,10 @@ Each requirement has one permanent canonical ID, parent links, owner,
 verification method, and evidence/status. Preserve distinctions between
 planned verification, inspection, passing synthetic tests, and live evidence.
 Never renumber, reuse retired IDs, or mark a product feature complete because
-one generated function exists. The current repository checker audits AUTH
-references; extend it to new namespaces and parent relationships before
-relying on it to validate a market-data baseline.
+one generated function exists. The repository checker now audits canonical
+definitions, duplicates, references, and immediate-level parents in AUTH and
+new namespaces. These structural checks do not prove implementation or test
+coverage and do not approve a market-data baseline.
 
 Trace selected work along this chain:
 
@@ -64,10 +67,10 @@ research and verbatim performance review; add corrections/reconciliations.
 
 ## Consequences and next requirements work
 
-The next deliverable is a reviewed market-data L1/L2/L3 baseline for the EOD
-slice, linked to ADRs 0007-0011 and source items. Assign new IDs when concrete
-requirements are written, not as undefined placeholders in ADR prose. Define
-status/parent/reference checks alongside that baseline. These proposed ADRs
+The EOD slice now has [defined L1/L2/L3 contracts](../requirements/L1-stock-eod.md),
+linked to ADRs 0007-0011 and source items, with explicit planned verification
+and structural parent/reference checks. Next link implementation and passing
+evidence, and close the measured resource-policy gate. These proposed ADRs
 remain design records until reviewed and implemented according to the local
 ADR status convention; they do not change the accepted auth baseline.
 

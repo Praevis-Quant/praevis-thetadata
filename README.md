@@ -159,4 +159,6 @@ The original `thetadata-1.0.12-py3-none-any.zip` and extracted `thetadata-1.0.12
 The local vendor ZIP/extraction have been removed after hash verification.
 Use [the recovery instructions](docs/research/upstream-source.md#recovering-the-removed-local-artifacts)
 only when source regeneration is needed. [Proposed ADRs 0007-0012](docs/adr/README.md)
-define the first market-data design; its requirements and implementation remain future work.
+define the first market-data design. Its [stock EOD requirements](docs/requirements/L1-stock-eod.md)
+are defined, with [acceptance gates](docs/requirements/stock-eod-evidence.md);
+runtime implementation and acceptance verification remain planned.

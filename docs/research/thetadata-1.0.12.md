@@ -739,3 +739,15 @@ proposal is one small query with captured synthetic protocol fixtures, not
 all 80 wrappers at once. Native Rust tooling migration remains a separate
 roadmap candidate. Unverified vendor contracts require authoritative evidence
 or an authorized live account; enumeration of source does not resolve them.
+
+## Stock EOD requirements reconciliation (2026-10-04)
+
+The next slice now has [defined L1/L2/L3 requirements](../requirements/L1-stock-eod.md)
+and a [source/deviation/acceptance record](../requirements/stock-eod-evidence.md).
+Earlier statements above about unassigned market-data requirements describe
+the research snapshot before this selection. The feature ledger now has 27
+dispositions: the new planned `stock-eod` group selects exactly its wrapper,
+query message, request envelope, and RPC. All 531 source inventory items remain.
+The other endpoints retain their prior dispositions. Runtime implementation,
+synthetic acceptance, resource-default measurements, and live service evidence
+are not established by this documentation update.

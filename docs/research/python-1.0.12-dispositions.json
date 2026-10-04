@@ -1,5 +1,31 @@
 [
   {
+    "id": "stock-eod",
+    "status": "planned",
+    "section": "wrapper-semantics",
+    "rationale": "Selected one-symbol EOD slice: four source items trace to defined L1/L2/L3 contracts. Runtime implementation and acceptance verification remain planned; raw bindings do not establish typed-query support or live service behavior. See docs/requirements/stock-eod-evidence.md for deviations and gates.",
+    "adrs": [
+      "docs/adr/0007-first-market-data-slice.md",
+      "docs/adr/0008-typed-requests-and-presence.md",
+      "docs/adr/0009-market-data-values-and-schema.md",
+      "docs/adr/0010-stream-lifecycle-and-resource-bounds.md",
+      "docs/adr/0011-market-data-verification-and-artifact-retention.md",
+      "docs/adr/0012-requirements-and-research-traceability.md"
+    ],
+    "requirements": [
+      "EOD-L1-001", "EOD-L1-002", "EOD-L1-003", "EOD-L1-004", "EOD-L1-005", "EOD-L1-006",
+      "EOD-L2-001", "EOD-L2-002", "EOD-L2-003", "EOD-L2-004", "EOD-L2-005", "EOD-L2-006",
+      "EOD-L2-007", "EOD-L2-008", "EOD-L2-009", "EOD-L2-010", "EOD-L2-011", "EOD-L2-012",
+      "EOD-L3-001", "EOD-L3-002", "EOD-L3-003", "EOD-L3-004", "EOD-L3-005", "EOD-L3-006",
+      "EOD-L3-007", "EOD-L3-008", "EOD-L3-009", "EOD-L3-010", "EOD-L3-011", "EOD-L3-012",
+      "EOD-L3-013", "EOD-L3-014", "EOD-L3-015", "EOD-L3-016", "EOD-L3-017", "EOD-L3-018",
+      "EOD-L3-019", "EOD-L3-020", "EOD-L3-021", "EOD-L3-022", "EOD-L3-023", "EOD-L3-024",
+      "EOD-L3-025", "EOD-L3-026", "EOD-L3-027", "EOD-L3-028", "EOD-L3-029"
+    ],
+    "implementation": [],
+    "verification": []
+  },
+  {
     "id": "artifact-packaging",
     "status": "supported",
     "section": "artifact-and-packaging",
