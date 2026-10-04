@@ -7,6 +7,8 @@ Every verification cell below is an acceptance obligation, **not by itself
 passing evidence**. See the [typed experiment evidence](stock-eod-evidence.md#typed-numeric-experiment-2026-10-04)
 for implemented cases and remaining gaps. Keep these cross-component contracts central under
 [ADR-0012](../adr/0012-requirements-and-research-traceability.md).
+The [current acceptance matrix](stock-eod-matrix.md) links every row to tests,
+local error provenance, transport admission and remaining verification clauses.
 
 Parents: [L2](L2-stock-eod.md). Outcomes: [L1](L1-stock-eod.md).
 Source/decision links and open vendor contracts: [evidence record](stock-eod-evidence.md).

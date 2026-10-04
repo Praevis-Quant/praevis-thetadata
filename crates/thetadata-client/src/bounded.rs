@@ -4,7 +4,7 @@ use prost::{
     Message,
     encoding::{DecodeContext, WireType, decode_key, decode_varint, skip_field},
 };
-use std::{io::Read, mem::size_of, sync::Arc};
+use std::{mem::size_of, sync::Arc};
 use thetadata_core::{BatchValue, DataBatch, Price, Timestamp, Value};
 use thetadata_proto::endpoints::{DataValue, ResponseData, data_value::DataType};
 
@@ -87,6 +87,19 @@ fn bound(value: usize, limit: usize, name: &'static str) -> Result<(), EodError>
         Err(EodError::Resource(name))
     } else {
         Ok(())
+    }
+}
+fn zstd_error(code: usize) -> EodError {
+    use zstd::zstd_safe::zstd_sys::{ZSTD_ErrorCode, ZSTD_getErrorCode};
+    // SAFETY: this C function accepts a numeric result code, dereferences no
+    // pointers and has no initialization/lifetime requirements. Keep the typed
+    // libzstd code; neither library nor remote error strings are parsed.
+    match unsafe { ZSTD_getErrorCode(code) } {
+        ZSTD_ErrorCode::ZSTD_error_frameParameter_windowTooLarge => {
+            EodError::Resource("zstd window")
+        }
+        ZSTD_ErrorCode::ZSTD_error_memory_allocation => EodError::Resource("allocation"),
+        _ => EodError::Decode,
     }
 }
 fn key(bytes: &mut &[u8]) -> Result<(u32, WireType), EodError> {
@@ -218,18 +231,21 @@ pub(crate) fn decode(
                 limits.allocated_bytes,
                 "allocation bytes",
             )?;
-            let mut decoder = zstd::stream::read::Decoder::with_buffer(input_bytes.as_slice())
-                .map_err(|_| EodError::Decode)?;
+            use zstd::zstd_safe::{DCtx, DParameter, InBuffer, OutBuffer};
+            let mut decoder = DCtx::try_create().ok_or(EodError::Resource("allocation"))?;
             decoder
-                .window_log_max(limits.zstd_window_log)
-                .map_err(|_| EodError::Decode)?;
+                .set_parameter(DParameter::WindowLogMax(limits.zstd_window_log))
+                .map_err(zstd_error)?;
+            let mut source = InBuffer::around(input_bytes.as_slice());
             let mut output = Vec::new();
             let mut chunk = [0; 64 * 1024];
             loop {
-                let n = decoder.read(&mut chunk).map_err(|_| EodError::Decode)?;
-                if n == 0 {
-                    break;
-                }
+                let previous = source.pos();
+                let mut target = OutBuffer::around(&mut chunk[..]);
+                let remaining = decoder
+                    .decompress_stream(&mut target, &mut source)
+                    .map_err(zstd_error)?;
+                let n = target.pos();
                 let length = add(output.len(), n)?;
                 bound(length, limits.decompressed_bytes, "decompressed bytes")?;
                 if length > output.capacity() {
@@ -247,6 +263,14 @@ pub(crate) fn decode(
                         .map_err(|_| EodError::Resource("allocation"))?;
                 }
                 output.extend_from_slice(&chunk[..n]);
+                if remaining == 0 && source.pos() == input_bytes.len() {
+                    break;
+                }
+                // Reject truncated input/no progress, while allowing output to
+                // drain and concatenated/skippable frames to be consumed.
+                if source.pos() == previous && n == 0 {
+                    return Err(EodError::Decode);
+                }
             }
             drop(decoder);
             drop(input_bytes);
@@ -511,7 +535,7 @@ mod tests {
         };
         assert_eq!(
             decode(response(input, true), &limits, None, false).unwrap_err(),
-            EodError::Decode
+            EodError::Resource("zstd window")
         );
         let mut data = response(Vec::new(), false);
         data.flat_file_manifest = Some(Default::default());
@@ -524,6 +548,40 @@ mod tests {
         assert_eq!(
             decode(data, &DecodeLimits::default(), None, false).unwrap_err(),
             EodError::Unsupported
+        );
+    }
+    #[test]
+    fn zstd_concatenation_skippable_frames_and_truncation_keep_decode_semantics() {
+        let bytes = wire().encode_to_vec();
+        let split = bytes.len() / 2;
+        let first = zstd::stream::encode_all(&bytes[..split], 1).unwrap();
+        let second = zstd::stream::encode_all(&bytes[split..], 1).unwrap();
+        let mut data = response(Vec::new(), true);
+        data.compressed_data = first.clone();
+        // ZSTD skippable frame, four bytes of metadata between data frames.
+        data.compressed_data
+            .extend_from_slice(&[0x50, 0x2a, 0x4d, 0x18, 4, 0, 0, 0, 1, 2, 3, 4]);
+        data.compressed_data.extend_from_slice(&second);
+        let expected = crate::decode::decode(data.clone(), 4096).unwrap();
+        assert_eq!(
+            decode(data.clone(), &DecodeLimits::default(), None, false)
+                .unwrap()
+                .into_table(),
+            expected
+        );
+        for len in 0..data.compressed_data.len() {
+            // Only complete first frame is valid ZSTD but invalid protobuf here.
+            let mut truncated = data.clone();
+            truncated.compressed_data.truncate(len);
+            assert!(
+                decode(truncated, &DecodeLimits::default(), None, false).is_err(),
+                "length {len}"
+            );
+        }
+        data.compressed_data.push(42);
+        assert_eq!(
+            decode(data, &DecodeLimits::default(), None, false).unwrap_err(),
+            EodError::Decode
         );
     }
 }

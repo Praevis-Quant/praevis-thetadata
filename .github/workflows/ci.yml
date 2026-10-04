@@ -44,7 +44,7 @@ jobs:
           cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine legacy --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-legacy.json
           cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine table --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-table.json
           cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine numeric --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-numeric.json
-          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine numeric-offload --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-offload.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine numeric-offload --rows 64 --samples 2 --warmups 1 --streams 2 --consumer-delay-ms 1 --output artifacts/eod-smoke-offload.json
       - name: Install Linux keyring fixture
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends dbus gnome-keyring

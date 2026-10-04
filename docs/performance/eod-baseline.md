@@ -4,6 +4,8 @@ This document records the original before-change baseline. The subsequent
 [numeric experiment](eod-numeric.md) extends the harness to three engines;
 [its results](eod-numeric-results.md) use fresh common-harness measurements.
 Statements about pending implementation below describe the original baseline.
+The [acceptance follow-up](eod-acceptance-results.md) uses v3 reports with an
+explicit slow-consumer delay; its guarded comparisons reject older formats.
 
 The Rust-native fixture and benchmark exercise the current raw EOD helper and
 unchanged Table decoder. They establish a baseline before implementing numeric

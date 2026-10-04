@@ -1,6 +1,6 @@
 //! Typed stock EOD pull streams. Raw generated helpers retain their original API.
 pub use crate::bounded::DecodeLimits;
-use crate::{ClientConfig, ThetaClient, api, bounded, envelope, wire};
+use crate::{ClientConfig, ThetaClient, api, bounded, envelope, framing, wire};
 use chrono::Datelike;
 pub use chrono::NaiveDate;
 use std::{sync::Arc, time::Duration};
@@ -37,12 +37,6 @@ pub enum EodError {
     Unsupported,
     #[error("stock EOD resource limit: {0}")]
     Resource(&'static str),
-}
-fn status(error: tonic::Status) -> EodError {
-    match error.code() {
-        tonic::Code::NotFound => EodError::NoData,
-        code => EodError::Remote(code),
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -86,6 +80,8 @@ pub struct EodPolicy {
     pub decode: DecodeLimits,
     pub concurrent_jobs: usize,
     pub shared_bytes: usize,
+    /// Maximum simultaneous typed queries, including paused consumers (1..=64).
+    pub concurrent_streams: usize,
     /// Actual uncompressed envelope bytes eligible for inline work. 0 forces
     /// offload; capped at 4096. ZSTD always uses a bounded worker.
     pub inline_bytes: usize,
@@ -96,6 +92,7 @@ impl Default for EodPolicy {
             decode: DecodeLimits::default(),
             concurrent_jobs: 2,
             shared_bytes: 512 << 20,
+            concurrent_streams: 16,
             // Scheduling evidence is platform/workload dependent. Keep the
             // portable offload default; measured consumers can opt in up to 4 KiB.
             inline_bytes: 0,
@@ -106,6 +103,7 @@ pub(crate) struct Pool {
     policy: EodPolicy,
     jobs: Arc<Semaphore>,
     schemas: Arc<Semaphore>,
+    streams: Arc<Semaphore>,
     #[cfg(test)]
     gate: std::sync::Mutex<Option<Arc<tests::Gate>>>,
 }
@@ -126,6 +124,7 @@ impl Pool {
         let schema = units(policy.decode.schema_bytes()?)?;
         if policy.concurrent_jobs == 0
             || policy.concurrent_jobs > 64
+            || !(1..=64).contains(&policy.concurrent_streams)
             || policy.inline_bytes > 4096
             || total > u32::MAX as usize
             || total > Semaphore::MAX_PERMITS
@@ -138,6 +137,7 @@ impl Pool {
         // the total down to KiB; this also avoids byte-permit limits on 32-bit.
         let jobs = policy.concurrent_jobs.min((total - schema) / batch);
         Ok(Arc::new(Self {
+            streams: Arc::new(Semaphore::new(policy.concurrent_streams)),
             jobs: Arc::new(Semaphore::new(jobs)),
             schemas: Arc::new(Semaphore::new(total - jobs * batch)),
             #[cfg(test)]
@@ -145,7 +145,13 @@ impl Pool {
             policy,
         }))
     }
+    pub(crate) fn connection_window(&self) -> u32 {
+        // Each idle stream can withhold its entire HTTP/2 receive window. Keep
+        // one extra window available so admitted streams can always progress.
+        (self.policy.concurrent_streams as u32 + 1) * STREAM_WINDOW
+    }
 }
+pub(crate) const STREAM_WINDOW: u32 = 2 << 20;
 fn budgets(config: &ClientConfig) -> Result<(), EodError> {
     for duration in [
         config.connect_timeout,
@@ -168,14 +174,14 @@ impl ThetaClient {
         budgets(&config)?;
         let pool = Pool::new(policy)?;
         let connect_timeout = config.connect_timeout;
-        let mut client = tokio::time::timeout(connect_timeout, Self::with_session(config, session))
-            .await
-            .map_err(|_| EodError::Connection)?
-            .map_err(|error| match error {
-                crate::Error::Config(_) => EodError::Configuration,
-                _ => EodError::Connection,
-            })?;
-        client.eod_pool = pool;
+        let client =
+            tokio::time::timeout(connect_timeout, Self::connect(config, session, pool, true))
+                .await
+                .map_err(|_| EodError::Connection)?
+                .map_err(|error| match error {
+                    crate::Error::Config(_) => EodError::Configuration,
+                    _ => EodError::Connection,
+                })?;
         Ok(client)
     }
     /// Consume batches without timestamp formatting or implicit collection.
@@ -214,6 +220,10 @@ impl ThetaClient {
             .checked_add(self.config.request_timeout)
             .ok_or(EodError::Configuration)?;
         let pool = self.eod_pool.clone();
+        let stream_lease = timeout_at(deadline, pool.streams.clone().acquire_owned())
+            .await
+            .map_err(|_| EodError::Deadline)?
+            .map_err(|_| EodError::Cancelled)?;
         let schema_lease = timeout_at(
             deadline,
             pool.schemas
@@ -228,8 +238,13 @@ impl ThetaClient {
             params: Some(request.wire()),
         });
         request.set_timeout(deadline.saturating_duration_since(Instant::now()));
-        let mut stub = tonic::client::Grpc::new(self.channel.clone())
-            .max_decoding_message_size(pool.policy.decode.encoded_bytes + 1024);
+        let failure = framing::Failure::default();
+        let mut stub = tonic::client::Grpc::new(framing::GuardedChannel {
+            channel: self.channel.clone(),
+            limit: pool.policy.decode.encoded_bytes + 1024,
+            failure: failure.clone(),
+        })
+        .max_decoding_message_size(pool.policy.decode.encoded_bytes + 1024);
         check_deadline(deadline)?;
         let response = timeout_at(deadline, async {
             stub.ready().await.map_err(|_| EodError::Connection)?;
@@ -242,7 +257,7 @@ impl ThetaClient {
                 envelope::EnvelopeCodec,
             )
             .await
-            .map_err(status)
+            .map_err(|error| failure.classify(error))
         })
         .await
         .map_err(|_| EodError::Deadline)?;
@@ -257,6 +272,8 @@ impl ThetaClient {
             schema_lease: Some(Arc::new(schema_lease)),
             terminal: false,
             table,
+            failure,
+            stream_lease: Some(stream_lease),
         })
     }
 }
@@ -293,12 +310,15 @@ pub struct EodBatchStream {
     schema_lease: Option<Arc<OwnedSemaphorePermit>>,
     terminal: bool,
     table: bool,
+    failure: framing::Failure,
+    stream_lease: Option<OwnedSemaphorePermit>,
 }
 impl EodBatchStream {
     pub fn cancel(&mut self) {
         self.inner = None;
         self.schema = None;
         self.schema_lease = None;
+        self.stream_lease = None;
     }
     fn finish(&mut self) {
         self.cancel();
@@ -320,10 +340,14 @@ impl EodBatchStream {
         }
         // Taking the transport before the first await makes dropping a pending
         // future terminal: no consumed response can later be silently skipped.
-        let Some(mut inner) = self.inner.take() else {
+        let Some(inner) = self.inner.take() else {
             self.finish();
             return Err(EodError::Cancelled);
         };
+        // A dropped pending future drops transport and its stream slot together.
+        // Tuple fields drop in order: release transport before admitting its
+        // replacement, including when the enclosing pending future is dropped.
+        let mut receiving = (inner, self.stream_lease.take());
         let result = timeout_at(self.deadline, async {
             loop {
                 if Instant::now() >= self.deadline {
@@ -343,7 +367,7 @@ impl EodBatchStream {
                     .checked_add(self.idle)
                     .ok_or(EodError::Configuration)?
                     .min(self.deadline);
-                let response = timeout_at(idle_deadline, inner.message())
+                let response = timeout_at(idle_deadline, receiving.0.message())
                     .await
                     .map_err(|_| {
                         if Instant::now() >= self.deadline {
@@ -352,7 +376,7 @@ impl EodBatchStream {
                             EodError::Idle
                         }
                     })?
-                    .map_err(status)?;
+                    .map_err(|error| self.failure.classify(error))?;
                 let Some(response) = response else {
                     return Ok(None);
                 };
@@ -422,7 +446,11 @@ impl EodBatchStream {
         // deadline priority even for ready EOF/status at the expiration boundary.
         let result = check_deadline(self.deadline).and(result);
         match &result {
-            Ok(Some(_)) => self.inner = Some(inner),
+            Ok(Some(_)) => {
+                let (inner, stream_lease) = receiving;
+                self.inner = Some(inner);
+                self.stream_lease = stream_lease;
+            }
             _ => self.finish(),
         }
         result
@@ -661,6 +689,138 @@ mod tests {
             assert_eq!(gate.entered.available_permits(), 1);
             assert!(stream.next_batch().await.unwrap().is_some());
             assert_eq!(gate.entered.available_permits(), 2);
+        }
+    }
+    #[tokio::test]
+    async fn admission_deadlines_release_waiters_and_expired_streams_do_no_work() {
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(
+                &fixture::table(fixture::Shape::Mixed, 1).0,
+                false,
+            ))],
+            ..Default::default()
+        });
+        let client = client(&server, Duration::from_millis(150)).await;
+        let pool = client.eod_pool.clone();
+        let capacity = pool.schemas.available_permits();
+        let schemas = pool
+            .schemas
+            .clone()
+            .acquire_many_owned(capacity as u32)
+            .await
+            .unwrap();
+        assert_eq!(
+            client.stock_eod_batches(request()).await.err().unwrap(),
+            EodError::Deadline
+        );
+        assert!(server.requests.lock().unwrap().is_empty());
+        drop(schemas);
+        let job = pool.jobs.clone().acquire_owned().await.unwrap();
+        let mut stream = client.stock_eod_batches(request()).await.unwrap();
+        assert_eq!(stream.next_batch().await.unwrap_err(), EodError::Deadline);
+        assert!(stream.next_batch().await.unwrap().is_none());
+        drop(job);
+        assert_eq!(pool.schemas.available_permits(), capacity);
+        let gate = Gate::new();
+        gate.release();
+        *pool.gate.lock().unwrap() = Some(gate.clone());
+        let mut stream = client.stock_eod_batches(request()).await.unwrap();
+        stream.deadline = Instant::now();
+        stream.idle = Duration::ZERO;
+        assert_eq!(stream.next_batch().await.unwrap_err(), EodError::Deadline);
+        assert_eq!(gate.entered.available_permits(), 0);
+        assert_eq!(pool.jobs.available_permits(), 1);
+        assert_eq!(pool.schemas.available_permits(), capacity);
+    }
+    #[tokio::test]
+    async fn paused_streams_cannot_exhaust_connection_credit_for_active_decode() {
+        let wire = fixture::table(fixture::Shape::Nulls, 100_000).0;
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire, false))],
+            ..Default::default()
+        });
+        let client = ThetaClient::with_eod_policy(
+            ClientConfig {
+                endpoint: Some(server.endpoint.clone()),
+                allow_insecure: true,
+                idle_timeout: Duration::from_secs(5),
+                request_timeout: Duration::from_secs(20),
+                ..Default::default()
+            },
+            fixture::session().await,
+            EodPolicy {
+                concurrent_streams: 8,
+                concurrent_jobs: 1,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        let mut paused = Vec::new();
+        for _ in 0..7 {
+            paused.push(client.stock_eod_batches(request()).await.unwrap());
+        }
+        let mut active = client.stock_eod_batches(request()).await.unwrap();
+        let batch = active.next_batch().await.unwrap().unwrap();
+        assert_eq!(batch.row_count(), 100_000);
+        assert_eq!(batch.cells().len(), 800_000);
+        assert!(active.next_batch().await.unwrap().is_none());
+        assert_eq!(client.eod_pool.streams.available_permits(), 1);
+        drop(paused);
+        assert_eq!(client.eod_pool.streams.available_permits(), 8);
+    }
+    #[tokio::test]
+    async fn stream_admission_bounds_dispatch_and_releases_on_pending_drop() {
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(
+                &fixture::table(fixture::Shape::Nulls, 1).0,
+                false,
+            ))],
+            message_delay: Duration::from_secs(2),
+            ..Default::default()
+        });
+        let client = ThetaClient::with_eod_policy(
+            ClientConfig {
+                endpoint: Some(server.endpoint.clone()),
+                allow_insecure: true,
+                request_timeout: Duration::from_millis(250),
+                ..Default::default()
+            },
+            fixture::session().await,
+            EodPolicy {
+                concurrent_streams: 1,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        let mut stream = client.stock_eod_batches(request()).await.unwrap();
+        assert_eq!(
+            client.stock_eod_batches(request()).await.err().unwrap(),
+            EodError::Deadline
+        );
+        assert_eq!(server.requests.lock().unwrap().len(), 1);
+        // Use a fresh deadline for the pending-future cancellation part.
+        stream.deadline = Instant::now() + Duration::from_secs(5);
+        assert!(
+            tokio::time::timeout(Duration::from_millis(20), stream.next_batch())
+                .await
+                .is_err()
+        );
+        assert_eq!(client.eod_pool.streams.available_permits(), 1);
+        assert_eq!(stream.next_batch().await.unwrap_err(), EodError::Cancelled);
+        let replacement = client.stock_eod_batches(request()).await.unwrap();
+        assert_eq!(server.requests.lock().unwrap().len(), 2);
+        drop(replacement);
+        assert_eq!(client.eod_pool.streams.available_permits(), 1);
+        for concurrent_streams in [0, 65] {
+            assert!(
+                Pool::new(EodPolicy {
+                    concurrent_streams,
+                    ..Default::default()
+                })
+                .is_err()
+            );
         }
     }
 }

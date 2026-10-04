@@ -2232,6 +2232,7 @@ dependencies = [
  "chrono",
  "clap",
  "heck",
+ "http-body",
  "prost",
  "prost-types",
  "serde",

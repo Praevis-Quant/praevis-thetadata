@@ -163,6 +163,11 @@ service compatibility.
   The experimental typed EOD path adds preflight counts/accounting, numeric
   batches and shared bounded offload; see [the resource audit and gaps](docs/performance/eod-resource-audit.md).
   Small NONE-frame inline decoding is opt-in; the portable default stays offload.
+  Typed queries have a separate channel and finite active-stream admission;
+  preserve the receive-credit relationship that prevents paused-stream stalls.
+  The [acceptance matrix](docs/requirements/stock-eod-matrix.md) and
+  [calibration results](docs/performance/eod-acceptance-results.md) retain current
+  verification gaps and null/price decode regressions. Do not call them accepted.
   Do not claim complete heap/RSS or typed-slice acceptance from those checks.
 - **Preserve platform and wire behavior.** Exercise Windows and Linux for
   changes to native persistence or process behavior. Preserve descriptor bytes
