@@ -4,6 +4,8 @@ Rust workspace derived from the bundled ThetaData Python **1.0.12** package. The
 
 See the [auth requirements and ADRs](docs/README.md), [roadmap](docs/ROADMAP.md), [vendor research](docs/research/thetadata-1.0.12.md), and [performance methodology](docs/performance/auth.md). Only authentication is a baselined feature scope; the market-data crates are foundations for later work.
 
+For implemented changes, see the [changelog](CHANGELOG.md). Coding agents should start with [AGENTS.md](AGENTS.md) and the shared [project guidance and Git conventions](CLAUDE.md).
+
 Newly authored code and tooling are licensed under [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution and [the preserved upstream license](crates/thetadata-proto/LICENSE.upstream) for the bundled protocol source.
 
 ## Workspace

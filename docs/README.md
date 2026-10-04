@@ -4,6 +4,8 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 
 | Document | Purpose |
 | --- | --- |
+| [Changelog](../CHANGELOG.md) | Implemented changes, kept separate from future work |
+| [Agent guidance](../CLAUDE.md) | Architecture, commands, working conventions, and Git workflow |
 | [L1 requirements](requirements/L1-auth.md) | User and product outcomes |
 | [L2 requirements](requirements/L2-auth.md) | System behavior and parent L1 links |
 | [L3 requirements](requirements/L3-auth.md) | Verifiable component behavior, implementation, and checks |

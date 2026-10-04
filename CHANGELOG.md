@@ -1,0 +1,92 @@
+# Changelog
+
+All notable changes to this project are documented here.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and versioned releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROADMAP.md).
+
+The workspace currently declares `0.1.0` with publishing disabled. No release
+tag exists as of 2026-10-04; the entries below describe implemented work, not a
+published `0.1.0` release. The Python compatibility baseline is separately
+tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
+
+## [Unreleased]
+
+### Added
+
+- Rust workspace with an independent `thetadata-auth` library and `theta`
+  authentication CLI. Supports API-key and email/password authentication,
+  explicit credential discovery, PROD/STAGE environments, and named profiles.
+- Native session persistence through Windows Credential Manager and Linux
+  Secret Service, with auth/status/logout commands usable across processes.
+  Status reports locally stored metadata with server validity `not_checked`;
+  logout removes only the selected local record.
+- Market-data foundations: checked-in protobuf descriptor and generated gRPC
+  bindings for 82 RPCs, transport-independent data types, and a client for
+  requests, ZSTD decoding, and batch streaming. These foundations do not claim
+  complete Python parity or verified live-service behavior.
+- Authentication L1/L2/L3 requirements and six ADRs covering library boundaries,
+  wire/credential contracts, native persistence, explicit session lifecycle,
+  verification/provenance, and CLI runtime ownership. Documented the hybrid
+  requirements organization in [the documentation index](docs/README.md).
+- Python 1.0.12 artifact research, source hashes, and an API inventory. Recorded
+  the publishing repository and commit from PyPI attestations, public GitHub
+  access limitations, and matching wheel/sdist Python sources in
+  [the upstream source investigation](docs/research/upstream-source.md).
+- Windows/Ubuntu CI for formatting, Clippy, workspace tests, repository and
+  documentation auditing, Python tooling tests, and synthetic native-store
+  persistence tests. No live ThetaData credentials are required.
+- Scheduled and manually triggered [PyPI compatibility monitoring](docs/upstream-monitor.md).
+  It reads the tracked version from the protocol manifest, compares stable
+  non-yanked releases with PEP 440, and fails on a newer version or an inability
+  to verify. It does not automatically update the compatibility baseline.
+- Synthetic auth benchmarks and before/after CLI startup comparisons with
+  release-build provenance, executable hashes, alternating sample order, raw
+  samples, percentile summaries, isolated native-store fixtures, and Windows/
+  Ubuntu workflow support. WSL comparisons can stage identical binaries onto
+  the native temporary filesystem.
+- Forward-looking roadmap preserving the original performance review and table
+  verbatim, with planned compatibility research and native Rust tooling work.
+- Shared coding-agent guidance in [AGENTS.md](AGENTS.md) and
+  [CLAUDE.md](CLAUDE.md), including project-specific Git conventions, and this
+  changelog separating implemented changes from future work.
+
+### Changed
+
+- CLI parsing, help/version, status, and logout now run synchronously. Only
+  HTTP authentication starts a current-thread Tokio runtime, which ends before
+  persistence/output. The async auth library remains caller-runtime-owned;
+  credential precedence, record format, output, and exit codes are preserved.
+- Recorded the startup change's measured results and limitations in
+  [the evaluation](docs/performance/cli-startup.md): Windows median status
+  latency improved 10.6-10.9% and auth/save 5.5-6.0% across two runs. Native
+  Linux-filesystem status improved 11.5-12.1%, but Linux auth/save showed no
+  reliable gain. Tail latency did not consistently improve, and execution from
+  Windows-mounted WSL storage regressed. These are synthetic local findings,
+  not a universal latency guarantee.
+
+### Security
+
+- Authentication defaults to HTTPS with redirects disabled and explicit
+  timeouts. Plain HTTP requires an explicit test opt-in. Credential/session
+  secrets are redacted from output; saved records omit passwords and API keys.
+- Native-store failures remain explicit errors, with no plaintext or
+  process-only persistence fallback. Failed authentication preserves an
+  existing saved session. Tests isolate and clean up synthetic profiles.
+
+### Licensing
+
+- Adopted Apache-2.0 for newly authored Rust code and tooling, added the root
+  [LICENSE](LICENSE) and [NOTICE](NOTICE), and retained
+  [the upstream Apache-2.0 license](crates/thetadata-proto/LICENSE.upstream).
+
+The initial implementation was recorded on 2026-10-03 (`0caf272`); upstream
+monitoring, licensing, source investigation, startup optimization, and its
+acceptance documentation followed on 2026-10-04 (`83f429e`, `2b4798a`,
+`daa50db`, `af965f7`). These dates describe repository history, not releases.
+
+Changelog structure adapted from [siat-foreign-analysis CHANGELOG.md](https://github.com/joey-huckabee/siat-foreign-analysis/blob/main/CHANGELOG.md)
+on 2026-10-04 (source blob `1cf05b7c5f4dabfea95ebf669b2afbef3787c3d3`).
+Entries describe this project's implementation; the reference project's
+release history is not imported.
