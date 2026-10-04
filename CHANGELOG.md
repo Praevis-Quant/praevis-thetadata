@@ -15,6 +15,13 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Proposed ADRs 0007-0012 for a first stock EOD library slice, typed request
+  presence/validation, exact values and batch schemas, stream lifecycle and
+  resource limits, Rust-native protocol verification, and hybrid requirements
+  traceability. Linked feature dispositions to the proposed decisions without
+  marking unimplemented market-data behavior supported.
+- Exact PyPI wheel recovery instructions and hash verification for optional
+  research regeneration after removing the untracked local ZIP/extraction.
 - Complete Python 1.0.12 source analysis and generated Markdown catalogue:
   14 artifact members, 9 modules, 251 functions/methods, 80 query wrappers,
   82 RPCs, 176 messages, 778 fields, and two enums. Added 531 inventory rows
