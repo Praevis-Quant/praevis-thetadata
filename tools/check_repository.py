@@ -38,6 +38,11 @@ def main():
         for link in re.findall(r"\]\(([^)]+)\)", content):
             if "://" in link or link.startswith(("#", "mailto:")):
                 continue
+            # The roadmap preserves a verbatim review with historical workstation
+            # citations, including ignored measurement artifacts. These are not
+            # portable repository links; keep auditing every relative link.
+            if document == ROOT / "docs/ROADMAP.md" and re.match(r"/[A-Za-z]:/", link):
+                continue
             target = unquote(link.split("#", 1)[0])
             if target and not (document.parent / target).exists():
                 errors.append(f"Broken file link in {document.relative_to(ROOT)}: {target}")

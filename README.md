@@ -2,7 +2,9 @@
 
 Rust workspace derived from the bundled ThetaData Python **1.0.12** package. The first application is an authentication CLI, backed by an authentication library that other projects can use independently.
 
-See the [auth requirements and ADRs](docs/README.md), [vendor research](docs/research/thetadata-1.0.12.md), and [performance methodology](docs/performance/auth.md). Only authentication is a baselined feature scope; the market-data crates are foundations for later work.
+See the [auth requirements and ADRs](docs/README.md), [roadmap](docs/ROADMAP.md), [vendor research](docs/research/thetadata-1.0.12.md), and [performance methodology](docs/performance/auth.md). Only authentication is a baselined feature scope; the market-data crates are foundations for later work.
+
+Newly authored code and tooling are licensed under [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution and [the preserved upstream license](crates/thetadata-proto/LICENSE.upstream) for the bundled protocol source.
 
 ## Workspace
 

@@ -1,0 +1,2 @@
+# CI-only tooling; not needed for Rust builds or the runtime CLI.
+packaging==26.3

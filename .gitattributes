@@ -2,10 +2,15 @@
 .gitignore text eol=lf
 .gitattributes text eol=lf
 LICENSE.upstream text eol=lf
+LICENSE text eol=lf
+NOTICE text eol=lf
+*.txt text eol=lf
 *.rs text eol=lf
 *.toml text eol=lf
 *.lock text eol=lf
 *.md text eol=lf
+# Preserve the verbatim review's Markdown hard line breaks.
+docs/ROADMAP.md whitespace=-blank-at-eol
 *.yml text eol=lf
 *.yaml text eol=lf
 *.py text eol=lf

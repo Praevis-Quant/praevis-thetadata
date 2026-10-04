@@ -1,0 +1,15 @@
+thetadata-rs
+Copyright 2026 the thetadata-rs contributors.
+
+This project contains protocol definitions recovered from the ThetaData Python
+distribution, version 1.0.12, published by ThetaData under Apache License 2.0.
+The upstream license is preserved in crates/thetadata-proto/LICENSE.upstream.
+Source hashes and protocol provenance are recorded in
+crates/thetadata-proto/schema/manifest.json and docs/research/.
+
+The Rust implementation, command-line application, documentation, and project
+tooling are newly authored work. The protocol extraction and generated Rust
+bindings are described in README.md; they are not the original Python sources.
+
+Third-party dependencies retain their respective licenses. This project is not
+an official ThetaData product and does not grant rights to ThetaData trademarks.
