@@ -1,9 +1,11 @@
 # L2: stock EOD system requirements
 
-Status: **Defined; implementation and acceptance verification planned**, 2026-10-04.
+Status: **Defined; partial experimental implementation, full acceptance open**, 2026-10-04.
 Owner of every L2 requirement: Praevis-Quant architecture maintainers.
 Parents: [L1 outcomes](L1-stock-eod.md). Children: [L3 contracts](L3-stock-eod.md).
-All verification described below is planned, not recorded passing evidence.
+Verification descriptions below are acceptance obligations, not by themselves
+passing evidence. See the [typed experiment evidence](stock-eod-evidence.md#typed-numeric-experiment-2026-10-04)
+for implemented cases and remaining gaps.
 
 | ID | L1 parents | System requirement | Acceptance method |
 | --- | --- | --- | --- |

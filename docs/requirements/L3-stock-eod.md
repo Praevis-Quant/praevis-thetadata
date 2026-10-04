@@ -1,11 +1,11 @@
 # L3: stock EOD component and acceptance contracts
 
-Status: **Defined; implementation and acceptance verification planned**, 2026-10-04.
+Status: **Defined; partial experimental implementation, full acceptance open**, 2026-10-04.
 Each row names its owning maintainers. `client`, `core`, and `proto` refer to
 the corresponding `thetadata-*` crates; `workspace` means repository/CI owners.
-Every verification cell below is a required future check, **not passing
-evidence**. Existing code is a foundation requiring a requirement-by-requirement
-audit. Keep these cross-component contracts central under
+Every verification cell below is an acceptance obligation, **not by itself
+passing evidence**. See the [typed experiment evidence](stock-eod-evidence.md#typed-numeric-experiment-2026-10-04)
+for implemented cases and remaining gaps. Keep these cross-component contracts central under
 [ADR-0012](../adr/0012-requirements-and-research-traceability.md).
 
 Parents: [L2](L2-stock-eod.md). Outcomes: [L1](L1-stock-eod.md).

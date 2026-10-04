@@ -1,5 +1,10 @@
 # Synthetic stock EOD decoder and delivery baseline
 
+This document records the original before-change baseline. The subsequent
+[numeric experiment](eod-numeric.md) extends the harness to three engines;
+[its results](eod-numeric-results.md) use fresh common-harness measurements.
+Statements about pending implementation below describe the original baseline.
+
 The Rust-native fixture and benchmark exercise the current raw EOD helper and
 unchanged Table decoder. They establish a baseline before implementing numeric
 batches, allocation limits or decode offload. All data is synthetic; the

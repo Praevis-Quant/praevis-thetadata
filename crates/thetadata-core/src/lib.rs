@@ -2,6 +2,8 @@
 
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::Serialize;
+mod batch;
+pub use batch::{BatchValue, DataBatch, TimeZone, Timestamp};
 
 #[derive(Debug, thiserror::Error)]
 pub enum DataError {

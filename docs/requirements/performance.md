@@ -1,7 +1,7 @@
 # Performance-first delivery requirements
 
-Status: Defined/proposed, 2026-10-04; runtime implementation, calibration and
-acceptance planned. Origin of every PERF requirement: **Rust enhancement**.
+Status: Defined/proposed, 2026-10-04; partial experimental implementation,
+calibration and full acceptance open. Origin of every PERF requirement: **Rust enhancement**.
 Owner: workspace performance maintainers; L3 names component owners.
 Decision: [ADR-0014](../adr/0014-performance-first-data-path.md).
 Related contracts: [EOD](L3-stock-eod.md), [architecture](architecture.md),
@@ -10,7 +10,9 @@ Related contracts: [EOD](L3-stock-eod.md), [architecture](architecture.md),
 Performance is the primary optimization objective within correctness, security,
 resource and lifecycle constraints. These requirements apply from the low-level
 decoder to consumer delivery; they do not guarantee vendor latency or a
-workload-independent optimum. All verification below is planned.
+workload-independent optimum. Verification below states acceptance obligations;
+see the [experiment](../performance/eod-numeric.md) and
+[results](../performance/eod-numeric-results.md) for current evidence and gaps.
 
 ## L1
 

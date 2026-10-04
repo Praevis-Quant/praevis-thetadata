@@ -58,7 +58,9 @@ measured alternatives; do not choose a layout solely to anticipate Python.
 Unbounded offload/prefetch or removing validation may improve one microbenchmark
 while violating memory/latency guarantees and is rejected.
 
-Implementation and performance results remain planned. The measurement and
-resource-policy gate in EOD-L3-023 remains open; this ADR adds first-batch and
+An [experimental implementation](../performance/eod-numeric.md) and
+[performance results](../performance/eod-numeric-results.md) now provide partial
+evidence. The measurement and resource-policy gate in EOD-L3-023 remains open;
+this ADR adds first-batch and
 adapter-cost criteria and selects the numeric-path direction before coding.
 See the [architecture review](../research/architecture-performance-review.md).

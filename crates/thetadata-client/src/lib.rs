@@ -1,5 +1,18 @@
 //! Async batch streaming for ThetaData's direct gRPC API.
+mod bounded;
 mod decode;
+mod envelope;
+mod eod;
+#[cfg(test)]
+extern crate self as thetadata_client;
+#[cfg(test)]
+#[allow(dead_code)]
+#[path = "../tests/support/mod.rs"]
+mod test_fixture;
+pub use eod::{
+    DecodeLimits, EodBatchStream, EodError, EodPolicy, EodTableStream, NaiveDate, StockEodRequest,
+};
+pub use thetadata_core::{BatchValue, DataBatch, TimeZone, Timestamp};
 
 use std::time::Duration;
 pub use thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, Session};
@@ -72,9 +85,11 @@ impl Default for ClientConfig {
 
 #[derive(Clone)]
 pub struct ThetaClient {
+    channel: Channel,
     stub: api::beta_theta_terminal_client::BetaThetaTerminalClient<Channel>,
     session: Session,
     config: ClientConfig,
+    eod_pool: std::sync::Arc<eod::Pool>,
 }
 
 impl ThetaClient {
@@ -111,12 +126,14 @@ impl ThetaClient {
             }
         }
         let channel = endpoint.connect().await?;
-        let stub = api::beta_theta_terminal_client::BetaThetaTerminalClient::new(channel)
+        let stub = api::beta_theta_terminal_client::BetaThetaTerminalClient::new(channel.clone())
             .max_decoding_message_size(config.max_batch_bytes + 1024);
         Ok(Self {
+            channel,
             stub,
             session,
             config,
+            eod_pool: eod::Pool::new(EodPolicy::default()).expect("valid default EOD policy"),
         })
     }
     pub fn session(&self) -> Session {

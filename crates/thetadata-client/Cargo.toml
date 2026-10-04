@@ -6,6 +6,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+chrono.workspace = true
 thetadata-auth.workspace = true
 thetadata-core.workspace = true
 thetadata-proto.workspace = true

@@ -185,6 +185,7 @@ pub struct Script {
     pub messages: Vec<Result<wire::ResponseData, tonic::Status>>,
     pub message_delay: Duration,
     pub initial_error: Option<tonic::Status>,
+    pub header_delay: Duration,
 }
 
 type FixtureStream = ReceiverStream<Result<wire::ResponseData, tonic::Status>>;
@@ -198,6 +199,9 @@ impl FixtureService {
         request: tonic::Request<api::StockHistoryEodRequest>,
     ) -> Result<tonic::Response<FixtureStream>, tonic::Status> {
         self.requests.lock().unwrap().push(request.into_inner());
+        if !self.script.header_delay.is_zero() {
+            tokio::time::sleep(self.script.header_delay).await;
+        }
         if let Some(error) = &self.script.initial_error {
             return Err(error.clone());
         }

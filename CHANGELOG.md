@@ -15,6 +15,20 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Typed EOD resource-audit fixes: bounded outer-envelope decoding, conservative
+  String capacity accounting, separate schema/batch reservations, deterministic
+  running-worker cancellation tests, and opt-in bounded inline scheduling for
+  small uncompressed responses. Repeated Windows/Linux measurements retain
+  bounded offload as the portable default because Windows gains were mixed;
+  Linux small numeric delivery improved by 51-65% in this fixture. Full stock
+  EOD acceptance remains separate.
+- Experimental typed stock EOD numeric batches with flat cell storage, lazy
+  timestamp presentation, a shared Table adapter, preflight allocation/count
+  bounds, finite decode admission, schema continuity and terminal stream errors.
+  Added synthetic contract tests and a common legacy/Table/numeric benchmark;
+  full EOD acceptance and live-service verification remain open.
+- crates.io prerelease plan covering the five existing packages, name checks,
+  credential-verification limits, packaging, ownership and release approval.
 - Credential-free Rust EOD HTTP/gRPC fixtures with deterministic NONE/ZSTD
   batches and exact-value, wire-request, empty/partial/error and timeout tests.
   Tests exercise the current raw client; they do not claim typed EOD acceptance

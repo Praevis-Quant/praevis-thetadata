@@ -2229,6 +2229,7 @@ dependencies = [
 name = "thetadata-client"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "clap",
  "heck",
  "prost",
