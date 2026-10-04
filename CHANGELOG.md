@@ -15,6 +15,13 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Typed EOD local frame/ZSTD resource-error provenance and a per-requirement
+  acceptance matrix covering both numeric and Table APIs. Larger mock workloads
+  exposed an existing HTTP/2 progress failure; finite query admission and a
+  dedicated typed channel with fixed receive credit prevent paused streams from
+  starving active decoding. Repeated Windows/Linux slow-consumer measurements,
+  failed-calibration evidence and measured decode regressions are retained.
+  Full EOD/performance acceptance remains open.
 - Typed EOD resource-audit fixes: bounded outer-envelope decoding, conservative
   String capacity accounting, separate schema/batch reservations, deterministic
   running-worker cancellation tests, and opt-in bounded inline scheduling for

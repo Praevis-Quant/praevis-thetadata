@@ -55,8 +55,6 @@ Do not introduce unlimited spawn_blocking calls or claim cancellation frees
 all CPU/memory immediately. The current synchronous decoder remains an
 explicit implementation gap, not a validated responsiveness guarantee.
 
-## Alternatives
-
 Implementation follow-up (2026-10-04): the large concurrent fixture exposed
 HTTP/2 connection-credit starvation when unpolled streams held receive credit
 while active streams waited for complete frames. Bound simultaneous typed
@@ -71,6 +69,8 @@ time, and cancellation releases transport before its slot. See the
 resource/lifecycle enhancement under EOD-L3-019/022/023, not upstream behavior or
 approval of the full slice. Initial defaults are 16 streams, 2 MiB per-stream
 credit and 34 MiB connection credit; they supplement the application budget.
+
+## Alternatives
 
 - Accumulating all results matches Python's dataframe interface but removes
   caller backpressure and scales memory with query size.

@@ -283,6 +283,7 @@ async fn local_faults_before_and_after_delivery_fuse_and_release_single_job() {
     }
     for (name, fault, mut policy, expected) in cases {
         policy.concurrent_jobs = 1;
+        policy.concurrent_streams = 1;
         for table_api in [false, true] {
             for partial in [false, true] {
                 let mut messages = Vec::new();

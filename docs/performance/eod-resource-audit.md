@@ -4,6 +4,13 @@ Scope: follow-up to the [numeric experiment](eod-numeric.md), 2026-10-04.
 This records reviewed code paths and synthetic verification, not live service
 validation or acceptance of every stock EOD requirement.
 
+Follow-up: the [acceptance matrix](../requirements/stock-eod-matrix.md) and
+[resource-calibration results](eod-acceptance-results.md) supersede the open
+local-frame/ZSTD-window error-classification gap below. They also add bounded
+query admission and dedicated HTTP/2 receive credit after larger concurrent
+workloads exposed a progress failure. Full acceptance and measured decode
+regressions remain open; the original audit is retained as evidence.
+
 ## Findings and changes
 
 | Finding | Change | Verification |

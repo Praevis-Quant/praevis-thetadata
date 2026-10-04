@@ -22,10 +22,13 @@
       "EOD-L3-019", "EOD-L3-020", "EOD-L3-021", "EOD-L3-022", "EOD-L3-023", "EOD-L3-024",
       "EOD-L3-025", "EOD-L3-026", "EOD-L3-027", "EOD-L3-028", "EOD-L3-029"
     ],
-    "implementation": ["crates/thetadata-client/src/eod.rs", "crates/thetadata-client/src/bounded.rs", "crates/thetadata-core/src/batch.rs"],
+    "implementation": ["crates/thetadata-client/src/eod.rs", "crates/thetadata-client/src/bounded.rs", "crates/thetadata-client/src/envelope.rs", "crates/thetadata-client/src/framing.rs", "crates/thetadata-core/src/batch.rs"],
     "verification": [
       "crates/thetadata-client/tests/eod_fixture.rs",
       "crates/thetadata-client/tests/eod_typed.rs",
+      "crates/thetadata-client/tests/eod_contracts.rs",
+      "docs/requirements/stock-eod-matrix.md",
+      "docs/performance/eod-acceptance-results.md",
       "docs/performance/eod-numeric.md",
       "crates/thetadata-client/examples/eod_benchmark.rs",
       "docs/performance/eod-baseline.md"

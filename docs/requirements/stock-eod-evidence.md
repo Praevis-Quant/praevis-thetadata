@@ -117,3 +117,21 @@ workspace tests and benchmark smoke checks. The subsequent default-0 decision
 and actual-thread/no-prefetch test are part of the same follow-up. No live
 vendor verification was performed. Canonical IDs, origins and proposed ADR
 statuses remain unchanged.
+
+## Fault matrix and larger-workload follow-up (2026-10-04)
+
+The [acceptance matrix](stock-eod-matrix.md) now accounts for every EOD L3 row,
+with separate evidence and remaining clauses. Local frame announcements and
+ZSTD window failures have trustworthy resource-error provenance; every remote
+non-OK status retains its safe code through both public APIs. Before/after-batch
+faults verify terminal fusion and reuse with one job and one stream slot.
+
+The [calibration report](../performance/eod-acceptance-results.md) records a
+pre-existing eight-stream HTTP/2 stall, bounded query/window admission that fixes
+it, repeated successful large/slow-consumer runs on Windows and Linux, and all
+regressions. Numeric null decoding remains roughly 11-18% slower in this change;
+some price workloads also regress. Integrating the correctness fixes does not
+accept the PERF baseline or close EOD-L3-023. The unsuccessful function-layout
+experiment was reverted and its evidence retained. Next work is targeted decode
+regression investigation plus the remaining verification clauses and separate
+transport/C-memory profiling. No vendor contract or requirement origin changed.
