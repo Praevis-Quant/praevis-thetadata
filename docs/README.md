@@ -32,7 +32,9 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [CLI startup evaluation](performance/cli-startup.md) | Before/after release comparisons for runtime startup |
 | [Synthetic EOD baseline](performance/eod-baseline.md) | Rust-native loopback fixture, decoder/delivery measurements, scope and comparison procedure |
 | [Initial EOD measurements](performance/eod-results.md) | Repeated Windows/WSL baseline, variability, allocation evidence and artifact hashes |
+| [Bounded numeric EOD experiment](performance/eod-numeric.md) | Implementation, provisional budgets, common-harness comparisons and acceptance gaps |
 | [Roadmap](ROADMAP.md) | Forward-looking candidates and the preserved original review |
+| [crates.io release plan](crates-io-release-plan.md) | Useful prereleases, name checks, credential verification limits and packaging gates |
 | [Upstream compatibility monitor](upstream-monitor.md) | Scheduled PyPI version comparison and baseline policy |
 
 Requirement IDs are permanent. L2 requirements name their L1 parents; L3 requirements name their L2 parents. Add new requirements and ADRs as scope grows; do not quietly reinterpret existing IDs. Changes to credential precedence, persisted data, store identity, or lifecycle behavior require updating the relevant ADR and tests.

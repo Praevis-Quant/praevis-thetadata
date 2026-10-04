@@ -1,5 +1,11 @@
 //! Async batch streaming for ThetaData's direct gRPC API.
+mod bounded;
 mod decode;
+mod eod;
+pub use eod::{
+    DecodeLimits, EodBatchStream, EodError, EodPolicy, EodTableStream, NaiveDate, StockEodRequest,
+};
+pub use thetadata_core::{BatchValue, DataBatch, TimeZone, Timestamp};
 
 use std::time::Duration;
 pub use thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, Session};
@@ -75,6 +81,7 @@ pub struct ThetaClient {
     stub: api::beta_theta_terminal_client::BetaThetaTerminalClient<Channel>,
     session: Session,
     config: ClientConfig,
+    eod_pool: std::sync::Arc<eod::Pool>,
 }
 
 impl ThetaClient {
@@ -117,6 +124,7 @@ impl ThetaClient {
             stub,
             session,
             config,
+            eod_pool: eod::Pool::new(EodPolicy::default()).expect("valid default EOD policy"),
         })
     }
     pub fn session(&self) -> Session {

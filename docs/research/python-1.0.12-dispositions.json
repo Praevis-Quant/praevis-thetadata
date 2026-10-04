@@ -3,7 +3,7 @@
     "id": "stock-eod",
     "status": "planned",
     "section": "wrapper-semantics",
-    "rationale": "Selected one-symbol EOD slice: four source items trace to defined L1/L2/L3 contracts. Runtime implementation and acceptance verification remain planned; raw bindings do not establish typed-query support or live service behavior. See docs/requirements/stock-eod-evidence.md for deviations and gates.",
+    "rationale": "Selected one-symbol EOD slice: four source items trace to defined L1/L2/L3 contracts. Typed numeric/Table implementation is experimental with partial synthetic evidence; full acceptance and live service behavior remain unverified. See docs/requirements/stock-eod-evidence.md for deviations and gates.",
     "adrs": [
       "docs/adr/0007-first-market-data-slice.md",
       "docs/adr/0008-typed-requests-and-presence.md",
@@ -22,9 +22,11 @@
       "EOD-L3-019", "EOD-L3-020", "EOD-L3-021", "EOD-L3-022", "EOD-L3-023", "EOD-L3-024",
       "EOD-L3-025", "EOD-L3-026", "EOD-L3-027", "EOD-L3-028", "EOD-L3-029"
     ],
-    "implementation": [],
+    "implementation": ["crates/thetadata-client/src/eod.rs", "crates/thetadata-client/src/bounded.rs", "crates/thetadata-core/src/batch.rs"],
     "verification": [
       "crates/thetadata-client/tests/eod_fixture.rs",
+      "crates/thetadata-client/tests/eod_typed.rs",
+      "docs/performance/eod-numeric.md",
       "crates/thetadata-client/examples/eod_benchmark.rs",
       "docs/performance/eod-baseline.md"
     ]

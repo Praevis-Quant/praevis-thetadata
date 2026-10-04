@@ -76,3 +76,23 @@ safe error wrapping and pre-allocation resource enforcement remain planned.
 The benchmark establishes before-change measurements; numeric layout, offload,
 complete memory accounting and calibrated limits still require implementation
 and equivalent after-change evidence. Live checks remain optional and separate.
+
+## Typed numeric experiment (2026-10-04)
+
+The [bounded numeric experiment](../performance/eod-numeric.md) supersedes the
+initial implementation-status statements above, without accepting the complete
+slice. Canonical requirements and origin classifications are unchanged.
+
+| Contracts | Implementation / verification | Current evidence and gaps |
+| --- | --- | --- |
+| EOD-L3-001 through EOD-L3-005 | `client/src/eod.rs`; `tests/eod_typed.rs` | Typed calendar/symbol validation, exact request mapping, supplied session and explicit transport configuration; full invalid-configuration/no-side-effect matrix remains open |
+| EOD-L3-006 through EOD-L3-011; PERF-L3-002/003/004 | `client/src/bounded.rs`, `core/src/batch.rs`; bounded/core tests and typed fixture | NONE/ZSTD equivalence, flat exact values, numeric timestamp/DST adapter, schema identity/change and malformed-input tests; exhaustive adversarial protobuf corpus remains open |
+| EOD-L3-012 through EOD-L3-019 | `client/src/eod.rs`; typed fixture | Partial NOT_FOUND, safe remote codes, empty schema, fusion, explicit/pending-future cancellation, idle and caller-pause deadline tests; deterministic header/admission/running-worker deadline/cancellation matrix remains open |
+| EOD-L3-020 through EOD-L3-023; PERF-L3-005 | `client/src/bounded.rs`, `client/src/eod.rs` | Actual expansion/count/text/accounted-storage checks, ZSTD window setting and shared admission implemented; outer envelope allocations, worst-case accounting and active-worker saturation need further audit before acceptance |
+| EOD-L3-024 through EOD-L3-027; PERF-L3-007/008 | Typed/raw fixtures, compiled API example and three-engine Rust harness | Credential-free checks and comparable measurement method implemented; policy remains provisional and performance thresholds uncalibrated |
+| EOD-L3-028/029 | Origin register, feature ledger, this evidence record | Existing offline coverage checks retained; no claim of live validation |
+
+Paths in this table are relative to `crates/thetadata-client` and
+`crates/thetadata-core` as indicated. Tests establish the listed cases, not every
+verification clause of each grouped requirement. ADRs 0007-0016 remain proposed;
+the resource-policy gate and full slice acceptance are still open.

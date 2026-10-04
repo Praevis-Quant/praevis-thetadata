@@ -23,12 +23,18 @@ jobs:
       - name: Native fixture and benchmark tests
         run: |
           cargo test --locked -p thetadata-client --test eod_fixture
+          cargo test --locked -p thetadata-client --test eod_typed
           cargo test --locked -p thetadata-client --example eod_benchmark
-      - name: Release baseline repetitions (no vendor credentials)
+      - name: Release comparisons in forward/reverse order (no vendor credentials)
         run: |
-          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --output artifacts/eod-1.json
-          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --output artifacts/eod-2.json
-          cargo run --release --locked -p thetadata-client --example eod_benchmark -- compare --baseline artifacts/eod-1.json --candidate artifacts/eod-2.json --output artifacts/eod-repeatability.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine legacy --output artifacts/eod-legacy-1.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine table --output artifacts/eod-table-1.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine numeric --output artifacts/eod-numeric-1.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine numeric --output artifacts/eod-numeric-2.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine table --output artifacts/eod-table-2.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine legacy --output artifacts/eod-legacy-2.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- compare --baseline artifacts/eod-legacy-1.json --candidate artifacts/eod-table-1.json --output artifacts/eod-table-comparison.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- compare --baseline artifacts/eod-legacy-1.json --candidate artifacts/eod-numeric-1.json --output artifacts/eod-numeric-comparison.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: synthetic-eod-${{ runner.os }}-${{ github.sha }}

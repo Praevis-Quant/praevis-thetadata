@@ -6,7 +6,7 @@ The next round is implementing the stock EOD slice's [defined L1/L2/L3 requireme
 
 ## Next round: implement and verify stock EOD
 
-Implement the typed one-symbol EOD request and pull stream against [the L3 contracts](requirements/L3-stock-eod.md). Extend the [Rust-native mock and retained decoder baseline](performance/eod-baseline.md) to the typed/numeric path. Use the [initial measurements](performance/eod-results.md) to design pre-allocation accounting and numeric timestamp/layout experiments, then choose finite resource defaults and bounded scheduling from equivalent before/after evidence. Report regressions and fixture/instrumentation effects as well as improvements. A raw generated binding is not acceptance evidence for a supported product feature.
+Complete acceptance of the typed one-symbol EOD request and pull stream against [the L3 contracts](requirements/L3-stock-eod.md). Close the [bounded numeric experiment's remaining gates](performance/eod-numeric.md): audit outer-envelope allocation and shared-budget saturation, inject cancellation during active decode, and complete the timeout/invalid-input matrix. Use the [retained baseline](performance/eod-results.md) and common-harness before/after evidence to approve finite resource defaults and bounded scheduling. Report regressions and fixture/instrumentation effects as well as improvements. A raw generated binding is not acceptance evidence for a supported product feature.
 
 Verify validation/wire mapping, exact values, session use, stream/schema/empty-result behavior, deadlines/cancellation, and partial-stream errors on Windows and Linux. Link implementation and passing evidence to each requirement before accepting the slice. Retain open service-column, date-inclusivity, ordering/adjustment, entitlement, and token-lifecycle questions until supported by authorized live evidence or vendor confirmation. Future optional-field endpoints need explicit false/zero-presence contracts when selected; they are not part of the three-field EOD query.
 
@@ -31,6 +31,15 @@ local filtering/projection after the unfiltered numeric path is verified;
 preserve source validation and lifecycle semantics and benchmark adapter bypass.
 Explore bounded aggregation/windowing, export adapters and caching only with
 separate consumer requirements, state budgets and provenance/invalidation rules.
+
+## Initial crates.io presence
+
+Prepare useful experimental prereleases of the five existing workspace crates
+using the [crates.io release plan](crates-io-release-plan.md). Resolve package
+metadata, registry dependency versions, self-contained build/benchmark assets,
+license inclusion, ownership and token permissions before publication. Review
+exact archives and Windows/Linux consumer checks, then approve the public
+release. Recheck name availability; do not reserve speculative future packages.
 
 ## Future Python interface through PyO3
 

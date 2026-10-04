@@ -1,6 +1,6 @@
 //! Synthetic baseline of the unchanged decoder and public raw EOD stream.
 //! No account, Python, native-store access or live endpoint option.
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -15,6 +15,7 @@ use std::{
     },
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+use thetadata_client::{BatchValue, DataBatch, EodError, NaiveDate, StockEodRequest, Timestamp};
 use thetadata_client::{ClientConfig, Error, ThetaClient};
 use thetadata_core::Table;
 use tokio::task::JoinSet;
@@ -25,12 +26,98 @@ use tokio::task::JoinSet;
 mod allocation;
 #[path = "../src/decode.rs"]
 mod decode;
+// Same binary/harness exercises the retained implementation and the candidate.
+// Only the private decoder entry point is included; production streaming is
+// always exercised through the public client API.
+#[allow(dead_code)]
+#[path = "../src/bounded.rs"]
+mod bounded;
+mod eod {
+    pub use thetadata_client::EodError;
+}
 #[path = "../tests/support/mod.rs"]
 mod support;
 #[global_allocator]
 static ALLOCATOR: allocation::Allocator = allocation::Allocator;
 const LIMIT: usize = 64 * 1024 * 1024;
 type Failure = Box<dyn std::error::Error + Send + Sync>;
+
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, ValueEnum)]
+enum Engine {
+    #[default]
+    Legacy,
+    Table,
+    Numeric,
+}
+#[derive(Debug, PartialEq)]
+enum Output {
+    Table(Table),
+    Numeric(DataBatch),
+}
+fn expected_output(table: &Table, engine: Engine) -> Output {
+    use thetadata_core::Value;
+    if !matches!(engine, Engine::Numeric) {
+        return Output::Table(table.clone());
+    }
+    let cells = table
+        .rows
+        .iter()
+        .flatten()
+        .map(|v| match v {
+            Value::Null => BatchValue::Null,
+            Value::Text(v) => BatchValue::Text(v.clone()),
+            Value::Integer(v) => BatchValue::Integer(*v),
+            Value::Price(v) => BatchValue::Price(v.clone()),
+            Value::Boolean(v) => BatchValue::Boolean(*v),
+            Value::Timestamp(v) => {
+                let instant = chrono::DateTime::parse_from_rfc3339(v).unwrap();
+                BatchValue::Timestamp(
+                    Timestamp::from_wire(
+                        instant.timestamp_millis() as u64,
+                        if v.ends_with('Z') { 1 } else { 0 },
+                    )
+                    .unwrap(),
+                )
+            }
+        })
+        .collect();
+    Output::Numeric(DataBatch::new(table.headers.clone().into(), cells, table.rows.len()).unwrap())
+}
+fn decode_output(
+    response: thetadata_proto::endpoints::ResponseData,
+    engine: Engine,
+) -> Result<Output, Failure> {
+    Ok(match engine {
+        Engine::Legacy => Output::Table(decode::decode(response, LIMIT)?),
+        Engine::Table => {
+            Output::Table(bounded::decode(response, &Default::default(), None, true)?.into_table())
+        }
+        Engine::Numeric => {
+            Output::Numeric(bounded::decode(response, &Default::default(), None, false)?)
+        }
+    })
+}
+enum Stream {
+    Legacy(thetadata_client::ResponseStream),
+    Table(thetadata_client::EodTableStream),
+    Numeric(thetadata_client::EodBatchStream),
+}
+impl Stream {
+    async fn next(&mut self) -> Result<Option<Output>, Failure> {
+        Ok(match self {
+            Self::Legacy(v) => v.next_batch().await?.map(Output::Table),
+            Self::Table(v) => v.next_batch().await?.map(Output::Table),
+            Self::Numeric(v) => v.next_batch().await?.map(Output::Numeric),
+        })
+    }
+}
+fn typed_request() -> Result<StockEodRequest, EodError> {
+    StockEodRequest::new(
+        "SYNTHETIC",
+        NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+        NaiveDate::from_ymd_opt(2026, 1, 16).unwrap(),
+    )
+}
 
 #[derive(Parser)]
 struct Args {
@@ -40,6 +127,8 @@ struct Args {
 #[derive(Subcommand)]
 enum Mode {
     Run {
+        #[arg(long, value_enum, default_value_t = Engine::Legacy)]
+        engine: Engine,
         #[arg(long)]
         output: PathBuf,
         #[arg(long, default_value_t = 12, value_parser = clap::value_parser!(u32).range(2..=10000))]
@@ -81,6 +170,7 @@ struct Provenance {
 }
 #[derive(Clone, Serialize, Deserialize)]
 struct Report {
+    engine: Engine,
     format: String,
     synthetic: bool,
     provenance: Provenance,
@@ -164,9 +254,30 @@ fn provenance() -> Result<Provenance, Failure> {
         git_revision: command("git", &["rev-parse", "HEAD"])?,
         git_dirty: !command("git", &["status", "--porcelain"])?.is_empty(),
         executable_sha256: executable_hash(&std::env::current_exe()?)?,
-        decoder_sha256: source_hash(include_bytes!("../src/decode.rs")),
-        core_sha256: source_hash(include_bytes!("../../thetadata-core/src/lib.rs")),
-        client_sha256: source_hash(include_bytes!("../src/lib.rs")),
+        decoder_sha256: hash(
+            format!(
+                "{}{}",
+                source_hash(include_bytes!("../src/decode.rs")),
+                source_hash(include_bytes!("../src/bounded.rs"))
+            )
+            .as_bytes(),
+        ),
+        core_sha256: hash(
+            format!(
+                "{}{}",
+                source_hash(include_bytes!("../../thetadata-core/src/lib.rs")),
+                source_hash(include_bytes!("../../thetadata-core/src/batch.rs"))
+            )
+            .as_bytes(),
+        ),
+        client_sha256: hash(
+            format!(
+                "{}{}",
+                source_hash(include_bytes!("../src/lib.rs")),
+                source_hash(include_bytes!("../src/eod.rs"))
+            )
+            .as_bytes(),
+        ),
         fixture_sha256: source_hash(include_bytes!("../tests/support/mod.rs")),
         harness_sha256: hash(
             format!(
@@ -205,8 +316,9 @@ struct Delivery {
 }
 async fn delivery(
     client: &ThetaClient,
-    expected: Arc<Table>,
+    expected: Arc<Output>,
     streams: u32,
+    engine: Engine,
 ) -> Result<Delivery, Failure> {
     let stopped = Arc::new(AtomicBool::new(false));
     let stop = stopped.clone();
@@ -231,13 +343,19 @@ async fn delivery(
         let client = client.clone();
         let expected = expected.clone();
         tasks.spawn(async move {
-            let mut stream = client.stock_history_eod(support::query()).await?;
+            let mut stream = match engine {
+                Engine::Legacy => Stream::Legacy(client.stock_history_eod(support::query()).await?),
+                Engine::Table => Stream::Table(client.stock_eod(typed_request()?).await?),
+                Engine::Numeric => {
+                    Stream::Numeric(client.stock_eod_batches(typed_request()?).await?)
+                }
+            };
             let mut first = None;
             let mut waits = Vec::with_capacity(3);
             let mut count = 0;
             loop {
                 let waiting = Instant::now();
-                let Some(batch) = stream.next_batch().await? else {
+                let Some(batch) = stream.next().await? else {
                     break;
                 };
                 let elapsed = nanos(waiting.elapsed());
@@ -252,7 +370,7 @@ async fn delivery(
                 count += 1;
             }
             assert_eq!(count, 3);
-            Ok::<_, Error>((first.unwrap(), waits))
+            Ok::<_, Failure>((first.unwrap(), waits))
         });
     }
     let mut first = u64::MAX;
@@ -286,7 +404,14 @@ async fn delivery(
     })
 }
 
-fn run(output: &Path, samples: u32, warmups: u32, rows: u32, streams: u32) -> Result<(), Failure> {
+fn run(
+    output: &Path,
+    samples: u32,
+    warmups: u32,
+    rows: u32,
+    streams: u32,
+    engine: Engine,
+) -> Result<(), Failure> {
     if cfg!(debug_assertions) {
         return Err("benchmark requires a --release build".into());
     }
@@ -303,7 +428,7 @@ fn run(output: &Path, samples: u32, warmups: u32, rows: u32, streams: u32) -> Re
         ("prices", support::Shape::Prices, rows as usize),
     ] {
         let (wire, expected) = support::table(shape, count);
-        let expected = Arc::new(expected);
+        let expected = Arc::new(expected_output(&expected, engine));
         for compressed in [false, true] {
             let response = support::response(&wire, compressed);
             let name = format!("{name}-{}", if compressed { "zstd" } else { "none" });
@@ -314,7 +439,7 @@ fn run(output: &Path, samples: u32, warmups: u32, rows: u32, streams: u32) -> Re
                 // equality/drop of output are outside decode_ns.
                 let input = response.clone();
                 let start = Instant::now();
-                let table = decode::decode(black_box(input), LIMIT)?;
+                let table = decode_output(black_box(input), engine)?;
                 let elapsed = nanos(start.elapsed());
                 assert_eq!(&table, expected.as_ref());
                 black_box(&table);
@@ -325,7 +450,7 @@ fn run(output: &Path, samples: u32, warmups: u32, rows: u32, streams: u32) -> Re
             // Include the clone in this separate allocation probe so every freed
             // allocation originated in scope. No server/tasks run on this thread.
             let (table, allocation) =
-                allocation::probe(|| decode::decode(response.clone(), LIMIT).unwrap());
+                allocation::probe(|| decode_output(response.clone(), engine).unwrap());
             assert_eq!(&table, expected.as_ref());
             drop(table);
             let fixture = support::Fixture::start(support::Script {
@@ -348,7 +473,8 @@ fn run(output: &Path, samples: u32, warmups: u32, rows: u32, streams: u32) -> Re
             let mut batch_wait_ns = Vec::new();
             let mut executor_lateness_ns = Vec::new();
             for iteration in 0..warmups + samples {
-                let sample = runtime.block_on(delivery(&client, expected.clone(), streams))?;
+                let sample =
+                    runtime.block_on(delivery(&client, expected.clone(), streams, engine))?;
                 if iteration >= warmups {
                     first_batch_ns.push(sample.first);
                     delivery_ns.push(sample.total);
@@ -390,7 +516,7 @@ fn run(output: &Path, samples: u32, warmups: u32, rows: u32, streams: u32) -> Re
             drop(fixture);
         }
     }
-    write_json(output, &Report { format: "thetadata-eod-baseline-v1".into(), synthetic: true, provenance, samples, warmups, rows, streams, batches_per_stream: 3,
+    write_json(output, &Report { engine, format: "thetadata-eod-baseline-v2".into(), synthetic: true, provenance, samples, warmups, rows, streams, batches_per_stream: 3,
         runtime: "one current-thread consumer runtime; separate one-thread loopback server runtime".into(),
         measurement_scope: "decode includes decompression/protobuf/conversion/validation; excludes input clone and output check/drop. Delivery includes loopback serving, transport, decoding, full equality consumer and output drop; excludes connection/auth/setup. Timed allocator calls retain an inactive thread-local probe check. Separate allocation probe includes input clone and requested Rust heap only, excludes C ZSTD allocator/RSS. Timer is maximum 1ms sleep lateness per delivery sample, including timer granularity and equality consumer.".into(), cases })
 }
@@ -418,7 +544,7 @@ fn compatible(a: &Report, b: &Report) -> Result<(), Failure> {
             return Err("invalid sampling configuration".into());
         }
     }
-    if a.format != "thetadata-eod-baseline-v1"
+    if a.format != "thetadata-eod-baseline-v2"
         || a.format != b.format
         || !a.synthetic
         || !b.synthetic
@@ -488,18 +614,19 @@ fn compare(baseline: &Path, candidate: &Path, output: &Path) -> Result<(), Failu
     }
     write_json(
         output,
-        &serde_json::json!({"format": "thetadata-eod-comparison-v1", "baseline_report_sha256": hash(&fs::read(baseline)?), "candidate_report_sha256": hash(&fs::read(candidate)?), "baseline": a.provenance, "candidate": b.provenance, "interpretation": "descriptive comparison, not a calibrated regression gate or statistical speedup claim; repeat in AB/BA order", "cases": comparisons}),
+        &serde_json::json!({"format": "thetadata-eod-comparison-v2", "baseline_engine": a.engine, "candidate_engine": b.engine, "baseline_report_sha256": hash(&fs::read(baseline)?), "candidate_report_sha256": hash(&fs::read(candidate)?), "baseline": a.provenance, "candidate": b.provenance, "interpretation": "descriptive comparison, not a calibrated regression gate; numeric output bypasses formatting, table output preserves it; repeat in AB/BA order", "cases": comparisons}),
     )
 }
 fn main() -> Result<(), Failure> {
     match Args::parse().command {
         Mode::Run {
+            engine,
             output,
             samples,
             warmups,
             rows,
             streams,
-        } => run(&output, samples, warmups, rows, streams),
+        } => run(&output, samples, warmups, rows, streams, engine),
         Mode::Compare {
             baseline,
             candidate,
@@ -514,7 +641,8 @@ mod tests {
 
     fn report() -> Report {
         Report {
-            format: "thetadata-eod-baseline-v1".into(),
+            engine: Engine::Legacy,
+            format: "thetadata-eod-baseline-v2".into(),
             synthetic: true,
             provenance: Provenance::default(),
             samples: 2,

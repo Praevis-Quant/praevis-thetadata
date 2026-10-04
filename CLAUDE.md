@@ -159,10 +159,10 @@ service compatibility.
   edit generated files under `target/` or infer complete Python behavior from
   the RPC names alone.
 - **A byte limit is not a heap limit.** The client's current 64 MiB batch
-  checks bound encoded/decompressed bytes, not all allocations after table
-  decoding. Decoding still performs CPU work synchronously inside async batch
-  consumption, and timestamps are formatted eagerly. These are documented
-  performance candidates, not already-solved guarantees.
+  checks on raw helpers bound encoded/decompressed bytes, not all allocations.
+  The experimental typed EOD path adds preflight counts/accounting, numeric
+  batches and shared bounded offload; see [its policy and gaps](docs/performance/eod-numeric.md).
+  Do not claim complete heap/RSS or typed-slice acceptance from those checks.
 - **Preserve platform and wire behavior.** Exercise Windows and Linux for
   changes to native persistence or process behavior. Preserve descriptor bytes
   and follow `.gitattributes`; write Markdown/source as UTF-8 with LF to avoid

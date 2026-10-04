@@ -40,7 +40,10 @@ jobs:
       - name: Native EOD benchmark checks
         run: cargo test --locked -p thetadata-client --example eod_benchmark
       - name: Credential-free EOD benchmark smoke test
-        run: cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke.json
+        run: |
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine legacy --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-legacy.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine table --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-table.json
+          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine numeric --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-numeric.json
       - name: Install Linux keyring fixture
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends dbus gnome-keyring
