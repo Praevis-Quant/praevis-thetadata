@@ -211,11 +211,15 @@ inventory every source module/function, all 80 wrappers and 82 RPCs, protocol
 fields, and explicit feature dispositions. `tools/research_python.py --check`
 verifies committed evidence and generated documentation without the vendor
 archive or research dependencies. Archive regeneration additionally needs
-`tools/research-requirements.txt` and the original ignored ZIP; never import
-or execute the vendor package to build the inventory.
+`tools/research-requirements.txt` and the exact original wheel bytes. The local
+ZIP/extraction were removed after verification; use the documented
+[hash-verified recovery procedure](docs/research/upstream-source.md#recovering-the-removed-local-artifacts)
+when regeneration is needed. Never import or execute the vendor package.
 
-The next planned work in [the roadmap](docs/ROADMAP.md) is selecting one small
-market-data scope and writing its ADRs and requirements from that evidence.
+The next planned work in [the roadmap](docs/ROADMAP.md) is writing the stock
+EOD slice's requirements from that evidence and [proposed ADRs 0007-0012](docs/adr/README.md).
+Those ADRs define scope, typed requests, outputs, stream behavior, verification,
+and traceability; they do not establish an implemented market-data baseline.
 Extend coverage to implementation and verification as work is selected.
 Preserve the original research and unresolved contracts. Mechanical coverage
 cannot prove undocumented live-service behavior or approve market-data scope.

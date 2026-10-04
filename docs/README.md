@@ -10,11 +10,13 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [L2 requirements](requirements/L2-auth.md) | System behavior and parent L1 links |
 | [L3 requirements](requirements/L3-auth.md) | Verifiable component behavior, implementation, and checks |
 | [Architecture decisions](adr/README.md) | Decisions, alternatives, and consequences |
+| [First market-data slice](adr/0007-first-market-data-slice.md) | Proposed stock EOD scope; ADRs 0007-0012 define design and remaining requirements work |
 | [Vendor research](research/thetadata-1.0.12.md) | Evidence, contradictions, discoveries, and unanswered questions |
 | [Complete Python catalogue and coverage matrix](research/python-1.0.12-catalog.md) | Every file/symbol/RPC/message, signatures/defaults/fields, and feature-to-requirement dispositions |
 | [Deep source inventory](research/python-1.0.12-inventory.json) | Regenerable source hashes, AST evidence, descriptors, metadata, and examples |
 | [Feature dispositions](research/python-1.0.12-dispositions.json) | Supported/planned/excluded/unresolved behavior and explicit downstream evidence/gaps |
 | [Upstream source identity](research/upstream-source.md) | Attested publishing repository/commit, source hashes, and access limitations |
+| [Recover research artifacts](research/upstream-source.md#recovering-the-removed-local-artifacts) | Exact wheel URL/hash and optional regeneration after local source cleanup |
 | [Artifact inventory](research/vendor-1.0.12.json) | Reproducible local artifact hashes and API inventory |
 | [Performance baseline](performance/auth.md) | Synthetic measurements and how to interpret them |
 | [CLI startup evaluation](performance/cli-startup.md) | Before/after release comparisons for runtime startup |

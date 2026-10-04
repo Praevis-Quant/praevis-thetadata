@@ -1,28 +1,438 @@
 [
-  {"id":"artifact-packaging","status":"supported","section":"artifact-and-packaging","rationale":"The exact 14-member wheel is inventoried and licensed source provenance is retained; this does not claim that the Python distribution installs correctly or is published by this Rust project.","adrs":["docs/adr/0005-verification-and-provenance.md"],"requirements":["AUTH-L3-017"],"implementation":["crates/thetadata-proto/schema/manifest.json"],"verification":["tools/research_python.py","tools/check_repository.py"]},
-  {"id":"wire-schema","status":"supported","section":"protocol-surface","rationale":"Raw descriptor types and 82 service bindings are preserved by Rust code generation. This status covers wire shape only; query defaults, server availability, entitlements, and complete typed API behavior remain unverified.","adrs":["docs/adr/0005-verification-and-provenance.md"],"requirements":["AUTH-L3-017"],"implementation":["crates/thetadata-proto/build.rs","crates/thetadata-proto/schema/thetadata.bin"],"verification":["tools/research_python.py","tools/check_repository.py"]},
-  {"id":"construction","status":"planned","section":"constructor-and-configuration","rationale":"Python combines discovery, synchronous authentication, and channel creation in one constructor. Rust intentionally separates auth, storage, and async client construction; a high-level compatibility API is not baselined.","adrs":["docs/adr/0001-standalone-auth.md"],"requirements":[],"implementation":["crates/thetadata-auth/src/lib.rs","crates/thetadata-client/src/lib.rs"],"verification":[]},
-  {"id":"credential-file","status":"supported","section":"constructor-and-configuration","rationale":"The common two-line email/password input is supported. Python returns None for absent/empty files and conflates those at the caller; Rust intentionally returns explicit errors. This is input compatibility, not identical Python exception behavior.","adrs":["docs/adr/0002-auth-contract-and-credentials.md"],"requirements":["AUTH-L3-001","AUTH-L3-002"],"implementation":["crates/thetadata-auth/src/lib.rs","apps/thetadata-cli/src/main.rs"],"verification":["crates/thetadata-auth/src/tests.rs","docs/requirements/L3-auth.md"]},
-  {"id":"auth-wire","status":"supported","section":"authentication-detail","rationale":"API-key/email-password JSON, environment envelope, and session parsing are implemented with synthetic tests. Rust validates required strings, preserves optional subscription JSON, and deliberately differs from Python malformed-response/logging behavior. Live auth is unverified.","adrs":["docs/adr/0002-auth-contract-and-credentials.md"],"requirements":["AUTH-L3-003","AUTH-L3-004","AUTH-L3-005","AUTH-L3-006"],"implementation":["crates/thetadata-auth/src/lib.rs"],"verification":["crates/thetadata-auth/src/tests.rs"]},
-  {"id":"session-reuse","status":"supported","section":"authentication-detail","rationale":"Rust sessions can be passed explicitly without repeated login. Native persistence is an intentional project addition, not Python parity. Vendor expiry, invalidation, or cross-environment portability are not established.","adrs":["docs/adr/0003-native-session-persistence.md","docs/adr/0004-explicit-session-lifecycle.md"],"requirements":["AUTH-L3-007","AUTH-L3-010","AUTH-L3-011","AUTH-L3-012"],"implementation":["crates/thetadata-auth/src/store.rs","crates/thetadata-client/src/lib.rs"],"verification":["apps/thetadata-cli/tests/persistence.rs","docs/requirements/L3-auth.md"]},
-  {"id":"dotenv-discovery","status":"intentionally excluded","section":"constructor-and-configuration","rationale":"Implicit .env loading is deliberately excluded by the accepted auth contract. CLI environment discovery remains explicit; the library does not inspect the process environment.","adrs":["docs/adr/0002-auth-contract-and-credentials.md"],"requirements":["AUTH-L3-001"],"implementation":["apps/thetadata-cli/src/main.rs"],"verification":["docs/requirements/L3-auth.md"]},
-  {"id":"secret-logging","status":"intentionally excluded","section":"authentication-detail","rationale":"Do not reproduce Python's INFO dump of the successful identity response or raw rejection text. Rust redacts credential/session secrets and does not echo server bodies.","adrs":["docs/adr/0002-auth-contract-and-credentials.md"],"requirements":["AUTH-L3-014"],"implementation":["crates/thetadata-auth/src/lib.rs"],"verification":["crates/thetadata-auth/src/tests.rs","apps/thetadata-cli/tests/persistence.rs"]},
-  {"id":"query-wrappers","status":"planned","section":"wrapper-semantics","rationale":"All 80 signatures, defaults, construction conditions, vendor descriptions, and RPC mappings are retained. Raw Rust helpers exist, but Python defaults and typed validation/output parity are not implemented or approved market-data requirements.","adrs":[],"requirements":[],"implementation":["crates/thetadata-client/build.rs","crates/thetadata-client/src/lib.rs"],"verification":[]},
-  {"id":"date-time","status":"planned","section":"date-and-presence","rationale":"Time formatting, string passthrough, wildcard expiration handling, and per-method differences need explicit typed request contracts. Current generated wire structs leave this to callers.","adrs":[],"requirements":[],"implementation":[],"verification":[]},
-  {"id":"presence-and-defaults","status":"planned","section":"date-and-presence","rationale":"Retain None versus false/zero/empty and distinguish Python truthiness omission from server defaults. No automatic claim of bug-for-bug compatibility; decide each typed API default when scoped.","adrs":[],"requirements":[],"implementation":[],"verification":[]},
-  {"id":"query-metadata","status":"planned","section":"wrapper-semantics","rationale":"Python sends parameter strings plus client=python in QueryInfo; Rust currently sends client=rust and token/email only. Privacy policy, diagnostics, and version fields need an explicit compatibility decision.","adrs":[],"requirements":[],"implementation":["crates/thetadata-client/src/lib.rs"],"verification":[]},
-  {"id":"grpc-transport","status":"planned","section":"transport-and-errors","rationale":"TLS/channel and finite server-streaming foundations exist. Python has no exposed per-wrapper deadline/cancellation/close controls; Rust adds deadlines and stream dropping. Live limits, retry policy, and safe concurrency remain open.","adrs":[],"requirements":[],"implementation":["crates/thetadata-client/src/lib.rs"],"verification":[]},
-  {"id":"errors","status":"planned","section":"transport-and-errors","rationale":"Auth errors are baselined; the full Python exception surface also includes gRPC NOT_FOUND, generic transport/config/conversion errors, and partial-stream failure. Rust mapping exists but a complete market-data error contract and fixtures remain future work.","adrs":["docs/adr/0002-auth-contract-and-credentials.md"],"requirements":["AUTH-L3-006"],"implementation":["crates/thetadata-auth/src/lib.rs","crates/thetadata-client/src/lib.rs"],"verification":["crates/thetadata-auth/src/tests.rs"]},
-  {"id":"conversion","status":"planned","section":"conversion-and-output","rationale":"Rust decodes batches, not Python's fully accumulated dataframe. Compression, row shape, price, timestamp, null, dataframe inference, and empty-stream semantics need explicit per-feature acceptance criteria.","adrs":[],"requirements":[],"implementation":["crates/thetadata-client/src/decode.rs","crates/thetadata-core/src/lib.rs"],"verification":["crates/thetadata-client/src/decode.rs","crates/thetadata-core/src/lib.rs"]},
-  {"id":"prices","status":"planned","section":"conversion-and-output","rationale":"Rust exact mantissa/exponent and null-for-scale-zero deliberately differ from Python float multiplication and NaN; Python also accepts negative scale indexing. Existing tests cover Rust behavior, not dataframe parity.","adrs":[],"requirements":[],"implementation":["crates/thetadata-core/src/lib.rs"],"verification":["crates/thetadata-core/src/lib.rs"]},
-  {"id":"timestamps","status":"planned","section":"conversion-and-output","rationale":"Python emits aware datetime objects and Polars millisecond columns; Rust emits RFC3339 strings and rejects unknown zones. Define output representation, timezone/DST/overflow guarantees before expanding the public API.","adrs":[],"requirements":[],"implementation":["crates/thetadata-core/src/lib.rs"],"verification":["crates/thetadata-core/src/lib.rs"]},
-  {"id":"dataframes","status":"planned","section":"conversion-and-output","rationale":"Both Pandas and Polars behavior is retained as research. Native Rust table/column/export choices remain open; do not silently equate a batch stream with one accumulated dataframe or add Python runtime dependencies.","adrs":[],"requirements":[],"implementation":["crates/thetadata-core/src/lib.rs"],"verification":[]},
-  {"id":"decoded-memory","status":"planned","section":"conversion-and-output","rationale":"Encoded/decompressed byte limits do not bound total decoded heap. Row/cell limits, bounded CPU work, allocation reuse, and concurrent budgets remain roadmap candidates with benchmarks required.","adrs":[],"requirements":[],"implementation":["crates/thetadata-client/src/decode.rs"],"verification":[]},
-  {"id":"flat-files","status":"unresolved","section":"flat-files-and-corporate-actions","rationale":"Seven wrappers and manifest wire fields exist, but Python ignores the manifest and has no dedicated downloader/framing parser. Rust deliberately rejects flat-file table decoding. Live framing/availability/output semantics need evidence before requirements.","adrs":[],"requirements":[],"implementation":["crates/thetadata-client/src/decode.rs"],"verification":["crates/thetadata-client/src/decode.rs"]},
-  {"id":"corporate-actions","status":"unresolved","section":"flat-files-and-corporate-actions","rationale":"Dividend and split RPCs each accept symbol/start_date/end_date and stream ResponseData, but have no Python wrapper or operation in the previously reviewed OpenAPI. Preserve bindings without promising supported service behavior.","adrs":[],"requirements":[],"implementation":["crates/thetadata-proto/schema/thetadata.bin"],"verification":["tools/research_python.py"]},
-  {"id":"generated-python","status":"intentionally excluded","section":"generated-code","rationale":"Do not port Python-specific generated stub/server/experimental helper implementations into a Rust client. Every symbol is inventoried; their RPC signatures and wire paths are preserved separately in Rust generation. This excludes language scaffolding, not market-data capabilities.","adrs":[],"requirements":[],"implementation":["crates/thetadata-proto/build.rs"],"verification":["tools/research_python.py"]},
-  {"id":"dependencies-and-platforms","status":"unresolved","section":"artifact-and-packaging","rationale":"dotenv is imported but not declared; generated gRPC requires >=1.80.0 despite metadata >=1.75.0; ZoneInfo needs timezone data. Record these packaging/runtime assumptions without reproducing Python dependency defects in Rust.","adrs":[],"requirements":[],"implementation":[],"verification":["tools/research_python.py"]},
-  {"id":"vendor-examples","status":"planned","section":"examples-and-doc-conflicts","rationale":"Preserve all eleven embedded Python examples as evidence and review parameter/return assumptions. They are source examples, not executed live acceptance tests or approved Rust API designs.","adrs":[],"requirements":[],"implementation":[],"verification":["tools/research_python.py"]},
-  {"id":"remote-lifecycle","status":"unresolved","section":"remaining-contracts","rationale":"Expiry, refresh, revocation, IP binding, entitlement interpretation, token reuse limits, and identity quotas have no complete observed contract. Do not derive them from local persistence or Terminal REST documentation.","adrs":["docs/adr/0004-explicit-session-lifecycle.md"],"requirements":["AUTH-L3-011","AUTH-L3-012"],"implementation":[],"verification":[]},
-  {"id":"live-streaming","status":"unresolved","section":"remaining-contracts","rationale":"Finite gRPC query streams are present; a WebSocket/FPSS subscription client is absent from this artifact. Treat real-time event streaming as a separately evidenced adapter, not a missing wrapper inferred from server_streaming=true.","adrs":[],"requirements":[],"implementation":[],"verification":[]}
+  {
+    "id": "artifact-packaging",
+    "status": "supported",
+    "section": "artifact-and-packaging",
+    "rationale": "The exact 14-member wheel is inventoried and licensed source provenance is retained; this does not claim that the Python distribution installs correctly or is published by this Rust project.",
+    "adrs": [
+      "docs/adr/0005-verification-and-provenance.md",
+      "docs/adr/0011-market-data-verification-and-artifact-retention.md"
+    ],
+    "requirements": [
+      "AUTH-L3-017"
+    ],
+    "implementation": [
+      "crates/thetadata-proto/schema/manifest.json"
+    ],
+    "verification": [
+      "tools/research_python.py",
+      "tools/check_repository.py"
+    ]
+  },
+  {
+    "id": "wire-schema",
+    "status": "supported",
+    "section": "protocol-surface",
+    "rationale": "Raw descriptor types and 82 service bindings are preserved by Rust code generation. This status covers wire shape only; query defaults, server availability, entitlements, and complete typed API behavior remain unverified.",
+    "adrs": [
+      "docs/adr/0005-verification-and-provenance.md",
+      "docs/adr/0011-market-data-verification-and-artifact-retention.md"
+    ],
+    "requirements": [
+      "AUTH-L3-017"
+    ],
+    "implementation": [
+      "crates/thetadata-proto/build.rs",
+      "crates/thetadata-proto/schema/thetadata.bin"
+    ],
+    "verification": [
+      "tools/research_python.py",
+      "tools/check_repository.py"
+    ]
+  },
+  {
+    "id": "construction",
+    "status": "planned",
+    "section": "constructor-and-configuration",
+    "rationale": "Python combines discovery, synchronous authentication, and channel creation in one constructor. Rust intentionally separates auth, storage, and async client construction; a high-level compatibility API is not baselined.",
+    "adrs": [
+      "docs/adr/0001-standalone-auth.md",
+      "docs/adr/0007-first-market-data-slice.md",
+      "docs/adr/0008-typed-requests-and-presence.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-auth/src/lib.rs",
+      "crates/thetadata-client/src/lib.rs"
+    ],
+    "verification": []
+  },
+  {
+    "id": "credential-file",
+    "status": "supported",
+    "section": "constructor-and-configuration",
+    "rationale": "The common two-line email/password input is supported. Python returns None for absent/empty files and conflates those at the caller; Rust intentionally returns explicit errors. This is input compatibility, not identical Python exception behavior.",
+    "adrs": [
+      "docs/adr/0002-auth-contract-and-credentials.md"
+    ],
+    "requirements": [
+      "AUTH-L3-001",
+      "AUTH-L3-002"
+    ],
+    "implementation": [
+      "crates/thetadata-auth/src/lib.rs",
+      "apps/thetadata-cli/src/main.rs"
+    ],
+    "verification": [
+      "crates/thetadata-auth/src/tests.rs",
+      "docs/requirements/L3-auth.md"
+    ]
+  },
+  {
+    "id": "auth-wire",
+    "status": "supported",
+    "section": "authentication-detail",
+    "rationale": "API-key/email-password JSON, environment envelope, and session parsing are implemented with synthetic tests. Rust validates required strings, preserves optional subscription JSON, and deliberately differs from Python malformed-response/logging behavior. Live auth is unverified.",
+    "adrs": [
+      "docs/adr/0002-auth-contract-and-credentials.md"
+    ],
+    "requirements": [
+      "AUTH-L3-003",
+      "AUTH-L3-004",
+      "AUTH-L3-005",
+      "AUTH-L3-006"
+    ],
+    "implementation": [
+      "crates/thetadata-auth/src/lib.rs"
+    ],
+    "verification": [
+      "crates/thetadata-auth/src/tests.rs"
+    ]
+  },
+  {
+    "id": "session-reuse",
+    "status": "supported",
+    "section": "authentication-detail",
+    "rationale": "Rust sessions can be passed explicitly without repeated login. Native persistence is an intentional project addition, not Python parity. Vendor expiry, invalidation, or cross-environment portability are not established.",
+    "adrs": [
+      "docs/adr/0003-native-session-persistence.md",
+      "docs/adr/0004-explicit-session-lifecycle.md",
+      "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
+    ],
+    "requirements": [
+      "AUTH-L3-007",
+      "AUTH-L3-010",
+      "AUTH-L3-011",
+      "AUTH-L3-012"
+    ],
+    "implementation": [
+      "crates/thetadata-auth/src/store.rs",
+      "crates/thetadata-client/src/lib.rs"
+    ],
+    "verification": [
+      "apps/thetadata-cli/tests/persistence.rs",
+      "docs/requirements/L3-auth.md"
+    ]
+  },
+  {
+    "id": "dotenv-discovery",
+    "status": "intentionally excluded",
+    "section": "constructor-and-configuration",
+    "rationale": "Implicit .env loading is deliberately excluded by the accepted auth contract. CLI environment discovery remains explicit; the library does not inspect the process environment.",
+    "adrs": [
+      "docs/adr/0002-auth-contract-and-credentials.md"
+    ],
+    "requirements": [
+      "AUTH-L3-001"
+    ],
+    "implementation": [
+      "apps/thetadata-cli/src/main.rs"
+    ],
+    "verification": [
+      "docs/requirements/L3-auth.md"
+    ]
+  },
+  {
+    "id": "secret-logging",
+    "status": "intentionally excluded",
+    "section": "authentication-detail",
+    "rationale": "Do not reproduce Python's INFO dump of the successful identity response or raw rejection text. Rust redacts credential/session secrets and does not echo server bodies.",
+    "adrs": [
+      "docs/adr/0002-auth-contract-and-credentials.md"
+    ],
+    "requirements": [
+      "AUTH-L3-014"
+    ],
+    "implementation": [
+      "crates/thetadata-auth/src/lib.rs"
+    ],
+    "verification": [
+      "crates/thetadata-auth/src/tests.rs",
+      "apps/thetadata-cli/tests/persistence.rs"
+    ]
+  },
+  {
+    "id": "query-wrappers",
+    "status": "planned",
+    "section": "wrapper-semantics",
+    "rationale": "All 80 signatures, defaults, construction conditions, vendor descriptions, and RPC mappings are retained. Raw Rust helpers exist, but Python defaults and typed validation/output parity are not implemented or approved market-data requirements. Proposed ADR-0007 selects only stock_history_eod for the first requirements slice; the remaining wrappers stay future candidates. ADR links do not mark implementation complete.",
+    "adrs": [
+      "docs/adr/0007-first-market-data-slice.md",
+      "docs/adr/0008-typed-requests-and-presence.md",
+      "docs/adr/0012-requirements-and-research-traceability.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-client/build.rs",
+      "crates/thetadata-client/src/lib.rs"
+    ],
+    "verification": []
+  },
+  {
+    "id": "date-time",
+    "status": "planned",
+    "section": "date-and-presence",
+    "rationale": "Time formatting, string passthrough, wildcard expiration handling, and per-method differences need explicit typed request contracts. Current generated wire structs leave this to callers.",
+    "adrs": [
+      "docs/adr/0008-typed-requests-and-presence.md"
+    ],
+    "requirements": [],
+    "implementation": [],
+    "verification": []
+  },
+  {
+    "id": "presence-and-defaults",
+    "status": "planned",
+    "section": "date-and-presence",
+    "rationale": "Retain None versus false/zero/empty and distinguish Python truthiness omission from server defaults. No automatic claim of bug-for-bug compatibility; decide each typed API default when scoped.",
+    "adrs": [
+      "docs/adr/0008-typed-requests-and-presence.md"
+    ],
+    "requirements": [],
+    "implementation": [],
+    "verification": []
+  },
+  {
+    "id": "query-metadata",
+    "status": "planned",
+    "section": "wrapper-semantics",
+    "rationale": "Python sends parameter strings plus client=python in QueryInfo; Rust currently sends client=rust and token/email only. Privacy policy, diagnostics, and version fields need an explicit compatibility decision.",
+    "adrs": [
+      "docs/adr/0008-typed-requests-and-presence.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-client/src/lib.rs"
+    ],
+    "verification": []
+  },
+  {
+    "id": "grpc-transport",
+    "status": "planned",
+    "section": "transport-and-errors",
+    "rationale": "TLS/channel and finite server-streaming foundations exist. Python has no exposed per-wrapper deadline/cancellation/close controls; Rust adds deadlines and stream dropping. Live limits, retry policy, and safe concurrency remain open.",
+    "adrs": [
+      "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-client/src/lib.rs"
+    ],
+    "verification": []
+  },
+  {
+    "id": "errors",
+    "status": "planned",
+    "section": "transport-and-errors",
+    "rationale": "Auth errors are baselined; the full Python exception surface also includes gRPC NOT_FOUND, generic transport/config/conversion errors, and partial-stream failure. Rust mapping exists but a complete market-data error contract and fixtures remain future work.",
+    "adrs": [
+      "docs/adr/0002-auth-contract-and-credentials.md",
+      "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
+    ],
+    "requirements": [
+      "AUTH-L3-006"
+    ],
+    "implementation": [
+      "crates/thetadata-auth/src/lib.rs",
+      "crates/thetadata-client/src/lib.rs"
+    ],
+    "verification": [
+      "crates/thetadata-auth/src/tests.rs"
+    ]
+  },
+  {
+    "id": "conversion",
+    "status": "planned",
+    "section": "conversion-and-output",
+    "rationale": "Rust decodes batches, not Python's fully accumulated dataframe. Compression, row shape, price, timestamp, null, dataframe inference, and empty-stream semantics need explicit per-feature acceptance criteria.",
+    "adrs": [
+      "docs/adr/0009-market-data-values-and-schema.md",
+      "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-client/src/decode.rs",
+      "crates/thetadata-core/src/lib.rs"
+    ],
+    "verification": [
+      "crates/thetadata-client/src/decode.rs",
+      "crates/thetadata-core/src/lib.rs"
+    ]
+  },
+  {
+    "id": "prices",
+    "status": "planned",
+    "section": "conversion-and-output",
+    "rationale": "Rust exact mantissa/exponent and null-for-scale-zero deliberately differ from Python float multiplication and NaN; Python also accepts negative scale indexing. Existing tests cover Rust behavior, not dataframe parity.",
+    "adrs": [
+      "docs/adr/0009-market-data-values-and-schema.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-core/src/lib.rs"
+    ],
+    "verification": [
+      "crates/thetadata-core/src/lib.rs"
+    ]
+  },
+  {
+    "id": "timestamps",
+    "status": "planned",
+    "section": "conversion-and-output",
+    "rationale": "Python emits aware datetime objects and Polars millisecond columns; Rust emits RFC3339 strings and rejects unknown zones. Define output representation, timezone/DST/overflow guarantees before expanding the public API.",
+    "adrs": [
+      "docs/adr/0009-market-data-values-and-schema.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-core/src/lib.rs"
+    ],
+    "verification": [
+      "crates/thetadata-core/src/lib.rs"
+    ]
+  },
+  {
+    "id": "dataframes",
+    "status": "planned",
+    "section": "conversion-and-output",
+    "rationale": "Both Pandas and Polars behavior is retained as research. Native Rust table/column/export choices remain open; do not silently equate a batch stream with one accumulated dataframe or add Python runtime dependencies.",
+    "adrs": [
+      "docs/adr/0009-market-data-values-and-schema.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-core/src/lib.rs"
+    ],
+    "verification": []
+  },
+  {
+    "id": "decoded-memory",
+    "status": "planned",
+    "section": "conversion-and-output",
+    "rationale": "Encoded/decompressed byte limits do not bound total decoded heap. Row/cell limits, bounded CPU work, allocation reuse, and concurrent budgets remain roadmap candidates with benchmarks required.",
+    "adrs": [
+      "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-client/src/decode.rs"
+    ],
+    "verification": []
+  },
+  {
+    "id": "flat-files",
+    "status": "unresolved",
+    "section": "flat-files-and-corporate-actions",
+    "rationale": "Seven wrappers and manifest wire fields exist, but Python ignores the manifest and has no dedicated downloader/framing parser. Rust deliberately rejects flat-file table decoding. Live framing/availability/output semantics need evidence before requirements.",
+    "adrs": [
+      "docs/adr/0007-first-market-data-slice.md",
+      "docs/adr/0011-market-data-verification-and-artifact-retention.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-client/src/decode.rs"
+    ],
+    "verification": [
+      "crates/thetadata-client/src/decode.rs"
+    ]
+  },
+  {
+    "id": "corporate-actions",
+    "status": "unresolved",
+    "section": "flat-files-and-corporate-actions",
+    "rationale": "Dividend and split RPCs each accept symbol/start_date/end_date and stream ResponseData, but have no Python wrapper or operation in the previously reviewed OpenAPI. Preserve bindings without promising supported service behavior.",
+    "adrs": [
+      "docs/adr/0007-first-market-data-slice.md",
+      "docs/adr/0011-market-data-verification-and-artifact-retention.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-proto/schema/thetadata.bin"
+    ],
+    "verification": [
+      "tools/research_python.py"
+    ]
+  },
+  {
+    "id": "generated-python",
+    "status": "intentionally excluded",
+    "section": "generated-code",
+    "rationale": "Do not port Python-specific generated stub/server/experimental helper implementations into a Rust client. Every symbol is inventoried; their RPC signatures and wire paths are preserved separately in Rust generation. This excludes language scaffolding, not market-data capabilities.",
+    "adrs": [
+      "docs/adr/0011-market-data-verification-and-artifact-retention.md"
+    ],
+    "requirements": [],
+    "implementation": [
+      "crates/thetadata-proto/build.rs"
+    ],
+    "verification": [
+      "tools/research_python.py"
+    ]
+  },
+  {
+    "id": "dependencies-and-platforms",
+    "status": "unresolved",
+    "section": "artifact-and-packaging",
+    "rationale": "dotenv is imported but not declared; generated gRPC requires >=1.80.0 despite metadata >=1.75.0; ZoneInfo needs timezone data. Record these packaging/runtime assumptions without reproducing Python dependency defects in Rust.",
+    "adrs": [
+      "docs/adr/0011-market-data-verification-and-artifact-retention.md"
+    ],
+    "requirements": [],
+    "implementation": [],
+    "verification": [
+      "tools/research_python.py"
+    ]
+  },
+  {
+    "id": "vendor-examples",
+    "status": "planned",
+    "section": "examples-and-doc-conflicts",
+    "rationale": "Preserve all eleven embedded Python examples as evidence and review parameter/return assumptions. They are source examples, not executed live acceptance tests or approved Rust API designs.",
+    "adrs": [
+      "docs/adr/0011-market-data-verification-and-artifact-retention.md"
+    ],
+    "requirements": [],
+    "implementation": [],
+    "verification": [
+      "tools/research_python.py"
+    ]
+  },
+  {
+    "id": "remote-lifecycle",
+    "status": "unresolved",
+    "section": "remaining-contracts",
+    "rationale": "Expiry, refresh, revocation, IP binding, entitlement interpretation, token reuse limits, and identity quotas have no complete observed contract. Do not derive them from local persistence or Terminal REST documentation.",
+    "adrs": [
+      "docs/adr/0004-explicit-session-lifecycle.md",
+      "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
+    ],
+    "requirements": [
+      "AUTH-L3-011",
+      "AUTH-L3-012"
+    ],
+    "implementation": [],
+    "verification": []
+  },
+  {
+    "id": "live-streaming",
+    "status": "unresolved",
+    "section": "remaining-contracts",
+    "rationale": "Finite gRPC query streams are present; a WebSocket/FPSS subscription client is absent from this artifact. Treat real-time event streaming as a separately evidenced adapter, not a missing wrapper inferred from server_streaming=true.",
+    "adrs": [
+      "docs/adr/0007-first-market-data-slice.md"
+    ],
+    "requirements": [],
+    "implementation": [],
+    "verification": []
+  }
 ]

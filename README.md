@@ -155,3 +155,8 @@ The Python client exposes **80 methods**; its descriptor includes **82 RPCs**, i
 To regenerate after deliberately updating the bundled package, run `python tools/extract_protocol.py` with `google.protobuf` installed. Rust builds compile the checked-in descriptor through [tonic-prost-build's descriptor API](https://docs.rs/tonic-prost-build/0.14.6/tonic_prost_build/struct.Builder.html#method.compile_fds). The upstream Apache-2.0 license is retained at `crates/thetadata-proto/LICENSE.upstream`. The original Python distribution is unchanged.
 
 The original `thetadata-1.0.12-py3-none-any.zip` and extracted `thetadata-1.0.12-py3-none-any/` directory are local research inputs and are **not committed**. Normal builds do not require them. CI checks exclusions, descriptor hashes, requirement IDs, and documentation links, then runs the Windows/Linux test and native-persistence matrix. A separate workflow records synthetic auth performance without live credentials.
+
+The local vendor ZIP/extraction have been removed after hash verification.
+Use [the recovery instructions](docs/research/upstream-source.md#recovering-the-removed-local-artifacts)
+only when source regeneration is needed. [Proposed ADRs 0007-0012](docs/adr/README.md)
+define the first market-data design; its requirements and implementation remain future work.
