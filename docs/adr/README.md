@@ -21,6 +21,7 @@ Records identify their own date and status. “Accepted” records the implement
 | [0015](0015-upstream-and-enhancement-contracts.md) | Proposed | Rust enhancement | Protect local contracts independently of upstream compatibility updates |
 | [0016](0016-optional-batch-transforms.md) | Proposed | Rust enhancement | Add optional bounded local filtering/projection without inventing vendor pushdown |
 | [0017](0017-manual-live-verification.md) | Accepted workflow | Rust enhancement | Keep optional credentialed service checks outside CI and retain private capture/replay evidence for releases |
+| [0018](0018-explicit-connection-adapters.md) | Proposed | Rust enhancement | Keep direct gRPC, optional Terminal REST/JAR supervision and WebSocket events explicit and separately verified |
 
 ADRs 0007-0016 define proposed designs and linked requirements; runtime
 implementation/acceptance remains planned. Read 0007-0012 for the selected EOD

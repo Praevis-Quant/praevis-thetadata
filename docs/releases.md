@@ -32,6 +32,14 @@ is incomplete; change the plan explicitly rather than silently dropping features
 Initially version the five workspace crates together. A future independent
 crate-version policy needs a release decision and dependency compatibility plan.
 
+Optional Terminal track: target a first REST EOD adapter for an operator-started
+v3 JAR in the `0.2.0` prereleases, with explicit HTTP/value/resource contracts and
+manual per-tier evidence under [ADR-0018](adr/0018-explicit-connection-adapters.md).
+Target process supervision only after attached-process behavior is accepted;
+keep WebSocket subscription work in the `0.5.0` event milestone. Do not delay or
+add Java to direct auth/EOD users. Every release records available and not-run
+product/tier/connector cells in the [subscription matrix](subscription-testing.md).
+
 ## Immediate execution order
 
 1. Prepare the manual Rust capture/replay path and this release checklist.

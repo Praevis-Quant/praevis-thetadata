@@ -1,4 +1,5 @@
 use crate::fixture::{self, Fixture, Script};
+pub mod probe;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -62,9 +63,20 @@ struct Frame {
 #[derive(Serialize, Deserialize)]
 pub struct Capture {
     format: String,
+    #[serde(flatten)]
+    provenance: Provenance,
+    query: Query,
+    frames: Vec<Frame>,
+    // Safe terminal category, never remote status text/metadata.
+    terminal: String,
+    pub verification: String,
+    pub auth_http_status: Option<u16>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Provenance {
     captured_at: String,
     environment: String,
-    query: Query,
     source_commit: String,
     source_dirty: bool,
     executable_sha256: String,
@@ -74,11 +86,6 @@ pub struct Capture {
     upstream_version: String,
     descriptor_sha256: String,
     protocol_manifest_sha256: String,
-    frames: Vec<Frame>,
-    // Safe terminal category, never remote status text/metadata.
-    terminal: String,
-    pub verification: String,
-    pub auth_http_status: Option<u16>,
 }
 fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
@@ -90,6 +97,7 @@ fn compiled_source_hash() -> String {
     for source in [
         include_bytes!("../live_eod.rs").as_slice(),
         include_bytes!("mod.rs").as_slice(),
+        include_bytes!("probe.rs").as_slice(),
         include_bytes!("../../src/lib.rs").as_slice(),
         include_bytes!("../../src/eod.rs").as_slice(),
         include_bytes!("../../src/bounded.rs").as_slice(),
@@ -111,8 +119,8 @@ fn compiled_source_hash() -> String {
     format!("{:x}", digest.finalize())
 }
 
-impl Capture {
-    pub fn new(query: Query, environment: &str) -> Result<Self> {
+impl Provenance {
+    pub fn new(environment: &str) -> Result<Self> {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let git = |args: &[&str]| -> Result<Vec<u8>> {
             let output = std::process::Command::new("git")
@@ -146,10 +154,8 @@ impl Capture {
         let manifest: serde_json::Value =
             serde_json::from_str(MANIFEST).map_err(|_| "protocol provenance")?;
         Ok(Self {
-            format: FORMAT.into(),
             captured_at: chrono::Utc::now().to_rfc3339(),
             environment: environment.into(),
-            query,
             source_commit,
             source_dirty: !git(&["status", "--porcelain"])?.is_empty(),
             executable_sha256: format!("{:x}", digest.finalize()),
@@ -162,6 +168,16 @@ impl Capture {
                 .into(),
             descriptor_sha256: hash(DESCRIPTOR),
             protocol_manifest_sha256: hash(MANIFEST.as_bytes()),
+        })
+    }
+}
+
+impl Capture {
+    pub fn new(query: Query, environment: &str) -> Result<Self> {
+        Ok(Self {
+            format: FORMAT.into(),
+            provenance: Provenance::new(environment)?,
+            query,
             frames: Vec::new(),
             terminal: "not_started".into(),
             verification: "not_completed".into(),
@@ -176,8 +192,8 @@ impl Capture {
             serde_json::from_slice(&read_limited(&directory.join("manifest.json"), 65536)?)
                 .map_err(|_| "capture manifest")?;
         if capture.format != FORMAT
-            || capture.descriptor_sha256 != hash(DESCRIPTOR)
-            || !matches!(capture.environment.as_str(), "PROD" | "STAGE")
+            || capture.provenance.descriptor_sha256 != hash(DESCRIPTOR)
+            || !matches!(capture.provenance.environment.as_str(), "PROD" | "STAGE")
         {
             return Err("capture format or protocol mismatch");
         }

@@ -41,6 +41,9 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Roadmap](ROADMAP.md) | Forward-looking candidates and the preserved original review |
 | [Release milestones](releases.md) | Versioned scope, exit gates, owners and release evidence checklist |
 | [Manual live verification](live-verification.md) | Explicit PROD/STAGE credentialed runs, private captures and offline comparison; outside CI |
+| [Connection points and SVG](connections.md) | Direct HTTPS/gRPC versus planned Terminal REST/JAR and WebSocket paths, distinct errors and lifecycle |
+| [Connection requirements](requirements/connections.md) | CONN L1/L2/L3 explicit modes, optional process ownership and adapter verification |
+| [Subscription testing](subscription-testing.md) | Per-product/tier/connector expectations, positive/negative cases and paid-account coverage gaps |
 | [Live verification requirements](requirements/live-verification.md) | LIVE L1/L2/L3 opt-in, provenance, replay and release obligations |
 | [Live observation records](research/live-observations.md) | Reviewed service evidence template and synthetic comparison gaps |
 | [crates.io release plan](crates-io-release-plan.md) | Useful prereleases, name checks, credential verification limits and packaging gates |

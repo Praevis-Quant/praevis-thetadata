@@ -12,15 +12,27 @@ option/index/calendar/rate slices, flat files and real-time subscriptions before
 a reviewed stable Rust API. PyO3 remains a separate later adapter release.
 Version targets are gate-based, not promises of dates or full Python parity.
 
-Next, run the [optional manual PROD verification](live-verification.md) using the
-account holder's explicitly selected environment key or local credential file. Collect a bounded
-single-day EOD capture, compare raw/numeric/Table delivery and replay it through
-the synthetic service. Review actual schema/value/date/completion behavior and
-record [observations](research/live-observations.md); retain private original
-captures and add reviewed synthetic reproductions for discovered gaps. No live
-checks, credentials or live artifact uploads belong in CI. STAGE is a separate
-vendor connection, not an assumed testing sandbox. Close package/archive/owner
-checks for alpha.1 while pursuing the performance acceptance work below.
+Expand [optional manual PROD verification](live-verification.md) using the
+account holder's explicitly selected environment key or local credential file.
+Follow the [subscription matrix](subscription-testing.md): pair allowed EOD data
+with explicitly expected endpoint denials on FREE; add independent paid-product
+profiles as available and keep unavailable tiers marked not-run. Compare bounded
+captures through raw/numeric/Table delivery and mock replay, review schema/value/
+date/completion differences, and record [observations](research/live-observations.md).
+No live checks, credentials or live artifact uploads belong in CI. STAGE is a
+separate vendor connection, not an assumed testing sandbox. Close package/archive/
+owner checks for alpha.1 while pursuing the performance acceptance work below.
+
+## Optional Theta Terminal connection track
+
+Implement [ADR-0018](adr/0018-explicit-connection-adapters.md) and
+[CONN requirements](requirements/connections.md): first a REST adapter for an
+operator-started v3 JAR, then optional process supervision with explicit ownership
+and version provenance, then a separate WebSocket subscription adapter. Keep the
+direct HTTPS/gRPC path Java-free and prevent implicit transport fallback. Use the
+[connection inventory and SVG](connections.md) to keep endpoints, errors,
+entitlements and lifecycle/performance evidence distinct. Terminal support does
+not bypass subscription restrictions or imply complete Python parity.
 
 The next round is completing the stock EOD slice's [defined L1/L2/L3 requirements](requirements/L1-stock-eod.md) and [performance-first contracts](requirements/performance.md) from [proposed ADRs 0007-0016](adr/README.md), [the detailed Python research](research/thetadata-1.0.12.md#deep-analysis-2026-10-04), and [coverage matrix](research/python-1.0.12-catalog.md). Build on the Rust-native fixtures and [numeric-path measurements](performance/eod-numeric-results.md) to close the [resource-policy measurement gate](requirements/stock-eod-evidence.md). Recommendations **#1, #3, and #6** inform resource/verification contracts; **#4** informs additive numeric delivery, and **#5** requires measured buffer-reuse evaluation. The original review remains verbatim as source material; implementation evidence belongs in the requirements and performance documentation.
 

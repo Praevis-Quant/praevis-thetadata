@@ -2,9 +2,17 @@
   "schema_version": 1,
   "groups": [
     {
+      "id": "connection-adapters",
+      "origin": "rust-enhancement",
+      "requirements": ["CONN-L1-001", "CONN-L2-001", "CONN-L2-002", "CONN-L3-001", "CONN-L3-002", "CONN-L3-003", "CONN-L3-004", "CONN-L3-005"],
+      "rationale": "Explicit adapter selection, optional JAR supervision, distinct error/value/lifecycle contracts and measured connection-specific acceptance are local architecture policy.",
+      "protected_contract": "Keep Java outside the direct path, prohibit implicit transport fallback, preserve protocol error provenance and independently verify optional Terminal adapters.",
+      "evidence": ["docs/requirements/connections.md", "docs/adr/0018-explicit-connection-adapters.md", "docs/connections.md"]
+    },
+    {
       "id": "manual-live-verification",
       "origin": "rust-enhancement",
-      "requirements": ["LIVE-L1-001", "LIVE-L2-001", "LIVE-L2-002", "LIVE-L2-003", "LIVE-L3-001", "LIVE-L3-002", "LIVE-L3-003", "LIVE-L3-004", "LIVE-L3-005", "LIVE-L3-006"],
+      "requirements": ["LIVE-L1-001", "LIVE-L2-001", "LIVE-L2-002", "LIVE-L2-003", "LIVE-L2-004", "LIVE-L3-001", "LIVE-L3-002", "LIVE-L3-003", "LIVE-L3-004", "LIVE-L3-005", "LIVE-L3-006", "LIVE-L3-007", "LIVE-L3-008", "LIVE-L3-009"],
       "rationale": "Optional manual live verification, private response retention, differential replay and release evidence gates are local project policy.",
       "protected_contract": "Keep live credentials and service calls out of CI; preserve explicit consent, finite query/capture scope, private provenance and independent enhancement review during upstream updates.",
       "evidence": ["docs/requirements/live-verification.md", "docs/adr/0017-manual-live-verification.md", "docs/live-verification.md", "docs/releases.md"]
@@ -75,6 +83,7 @@
     }
   ],
   "adrs": [
+    {"path": "docs/adr/0018-explicit-connection-adapters.md", "origin": "rust-enhancement", "rationale": "Explicit direct/REST/WebSocket boundaries, optional Terminal process ownership and independent entitlement/performance evidence."},
     {"path": "docs/adr/0017-manual-live-verification.md", "origin": "rust-enhancement", "rationale": "Explicit manual credentialed testing outside CI, private captures, replay and release evidence policy."},
     {"path": "docs/adr/0001-standalone-auth.md", "origin": "rust-enhancement", "rationale": "Independent reusable auth and application boundary."},
     {"path": "docs/adr/0002-auth-contract-and-credentials.md", "origin": "mixed", "rationale": "Observed auth wire shape plus protected Rust credential validation/discovery rules."},

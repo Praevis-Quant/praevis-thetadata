@@ -80,6 +80,14 @@ fixture promotion or uploads. Test the runner locally with
 Follow the [release milestones](docs/releases.md) when proposing supported scope;
 successful mocks or a single live query do not grant full EOD acceptance.
 
+Use the [connection inventory/SVG](docs/connections.md) to distinguish direct
+HTTPS/gRPC, future Terminal REST and future WebSocket events. Terminal adapters
+and JAR supervision are proposed under ADR-0018, not implemented dependencies.
+Use the [subscription matrix](docs/subscription-testing.md) for per-product/tier
+evidence: expected PERMISSION_DENIED is a denial assertion, not data success.
+Paid-account gaps remain not-run. The manual `probe-stock-quote` command performs
+one bounded negative check; never sweep endpoints or parse remote text for tiers.
+
 ## Architecture
 
 ### Dependency boundaries

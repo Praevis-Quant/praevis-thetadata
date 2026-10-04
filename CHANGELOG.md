@@ -15,14 +15,23 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Connection inventory and editable SVG distinguishing direct HTTPS/gRPC from
+  proposed Theta Terminal v3 REST/WebSocket adapters, with ADR-0018 and explicit
+  enhancement requirements. Added a per-product/subscription manual test matrix
+  and a bounded stock quote probe that passes only on the expected pre-data
+  permission denial; other errors or unexpected data fail the assertion.
+
 - Explicit `--api-key-env` support for the manual live runner, reading only
   process `THETADATA_API_KEY` without requiring a file or exposing its value.
+  The first authorized PROD AAPL single-day EOD check passed: live numeric/Table
+  results and Windows/Linux offline raw/numeric/Table replay matched the private
+  captured response. Broader service and performance acceptance remain open.
 
 - Concrete versioned release milestones and exit gates, plus an optional
   feature-gated Rust live EOD capture/replay runner. Manual account checks use
   explicit credential files and retain private response/provenance artifacts;
   offline replay compares raw, numeric and Table interfaces. CI workflows stay
-  unchanged and credential-free. Real-service verification remains pending.
+  unchanged and credential-free. Live observations are recorded separately.
 
 - Typed EOD local frame/ZSTD resource-error provenance and a per-requirement
   acceptance matrix covering both numeric and Table APIs. Larger mock workloads
