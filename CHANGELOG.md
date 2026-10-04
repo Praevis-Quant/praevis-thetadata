@@ -15,6 +15,15 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Architecture review against Fowler separation, ports/adapters and applicable
+  Twelve-Factor principles. Proposed ADRs 0013-0016 and 36 ARCH/PERF/EXT
+  requirements define optional persistence boundaries, numeric batch delivery
+  with explicit Table conversion, measured performance acceptance, protected
+  enhancements, and optional local filtering/projection. Runtime changes remain
+  planned; future PyO3 bindings are recorded on the roadmap.
+- Exhaustive origin classification for requirements and ADRs, with mutation
+  checks and an upstream-update impact template separating compatibility from
+  protected Rust behavior. Classification is independent of acceptance status.
 - Defined stock EOD requirements: six L1 outcomes, twelve L2 system contracts,
   and twenty-nine L3 acceptance contracts with owners, source/ADR links,
   intentional Python deviations, Rust-native fixture/benchmark obligations,

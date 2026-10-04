@@ -9,6 +9,54 @@ from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIREMENT = r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-L[123]-\d{3}"
+ORIGINS = {"upstream-contract", "rust-enhancement", "mixed"}
+
+
+def audit_origins(registry, requirements, adr_paths, tracked_paths):
+    """Check exhaustive, deliberate classification; not semantic noninterference."""
+    errors = []
+    if registry.get("schema_version") != 1:
+        errors.append("Unsupported origin register schema version.")
+    classified = set()
+    groups = set()
+    for group in registry.get("groups", []):
+        name = group.get("id")
+        if not isinstance(name, str) or not name.strip() or name in groups:
+            errors.append(f"Invalid/duplicate origin group: {name}")
+        groups.add(name)
+        if group.get("origin") not in ORIGINS:
+            errors.append(f"Invalid origin: {name}")
+        for field in ("rationale", "protected_contract"):
+            if not isinstance(group.get(field), str) or not group[field].strip():
+                errors.append(f"Missing {field}: {name}")
+        if not group.get("requirements") or not group.get("evidence"):
+            errors.append(f"Missing requirements/evidence: {name}")
+        for identifier in group.get("requirements", []):
+            if identifier in classified:
+                errors.append(f"Duplicate origin classification: {identifier}")
+            classified.add(identifier)
+        for path in group.get("evidence", []):
+            if path not in tracked_paths:
+                errors.append(f"Untracked/missing origin evidence: {path}")
+    for identifier in sorted(set(requirements) - classified):
+        errors.append(f"Unclassified requirement: {identifier}")
+    for identifier in sorted(classified - set(requirements)):
+        errors.append(f"Unknown classified requirement: {identifier}")
+    classified_adrs = set()
+    for record in registry.get("adrs", []):
+        path = record.get("path")
+        if path in classified_adrs:
+            errors.append(f"Duplicate ADR origin: {path}")
+        classified_adrs.add(path)
+        if record.get("origin") not in ORIGINS:
+            errors.append(f"Invalid ADR origin: {path}")
+        if not isinstance(record.get("rationale"), str) or not record["rationale"].strip():
+            errors.append(f"Missing ADR origin rationale: {path}")
+    for path in sorted(set(adr_paths) - classified_adrs):
+        errors.append(f"Unclassified ADR: {path}")
+    for path in classified_adrs - set(adr_paths):
+        errors.append(f"Unknown classified ADR: {path}")
+    return errors
 
 
 def audit_requirements(documents):
@@ -76,6 +124,9 @@ def main():
                 for document in documents}
     defined, requirement_errors = audit_requirements(contents)
     errors.extend(requirement_errors)
+    registry = json.loads((ROOT / "docs/requirements/origins.json").read_text(encoding="utf-8"))
+    adrs = {path for path in files if re.fullmatch(r"docs/adr/\d{4}-.+\.md", path)}
+    errors.extend(audit_origins(registry, defined, adrs, set(files)))
     for document in documents:
         content = contents[document.relative_to(ROOT).as_posix()]
         for link in re.findall(r"\]\(([^)]+)\)", content):
@@ -91,7 +142,8 @@ def main():
                 errors.append(f"Broken file link in {document.relative_to(ROOT)}: {target}")
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"Checked {len(files)} tracked files, {len(defined)} requirements, local document links, and descriptor integrity.")
+    print(f"Checked {len(files)} tracked files, {len(defined)} requirements, {len(adrs)} ADR origins, "
+          "exhaustive requirement origins, local document links, and descriptor integrity.")
 
 
 if __name__ == "__main__":

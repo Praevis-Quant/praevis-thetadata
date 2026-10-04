@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "id": "auth-wire",
+      "origin": "upstream-contract",
+      "requirements": ["AUTH-L3-003"],
+      "rationale": "Observed Python authentication POST fields and terminal header; compatibility evidence, not a new Rust policy.",
+      "protected_contract": "Preserve the observed request mapping until an evidenced upstream revision changes it.",
+      "evidence": ["docs/research/thetadata-1.0.12.md", "docs/requirements/L3-auth.md"]
+    },
+    {
+      "id": "auth-mixed",
+      "origin": "mixed",
+      "requirements": ["AUTH-L1-001", "AUTH-L2-001", "AUTH-L2-002", "AUTH-L3-002", "AUTH-L3-004", "AUTH-L3-006"],
+      "rationale": "Inherited credentials, environment and response shape combined with Rust library boundaries, explicit validation/discovery, bounded requests and failed-login behavior.",
+      "protected_contract": "Preserve standalone auth/session reuse, explicit credentials and discovery policy, input/response validation, timeout defaults and no save after failed auth independently of upstream packaging changes.",
+      "evidence": ["docs/research/thetadata-1.0.12.md", "docs/requirements/L1-auth.md", "docs/requirements/L2-auth.md", "docs/requirements/L3-auth.md"]
+    },
+    {
+      "id": "auth-rust-policy",
+      "origin": "rust-enhancement",
+      "requirements": ["AUTH-L1-002", "AUTH-L1-003", "AUTH-L1-004", "AUTH-L1-005", "AUTH-L2-003", "AUTH-L2-004", "AUTH-L2-005", "AUTH-L2-006", "AUTH-L2-007", "AUTH-L2-008", "AUTH-L2-009", "AUTH-L2-010", "AUTH-L2-011", "AUTH-L3-001", "AUTH-L3-005", "AUTH-L3-007", "AUTH-L3-008", "AUTH-L3-009", "AUTH-L3-010", "AUTH-L3-011", "AUTH-L3-012", "AUTH-L3-013", "AUTH-L3-014", "AUTH-L3-015", "AUTH-L3-016", "AUTH-L3-017", "AUTH-L3-018", "AUTH-L3-019", "AUTH-L3-020", "AUTH-L3-021", "AUTH-L3-022", "AUTH-L3-023", "AUTH-L3-024"],
+      "rationale": "Rust CLI, native persistence, local status/logout, redaction, transport safety, lifecycle and verification/performance policy are independent product obligations, not Python parity.",
+      "protected_contract": "Retain each canonical auth policy, including runtime scope, store format/identity, precedence and diagnostics, unless deliberately migrated with independent tests.",
+      "evidence": ["docs/requirements/L1-auth.md", "docs/requirements/L2-auth.md", "docs/requirements/L3-auth.md", "docs/performance/cli-startup.md"]
+    },
+    {
+      "id": "eod-mixed",
+      "origin": "mixed",
+      "requirements": ["EOD-L1-001", "EOD-L1-002", "EOD-L1-003", "EOD-L2-001", "EOD-L2-002", "EOD-L2-003", "EOD-L2-004", "EOD-L2-006", "EOD-L2-009", "EOD-L3-001", "EOD-L3-003", "EOD-L3-004", "EOD-L3-005", "EOD-L3-006", "EOD-L3-007", "EOD-L3-008", "EOD-L3-009", "EOD-L3-010", "EOD-L3-011", "EOD-L3-012", "EOD-L3-016"],
+      "rationale": "Observed EOD request, session, compression, values and finite RPC semantics are combined with typed Rust entry points, local date validation, exact prices, strict schema/timezone checks and explicit partial/error behavior.",
+      "protected_contract": "Preserve typed validation, exactness, schema/order/null decisions, safe terminal/error distinctions and the Table timestamp contract. Add numeric delivery through PERF requirements; do not silently replace the Table representation during a vendor update.",
+      "evidence": ["docs/requirements/stock-eod-evidence.md", "docs/requirements/L3-stock-eod.md", "docs/research/python-1.0.12-dispositions.json"]
+    },
+    {
+      "id": "eod-rust-policy",
+      "origin": "rust-enhancement",
+      "requirements": ["EOD-L1-004", "EOD-L1-005", "EOD-L1-006", "EOD-L2-005", "EOD-L2-007", "EOD-L2-008", "EOD-L2-010", "EOD-L2-011", "EOD-L2-012", "EOD-L3-002", "EOD-L3-013", "EOD-L3-014", "EOD-L3-015", "EOD-L3-017", "EOD-L3-018", "EOD-L3-019", "EOD-L3-020", "EOD-L3-021", "EOD-L3-022", "EOD-L3-023", "EOD-L3-024", "EOD-L3-025", "EOD-L3-026", "EOD-L3-027", "EOD-L3-028", "EOD-L3-029"],
+      "rationale": "Local symbol policy, pull/fused lifecycle, deadlines/cancellation, redaction, bounded allocation/work and Rust-native verification/traceability are selected Rust behavior.",
+      "protected_contract": "Keep every local limit, lifecycle and verification obligation during wire upgrades. Unmeasured defaults remain explicit gates rather than disappearing or being asserted implemented.",
+      "evidence": ["docs/requirements/L1-stock-eod.md", "docs/requirements/L2-stock-eod.md", "docs/requirements/L3-stock-eod.md", "docs/requirements/stock-eod-evidence.md"]
+    },
+    {
+      "id": "architecture",
+      "origin": "rust-enhancement",
+      "requirements": ["ARCH-L1-001", "ARCH-L1-002", "ARCH-L2-001", "ARCH-L2-002", "ARCH-L2-003", "ARCH-L3-001", "ARCH-L3-002", "ARCH-L3-003", "ARCH-L3-004", "ARCH-L3-005"],
+      "rationale": "Library dependency, optional storage and adapter boundaries are Rust architecture decisions.",
+      "protected_contract": "Vendor changes must not pull application, persistence or Python policy into the core/fast path.",
+      "evidence": ["docs/requirements/architecture.md", "docs/research/architecture-performance-review.md"]
+    },
+    {
+      "id": "performance",
+      "origin": "rust-enhancement",
+      "requirements": ["PERF-L1-001", "PERF-L1-002", "PERF-L2-001", "PERF-L2-002", "PERF-L2-003", "PERF-L2-004", "PERF-L3-001", "PERF-L3-002", "PERF-L3-003", "PERF-L3-004", "PERF-L3-005", "PERF-L3-006", "PERF-L3-007", "PERF-L3-008"],
+      "rationale": "Numeric batch delivery, explicit presentation and measured hot-path acceptance go beyond Python dataframe parity.",
+      "protected_contract": "Keep optional conversion, exact numeric semantics, bounded work and calibrated performance regression decisions independently of source package updates.",
+      "evidence": ["docs/requirements/performance.md", "docs/adr/0014-performance-first-data-path.md"]
+    },
+    {
+      "id": "extensions",
+      "origin": "rust-enhancement",
+      "requirements": ["EXT-L1-001", "EXT-L1-002", "EXT-L2-001", "EXT-L2-002", "EXT-L2-003", "EXT-L3-001", "EXT-L3-002", "EXT-L3-003", "EXT-L3-004", "EXT-L3-005", "EXT-L3-006", "EXT-L3-007"],
+      "rationale": "Independent change control and optional local projection/filtering are Rust capabilities, not invented upstream fields.",
+      "protected_contract": "Keep opt-in deterministic transform semantics and explicit enhancement impact review; no implicit server pushdown or Python callback in native delivery.",
+      "evidence": ["docs/requirements/enhancements.md", "docs/upstream-update-template.md"]
+    }
+  ],
+  "adrs": [
+    {"path": "docs/adr/0001-standalone-auth.md", "origin": "rust-enhancement", "rationale": "Independent reusable auth and application boundary."},
+    {"path": "docs/adr/0002-auth-contract-and-credentials.md", "origin": "mixed", "rationale": "Observed auth wire shape plus protected Rust credential validation/discovery rules."},
+    {"path": "docs/adr/0003-native-session-persistence.md", "origin": "rust-enhancement", "rationale": "Native session storage, record format and identity are local product policy."},
+    {"path": "docs/adr/0004-explicit-session-lifecycle.md", "origin": "rust-enhancement", "rationale": "Explicit local status/logout and no inferred server validity/revocation."},
+    {"path": "docs/adr/0005-verification-and-provenance.md", "origin": "mixed", "rationale": "Preserved observed artifacts plus protected credential-free CI, provenance and benchmark obligations."},
+    {"path": "docs/adr/0006-cli-runtime-lifecycle.md", "origin": "rust-enhancement", "rationale": "Measured Rust CLI runtime startup policy."},
+    {"path": "docs/adr/0007-first-market-data-slice.md", "origin": "mixed", "rationale": "Observed stock EOD endpoint plus protected one-symbol typed library scope and explicit completion."},
+    {"path": "docs/adr/0008-typed-requests-and-presence.md", "origin": "mixed", "rationale": "Wire fields/presence plus protected local validation and deliberate Rust defaults."},
+    {"path": "docs/adr/0009-market-data-values-and-schema.md", "origin": "mixed", "rationale": "Observed values/schema with protected exact prices, strict shape/zone rules, and explicit empty/partial results; numeric API is additive under ADR-0014."},
+    {"path": "docs/adr/0010-stream-lifecycle-and-resource-bounds.md", "origin": "mixed", "rationale": "Observed finite transport/errors plus protected Rust pull lifecycle, cancellation, deadlines and resource policy."},
+    {"path": "docs/adr/0011-market-data-verification-and-artifact-retention.md", "origin": "rust-enhancement", "rationale": "Rust-native verification, measurements and recoverable research evidence policy."},
+    {"path": "docs/adr/0012-requirements-and-research-traceability.md", "origin": "rust-enhancement", "rationale": "Hybrid requirements ownership and permanent traceability policy."},
+    {"path": "docs/adr/0013-library-boundaries.md", "origin": "rust-enhancement", "rationale": "Cohesive libraries and optional outer adapters."},
+    {"path": "docs/adr/0014-performance-first-data-path.md", "origin": "rust-enhancement", "rationale": "Numeric fast path with explicit compatibility conversion and measured acceptance."},
+    {"path": "docs/adr/0015-upstream-and-enhancement-contracts.md", "origin": "rust-enhancement", "rationale": "Independent enhancement registry and upstream-update reconciliation."},
+    {"path": "docs/adr/0016-optional-batch-transforms.md", "origin": "rust-enhancement", "rationale": "Optional local typed filtering and projection."}
+  ]
+}

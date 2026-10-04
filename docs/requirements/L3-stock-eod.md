@@ -11,6 +11,12 @@ audit. Keep these cross-component contracts central under
 Parents: [L2](L2-stock-eod.md). Outcomes: [L1](L1-stock-eod.md).
 Source/decision links and open vendor contracts: [evidence record](stock-eod-evidence.md).
 
+Additive design: [ADR-0014](../adr/0014-performance-first-data-path.md) defines
+the numeric DataBatch path and explicit Table adapter. Rows below retain their
+Table-facing signatures and formatting; shared query/lifecycle/bound semantics
+apply to both paths. [PERF-L3-002/003](performance.md) define the representation
+extension. [The origin register](origins.md) classifies every EOD requirement.
+
 | ID | L2 parents | Owner | Component requirement | Planned verification |
 | --- | --- | --- | --- | --- |
 | EOD-L3-001 | EOD-L2-001 | client | Add `StockEodRequest::new(symbol, start_date, end_date)` using calendar-date values with private validated fields, and `ThetaClient::stock_eod(request)` returning an EOD-specific pull stream. Retain the existing `stock_history_eod(wire_query)` helper; the new contracts apply to the typed path. Callers own the async runtime. | Rust consumer compile test and raw-helper compatibility test; inspect auth/CLI dependencies. |

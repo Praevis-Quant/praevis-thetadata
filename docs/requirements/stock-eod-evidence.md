@@ -55,3 +55,11 @@ Verification status vocabulary: **planned** means required but not demonstrated;
 requires a linked test/run/revision; **live verified** additionally requires
 authorized vendor evidence and its scope. All new runtime acceptance checks
 are currently planned. Documentation audits verify links and structure only.
+
+Performance-first extension: [ADR-0014](../adr/0014-performance-first-data-path.md)
+adds numeric batches plus an explicit adapter preserving EOD-L3-009's Table
+format. New [PERF requirements](performance.md) add first-batch and adapter-cost
+measurements to the resource-policy gate. This resolves the direction toward
+lazy presentation without claiming implementation or choosing an unmeasured
+layout. [Origin classification](origins.md) protects both inherited wire behavior
+and deliberate Rust semantics during later upstream updates.

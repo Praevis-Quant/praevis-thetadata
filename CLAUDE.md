@@ -171,6 +171,23 @@ service compatibility.
 
 ## Performance work
 
+Performance is the leading optimization objective within correctness, security,
+resource and lifecycle contracts. Read [ADRs 0013-0016](docs/adr/README.md),
+[the architecture review](docs/research/architecture-performance-review.md),
+and [PERF requirements](docs/requirements/performance.md) before data-path work.
+The proposed primary path is numeric DataBatch delivery; the planned Table
+interface preserves RFC 3339 timestamps through an explicit adapter. New
+filtering/projection is optional native Rust behavior. PyO3 is future outer
+adapter scope, not a dependency of the Rust core or a current implementation task.
+
+Every canonical requirement and ADR must have an explicit origin in
+[the origin register](docs/requirements/origins.md): upstream-contract,
+rust-enhancement or mixed. Preserve local policies independently of upstream
+updates. Use [the impact template](docs/upstream-update-template.md), retain
+separate compatibility/enhancement test evidence and measure data-path changes.
+Origin coverage checks do not prove semantic noninterference or passing runtime
+requirements. Do not silently change an enhancement to match a vendor update.
+
 Use [the auth baseline](docs/performance/auth.md) and
 [the CLI startup evaluation](docs/performance/cli-startup.md) for commands,
 measurement conditions, and results. Build both revisions in release mode
