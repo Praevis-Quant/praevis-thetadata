@@ -17,8 +17,11 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 - Typed EOD resource-audit fixes: bounded outer-envelope decoding, conservative
   String capacity accounting, separate schema/batch reservations, deterministic
-  running-worker cancellation tests, and bounded inline scheduling for small
-  uncompressed responses. Full stock EOD acceptance remains separate.
+  running-worker cancellation tests, and opt-in bounded inline scheduling for
+  small uncompressed responses. Repeated Windows/Linux measurements retain
+  bounded offload as the portable default because Windows gains were mixed;
+  Linux small numeric delivery improved by 51-65% in this fixture. Full stock
+  EOD acceptance remains separate.
 - Experimental typed stock EOD numeric batches with flat cell storage, lazy
   timestamp presentation, a shared Table adapter, preflight allocation/count
   bounds, finite decode admission, schema continuity and terminal stream errors.

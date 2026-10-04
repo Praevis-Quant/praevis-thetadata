@@ -96,7 +96,9 @@ impl Default for EodPolicy {
             decode: DecodeLimits::default(),
             concurrent_jobs: 2,
             shared_bytes: 512 << 20,
-            inline_bytes: 4096,
+            // Scheduling evidence is platform/workload dependent. Keep the
+            // portable offload default; measured consumers can opt in up to 4 KiB.
+            inline_bytes: 0,
         }
     }
 }
@@ -454,6 +456,7 @@ mod tests {
         entered: Semaphore,
         released: Mutex<bool>,
         changed: Condvar,
+        thread: Mutex<Option<std::thread::ThreadId>>,
     }
     impl Gate {
         fn new() -> Arc<Self> {
@@ -461,9 +464,11 @@ mod tests {
                 entered: Semaphore::new(0),
                 released: Mutex::new(false),
                 changed: Condvar::new(),
+                thread: Mutex::new(None),
             })
         }
         pub(super) fn wait(&self) {
+            *self.thread.lock().unwrap() = Some(std::thread::current().id());
             self.entered.add_permits(1);
             let mut ready = self.released.lock().unwrap();
             while !*ready {
@@ -614,5 +619,48 @@ mod tests {
             })
             .is_err()
         );
+    }
+
+    #[tokio::test]
+    async fn only_actual_small_none_frames_inline_and_delivery_does_not_prefetch() {
+        let executor = std::thread::current().id();
+        for compressed in [false, true] {
+            let (wire, _) =
+                fixture::table(fixture::Shape::Nulls, if compressed { 1000 } else { 1 });
+            let mut response = fixture::response(&wire, compressed);
+            response.original_size = 1; // Not evidence that compressed work is small.
+            let server = fixture::Fixture::start(fixture::Script {
+                messages: vec![Ok(response); 2],
+                ..Default::default()
+            });
+            let client = ThetaClient::with_eod_policy(
+                ClientConfig {
+                    endpoint: Some(server.endpoint.clone()),
+                    allow_insecure: true,
+                    idle_timeout: Duration::from_millis(100),
+                    request_timeout: Duration::from_secs(5),
+                    ..Default::default()
+                },
+                fixture::session().await,
+                EodPolicy {
+                    inline_bytes: 4096,
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+            let gate = Gate::new();
+            gate.release();
+            *client.eod_pool.gate.lock().unwrap() = Some(gate.clone());
+            let mut stream = client.stock_eod_batches(request()).await.unwrap();
+            assert!(stream.next_batch().await.unwrap().is_some());
+            assert_eq!(*gate.thread.lock().unwrap() == Some(executor), !compressed);
+            // Caller pauses beyond idle_timeout. No worker runs on the next
+            // already-buffered response until next_batch is requested again.
+            tokio::time::sleep(Duration::from_millis(150)).await;
+            assert_eq!(gate.entered.available_permits(), 1);
+            assert!(stream.next_batch().await.unwrap().is_some());
+            assert_eq!(gate.entered.available_permits(), 2);
+        }
     }
 }

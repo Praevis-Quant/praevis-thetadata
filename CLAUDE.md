@@ -161,7 +161,8 @@ service compatibility.
 - **A byte limit is not a heap limit.** The client's current 64 MiB batch
   checks on raw helpers bound encoded/decompressed bytes, not all allocations.
   The experimental typed EOD path adds preflight counts/accounting, numeric
-  batches and shared bounded offload; see [its policy and gaps](docs/performance/eod-numeric.md).
+  batches and shared bounded offload; see [the resource audit and gaps](docs/performance/eod-resource-audit.md).
+  Small NONE-frame inline decoding is opt-in; the portable default stays offload.
   Do not claim complete heap/RSS or typed-slice acceptance from those checks.
 - **Preserve platform and wire behavior.** Exercise Windows and Linux for
   changes to native persistence or process behavior. Preserve descriptor bytes
@@ -236,7 +237,7 @@ when regeneration is needed. Never import or execute the vendor package.
 
 The next planned work in [the roadmap](docs/ROADMAP.md) is implementing the stock
 EOD slice's [defined requirements](docs/requirements/L1-stock-eod.md), closing
-the [typed experiment's remaining resource/fault gates](docs/performance/eod-numeric.md)
+the [typed experiment's remaining resource/fault gates](docs/performance/eod-resource-audit.md)
 using its fixtures and measured results, from that evidence and
 [proposed ADRs 0007-0012](docs/adr/README.md).
 Those ADRs define scope, typed requests, outputs, stream behavior, verification,

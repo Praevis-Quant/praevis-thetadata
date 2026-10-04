@@ -96,3 +96,24 @@ Paths in this table are relative to `crates/thetadata-client` and
 `crates/thetadata-core` as indicated. Tests establish the listed cases, not every
 verification clause of each grouped requirement. ADRs 0007-0016 remain proposed;
 the resource-policy gate and full slice acceptance are still open.
+
+## Resource and scheduling follow-up (2026-10-04)
+
+The [resource audit](../performance/eod-resource-audit.md) supersedes the
+identified allocation and running-worker gaps in the experiment table above.
+It records the exact accounting boundary and exclusions; this is not a process
+RSS bound or acceptance of every clause in a grouped requirement.
+
+| Contracts | Passed synthetic evidence | Remaining acceptance work |
+| --- | --- | --- |
+| EOD-L3-001 through EOD-L3-005 | `eod_typed.rs::invalid_policy_and_duration_fail_before_connecting` checks invalid policy before a connection; typed request fixtures remain passing | Reconcile the complete invalid-input/configuration matrix with each canonical clause |
+| EOD-L3-012 through EOD-L3-019 | `eod.rs` unit tests latch active decode and verify cancellation/deadline, retained job/schema leases, blocked clones, recovery, actual thread placement and no prefetch; typed fixtures exercise stalled initial headers and empty-message trickle deadlines | Complete the fault matrix and EOD-L3-016 error categories, including tonic local frame rejection versus remote status and ZSTD window failures |
+| EOD-L3-020 through EOD-L3-023; PERF-L3-005 | `envelope.rs` rejects manifest trees before materialization and bounds copies/metadata; Rust allocation probes cover manifest and tiny-string amplification; schema-pool saturation leaves the batch slot usable | Calibrate provisional defaults over larger concurrent/slow-consumer workloads and profile transport/C allocator costs separately |
+| EOD-L3-026/027; PERF-L3-007/008 | [Scheduling results](../performance/eod-scheduling-results.md): sixteen clean-revision reports, eight guarded comparisons, Windows and Linux; inline 4096 is opt-in and default 0 preserves bounded offload | No regression threshold or universal latency guarantee; retain platform variability and measure further changes against equivalent fixtures |
+
+The measured resource-audit revision is
+`d0d925a2477af209e8d492d9dfaeaba9940eafff`; Windows and Ubuntu CI passed its
+workspace tests and benchmark smoke checks. The subsequent default-0 decision
+and actual-thread/no-prefetch test are part of the same follow-up. No live
+vendor verification was performed. Canonical IDs, origins and proposed ADR
+statuses remain unchanged.

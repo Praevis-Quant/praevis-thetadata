@@ -13,7 +13,7 @@ validation or acceptance of every stock EOD requirement.
 | Compressed input could remain live during decoded table construction | Explicitly drop the ZSTD decoder and compressed input before table preflight/materialization | Ownership inspection plus allocation/peak reports; malformed/expansion/window tests retained |
 | Schema leases could consume the last available batch reservation | Partition the shared budget into fixed batch slots and a separate schema pool. Round reservations up and total budget down to KiB. | Minimum-budget test saturates schema storage while a batch slot remains available; excess acquisition fails and permits recover |
 | Running cancellation had only indirect coverage | Per-pool test-only worker latch holds actual decode work at a deterministic boundary | Cancelled pending calls and local deadlines return no batch while the worker retains its job/schema leases; another cloned client cannot start work; reservations release after worker exit |
-| Every tiny message paid blocking-task scheduling costs | Inline only NONE responses whose actual entire envelope is at most 4 KiB; user may choose 0 to force offload. Compressed messages always offload. | Same-harness numeric/Table versus forced-offload measurements; limits and output validation remain identical |
+| Every tiny message paid blocking-task scheduling costs | Offer opt-in inline decoding only for NONE responses whose actual entire envelope is at most 4 KiB; default 0 retains offload. Compressed messages always offload. | Same-harness numeric/Table versus forced-offload measurements; limits and output validation remain identical |
 | Inline empty batches could form a ready loop | Release the batch slot and yield when skipping a schemaless empty response | Empty-message trickle still reaches the whole-query deadline rather than resetting it indefinitely |
 
 Tests live in [the envelope module](../../crates/thetadata-client/src/envelope.rs),
@@ -61,8 +61,9 @@ typed-path guarantees. This is not a total-process memory limit.
 
 ## Scheduling and evidence limits
 
-`EodPolicy::inline_bytes` defaults to 4096, permits 0 to force offload and
-rejects values over 4096 before connecting. The entire actual frame must fit,
+`EodPolicy::inline_bytes` defaults to **0** (bounded offload). Consumers can
+opt in with 4096; values over 4096 are rejected before connecting. The entire
+actual frame must fit,
 and the decoded compression algorithm must be NONE. Neither compressed size
 nor `original_size` grants eligibility. At most a few KiB of parser input is
 handled inline; preflight and allocation checks still precede materialization.
@@ -71,10 +72,19 @@ still terminal when dropped. Empty inline batches explicitly yield.
 
 The benchmark adds `table-offload` and `numeric-offload` engines; each shares
 its decoder, codec, fixture, output oracle and binary with the corresponding
-default engine. Only scheduling differs. Run each pair in A/B/B/A order on
+`table`/`numeric` engine, which explicitly selects 4096 for this experiment.
+Only scheduling differs. Run each pair in A/B/B/A order on
 Windows and Linux. Do not compare old fixture/harness reports as though they
 were this scheduling experiment. Original baseline and numeric reports remain
 historical evidence.
+
+The [scheduling results](eod-scheduling-results.md) show a Linux/WSL small-batch
+gain but inconsistent Windows results. That does not justify a portable default
+change or an OS-specific policy based only on one WSL host. The final default
+remains 0; the measured, bounded inline policy is available explicitly. Tests
+also observe the actual decode thread: small NONE work can stay inline, while
+a tiny ZSTD frame with a forged small size hint still runs on a worker. A caller
+pause longer than idle_timeout does not trigger prefetch or consume idle time.
 
 The audit closes the identified application-buffer accounting and active-worker
 cancellation gaps with the listed tests. Full EOD acceptance still needs the
