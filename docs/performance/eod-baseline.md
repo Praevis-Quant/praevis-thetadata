@@ -44,11 +44,10 @@ The loopback HTTP fixture supplies a synthetic session through the public auth
 API. It shuts down before measurement. A loopback gRPC service runs on a
 separate OS thread with a current-thread Tokio runtime; consumers use another
 current-thread runtime, so server execution does not masquerade as client
-executor blocking. The service trait stubs are generated from the checked-in
-descriptor; accepted mock sockets explicitly enable TCP_NODELAY to avoid
+executor blocking. Accepted mock sockets explicitly enable TCP_NODELAY to avoid
 delayed-ACK/Nagle artifacts in small-message delivery. The service trait stubs
-come from the same
-descriptor; only GetStockHistoryEod is implemented. The server checks no real
+are generated from the checked-in descriptor; only GetStockHistoryEod is
+implemented. The server checks no real
 entitlement and does not emulate undocumented vendor business semantics.
 
 [Integration tests](../../crates/thetadata-client/tests/eod_fixture.rs) exercise
@@ -105,6 +104,9 @@ experiment, not suppressing mismatch checks. Median ratios are descriptive:
 report regressions, both pair orders and variability. There is no calibrated
 latency regression threshold yet. This task captures the **before** baseline;
 it makes no optimization/speedup claim.
+
+The [initial Windows/WSL results](eod-results.md) record two clean-commit
+repetitions, measured limitations, retained report/binary hashes, and findings.
 
 The baseline is the existing Table API. Comparing a future numeric API requires
 a shared adapter-aware harness and fresh measurements of both paths, with
