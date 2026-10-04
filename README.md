@@ -16,6 +16,14 @@ Newly authored code and tooling are licensed under [Apache License 2.0](LICENSE)
 
 ## Workspace
 
+`thetadata-rs` is the repository and **virtual workspace**, not a publishable root
+package. Each row below is a separate Cargo package. The CLI lives in
+[`apps/thetadata-cli`](apps/thetadata-cli/README.md), publishes under its own
+package name, and builds the `theta` executable. Cargo places build output in
+the shared root `target/` directory; that does not make the CLI a root package.
+Package and executable names remain provisional before first publication; see
+[the naming decision brief](docs/project-naming.md).
+
 | Package | Responsibility | Status |
 | --- | --- | --- |
 | `thetadata-auth` | HTTP authentication, credentials, sessions, Windows/Linux session persistence | First deliverable |

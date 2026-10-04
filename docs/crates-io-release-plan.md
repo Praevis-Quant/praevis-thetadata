@@ -18,6 +18,14 @@ Names are first come, first served; availability checks do not reserve them.
 
 ## Readiness observations
 
+**Naming gate:** existing names below are historical availability observations,
+not the selected public brand. Resolve [project/package naming](project-naming.md)
+before first publication and repeat availability checks for the chosen family.
+The root manifest is a virtual workspace; `thetadata-rs` is not a sixth package.
+`apps/thetadata-cli` is a separate binary package whose current executable is
+`theta`. Its own README and explicit manifest metadata distinguish that install
+surface from the libraries and repository overview.
+
 The five public API lookups below returned HTTP 404 on 2026-10-04. Check again
 immediately before publication. These are the existing workspace package names;
 do not create speculative umbrella or future PyO3 packages just to claim names.
@@ -41,6 +49,28 @@ the owner's crates.io token settings before publication. Do not ask for the
 token in chat. A successful package dry run will not establish publish rights.
 
 ## Preparation work
+
+### Local package inspection (2026-10-04)
+
+`cargo package --list --allow-dirty --offline -p <package>` succeeded for all five
+packages. This lists candidates; it does not build/verify distributable archives.
+
+| Package | Package README | License/NOTICE in candidate listing | Remaining blocker |
+| --- | --- | --- | --- |
+| Auth | Missing | Missing | Public metadata, attribution files and standalone consumer verification |
+| Core | Missing | Missing | Public metadata, attribution files and standalone consumer verification |
+| Proto | Missing | `LICENSE.upstream` only | Project license/NOTICE, public metadata and standalone build verification |
+| Client | Missing | Missing | Metadata/attribution, sibling descriptor and internal benchmark/manual-runner inputs |
+| CLI | Present; explicitly selected in manifest | Missing | Attribution files, registry dependency versions and standalone install verification |
+
+An actual offline CLI packaging attempt failed because `thetadata-auth` has no
+registry version requirement. Adding a version alone would not make an unpublished
+dependency resolvable. Finalize the name/version family and prepare the first-wave
+archives before verifying dependent archives against an isolated staging registry
+or published, approved dependencies. `publish = false` remains in place. No
+registry credentials were read and no package was uploaded during this inspection.
+
+### Work to close
 
 1. Choose and review the exact version and scope of each initial package.
    Keep the Rust release version separate from Python compatibility version
