@@ -2,7 +2,7 @@
 
 This is a forward-looking work list, not a changelog. Recommendations become requirements when selected for implementation; their inclusion here does not approve the entire market-data scope.
 
-The first candidate is recommendation **#2: CLI startup**. Its requirements and evaluation belong in [the auth requirements](requirements/L3-auth.md) and [performance documentation](performance/auth.md). Keep this candidate open until the branch is evaluated and accepted; track completed work outside this roadmap.
+The next round is the complete Python compatibility research below. Performance recommendations **#1, #3, #4, #5, and #6** remain candidates for future requirements. The original review remains verbatim as source material; current requirements and implementation evidence belong in [the auth requirements](requirements/L3-auth.md) and [performance documentation](performance/auth.md).
 
 ## Next round: complete Python compatibility research
 
@@ -12,13 +12,13 @@ Completion requires a source-hashed inventory of every module, public feature/fu
 
 Use a coverage matrix from each inventory item to detailed research and, as work is selected, its ADR, L1/L2/L3 requirements, implementation, and verification. Every item needs an explicit disposition: planned, supported, intentionally excluded with rationale, or unresolved. Check inventory counts, identifiers, and hashes mechanically; retain gaps openly. This establishes auditable coverage of the inspected distribution, not a claim that undocumented live-service behavior has been proved. Do not silently discard earlier discoveries or turn unverified findings into requirements.
 
-## Monitor upstream compatibility
+## Respond to upstream compatibility changes
 
-Run a scheduled GitHub Actions check against PyPI's latest stable `thetadata` release. Fail the scheduled pipeline if it exceeds the Python version tracked by this Rust port. Keep that compatibility baseline explicit and separate from the Rust crate version; a failed check initiates research and requirements review, not an automatic baseline bump. Also support manual dispatch. Record this candidate here until the branch is accepted.
+For each newer stable release detected by [the scheduled PyPI monitor](upstream-monitor.md), research the versioned source artifacts and assess compatibility before updating the tracked Python baseline. Keep that baseline separate from the Rust crate version; a failed check initiates research and requirements review, not an automatic baseline bump.
 
-## Licensing decision
+## Native Rust development tooling
 
-Adopt the confirmed Apache-2.0 license for newly authored code/tooling when accepting this branch. Preserve upstream license and attribution material independently.
+Evaluate migrating the performance harness and upstream version checker to a Rust `xtask` so routine builds, verification, and benchmarks use the Rust toolchain. Preserve synthetic fixtures, native-store cleanup, before/after build provenance, raw samples, comparison semantics, and regression coverage. Validate the replacement against the existing measurements before retiring the current tooling. Keep Python-specific artifact analysis scoped to research. This is a separate candidate from the runtime startup implementation.
 
 ## Original review and recommendations (verbatim)
 

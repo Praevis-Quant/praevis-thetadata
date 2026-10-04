@@ -1,6 +1,6 @@
 # ADR-0006: initialize the CLI runtime only for HTTP authentication
 
-Status: Accepted on the evaluation branch. Date: 2026-10-04. Requirements: AUTH-L2-010, AUTH-L2-011, AUTH-L3-019, AUTH-L3-020, AUTH-L3-021, AUTH-L3-022, AUTH-L3-023, AUTH-L3-024.
+Status: Accepted. Date: 2026-10-04. Requirements: AUTH-L2-010, AUTH-L2-011, AUTH-L3-019, AUTH-L3-020, AUTH-L3-021, AUTH-L3-022, AUTH-L3-023, AUTH-L3-024.
 
 ## Context
 
