@@ -2,6 +2,26 @@
 
 This is a forward-looking work list, not a changelog. Recommendations become requirements when selected for implementation; their inclusion here does not approve the entire market-data scope.
 
+## Release sequence and immediate service integration
+
+Follow the [concrete release milestones and exit gates](releases.md):
+`0.1.0-alpha.1` publishes useful experimental foundations; `alpha.2` closes EOD
+feature/performance acceptance; `beta.1` freezes the initial API; `0.1.0` supports
+auth and single-symbol stock EOD. Subsequent minor milestones cover typed stock,
+option/index/calendar/rate slices, flat files and real-time subscriptions before
+a reviewed stable Rust API. PyO3 remains a separate later adapter release.
+Version targets are gate-based, not promises of dates or full Python parity.
+
+Next, run the [optional manual PROD verification](live-verification.md) using the
+account holder's explicitly selected local credential file. Collect a bounded
+single-day EOD capture, compare raw/numeric/Table delivery and replay it through
+the synthetic service. Review actual schema/value/date/completion behavior and
+record [observations](research/live-observations.md); retain private original
+captures and add reviewed synthetic reproductions for discovered gaps. No live
+checks, credentials or live artifact uploads belong in CI. STAGE is a separate
+vendor connection, not an assumed testing sandbox. Close package/archive/owner
+checks for alpha.1 while pursuing the performance acceptance work below.
+
 The next round is completing the stock EOD slice's [defined L1/L2/L3 requirements](requirements/L1-stock-eod.md) and [performance-first contracts](requirements/performance.md) from [proposed ADRs 0007-0016](adr/README.md), [the detailed Python research](research/thetadata-1.0.12.md#deep-analysis-2026-10-04), and [coverage matrix](research/python-1.0.12-catalog.md). Build on the Rust-native fixtures and [numeric-path measurements](performance/eod-numeric-results.md) to close the [resource-policy measurement gate](requirements/stock-eod-evidence.md). Recommendations **#1, #3, and #6** inform resource/verification contracts; **#4** informs additive numeric delivery, and **#5** requires measured buffer-reuse evaluation. The original review remains verbatim as source material; implementation evidence belongs in the requirements and performance documentation.
 
 ## Next round: implement and verify stock EOD

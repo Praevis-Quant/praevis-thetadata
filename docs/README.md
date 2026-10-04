@@ -39,6 +39,10 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [EOD scheduling results](performance/eod-scheduling-results.md) | Repeated Windows/Linux inline/offload comparisons, portable default decision and retained hashes |
 | [EOD fault/resource calibration](performance/eod-acceptance-results.md) | Local error provenance, concurrent-stream stall/fix, slow-consumer measurements, retained regressions and policy rationale |
 | [Roadmap](ROADMAP.md) | Forward-looking candidates and the preserved original review |
+| [Release milestones](releases.md) | Versioned scope, exit gates, owners and release evidence checklist |
+| [Manual live verification](live-verification.md) | Explicit PROD/STAGE credentialed runs, private captures and offline comparison; outside CI |
+| [Live verification requirements](requirements/live-verification.md) | LIVE L1/L2/L3 opt-in, provenance, replay and release obligations |
+| [Live observation records](research/live-observations.md) | Reviewed service evidence template and synthetic comparison gaps |
 | [crates.io release plan](crates-io-release-plan.md) | Useful prereleases, name checks, credential verification limits and packaging gates |
 | [Upstream compatibility monitor](upstream-monitor.md) | Scheduled PyPI version comparison and baseline policy |
 

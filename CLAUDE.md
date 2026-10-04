@@ -67,6 +67,17 @@ requirement references, and local Markdown links. Stage new documentation
 before running it so the new files are included. It is not a complete
 feature-to-test traceability checker.
 
+Optional real-service checks use the [manual Rust runner](docs/live-verification.md)
+and [LIVE requirements](docs/requirements/live-verification.md). They require the
+`live-tests` feature, explicit capture command/consent/environment/query and one
+local credential file. Keep them outside every CI workflow. PROD is selected for
+initial integration; STAGE is an independent vendor connection, not an assumed
+sandbox. Captures stay private under ignored `artifacts/live`; no automatic
+fixture promotion or uploads. Test the runner locally with
+`cargo test --locked -p thetadata-client --features live-tests --example live_eod`.
+Follow the [release milestones](docs/releases.md) when proposing supported scope;
+successful mocks or a single live query do not grant full EOD acceptance.
+
 ## Architecture
 
 ### Dependency boundaries

@@ -15,6 +15,12 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Concrete versioned release milestones and exit gates, plus an optional
+  feature-gated Rust live EOD capture/replay runner. Manual account checks use
+  explicit credential files and retain private response/provenance artifacts;
+  offline replay compares raw, numeric and Table interfaces. CI workflows stay
+  unchanged and credential-free. Real-service verification remains pending.
+
 - Typed EOD local frame/ZSTD resource-error provenance and a per-requirement
   acceptance matrix covering both numeric and Table APIs. Larger mock workloads
   exposed an existing HTTP/2 progress failure; finite query admission and a
