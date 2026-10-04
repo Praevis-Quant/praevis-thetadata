@@ -1,0 +1,41 @@
+name: Auth performance
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: Baseline (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+      - name: Build release CLI
+        run: cargo build --locked --release -p thetadata-cli
+      - name: Install Linux keyring fixture
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends dbus gnome-keyring
+      - name: Linux baseline
+        if: runner.os == 'Linux'
+        run: bash tools/with-test-keyring.sh python3 tools/benchmark_auth.py --binary target/release/theta --samples 30 --output artifacts/auth-linux.json
+      - name: Windows baseline
+        if: runner.os == 'Windows'
+        run: python tools/benchmark_auth.py --binary target/release/theta.exe --samples 30 --output artifacts/auth-windows.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: auth-performance-${{ runner.os }}-${{ github.sha }}
+          path: artifacts/auth-*.json
+          if-no-files-found: error
+          retention-days: 30

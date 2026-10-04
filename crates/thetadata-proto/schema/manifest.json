@@ -1,0 +1,502 @@
+{
+  "source_version": "1.0.12",
+  "source_sha256": {
+    "_proto/endpoints_pb2.py": "456b2071124590c1bfa1afaf9a11e3be0787a57028d2729995e2803664569ed7",
+    "_proto/v3grpc/endpoints_pb2.py": "00f5a667755de6fbff860839250f35b4129b39ec182f277ad836f29fb122991d"
+  },
+  "descriptor_sha256": "b5b7ba02cebfb7ec7d817af12012dd52dcd9a23ad0ce02fe04cce299d1310373",
+  "methods": [
+    {
+      "rpc": "GetStockListSymbols",
+      "request": ".BetaEndpoints.StockListSymbolsRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockListDates",
+      "request": ".BetaEndpoints.StockListDatesRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockSnapshotOhlc",
+      "request": ".BetaEndpoints.StockSnapshotOhlcRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockSnapshotTrade",
+      "request": ".BetaEndpoints.StockSnapshotTradeRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockSnapshotQuote",
+      "request": ".BetaEndpoints.StockSnapshotQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockSnapshotMarketValue",
+      "request": ".BetaEndpoints.StockSnapshotMarketValueRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockHistoryEod",
+      "request": ".BetaEndpoints.StockHistoryEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockHistoryOhlc",
+      "request": ".BetaEndpoints.StockHistoryOhlcRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockHistoryTrade",
+      "request": ".BetaEndpoints.StockHistoryTradeRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockHistoryQuote",
+      "request": ".BetaEndpoints.StockHistoryQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockHistoryTradeQuote",
+      "request": ".BetaEndpoints.StockHistoryTradeQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockAtTimeTrade",
+      "request": ".BetaEndpoints.StockAtTimeTradeRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockAtTimeQuote",
+      "request": ".BetaEndpoints.StockAtTimeQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionListSymbols",
+      "request": ".BetaEndpoints.OptionListSymbolsRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionListDates",
+      "request": ".BetaEndpoints.OptionListDatesRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionListExpirations",
+      "request": ".BetaEndpoints.OptionListExpirationsRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionListStrikes",
+      "request": ".BetaEndpoints.OptionListStrikesRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionListContracts",
+      "request": ".BetaEndpoints.OptionListContractsRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotOhlc",
+      "request": ".BetaEndpoints.OptionSnapshotOhlcRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotTrade",
+      "request": ".BetaEndpoints.OptionSnapshotTradeRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotQuote",
+      "request": ".BetaEndpoints.OptionSnapshotQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotOpenInterest",
+      "request": ".BetaEndpoints.OptionSnapshotOpenInterestRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotMarketValue",
+      "request": ".BetaEndpoints.OptionSnapshotMarketValueRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotGreeksImpliedVolatility",
+      "request": ".BetaEndpoints.OptionSnapshotGreeksImpliedVolatilityRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotGreeksAll",
+      "request": ".BetaEndpoints.OptionSnapshotGreeksAllRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotBinomialGreeksAll",
+      "request": ".BetaEndpoints.OptionSnapshotBinomialGreeksAllRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotGreeksFirstOrder",
+      "request": ".BetaEndpoints.OptionSnapshotGreeksFirstOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotBinomialGreeksFirstOrder",
+      "request": ".BetaEndpoints.OptionSnapshotBinomialGreeksFirstOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotGreeksSecondOrder",
+      "request": ".BetaEndpoints.OptionSnapshotGreeksSecondOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotBinomialGreeksSecondOrder",
+      "request": ".BetaEndpoints.OptionSnapshotBinomialGreeksSecondOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotGreeksThirdOrder",
+      "request": ".BetaEndpoints.OptionSnapshotGreeksThirdOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionSnapshotBinomialGreeksThirdOrder",
+      "request": ".BetaEndpoints.OptionSnapshotBinomialGreeksThirdOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryEod",
+      "request": ".BetaEndpoints.OptionHistoryEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryOhlc",
+      "request": ".BetaEndpoints.OptionHistoryOhlcRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryTrade",
+      "request": ".BetaEndpoints.OptionHistoryTradeRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryQuote",
+      "request": ".BetaEndpoints.OptionHistoryQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryTradeQuote",
+      "request": ".BetaEndpoints.OptionHistoryTradeQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryOpenInterest",
+      "request": ".BetaEndpoints.OptionHistoryOpenInterestRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryGreeksEod",
+      "request": ".BetaEndpoints.OptionHistoryGreeksEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryBinomialGreeksEod",
+      "request": ".BetaEndpoints.OptionHistoryBinomialGreeksEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryGreeksAll",
+      "request": ".BetaEndpoints.OptionHistoryGreeksAllRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryBinomialGreeksAll",
+      "request": ".BetaEndpoints.OptionHistoryBinomialGreeksAllRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryTradeGreeksAll",
+      "request": ".BetaEndpoints.OptionHistoryTradeGreeksAllRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryBinomialTradeGreeksAll",
+      "request": ".BetaEndpoints.OptionHistoryBinomialTradeGreeksAllRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryGreeksFirstOrder",
+      "request": ".BetaEndpoints.OptionHistoryGreeksFirstOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryBinomialGreeksFirstOrder",
+      "request": ".BetaEndpoints.OptionHistoryBinomialGreeksFirstOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryTradeGreeksFirstOrder",
+      "request": ".BetaEndpoints.OptionHistoryTradeGreeksFirstOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryBinomialTradeGreeksFirstOrder",
+      "request": ".BetaEndpoints.OptionHistoryBinomialTradeGreeksFirstOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryGreeksSecondOrder",
+      "request": ".BetaEndpoints.OptionHistoryGreeksSecondOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryBinomialGreeksSecondOrder",
+      "request": ".BetaEndpoints.OptionHistoryBinomialGreeksSecondOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryTradeGreeksSecondOrder",
+      "request": ".BetaEndpoints.OptionHistoryTradeGreeksSecondOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryBinomialTradeGreeksSecondOrder",
+      "request": ".BetaEndpoints.OptionHistoryBinomialTradeGreeksSecondOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryGreeksThirdOrder",
+      "request": ".BetaEndpoints.OptionHistoryGreeksThirdOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryBinomialGreeksThirdOrder",
+      "request": ".BetaEndpoints.OptionHistoryBinomialGreeksThirdOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryTradeGreeksThirdOrder",
+      "request": ".BetaEndpoints.OptionHistoryTradeGreeksThirdOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryBinomialTradeGreeksThirdOrder",
+      "request": ".BetaEndpoints.OptionHistoryBinomialTradeGreeksThirdOrderRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryGreeksImpliedVolatility",
+      "request": ".BetaEndpoints.OptionHistoryGreeksImpliedVolatilityRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionHistoryTradeGreeksImpliedVolatility",
+      "request": ".BetaEndpoints.OptionHistoryTradeGreeksImpliedVolatilityRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionAtTimeTrade",
+      "request": ".BetaEndpoints.OptionAtTimeTradeRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionAtTimeQuote",
+      "request": ".BetaEndpoints.OptionAtTimeQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexListSymbols",
+      "request": ".BetaEndpoints.IndexListSymbolsRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexListDates",
+      "request": ".BetaEndpoints.IndexListDatesRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexSnapshotOhlc",
+      "request": ".BetaEndpoints.IndexSnapshotOhlcRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexSnapshotPrice",
+      "request": ".BetaEndpoints.IndexSnapshotPriceRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexSnapshotMarketValue",
+      "request": ".BetaEndpoints.IndexSnapshotMarketValueRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexHistoryEod",
+      "request": ".BetaEndpoints.IndexHistoryEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexHistoryOhlc",
+      "request": ".BetaEndpoints.IndexHistoryOhlcRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexHistoryPrice",
+      "request": ".BetaEndpoints.IndexHistoryPriceRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexAtTimePrice",
+      "request": ".BetaEndpoints.IndexAtTimePriceRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetCalendarOpenToday",
+      "request": ".BetaEndpoints.CalendarOpenTodayRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetCalendarOnDate",
+      "request": ".BetaEndpoints.CalendarOnDateRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetCalendarYear",
+      "request": ".BetaEndpoints.CalendarYearRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetInterestRateHistoryEod",
+      "request": ".BetaEndpoints.InterestRateHistoryEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetCorporateActionDividend",
+      "request": ".BetaEndpoints.CorporateActionDividendRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetCorporateActionSplit",
+      "request": ".BetaEndpoints.CorporateActionSplitRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionFlatFileTradeQuote",
+      "request": ".BetaEndpoints.OptionFlatFileTradeQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionFlatFileEod",
+      "request": ".BetaEndpoints.OptionFlatFileEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionFlatFileOpenInterest",
+      "request": ".BetaEndpoints.OptionFlatFileOpenInterestRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetOptionFlatFileQuote",
+      "request": ".BetaEndpoints.OptionFlatFileQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockFlatFileTradeQuote",
+      "request": ".BetaEndpoints.StockFlatFileTradeQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetStockFlatFileEod",
+      "request": ".BetaEndpoints.StockFlatFileEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetIndexFlatFileEod",
+      "request": ".BetaEndpoints.IndexFlatFileEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    }
+  ]
+}

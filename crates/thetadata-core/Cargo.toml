@@ -1,0 +1,11 @@
+[package]
+name = "thetadata-core"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+chrono.workspace = true
+chrono-tz.workspace = true
+serde.workspace = true
+thiserror.workspace = true

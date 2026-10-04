@@ -1,0 +1,1044 @@
+{
+  "artifact": "thetadata-1.0.12-py3-none-any.zip",
+  "artifact_sha256": "d9a5f4d19d0a6e7abc9861e8aee6bba3838e3551105babf76c4e361ff233d565",
+  "record_entries_verified": 13,
+  "extraction_matches_archive": true,
+  "files": {
+    "thetadata-1.0.12.dist-info/METADATA": {
+      "bytes": 5336,
+      "sha256": "458eefba7c038ec78ad572074b9a9cb30f83e85459e61369904899e27bc29acb"
+    },
+    "thetadata-1.0.12.dist-info/RECORD": {
+      "bytes": 1175,
+      "sha256": "e4b15f582d09ecbc79fd4b67879bed8f54f5517f134d9746a6c0b161e30f9aad"
+    },
+    "thetadata-1.0.12.dist-info/WHEEL": {
+      "bytes": 87,
+      "sha256": "5b77e4a649bbfb07fdbc123967eeecd1e5a478cfaca6eefc23c35e6fdf037848"
+    },
+    "thetadata-1.0.12.dist-info/licenses/LICENSE": {
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    "thetadata/__init__.py": {
+      "bytes": 161,
+      "sha256": "b23074f358cf63c046981ef00f02a23e1ea55bbf8833f662d6c63fc0e7d87b91"
+    },
+    "thetadata/_proto/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "thetadata/_proto/endpoints_pb2.py": {
+      "bytes": 4449,
+      "sha256": "456b2071124590c1bfa1afaf9a11e3be0787a57028d2729995e2803664569ed7"
+    },
+    "thetadata/_proto/endpoints_pb2_grpc.py": {
+      "bytes": 889,
+      "sha256": "2932b9190a17cfd83ac74e6369ecc559971bc368209d77c5e908bdfab33e61bb"
+    },
+    "thetadata/_proto/v3grpc/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "thetadata/_proto/v3grpc/endpoints_pb2.py": {
+      "bytes": 96975,
+      "sha256": "00f5a667755de6fbff860839250f35b4129b39ec182f277ad836f29fb122991d"
+    },
+    "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py": {
+      "bytes": 157683,
+      "sha256": "66ade255cfab5404cab8547baa8f3a538989a31e0d4ca7242b062c2c613aea79"
+    },
+    "thetadata/client.py": {
+      "bytes": 260804,
+      "sha256": "e5e9b6bee6da5538907994d01725e8049861c85446934daa9eb3bb4db2a0989d"
+    },
+    "thetadata/errors.py": {
+      "bytes": 186,
+      "sha256": "e79a53018b3728e8a61468e3c4d900aa9abf5f0c47316f85f19ffccc5e50f715"
+    },
+    "thetadata/py.typed": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "public_python_methods": 80,
+  "python_groups": {
+    "stock": 15,
+    "option": 51,
+    "index": 10,
+    "calendar": 3,
+    "interest": 1
+  },
+  "descriptor_rpc_count": 82,
+  "server_streaming_rpcs": 82,
+  "client_streaming_rpcs": 0,
+  "rpc_without_python_wrapper": [
+    "GetCorporateActionDividend",
+    "GetCorporateActionSplit"
+  ],
+  "methods": [
+    {
+      "name": "stock_list_symbols",
+      "line": 246,
+      "rpc": "GetStockListSymbols",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "stock_list_dates",
+      "line": 269,
+      "rpc": "GetStockListDates",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "stock_snapshot_ohlc",
+      "line": 300,
+      "rpc": "GetStockSnapshotOhlc",
+      "truthiness_guarded_parameters": [
+        "min_time",
+        "venue"
+      ]
+    },
+    {
+      "name": "stock_snapshot_trade",
+      "line": 336,
+      "rpc": "GetStockSnapshotTrade",
+      "truthiness_guarded_parameters": [
+        "min_time",
+        "venue"
+      ]
+    },
+    {
+      "name": "stock_snapshot_quote",
+      "line": 371,
+      "rpc": "GetStockSnapshotQuote",
+      "truthiness_guarded_parameters": [
+        "min_time",
+        "venue"
+      ]
+    },
+    {
+      "name": "stock_snapshot_market_value",
+      "line": 406,
+      "rpc": "GetStockSnapshotMarketValue",
+      "truthiness_guarded_parameters": [
+        "min_time",
+        "venue"
+      ]
+    },
+    {
+      "name": "stock_history_eod",
+      "line": 440,
+      "rpc": "GetStockHistoryEod",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "stock_history_ohlc",
+      "line": 471,
+      "rpc": "GetStockHistoryOhlc",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "end_time",
+        "start_date",
+        "start_time",
+        "venue"
+      ]
+    },
+    {
+      "name": "stock_history_trade",
+      "line": 523,
+      "rpc": "GetStockHistoryTrade",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "end_time",
+        "start_date",
+        "start_time",
+        "venue"
+      ]
+    },
+    {
+      "name": "stock_history_quote",
+      "line": 575,
+      "rpc": "GetStockHistoryQuote",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "end_time",
+        "start_date",
+        "start_time",
+        "venue"
+      ]
+    },
+    {
+      "name": "stock_history_trade_quote",
+      "line": 627,
+      "rpc": "GetStockHistoryTradeQuote",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "end_time",
+        "exclusive",
+        "start_date",
+        "start_time",
+        "venue"
+      ]
+    },
+    {
+      "name": "stock_at_time_trade",
+      "line": 686,
+      "rpc": "GetStockAtTimeTrade",
+      "truthiness_guarded_parameters": [
+        "venue"
+      ]
+    },
+    {
+      "name": "stock_at_time_quote",
+      "line": 727,
+      "rpc": "GetStockAtTimeQuote",
+      "truthiness_guarded_parameters": [
+        "venue"
+      ]
+    },
+    {
+      "name": "option_list_symbols",
+      "line": 762,
+      "rpc": "GetOptionListSymbols",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "option_list_dates",
+      "line": 786,
+      "rpc": "GetOptionListDates",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "option_list_expirations",
+      "line": 819,
+      "rpc": "GetOptionListExpirations",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "option_list_strikes",
+      "line": 845,
+      "rpc": "GetOptionListStrikes",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "option_list_contracts",
+      "line": 876,
+      "rpc": "GetOptionListContracts",
+      "truthiness_guarded_parameters": [
+        "max_dte",
+        "symbol"
+      ]
+    },
+    {
+      "name": "option_snapshot_ohlc",
+      "line": 912,
+      "rpc": "GetOptionSnapshotOhlc",
+      "truthiness_guarded_parameters": [
+        "max_dte",
+        "min_time",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_snapshot_trade",
+      "line": 956,
+      "rpc": "GetOptionSnapshotTrade",
+      "truthiness_guarded_parameters": [
+        "min_time",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_snapshot_quote",
+      "line": 997,
+      "rpc": "GetOptionSnapshotQuote",
+      "truthiness_guarded_parameters": [
+        "max_dte",
+        "min_time",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_snapshot_open_interest",
+      "line": 1042,
+      "rpc": "GetOptionSnapshotOpenInterest",
+      "truthiness_guarded_parameters": [
+        "max_dte",
+        "min_time",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_snapshot_market_value",
+      "line": 1084,
+      "rpc": "GetOptionSnapshotMarketValue",
+      "truthiness_guarded_parameters": [
+        "max_dte",
+        "min_time",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_snapshot_greeks_implied_volatility",
+      "line": 1129,
+      "rpc": "GetOptionSnapshotGreeksImpliedVolatility",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "max_dte",
+        "min_time",
+        "rate_type",
+        "rate_value",
+        "stock_price",
+        "strike_range",
+        "use_market_value",
+        "version"
+      ]
+    },
+    {
+      "name": "option_snapshot_greeks_all",
+      "line": 1198,
+      "rpc": "GetOptionSnapshotGreeksAll",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "max_dte",
+        "min_time",
+        "rate_type",
+        "rate_value",
+        "stock_price",
+        "strike_range",
+        "use_market_value",
+        "version"
+      ]
+    },
+    {
+      "name": "option_snapshot_binomial_greeks_all",
+      "line": 1268,
+      "rpc": "GetOptionSnapshotBinomialGreeksAll",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "max_dte",
+        "min_time",
+        "rate_type",
+        "rate_value",
+        "stock_price",
+        "strike_range",
+        "use_market_value",
+        "version"
+      ]
+    },
+    {
+      "name": "option_snapshot_greeks_first_order",
+      "line": 1341,
+      "rpc": "GetOptionSnapshotGreeksFirstOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "max_dte",
+        "min_time",
+        "rate_type",
+        "rate_value",
+        "stock_price",
+        "strike_range",
+        "use_market_value",
+        "version"
+      ]
+    },
+    {
+      "name": "option_snapshot_binomial_greeks_first_order",
+      "line": 1411,
+      "rpc": "GetOptionSnapshotBinomialGreeksFirstOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "max_dte",
+        "min_time",
+        "rate_type",
+        "rate_value",
+        "stock_price",
+        "strike_range",
+        "use_market_value",
+        "version"
+      ]
+    },
+    {
+      "name": "option_snapshot_greeks_second_order",
+      "line": 1484,
+      "rpc": "GetOptionSnapshotGreeksSecondOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "max_dte",
+        "min_time",
+        "rate_type",
+        "rate_value",
+        "stock_price",
+        "strike_range",
+        "use_market_value",
+        "version"
+      ]
+    },
+    {
+      "name": "option_snapshot_binomial_greeks_second_order",
+      "line": 1554,
+      "rpc": "GetOptionSnapshotBinomialGreeksSecondOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "max_dte",
+        "min_time",
+        "rate_type",
+        "rate_value",
+        "stock_price",
+        "strike_range",
+        "use_market_value",
+        "version"
+      ]
+    },
+    {
+      "name": "option_snapshot_greeks_third_order",
+      "line": 1627,
+      "rpc": "GetOptionSnapshotGreeksThirdOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "max_dte",
+        "min_time",
+        "rate_type",
+        "rate_value",
+        "stock_price",
+        "strike_range",
+        "use_market_value",
+        "version"
+      ]
+    },
+    {
+      "name": "option_snapshot_binomial_greeks_third_order",
+      "line": 1697,
+      "rpc": "GetOptionSnapshotBinomialGreeksThirdOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "max_dte",
+        "min_time",
+        "rate_type",
+        "rate_value",
+        "stock_price",
+        "strike_range",
+        "use_market_value",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_eod",
+      "line": 1770,
+      "rpc": "GetOptionHistoryEod",
+      "truthiness_guarded_parameters": [
+        "max_dte",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_history_ohlc",
+      "line": 1814,
+      "rpc": "GetOptionHistoryOhlc",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "end_time",
+        "start_date",
+        "start_time",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_history_trade",
+      "line": 1873,
+      "rpc": "GetOptionHistoryTrade",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "start_date",
+        "start_time",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_history_quote",
+      "line": 1933,
+      "rpc": "GetOptionHistoryQuote",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "start_date",
+        "start_time",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_history_trade_quote",
+      "line": 1996,
+      "rpc": "GetOptionHistoryTradeQuote",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "end_time",
+        "exclusive",
+        "max_dte",
+        "start_date",
+        "start_time",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_history_open_interest",
+      "line": 2060,
+      "rpc": "GetOptionHistoryOpenInterest",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "max_dte",
+        "start_date",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_history_greeks_eod",
+      "line": 2112,
+      "rpc": "GetOptionHistoryGreeksEod",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "max_dte",
+        "rate_type",
+        "rate_value",
+        "strike_range",
+        "underlyer_use_nbbo",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_binomial_greeks_eod",
+      "line": 2177,
+      "rpc": "GetOptionHistoryBinomialGreeksEod",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "max_dte",
+        "rate_type",
+        "rate_value",
+        "strike_range",
+        "underlyer_use_nbbo",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_greeks_all",
+      "line": 2246,
+      "rpc": "GetOptionHistoryGreeksAll",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_binomial_greeks_all",
+      "line": 2322,
+      "rpc": "GetOptionHistoryBinomialGreeksAll",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "date",
+        "end_date",
+        "end_time",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_trade_greeks_all",
+      "line": 2401,
+      "rpc": "GetOptionHistoryTradeGreeksAll",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "perf_boost_intraday",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_binomial_trade_greeks_all",
+      "line": 2483,
+      "rpc": "GetOptionHistoryBinomialTradeGreeksAll",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "perf_boost_intraday",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_greeks_first_order",
+      "line": 2568,
+      "rpc": "GetOptionHistoryGreeksFirstOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_binomial_greeks_first_order",
+      "line": 2644,
+      "rpc": "GetOptionHistoryBinomialGreeksFirstOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "date",
+        "end_date",
+        "end_time",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_trade_greeks_first_order",
+      "line": 2723,
+      "rpc": "GetOptionHistoryTradeGreeksFirstOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "perf_boost_intraday",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_binomial_trade_greeks_first_order",
+      "line": 2805,
+      "rpc": "GetOptionHistoryBinomialTradeGreeksFirstOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "perf_boost_intraday",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_greeks_second_order",
+      "line": 2890,
+      "rpc": "GetOptionHistoryGreeksSecondOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_binomial_greeks_second_order",
+      "line": 2966,
+      "rpc": "GetOptionHistoryBinomialGreeksSecondOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "date",
+        "end_date",
+        "end_time",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_trade_greeks_second_order",
+      "line": 3045,
+      "rpc": "GetOptionHistoryTradeGreeksSecondOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "perf_boost_intraday",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_binomial_trade_greeks_second_order",
+      "line": 3127,
+      "rpc": "GetOptionHistoryBinomialTradeGreeksSecondOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "perf_boost_intraday",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_greeks_third_order",
+      "line": 3212,
+      "rpc": "GetOptionHistoryGreeksThirdOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_binomial_greeks_third_order",
+      "line": 3288,
+      "rpc": "GetOptionHistoryBinomialGreeksThirdOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "date",
+        "end_date",
+        "end_time",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_trade_greeks_third_order",
+      "line": 3367,
+      "rpc": "GetOptionHistoryTradeGreeksThirdOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "perf_boost_intraday",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_binomial_trade_greeks_third_order",
+      "line": 3449,
+      "rpc": "GetOptionHistoryBinomialTradeGreeksThirdOrder",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "binomial_steps",
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "perf_boost_intraday",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_greeks_implied_volatility",
+      "line": 3533,
+      "rpc": "GetOptionHistoryGreeksImpliedVolatility",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_history_trade_greeks_implied_volatility",
+      "line": 3607,
+      "rpc": "GetOptionHistoryTradeGreeksImpliedVolatility",
+      "truthiness_guarded_parameters": [
+        "annual_dividend",
+        "date",
+        "end_date",
+        "end_time",
+        "max_dte",
+        "perf_boost_intraday",
+        "rate_type",
+        "rate_value",
+        "start_date",
+        "start_time",
+        "strike_range",
+        "version"
+      ]
+    },
+    {
+      "name": "option_at_time_trade",
+      "line": 3688,
+      "rpc": "GetOptionAtTimeTrade",
+      "truthiness_guarded_parameters": [
+        "max_dte",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "option_at_time_quote",
+      "line": 3734,
+      "rpc": "GetOptionAtTimeQuote",
+      "truthiness_guarded_parameters": [
+        "max_dte",
+        "strike_range"
+      ]
+    },
+    {
+      "name": "index_list_symbols",
+      "line": 3778,
+      "rpc": "GetIndexListSymbols",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "index_list_dates",
+      "line": 3801,
+      "rpc": "GetIndexListDates",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "index_snapshot_ohlc",
+      "line": 3827,
+      "rpc": "GetIndexSnapshotOhlc",
+      "truthiness_guarded_parameters": [
+        "min_time"
+      ]
+    },
+    {
+      "name": "index_snapshot_price",
+      "line": 3857,
+      "rpc": "GetIndexSnapshotPrice",
+      "truthiness_guarded_parameters": [
+        "min_time"
+      ]
+    },
+    {
+      "name": "index_snapshot_market_value",
+      "line": 3887,
+      "rpc": "GetIndexSnapshotMarketValue",
+      "truthiness_guarded_parameters": [
+        "min_time"
+      ]
+    },
+    {
+      "name": "index_history_eod",
+      "line": 3916,
+      "rpc": "GetIndexHistoryEod",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "index_history_ohlc",
+      "line": 3947,
+      "rpc": "GetIndexHistoryOhlc",
+      "truthiness_guarded_parameters": [
+        "end_time",
+        "start_time"
+      ]
+    },
+    {
+      "name": "index_history_price",
+      "line": 3989,
+      "rpc": "GetIndexHistoryPrice",
+      "truthiness_guarded_parameters": [
+        "date",
+        "end_date",
+        "end_time",
+        "start_date",
+        "start_time"
+      ]
+    },
+    {
+      "name": "index_at_time_price",
+      "line": 4037,
+      "rpc": "GetIndexAtTimePrice",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "calendar_open_today",
+      "line": 4070,
+      "rpc": "GetCalendarOpenToday",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "calendar_on_date",
+      "line": 4096,
+      "rpc": "GetCalendarOnDate",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "calendar_year",
+      "line": 4124,
+      "rpc": "GetCalendarYear",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "interest_rate_history_eod",
+      "line": 4149,
+      "rpc": "GetInterestRateHistoryEod",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "option_flat_file_trade_quote",
+      "line": 4182,
+      "rpc": "GetOptionFlatFileTradeQuote",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "option_flat_file_eod",
+      "line": 4211,
+      "rpc": "GetOptionFlatFileEod",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "option_flat_file_open_interest",
+      "line": 4240,
+      "rpc": "GetOptionFlatFileOpenInterest",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "option_flat_file_quote",
+      "line": 4273,
+      "rpc": "GetOptionFlatFileQuote",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "stock_flat_file_trade_quote",
+      "line": 4302,
+      "rpc": "GetStockFlatFileTradeQuote",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "stock_flat_file_eod",
+      "line": 4331,
+      "rpc": "GetStockFlatFileEod",
+      "truthiness_guarded_parameters": []
+    },
+    {
+      "name": "index_flat_file_eod",
+      "line": 4360,
+      "rpc": "GetIndexFlatFileEod",
+      "truthiness_guarded_parameters": []
+    }
+  ],
+  "openapi": {
+    "source": "https://thetadata.net/docs/openapiv3.yaml",
+    "sha256": "f0d44363cb81e46f6aca330743495c94e6e1622e695a02893937d91cbff24350",
+    "openapi_version": "3.1.0",
+    "api_version": "3.0.0",
+    "servers": [
+      {
+        "url": "http://127.0.0.1:25503/v3",
+        "description": "dev"
+      }
+    ],
+    "path_count": 80,
+    "operation_count": 80,
+    "global_security": [],
+    "security_schemes": null,
+    "auth_named_paths": [],
+    "only_python": [],
+    "only_openapi": []
+  }
+}

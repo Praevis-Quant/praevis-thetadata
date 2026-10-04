@@ -1,0 +1,11 @@
+/target/
+/thetadata-1.0.12-py3-none-any.zip
+/thetadata-1.0.12-py3-none-any/
+*.whl
+.env
+.env.*
+!.env.example
+creds.txt
+*.credentials
+__pycache__/
+/artifacts/

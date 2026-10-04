@@ -1,0 +1,23 @@
+[package]
+name = "thetadata-client"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+thetadata-auth.workspace = true
+thetadata-core.workspace = true
+thetadata-proto.workspace = true
+prost.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tonic.workspace = true
+zstd.workspace = true
+
+[build-dependencies]
+prost.workspace = true
+prost-types.workspace = true
+heck = "0.5"
+
+[dev-dependencies]
+tokio-stream = { version = "0.1", features = ["net"] }
