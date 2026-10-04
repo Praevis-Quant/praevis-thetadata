@@ -2,6 +2,14 @@
   "schema_version": 1,
   "groups": [
     {
+      "id": "manual-live-verification",
+      "origin": "rust-enhancement",
+      "requirements": ["LIVE-L1-001", "LIVE-L2-001", "LIVE-L2-002", "LIVE-L2-003", "LIVE-L3-001", "LIVE-L3-002", "LIVE-L3-003", "LIVE-L3-004", "LIVE-L3-005", "LIVE-L3-006"],
+      "rationale": "Optional manual live verification, private response retention, differential replay and release evidence gates are local project policy.",
+      "protected_contract": "Keep live credentials and service calls out of CI; preserve explicit consent, finite query/capture scope, private provenance and independent enhancement review during upstream updates.",
+      "evidence": ["docs/requirements/live-verification.md", "docs/adr/0017-manual-live-verification.md", "docs/live-verification.md", "docs/releases.md"]
+    },
+    {
       "id": "auth-wire",
       "origin": "upstream-contract",
       "requirements": ["AUTH-L3-003"],
@@ -67,6 +75,7 @@
     }
   ],
   "adrs": [
+    {"path": "docs/adr/0017-manual-live-verification.md", "origin": "rust-enhancement", "rationale": "Explicit manual credentialed testing outside CI, private captures, replay and release evidence policy."},
     {"path": "docs/adr/0001-standalone-auth.md", "origin": "rust-enhancement", "rationale": "Independent reusable auth and application boundary."},
     {"path": "docs/adr/0002-auth-contract-and-credentials.md", "origin": "mixed", "rationale": "Observed auth wire shape plus protected Rust credential validation/discovery rules."},
     {"path": "docs/adr/0003-native-session-persistence.md", "origin": "rust-enhancement", "rationale": "Native session storage, record format and identity are local product policy."},

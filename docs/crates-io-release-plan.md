@@ -3,6 +3,12 @@
 Status: preparation plan, 2026-10-04. No packages have been published by this
 work. Keep `publish = false` until the release preparation is reviewed.
 
+The [versioned release milestones](releases.md) define scope and exit gates;
+this document supplies the alpha.1 packaging/publication work. The manual live
+capture/replay example is checkout-only and feature-gated: explicitly exclude
+it from archives or make its fixture/provenance inputs self-contained. Never
+include `artifacts/live` or credential files in a package.
+
 Publish useful, clearly experimental `0.1.0-alpha.1` packages containing the
 existing implementation and honest support boundaries. Empty name reservations
 are unnecessary for this active project. The [crates.io policy update](https://blog.rust-lang.org/2023/09/22/crates-io-usage-policy-rfc/)
