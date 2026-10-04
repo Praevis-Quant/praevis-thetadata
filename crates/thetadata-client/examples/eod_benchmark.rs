@@ -18,6 +18,7 @@ use std::{
 use thetadata_client::{BatchValue, DataBatch, EodError, NaiveDate, StockEodRequest, Timestamp};
 use thetadata_client::{ClientConfig, Error, ThetaClient};
 use thetadata_core::Table;
+use thetadata_proto::{beta_endpoints as api, endpoints as wire};
 use tokio::task::JoinSet;
 
 // Compile the production decoder directly, without adding a benchmark API or
@@ -32,6 +33,9 @@ mod decode;
 #[allow(dead_code)]
 #[path = "../src/bounded.rs"]
 mod bounded;
+#[allow(dead_code)]
+#[path = "../src/envelope.rs"]
+mod envelope;
 mod eod {
     pub use thetadata_client::EodError;
 }
@@ -48,6 +52,8 @@ enum Engine {
     Legacy,
     Table,
     Numeric,
+    TableOffload,
+    NumericOffload,
 }
 #[derive(Debug, PartialEq)]
 enum Output {
@@ -56,7 +62,7 @@ enum Output {
 }
 fn expected_output(table: &Table, engine: Engine) -> Output {
     use thetadata_core::Value;
-    if !matches!(engine, Engine::Numeric) {
+    if !matches!(engine, Engine::Numeric | Engine::NumericOffload) {
         return Output::Table(table.clone());
     }
     let cells = table
@@ -89,10 +95,10 @@ fn decode_output(
 ) -> Result<Output, Failure> {
     Ok(match engine {
         Engine::Legacy => Output::Table(decode::decode(response, LIMIT)?),
-        Engine::Table => {
+        Engine::Table | Engine::TableOffload => {
             Output::Table(bounded::decode(response, &Default::default(), None, true)?.into_table())
         }
-        Engine::Numeric => {
+        Engine::Numeric | Engine::NumericOffload => {
             Output::Numeric(bounded::decode(response, &Default::default(), None, false)?)
         }
     })
@@ -272,9 +278,10 @@ fn provenance() -> Result<Provenance, Failure> {
         ),
         client_sha256: hash(
             format!(
-                "{}{}",
+                "{}{}{}",
                 source_hash(include_bytes!("../src/lib.rs")),
-                source_hash(include_bytes!("../src/eod.rs"))
+                source_hash(include_bytes!("../src/eod.rs")),
+                source_hash(include_bytes!("../src/envelope.rs"))
             )
             .as_bytes(),
         ),
@@ -345,8 +352,10 @@ async fn delivery(
         tasks.spawn(async move {
             let mut stream = match engine {
                 Engine::Legacy => Stream::Legacy(client.stock_history_eod(support::query()).await?),
-                Engine::Table => Stream::Table(client.stock_eod(typed_request()?).await?),
-                Engine::Numeric => {
+                Engine::Table | Engine::TableOffload => {
+                    Stream::Table(client.stock_eod(typed_request()?).await?)
+                }
+                Engine::Numeric | Engine::NumericOffload => {
                     Stream::Numeric(client.stock_eod_batches(typed_request()?).await?)
                 }
             };
@@ -458,13 +467,24 @@ fn run(
                 ..Default::default()
             });
             let client = runtime.block_on(async {
-                ThetaClient::with_session(
+                ThetaClient::with_eod_policy(
                     ClientConfig {
                         endpoint: Some(fixture.endpoint.clone()),
                         allow_insecure: true,
                         ..Default::default()
                     },
                     support::session().await,
+                    thetadata_client::EodPolicy {
+                        inline_bytes: if matches!(
+                            engine,
+                            Engine::TableOffload | Engine::NumericOffload
+                        ) {
+                            0
+                        } else {
+                            4096
+                        },
+                        ..Default::default()
+                    },
                 )
                 .await
             })?;
@@ -719,5 +739,58 @@ mod tests {
         drop(buffer);
         let (_, counts) = allocation::probe(|| ());
         assert_eq!(counts.live_bytes, 0);
+    }
+
+    #[test]
+    fn short_string_capacity_is_bounded_and_rejection_precedes_materialization() {
+        use wire::{DataTable, DataValue, DataValueList, data_value::DataType};
+        let wire = DataTable {
+            headers: vec!["h".into()],
+            data_table: vec![
+                DataValueList {
+                    values: vec![DataValue {
+                        data_type: Some(DataType::Text("x".into()))
+                    }]
+                };
+                1000
+            ],
+        };
+        let response = support::response(&wire, false);
+        for table in [false, true] {
+            let (_, counts) = allocation::probe(|| {
+                let batch =
+                    bounded::decode(response.clone(), &Default::default(), None, table).unwrap();
+                if table {
+                    drop(batch.into_table());
+                } else {
+                    drop(batch);
+                }
+            });
+            let limits = bounded::DecodeLimits {
+                allocated_bytes: counts.peak_live_bytes - 1,
+                ..Default::default()
+            };
+            let (result, rejected) =
+                allocation::probe(|| bounded::decode(response.clone(), &limits, None, table));
+            assert_eq!(result.unwrap_err(), EodError::Resource("allocation bytes"));
+            assert_eq!(
+                rejected.allocation_calls, 1,
+                "only the owned input clone may allocate"
+            );
+            assert!(!rejected.invalid_scope);
+        }
+    }
+
+    #[test]
+    fn manifest_rejection_allocates_only_the_owned_input_frame() {
+        let mut bytes = vec![34];
+        prost::encoding::encode_varint(20000, &mut bytes);
+        bytes.extend(std::iter::repeat_n([10, 0], 10000).flatten());
+        let (result, counts) =
+            allocation::probe(|| envelope::parse(bytes.clone(), &Default::default()));
+        assert_eq!(result.unwrap_err(), EodError::Unsupported);
+        assert_eq!(counts.allocation_calls, 1);
+        assert_eq!(counts.peak_live_bytes, bytes.len());
+        assert!(!counts.invalid_scope);
     }
 }

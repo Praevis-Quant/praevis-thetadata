@@ -220,3 +220,77 @@ async fn schema_empty_partial_not_found_and_idle_classification() {
     assert_eq!(stream.next_batch().await.unwrap_err(), EodError::Idle);
     assert!(stream.next_batch().await.unwrap().is_none());
 }
+
+#[tokio::test]
+async fn initial_headers_and_empty_trickle_obey_whole_query_deadline() {
+    let fixture = Fixture::start(Script {
+        header_delay: Duration::from_secs(1),
+        ..Default::default()
+    });
+    let client = client(&fixture, EodPolicy::default(), Duration::from_millis(30)).await;
+    assert_eq!(
+        client.stock_eod_batches(request()).await.err().unwrap(),
+        EodError::Deadline
+    );
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(support::response(&Default::default(), false)); 100],
+        message_delay: Duration::from_millis(2),
+        ..Default::default()
+    });
+    let mut stream = self::client(&fixture, EodPolicy::default(), Duration::from_millis(100))
+        .await
+        .stock_eod_batches(request())
+        .await
+        .unwrap();
+    assert_eq!(stream.next_batch().await.unwrap_err(), EodError::Deadline);
+    assert!(stream.next_batch().await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn invalid_policy_and_duration_fail_before_connecting() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let session = support::session().await;
+    for (policy, request_timeout) in [
+        (
+            EodPolicy {
+                inline_bytes: 4097,
+                ..Default::default()
+            },
+            Duration::from_secs(5),
+        ),
+        (
+            EodPolicy {
+                concurrent_jobs: 0,
+                ..Default::default()
+            },
+            Duration::from_secs(5),
+        ),
+        (
+            EodPolicy {
+                shared_bytes: 1,
+                ..Default::default()
+            },
+            Duration::from_secs(5),
+        ),
+        (EodPolicy::default(), Duration::ZERO),
+        (EodPolicy::default(), Duration::MAX),
+    ] {
+        let result = ThetaClient::with_eod_policy(
+            ClientConfig {
+                endpoint: Some(format!("http://{}", listener.local_addr().unwrap())),
+                allow_insecure: true,
+                request_timeout,
+                ..Default::default()
+            },
+            session.clone(),
+            policy,
+        )
+        .await;
+        assert_eq!(result.err().unwrap(), EodError::Configuration);
+    }
+    assert!(
+        tokio::time::timeout(Duration::from_millis(20), listener.accept())
+            .await
+            .is_err()
+    );
+}

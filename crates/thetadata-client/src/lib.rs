@@ -1,7 +1,14 @@
 //! Async batch streaming for ThetaData's direct gRPC API.
 mod bounded;
 mod decode;
+mod envelope;
 mod eod;
+#[cfg(test)]
+extern crate self as thetadata_client;
+#[cfg(test)]
+#[allow(dead_code)]
+#[path = "../tests/support/mod.rs"]
+mod test_fixture;
 pub use eod::{
     DecodeLimits, EodBatchStream, EodError, EodPolicy, EodTableStream, NaiveDate, StockEodRequest,
 };
@@ -78,6 +85,7 @@ impl Default for ClientConfig {
 
 #[derive(Clone)]
 pub struct ThetaClient {
+    channel: Channel,
     stub: api::beta_theta_terminal_client::BetaThetaTerminalClient<Channel>,
     session: Session,
     config: ClientConfig,
@@ -118,9 +126,10 @@ impl ThetaClient {
             }
         }
         let channel = endpoint.connect().await?;
-        let stub = api::beta_theta_terminal_client::BetaThetaTerminalClient::new(channel)
+        let stub = api::beta_theta_terminal_client::BetaThetaTerminalClient::new(channel.clone())
             .max_decoding_message_size(config.max_batch_bytes + 1024);
         Ok(Self {
+            channel,
             stub,
             session,
             config,

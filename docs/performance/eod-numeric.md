@@ -4,6 +4,9 @@ Status: implemented experiment; full EOD acceptance remains open. No live vendor
 traffic or account is required. Raw helpers still use the retained decoder.
 The [Windows/Linux results](eod-numeric-results.md) retain both gains and
 regressions, raw-report/binary hashes and the final measured source revision.
+The subsequent [resource audit](eod-resource-audit.md) supersedes the initial
+envelope/accounting/admission and always-offload policy described below. This
+document retains the first experiment's design and measurement context.
 
 ## Design and provisional policy
 

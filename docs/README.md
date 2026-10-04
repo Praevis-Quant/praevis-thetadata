@@ -34,6 +34,7 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Initial EOD measurements](performance/eod-results.md) | Repeated Windows/WSL baseline, variability, allocation evidence and artifact hashes |
 | [Bounded numeric EOD experiment](performance/eod-numeric.md) | Implementation, provisional budgets, common-harness comparisons and acceptance gaps |
 | [Numeric EOD results](performance/eod-numeric-results.md) | Windows/Linux legacy, Table and numeric comparisons, regressions and retained hashes |
+| [EOD resource audit](performance/eod-resource-audit.md) | Envelope preflight, capacity accounting, admission partition, running cancellation and bounded inline work |
 | [Roadmap](ROADMAP.md) | Forward-looking candidates and the preserved original review |
 | [crates.io release plan](crates-io-release-plan.md) | Useful prereleases, name checks, credential verification limits and packaging gates |
 | [Upstream compatibility monitor](upstream-monitor.md) | Scheduled PyPI version comparison and baseline policy |

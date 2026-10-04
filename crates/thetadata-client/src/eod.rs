@@ -1,6 +1,6 @@
 //! Typed stock EOD pull streams. Raw generated helpers retain their original API.
 pub use crate::bounded::DecodeLimits;
-use crate::{ClientConfig, ThetaClient, api, bounded, wire};
+use crate::{ClientConfig, ThetaClient, api, bounded, envelope, wire};
 use chrono::Datelike;
 pub use chrono::NaiveDate;
 use std::{sync::Arc, time::Duration};
@@ -86,6 +86,9 @@ pub struct EodPolicy {
     pub decode: DecodeLimits,
     pub concurrent_jobs: usize,
     pub shared_bytes: usize,
+    /// Actual uncompressed envelope bytes eligible for inline work. 0 forces
+    /// offload; capped at 4096. ZSTD always uses a bounded worker.
+    pub inline_bytes: usize,
 }
 impl Default for EodPolicy {
     fn default() -> Self {
@@ -93,13 +96,22 @@ impl Default for EodPolicy {
             decode: DecodeLimits::default(),
             concurrent_jobs: 2,
             shared_bytes: 512 << 20,
+            inline_bytes: 4096,
         }
     }
 }
 pub(crate) struct Pool {
     policy: EodPolicy,
     jobs: Arc<Semaphore>,
-    memory: Arc<Semaphore>,
+    schemas: Arc<Semaphore>,
+    #[cfg(test)]
+    gate: std::sync::Mutex<Option<Arc<tests::Gate>>>,
+}
+fn units(bytes: usize) -> Result<usize, EodError> {
+    bytes
+        .checked_add(1023)
+        .map(|n| n / 1024)
+        .ok_or(EodError::Configuration)
 }
 impl Pool {
     pub(crate) fn new(policy: EodPolicy) -> Result<Arc<Self>, EodError> {
@@ -107,21 +119,27 @@ impl Pool {
             .decode
             .validate()
             .map_err(|_| EodError::Configuration)?;
+        let total = policy.shared_bytes / 1024;
+        let batch = units(policy.decode.allocated_bytes)?;
+        let schema = units(policy.decode.schema_bytes()?)?;
         if policy.concurrent_jobs == 0
             || policy.concurrent_jobs > 64
-            || policy.shared_bytes > u32::MAX as usize
-            || policy.shared_bytes > Semaphore::MAX_PERMITS
-            || policy
-                .decode
-                .allocated_bytes
-                .checked_add(policy.decode.schema_bytes()?)
-                .is_none_or(|minimum| minimum > policy.shared_bytes)
+            || policy.inline_bytes > 4096
+            || total > u32::MAX as usize
+            || total > Semaphore::MAX_PERMITS
+            || batch.checked_add(schema).is_none_or(|n| n > total)
         {
             return Err(EodError::Configuration);
         }
+        // Partition the shared budget so idle schema leases cannot consume the
+        // last batch reservation and deadlock all streams. Round leases up and
+        // the total down to KiB; this also avoids byte-permit limits on 32-bit.
+        let jobs = policy.concurrent_jobs.min((total - schema) / batch);
         Ok(Arc::new(Self {
-            jobs: Arc::new(Semaphore::new(policy.concurrent_jobs)),
-            memory: Arc::new(Semaphore::new(policy.shared_bytes)),
+            jobs: Arc::new(Semaphore::new(jobs)),
+            schemas: Arc::new(Semaphore::new(total - jobs * batch)),
+            #[cfg(test)]
+            gate: std::sync::Mutex::new(None),
             policy,
         }))
     }
@@ -196,9 +214,9 @@ impl ThetaClient {
         let pool = self.eod_pool.clone();
         let schema_lease = timeout_at(
             deadline,
-            pool.memory
+            pool.schemas
                 .clone()
-                .acquire_many_owned(pool.policy.decode.schema_bytes()? as u32),
+                .acquire_many_owned(units(pool.policy.decode.schema_bytes()?)? as u32),
         )
         .await
         .map_err(|_| EodError::Deadline)?
@@ -208,16 +226,26 @@ impl ThetaClient {
             params: Some(request.wire()),
         });
         request.set_timeout(deadline.saturating_duration_since(Instant::now()));
-        let mut stub = self
-            .stub
-            .clone()
+        let mut stub = tonic::client::Grpc::new(self.channel.clone())
             .max_decoding_message_size(pool.policy.decode.encoded_bytes + 1024);
         check_deadline(deadline)?;
-        let response = timeout_at(deadline, stub.get_stock_history_eod(request))
+        let response = timeout_at(deadline, async {
+            stub.ready().await.map_err(|_| EodError::Connection)?;
+            check_deadline(deadline)?;
+            stub.server_streaming(
+                request,
+                tonic::codegen::http::uri::PathAndQuery::from_static(
+                    "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryEod",
+                ),
+                envelope::EnvelopeCodec,
+            )
             .await
-            .map_err(|_| EodError::Deadline)?;
+            .map_err(status)
+        })
+        .await
+        .map_err(|_| EodError::Deadline)?;
         check_deadline(deadline)?;
-        let inner = response.map_err(status)?.into_inner();
+        let inner = response?.into_inner();
         Ok(EodBatchStream {
             inner: Some(inner),
             pool,
@@ -235,6 +263,18 @@ enum Output {
     Batch(DataBatch),
     Table(Table),
 }
+enum Input {
+    Frame(Vec<u8>),
+    Parsed(wire::ResponseData),
+}
+impl Input {
+    fn response(self, limits: &DecodeLimits) -> Result<wire::ResponseData, EodError> {
+        match self {
+            Self::Frame(bytes) => envelope::parse(bytes, limits),
+            Self::Parsed(response) => Ok(response),
+        }
+    }
+}
 fn check_deadline(deadline: Instant) -> Result<(), EodError> {
     if Instant::now() >= deadline {
         Err(EodError::Deadline)
@@ -243,7 +283,7 @@ fn check_deadline(deadline: Instant) -> Result<(), EodError> {
     }
 }
 pub struct EodBatchStream {
-    inner: Option<tonic::Streaming<wire::ResponseData>>,
+    inner: Option<tonic::Streaming<Vec<u8>>>,
     pool: Arc<Pool>,
     deadline: Instant,
     idle: Duration,
@@ -287,15 +327,8 @@ impl EodBatchStream {
                 if Instant::now() >= self.deadline {
                     return Err(EodError::Deadline);
                 }
-                // Admit before receiving/allocating a ResponseData. Blocking jobs
-                // retain both permits even when their JoinHandle is abandoned.
-                let memory = self
-                    .pool
-                    .memory
-                    .clone()
-                    .acquire_many_owned(self.pool.policy.decode.allocated_bytes as u32)
-                    .await
-                    .map_err(|_| EodError::Cancelled)?;
+                // Each slot reserves the per-batch allocation ceiling. Acquire
+                // it before the codec allocates the owned envelope frame.
                 let job = self
                     .pool
                     .jobs
@@ -326,27 +359,53 @@ impl EodBatchStream {
                 let schema = self.schema.clone();
                 let schema_lease = self.schema_lease.clone();
                 let table = self.table;
-                let (output, headers, _memory, _job, _schema_lease) =
-                    tokio::task::spawn_blocking(move || {
-                        let batch = bounded::decode(response, &limits, schema, table);
-                        let headers = batch.as_ref().ok().map(|b| b.headers().clone());
-                        let output = batch.map(|batch| {
-                            if table {
-                                Output::Table(batch.into_table())
-                            } else {
-                                Output::Batch(batch)
-                            }
-                        });
-                        (output, headers, memory, job, schema_lease)
-                    })
-                    .await
-                    .map_err(|_| EodError::Decode)?;
+                let (input, inline) = if response.len() <= self.pool.policy.inline_bytes {
+                    let response = envelope::parse(response, &limits)?;
+                    let inline = response
+                        .compression_description
+                        .as_ref()
+                        .is_none_or(|d| d.algo == 0);
+                    (Input::Parsed(response), inline)
+                } else {
+                    (Input::Frame(response), false)
+                };
+                #[cfg(test)]
+                let gate = self.pool.gate.lock().unwrap().clone();
+                let work = move || {
+                    #[cfg(test)]
+                    if let Some(gate) = gate {
+                        gate.wait();
+                    }
+                    let batch = input
+                        .response(&limits)
+                        .and_then(|response| bounded::decode(response, &limits, schema, table));
+                    let headers = batch.as_ref().ok().map(|b| b.headers().clone());
+                    let output = batch.map(|batch| {
+                        if table {
+                            Output::Table(batch.into_table())
+                        } else {
+                            Output::Batch(batch)
+                        }
+                    });
+                    (output, headers, job, schema_lease)
+                };
+                let (output, headers, _job, _schema_lease) = if inline {
+                    work()
+                } else {
+                    tokio::task::spawn_blocking(work)
+                        .await
+                        .map_err(|_| EodError::Decode)?
+                };
                 if Instant::now() >= self.deadline {
                     return Err(EodError::Deadline);
                 }
                 let output = output?;
                 let headers = headers.unwrap();
                 if headers.is_empty() {
+                    // An already-buffered sequence of tiny empty responses must
+                    // not monopolize an executor when the inline path is used.
+                    drop((output, _job, _schema_lease));
+                    tokio::task::yield_now().await;
                     continue;
                 }
                 if self.schema.is_none() {
@@ -382,5 +441,178 @@ impl EodTableStream {
             None => Ok(None),
             _ => unreachable!(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_fixture as fixture;
+    use std::sync::{Condvar, Mutex};
+
+    pub(super) struct Gate {
+        entered: Semaphore,
+        released: Mutex<bool>,
+        changed: Condvar,
+    }
+    impl Gate {
+        fn new() -> Arc<Self> {
+            Arc::new(Self {
+                entered: Semaphore::new(0),
+                released: Mutex::new(false),
+                changed: Condvar::new(),
+            })
+        }
+        pub(super) fn wait(&self) {
+            self.entered.add_permits(1);
+            let mut ready = self.released.lock().unwrap();
+            while !*ready {
+                ready = self.changed.wait(ready).unwrap();
+            }
+        }
+        fn release(&self) {
+            *self.released.lock().unwrap() = true;
+            self.changed.notify_all();
+        }
+    }
+    struct Release(Arc<Gate>);
+    impl Drop for Release {
+        fn drop(&mut self) {
+            self.0.release();
+        }
+    }
+    fn request() -> StockEodRequest {
+        StockEodRequest::new(
+            "SYNTHETIC",
+            NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 1, 16).unwrap(),
+        )
+        .unwrap()
+    }
+    async fn client(server: &fixture::Fixture, deadline: Duration) -> ThetaClient {
+        ThetaClient::with_eod_policy(
+            ClientConfig {
+                endpoint: Some(server.endpoint.clone()),
+                allow_insecure: true,
+                request_timeout: deadline,
+                ..Default::default()
+            },
+            fixture::session().await,
+            EodPolicy {
+                concurrent_jobs: 1,
+                inline_bytes: 0,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap()
+    }
+    #[tokio::test]
+    async fn cancelled_running_work_retains_budget_and_queued_clones_cannot_oversubscribe() {
+        let wire = fixture::table(fixture::Shape::Mixed, 1).0;
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire, false))],
+            ..Default::default()
+        });
+        let client = client(&server, Duration::from_secs(10)).await;
+        let pool = client.eod_pool.clone();
+        let schema_capacity = pool.schemas.available_permits();
+        let gate = Gate::new();
+        let release = Release(gate.clone());
+        *pool.gate.lock().unwrap() = Some(gate.clone());
+        let mut stream = client.stock_eod_batches(request()).await.unwrap();
+        let mut pending = Box::pin(stream.next_batch());
+        tokio::select! {
+            permit = gate.entered.acquire() => permit.unwrap().forget(),
+            result = &mut pending => panic!("worker did not block: {result:?}"),
+        }
+        drop(pending);
+        assert_eq!(stream.next_batch().await.unwrap_err(), EodError::Cancelled);
+        assert_eq!(pool.jobs.available_permits(), 0);
+        assert!(pool.schemas.available_permits() < schema_capacity);
+        let clone = client.clone();
+        assert!(Arc::ptr_eq(&pool, &clone.eod_pool));
+        let mut queued = clone.stock_eod_batches(request()).await.unwrap();
+        assert!(
+            tokio::time::timeout(Duration::from_millis(20), queued.next_batch())
+                .await
+                .is_err()
+        );
+        assert_eq!(queued.next_batch().await.unwrap_err(), EodError::Cancelled);
+        assert_eq!(pool.jobs.available_permits(), 0);
+        drop(release);
+        let permit =
+            tokio::time::timeout(Duration::from_secs(5), pool.jobs.clone().acquire_owned())
+                .await
+                .unwrap()
+                .unwrap();
+        drop(permit);
+        // The worker has finished and its abandoned output/leases are dropped.
+        for _ in 0..100 {
+            if pool.schemas.available_permits() == schema_capacity {
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(pool.schemas.available_permits(), schema_capacity);
+        assert_eq!(pool.jobs.available_permits(), 1);
+    }
+    #[tokio::test]
+    async fn deadline_during_active_decode_retains_reservation_until_worker_exit() {
+        let wire = fixture::table(fixture::Shape::Nulls, 1).0;
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire, false))],
+            ..Default::default()
+        });
+        let client = client(&server, Duration::from_millis(250)).await;
+        let pool = client.eod_pool.clone();
+        let gate = Gate::new();
+        let release = Release(gate.clone());
+        *pool.gate.lock().unwrap() = Some(gate.clone());
+        let mut stream = client.stock_eod_batches(request()).await.unwrap();
+        let mut pending = Box::pin(stream.next_batch());
+        tokio::select! { permit = gate.entered.acquire() => permit.unwrap().forget(), result = &mut pending => panic!("worker did not start: {result:?}") }
+        assert_eq!(pending.await.unwrap_err(), EodError::Deadline);
+        assert_eq!(pool.jobs.available_permits(), 0);
+        assert!(stream.next_batch().await.unwrap().is_none());
+        drop(release);
+        let permit =
+            tokio::time::timeout(Duration::from_secs(5), pool.jobs.clone().acquire_owned())
+                .await
+                .unwrap()
+                .unwrap();
+        drop(permit);
+        assert_eq!(pool.jobs.available_permits(), 1);
+    }
+    #[tokio::test]
+    async fn schema_partition_cannot_consume_last_batch_slot() {
+        let limits = DecodeLimits::default();
+        let batch = units(limits.allocated_bytes).unwrap();
+        let schema = units(limits.schema_bytes().unwrap()).unwrap();
+        let pool = Pool::new(EodPolicy {
+            shared_bytes: (batch + schema) * 1024,
+            ..Default::default()
+        })
+        .unwrap();
+        let schema_lease = pool
+            .schemas
+            .clone()
+            .acquire_many_owned(schema as u32)
+            .await
+            .unwrap();
+        assert_eq!(pool.schemas.available_permits(), 0);
+        let job = pool.jobs.clone().try_acquire_owned().unwrap();
+        assert!(pool.jobs.clone().try_acquire_owned().is_err());
+        assert!(pool.schemas.clone().try_acquire_owned().is_err());
+        drop((job, schema_lease));
+        assert_eq!(pool.jobs.available_permits(), 1);
+        assert_eq!(pool.schemas.available_permits(), schema);
+        assert!(
+            Pool::new(EodPolicy {
+                shared_bytes: (batch + schema) * 1024 - 1,
+                ..Default::default()
+            })
+            .is_err()
+        );
     }
 }

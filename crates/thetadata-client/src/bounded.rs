@@ -59,7 +59,7 @@ impl DecodeLimits {
             .schema_bytes()?
             .checked_add(self.encoded_bytes)
             .is_none()
-            || self.allocated_bytes < self.encoded_bytes
+            || self.allocated_bytes < self.encoded_bytes + 1024
             || self.allocated_bytes < self.decompressed_bytes
             || self.zstd_workspace()? > self.allocated_bytes
         {
@@ -200,26 +200,26 @@ pub(crate) fn decode(
         .compression_description
         .map(|d| d.algo)
         .unwrap_or(0);
+    let input_bytes = response.compressed_data;
     let bytes = match algo {
         0 => {
             bound(
-                response.compressed_data.len(),
+                input_bytes.len(),
                 limits.decompressed_bytes,
                 "decompressed bytes",
             )?;
-            response.compressed_data
+            input_bytes
         }
         1 => {
             let workspace = limits.zstd_workspace()?;
-            let input = response.compressed_data.capacity();
+            let input = input_bytes.capacity();
             bound(
                 add(input, workspace)?,
                 limits.allocated_bytes,
                 "allocation bytes",
             )?;
-            let mut decoder =
-                zstd::stream::read::Decoder::with_buffer(response.compressed_data.as_slice())
-                    .map_err(|_| EodError::Decode)?;
+            let mut decoder = zstd::stream::read::Decoder::with_buffer(input_bytes.as_slice())
+                .map_err(|_| EodError::Decode)?;
             decoder
                 .window_log_max(limits.zstd_window_log)
                 .map_err(|_| EodError::Decode)?;
@@ -248,6 +248,8 @@ pub(crate) fn decode(
                 }
                 output.extend_from_slice(&chunk[..n]);
             }
+            drop(decoder);
+            drop(input_bytes);
             output
         }
         _ => return Err(EodError::Unsupported),
@@ -256,10 +258,12 @@ pub(crate) fn decode(
     // Text retained in output cannot exceed wire length. Prost decodes only one
     // bounded cell at a time. Header Arc conversion/duplicate sorting and Table
     // conversion get conservative simultaneous-live allowances.
-    let mut memory = add(bytes.capacity(), bytes.len())?;
-    memory = add(memory, mul(shape.cells, size_of::<BatchValue>())?)?;
+    let mut memory = add(bytes.capacity(), mul(bytes.len(), 2)?)?;
+    // Prost's String backing Vec grows geometrically with a minimum allocation
+    // of eight bytes, even for one-byte strings. Length alone undercounts it.
+    memory = add(memory, mul(shape.cells, add(size_of::<BatchValue>(), 8)?)?)?;
     memory = add(memory, mul(shape.headers, 80)?)?;
-    memory = add(memory, mul(shape.max_cell, 2)?)?;
+    memory = add(memory, add(mul(shape.max_cell, 4)?, 16)?)?;
     if table {
         memory = add(memory, mul(shape.cells, add(size_of::<Value>(), 64)?)?)?;
         memory = add(memory, mul(shape.rows, size_of::<Vec<Value>>())?)?;
