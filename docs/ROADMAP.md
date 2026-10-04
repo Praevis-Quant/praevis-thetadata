@@ -2,7 +2,7 @@
 
 This is a forward-looking work list, not a changelog. Recommendations become requirements when selected for implementation; their inclusion here does not approve the entire market-data scope.
 
-The next round is implementing the stock EOD slice's [defined L1/L2/L3 requirements](requirements/L1-stock-eod.md) from [proposed ADRs 0007-0012](adr/README.md), [the detailed Python research](research/thetadata-1.0.12.md#deep-analysis-2026-10-04), and [coverage matrix](research/python-1.0.12-catalog.md). Start with the Rust-native fixtures and decoder baseline needed to close the [resource-policy measurement gate](requirements/stock-eod-evidence.md). Performance recommendations **#1, #3, and #6** now inform this slice's resource and verification contracts; **#4 and #5** remain later candidates. The original review remains verbatim as source material; implementation evidence belongs in the requirements and performance documentation.
+The next round is implementing the stock EOD slice's [defined L1/L2/L3 requirements](requirements/L1-stock-eod.md) and [performance-first contracts](requirements/performance.md) from [proposed ADRs 0007-0016](adr/README.md), [the detailed Python research](research/thetadata-1.0.12.md#deep-analysis-2026-10-04), and [coverage matrix](research/python-1.0.12-catalog.md). Start with the Rust-native fixtures and decoder baseline needed to close the [resource-policy measurement gate](requirements/stock-eod-evidence.md). Recommendations **#1, #3, and #6** inform resource/verification contracts; **#4** informs additive numeric delivery, and **#5** requires measured buffer-reuse evaluation. The original review remains verbatim as source material; implementation evidence belongs in the requirements and performance documentation.
 
 ## Next round: implement and verify stock EOD
 
@@ -12,9 +12,50 @@ Verify validation/wire mapping, exact values, session use, stream/schema/empty-r
 
 Extend the coverage matrix from each selected inventory item to its ADR, requirements, implementation, and verification without dropping unselected items. Preserve source hashes and earlier research, reconcile new findings, and retain explicit planned/supported/excluded/unresolved dispositions. Close session lifecycle/identity questions before unattended use; establish separate evidence and designs for flat files, corporate actions, and real-time subscriptions. Do not turn unverified findings into requirements or claim live behavior from artifact coverage alone.
 
+## Performance-first library architecture and enhancements
+
+Implement [ADRs 0013-0016](adr/README.md) and the [ARCH](requirements/architecture.md),
+[PERF](requirements/performance.md), and [EXT](requirements/enhancements.md)
+contracts alongside the EOD slice. Performance is the leading optimization
+objective within correctness, security and bounded-resource/lifecycle contracts.
+Start with Rust-native decoder-to-consumer baseline measurements, then select
+finite limits, numeric DataBatch layout and bounded scheduling. Keep formatted
+Table output as an explicit compatibility adapter. Evaluate capped buffer/schema
+reuse from original recommendations #4/#5 under these measurement gates.
+
+Keep the current crate structure while separating internal responsibilities;
+make native storage optional for library consumers and explicitly enabled by
+the CLI. Use the [architecture review](research/architecture-performance-review.md)
+to assess dependency costs before extracting further crates. Define optional
+local filtering/projection after the unfiltered numeric path is verified;
+preserve source validation and lifecycle semantics and benchmark adapter bypass.
+Explore bounded aggregation/windowing, export adapters and caching only with
+separate consumer requirements, state budgets and provenance/invalidation rules.
+
+## Future Python interface through PyO3
+
+Create a separate PyO3 binding project/package after the Rust contracts and
+performance baseline stabilize. Expose the selected auth, query, value/batch and
+transform interfaces through reusable Rust APIs; core/auth/client must not depend
+on Python. Design batch ownership/lifetimes, async runtime integration,
+cancellation/errors, interpreter detachment/free-threading support, packaging
+and supported Python/platform versions when this scope is selected. Benchmark
+Python transfer separately from Rust delivery; avoid default per-row Python
+callbacks and unnecessary object conversion. Evaluate Arrow/buffer interchange
+as options with explicit copy/lifetime evidence, not an assumed zero-copy promise.
+Add binding ADRs/requirements and enhancement-origin records before implementation.
+
 ## Respond to upstream compatibility changes
 
 For each newer stable release detected by [the scheduled PyPI monitor](upstream-monitor.md), research the versioned source artifacts and assess compatibility before updating the tracked Python baseline. Keep that baseline separate from the Rust crate version; a failed check initiates research and requirements review, not an automatic baseline bump.
+
+Use the [upgrade impact template](upstream-update-template.md) and exhaustive
+[origin register](requirements/origins.md). Reconcile upstream contracts and
+Rust enhancements independently; preserve exact values, native-store/lifecycle
+policy, numeric delivery, filtering and performance/bounds through adapter
+changes. Run separate compatibility/enhancement checks and relevant before/after
+measurements. A conflicting upstream change needs an explicit migration ADR,
+not silent removal or reinterpretation of local functionality.
 
 ## Native Rust development tooling
 

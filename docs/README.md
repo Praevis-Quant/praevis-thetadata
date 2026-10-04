@@ -13,6 +13,12 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Stock EOD L2](requirements/L2-stock-eod.md) | Typed requests, values, streams, bounds, and verification |
 | [Stock EOD L3](requirements/L3-stock-eod.md) | Component owners and explicit acceptance contracts |
 | [Stock EOD evidence and gates](requirements/stock-eod-evidence.md) | Source trace, Python deviations, measurement gate, and unverified vendor semantics |
+| [Architecture review](research/architecture-performance-review.md) | Crate assessment, Fowler/ports-adapters, Twelve-Factor applicability and performance findings |
+| [Architecture requirements](requirements/architecture.md) | ARCH L1/L2/L3: dependency boundaries and optional adapters |
+| [Performance requirements](requirements/performance.md) | PERF L1/L2/L3: numeric fast path, consumer metrics and measured acceptance |
+| [Enhancement requirements](requirements/enhancements.md) | EXT L1/L2/L3: protected local contracts and optional filtering/projection |
+| [Contract origin register](requirements/origins.md) | Exhaustive upstream/enhancement/mixed classification, separate from status |
+| [Upstream update template](upstream-update-template.md) | Compatibility and enhancement impact, tests and performance reconciliation |
 | [Architecture decisions](adr/README.md) | Decisions, alternatives, and consequences |
 | [First market-data slice](adr/0007-first-market-data-slice.md) | Proposed stock EOD design; ADRs 0007-0012 link to defined requirements, implementation pending |
 | [Vendor research](research/thetadata-1.0.12.md) | Evidence, contradictions, discoveries, and unanswered questions |
@@ -47,3 +53,10 @@ including future component requirements directories. Canonical table rows start
 with a bare ID; L2/L3 rows put parents in the second cell. Reference tables use
 links or prose rather than duplicate defining rows. These structural checks do
 not validate that tests passed or that evidence supports a behavior claim.
+
+ARCH/PERF/EXT add 36 proposed requirements across all three levels, initially
+kept central because they span components. Each has a classified origin,
+owner and planned verification. Every canonical requirement and numbered ADR
+must appear exactly once in the origin register. Classification checks do not
+prove runtime noninterference or measured speedups. ADR-0014 defines the additive
+numeric-batch API; the EOD Table representation remains a compatibility adapter.

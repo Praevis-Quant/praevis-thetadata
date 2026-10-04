@@ -6,6 +6,11 @@ Requirements: [EOD-L1-002](../requirements/L1-stock-eod.md),
 [EOD-L3-006 through EOD-L3-012](../requirements/L3-stock-eod.md).
 Defined contracts, implementation/acceptance planned.
 
+Additive follow-up: [ADR-0014](0014-performance-first-data-path.md) defines a
+numeric batch interface and an explicit Table conversion adapter. The Table
+contract below is retained; it does not require eager formatting on the new
+numeric path. See [PERF-L3-002/003](../requirements/performance.md).
+
 ## Context
 
 Python accumulates every batch into a dataframe, multiplies prices into
