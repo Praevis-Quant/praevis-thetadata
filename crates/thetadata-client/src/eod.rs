@@ -212,11 +212,12 @@ impl ThetaClient {
             .stub
             .clone()
             .max_decoding_message_size(pool.policy.decode.encoded_bytes + 1024);
-        let inner = timeout_at(deadline, stub.get_stock_history_eod(request))
+        check_deadline(deadline)?;
+        let response = timeout_at(deadline, stub.get_stock_history_eod(request))
             .await
-            .map_err(|_| EodError::Deadline)?
-            .map_err(status)?
-            .into_inner();
+            .map_err(|_| EodError::Deadline)?;
+        check_deadline(deadline)?;
+        let inner = response.map_err(status)?.into_inner();
         Ok(EodBatchStream {
             inner: Some(inner),
             pool,
@@ -233,6 +234,13 @@ impl ThetaClient {
 enum Output {
     Batch(DataBatch),
     Table(Table),
+}
+fn check_deadline(deadline: Instant) -> Result<(), EodError> {
+    if Instant::now() >= deadline {
+        Err(EodError::Deadline)
+    } else {
+        Ok(())
+    }
 }
 pub struct EodBatchStream {
     inner: Option<tonic::Streaming<wire::ResponseData>>,
@@ -295,6 +303,7 @@ impl EodBatchStream {
                     .acquire_owned()
                     .await
                     .map_err(|_| EodError::Cancelled)?;
+                check_deadline(self.deadline)?;
                 let idle_deadline = Instant::now()
                     .checked_add(self.idle)
                     .ok_or(EodError::Configuration)?
@@ -312,6 +321,7 @@ impl EodBatchStream {
                 let Some(response) = response else {
                     return Ok(None);
                 };
+                check_deadline(self.deadline)?;
                 let limits = self.pool.policy.decode.clone();
                 let schema = self.schema.clone();
                 let schema_lease = self.schema_lease.clone();
@@ -347,6 +357,9 @@ impl EodBatchStream {
         })
         .await
         .unwrap_or(Err(EodError::Deadline));
+        // timeout_at polls a ready inner future before its timer. Preserve local
+        // deadline priority even for ready EOF/status at the expiration boundary.
+        let result = check_deadline(self.deadline).and(result);
         match &result {
             Ok(Some(_)) => self.inner = Some(inner),
             _ => self.finish(),
