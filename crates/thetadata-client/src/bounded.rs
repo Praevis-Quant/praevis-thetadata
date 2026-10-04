@@ -188,63 +188,6 @@ fn preflight(mut bytes: &[u8], limits: &DecodeLimits) -> Result<Shape, EodError>
     Ok(shape)
 }
 
-// Keep the ZSTD state machine and 64 KiB scratch buffer out of the shared
-// preflight/materialization function, including its uncompressed hot path.
-#[inline(never)]
-fn decompress(input_bytes: Vec<u8>, limits: &DecodeLimits) -> Result<Vec<u8>, EodError> {
-    let workspace = limits.zstd_workspace()?;
-    let input = input_bytes.capacity();
-    bound(
-        add(input, workspace)?,
-        limits.allocated_bytes,
-        "allocation bytes",
-    )?;
-    use zstd::zstd_safe::{DCtx, DParameter, InBuffer, OutBuffer};
-    let mut decoder = DCtx::try_create().ok_or(EodError::Resource("allocation"))?;
-    decoder
-        .set_parameter(DParameter::WindowLogMax(limits.zstd_window_log))
-        .map_err(zstd_error)?;
-    let mut source = InBuffer::around(input_bytes.as_slice());
-    let mut output = Vec::new();
-    let mut chunk = [0; 64 * 1024];
-    loop {
-        let previous = source.pos();
-        let mut target = OutBuffer::around(&mut chunk[..]);
-        let remaining = decoder
-            .decompress_stream(&mut target, &mut source)
-            .map_err(zstd_error)?;
-        let n = target.pos();
-        let length = add(output.len(), n)?;
-        bound(length, limits.decompressed_bytes, "decompressed bytes")?;
-        if length > output.capacity() {
-            let capacity = length
-                .max(output.capacity().saturating_mul(2))
-                .min(limits.decompressed_bytes);
-            // Include both old and replacement allocations during growth.
-            bound(
-                add(add(input, workspace)?, add(output.capacity(), capacity)?)?,
-                limits.allocated_bytes,
-                "allocation bytes",
-            )?;
-            output
-                .try_reserve_exact(capacity - output.len())
-                .map_err(|_| EodError::Resource("allocation"))?;
-        }
-        output.extend_from_slice(&chunk[..n]);
-        if remaining == 0 && source.pos() == input_bytes.len() {
-            break;
-        }
-        // Reject truncated input/no progress, while allowing output to
-        // drain and concatenated/skippable frames to be consumed.
-        if source.pos() == previous && n == 0 {
-            return Err(EodError::Decode);
-        }
-    }
-    drop(decoder);
-    drop(input_bytes);
-    Ok(output)
-}
-
 pub(crate) fn decode(
     response: ResponseData,
     limits: &DecodeLimits,
@@ -280,7 +223,59 @@ pub(crate) fn decode(
             )?;
             input_bytes
         }
-        1 => decompress(input_bytes, limits)?,
+        1 => {
+            let workspace = limits.zstd_workspace()?;
+            let input = input_bytes.capacity();
+            bound(
+                add(input, workspace)?,
+                limits.allocated_bytes,
+                "allocation bytes",
+            )?;
+            use zstd::zstd_safe::{DCtx, DParameter, InBuffer, OutBuffer};
+            let mut decoder = DCtx::try_create().ok_or(EodError::Resource("allocation"))?;
+            decoder
+                .set_parameter(DParameter::WindowLogMax(limits.zstd_window_log))
+                .map_err(zstd_error)?;
+            let mut source = InBuffer::around(input_bytes.as_slice());
+            let mut output = Vec::new();
+            let mut chunk = [0; 64 * 1024];
+            loop {
+                let previous = source.pos();
+                let mut target = OutBuffer::around(&mut chunk[..]);
+                let remaining = decoder
+                    .decompress_stream(&mut target, &mut source)
+                    .map_err(zstd_error)?;
+                let n = target.pos();
+                let length = add(output.len(), n)?;
+                bound(length, limits.decompressed_bytes, "decompressed bytes")?;
+                if length > output.capacity() {
+                    let capacity = length
+                        .max(output.capacity().saturating_mul(2))
+                        .min(limits.decompressed_bytes);
+                    // Include both old and replacement allocations during growth.
+                    bound(
+                        add(add(input, workspace)?, add(output.capacity(), capacity)?)?,
+                        limits.allocated_bytes,
+                        "allocation bytes",
+                    )?;
+                    output
+                        .try_reserve_exact(capacity - output.len())
+                        .map_err(|_| EodError::Resource("allocation"))?;
+                }
+                output.extend_from_slice(&chunk[..n]);
+                if remaining == 0 && source.pos() == input_bytes.len() {
+                    break;
+                }
+                // Reject truncated input/no progress, while allowing output to
+                // drain and concatenated/skippable frames to be consumed.
+                if source.pos() == previous && n == 0 {
+                    return Err(EodError::Decode);
+                }
+            }
+            drop(decoder);
+            drop(input_bytes);
+            output
+        }
         _ => return Err(EodError::Unsupported),
     };
     let shape = preflight(&bytes, limits)?;
@@ -396,8 +391,7 @@ mod tests {
                 decompressed_bytes: bytes.len(),
                 ..Default::default()
             };
-            let result = decode(response.clone(), &limits, None, false);
-            assert!(result.is_ok(), "compressed={compressed}: {result:?}");
+            assert!(decode(response.clone(), &limits, None, false).is_ok());
             for (field, name) in [
                 (0, "headers"),
                 (1, "rows"),
