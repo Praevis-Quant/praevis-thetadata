@@ -5,7 +5,9 @@ The [PROD AAPL EOD observation](research/live-observations.md) passed. A separat
 reported Python `client.stock_snapshot_quote(symbol=["AAPL"])` request returned
 gRPC `PERMISSION_DENIED`, with a message stating that VALUE access was required.
 The manual `probe-stock-quote` command reproduces this query with the Python
-default venue `nqb` and absent `min_time`; its live result is recorded separately.
+default venue `nqb` and absent `min_time`. The Rust PROD probe reproduced code 7
+at response headers, with zero batches; the expected-denial assertion passed.
+See [retained observation and provenance](research/live-observations.md).
 
 ## Evidence matrix
 
@@ -17,7 +19,7 @@ logic. The service remains authoritative for each actual request.
 
 | Product/profile | Positive cases | Negative and boundary cases | Current evidence |
 | --- | --- | --- | --- |
-| Stocks / FREE | Small supported EOD query; exact values and clean EOF | Endpoint requiring VALUE or higher; historical date coverage; permission denial versus no-data | One PROD EOD success; user-reported Python denial needs endpoint/query reproduction |
+| Stocks / FREE | Small supported EOD query; exact values and clean EOF | Endpoint requiring VALUE or higher; historical date coverage; permission denial versus no-data | One PROD EOD success; AAPL stock snapshot quote denial reproduced in Rust, code 7 before data |
 | Stocks / VALUE | Selected EOD, quote/OHLC and delayed snapshot cases once implemented | STANDARD/PRO-only operations; delay/resolution/date boundaries | Unavailable: no paid account evidence |
 | Stocks / STANDARD | Selected trade/trade-quote and real-time snapshot cases once implemented | PRO resolution/history/subscription boundaries | Unavailable: no paid account evidence |
 | Stocks / PRO | Selected tick/history/streaming cases once implemented | Invalid query/contract, no-data and resource boundaries still apply | Unavailable: no paid account evidence |

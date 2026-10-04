@@ -60,6 +60,40 @@ All response files remain private and unreviewed for redistribution. No real
 rows were promoted into public fixtures. The compile-time source hash and
 capture file hashes are retained in every comparison record.
 
+## FREE stock snapshot quote denial (2026-10-04)
+
+The account holder supplied the Python query
+`client.stock_snapshot_quote(symbol=["AAPL"])` and reported its permission error.
+One authorized Rust PROD request reproduced the denial using the same symbol
+and Python defaults. The tier is operator-declared, not inferred from remote
+error text or authentication metadata. Credentials were imported from the same
+Windows user environment variable into the runner process only.
+
+| Field | Observed result |
+| --- | --- |
+| Run and time | Private `prod-free-quote-001`; `2026-10-04T23:19:43.402957400+00:00` |
+| Source | Clean `b24d834dc45973620abaf25aa5f7f5cd1a9fe3d6`; Windows native execution |
+| Product/profile/connection | Stocks; operator-declared FREE; PROD direct gRPC |
+| Exact query | `GetStockSnapshotQuote`; symbol `["AAPL"]`; venue `nqb`; `min_time` absent |
+| Lifecycle | One successful in-memory authentication, one query, no retries or persistence |
+| Expected/actual | `PERMISSION_DENIED` (7) before data / code 7 at response headers, zero delivered batches |
+| Verification | `expected_denial_passed`; this is a passing authorization-denial assertion, not data success |
+| Executable SHA-256 | `8ffe64efb17cd5bee41587d81717e345cba6c95b5712973c3a6bf774b5768790` |
+| Compiled source SHA-256 | `1205d3048e3ef6b53a45b6f07e4f3764523a99cdbe170424d49a2ec7cb6c6e14` |
+| Private manifest SHA-256 | `41f2103a689a10f3a2c38cce6b4f68d8543ed1cc86eb5ad7c4e959aa0efe26b3` |
+
+The manifest retains safe status, phase, query and source/protocol provenance;
+it excludes credentials, account payloads, metadata and vendor error text. No
+response payload existed to replay. The probe's synthetic checks reject all
+other non-OK codes, unexpected data and empty success; typed EOD has a separate
+all-code transport fixture matrix. This live raw-binding observation does not
+establish a typed quote API, paid-tier access or Terminal HTTP error behavior.
+
+This supports LIVE-L2-004 and LIVE-L3-007/LIVE-L3-009 for this selected case.
+LIVE-L3-008 retains unavailable paid profiles as not-run. The original EOD
+capture also replayed successfully after the shared-provenance refactor,
+confirming compatibility with the retained v1 capture format on Windows.
+
 ## Template for a reviewed run
 
 | Field | Record |

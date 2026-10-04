@@ -20,6 +20,8 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
   enhancement requirements. Added a per-product/subscription manual test matrix
   and a bounded stock quote probe that passes only on the expected pre-data
   permission denial; other errors or unexpected data fail the assertion.
+  A manual PROD AAPL probe reproduced the FREE account's gRPC code 7 at headers
+  with zero batches. Paid-tier and Terminal verification remain untested.
 
 - Explicit `--api-key-env` support for the manual live runner, reading only
   process `THETADATA_API_KEY` without requiring a file or exposing its value.
