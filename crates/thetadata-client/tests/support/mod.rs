@@ -186,6 +186,7 @@ pub struct Script {
     pub message_delay: Duration,
     pub initial_error: Option<tonic::Status>,
     pub header_delay: Duration,
+    pub pause_before: Option<(usize, Duration)>,
 }
 
 type FixtureStream = ReceiverStream<Result<wire::ResponseData, tonic::Status>>;
@@ -208,7 +209,12 @@ impl FixtureService {
         let script = self.script.clone();
         let (tx, rx) = mpsc::channel(1);
         tokio::spawn(async move {
-            for item in script.messages {
+            for (index, item) in script.messages.into_iter().enumerate() {
+                if let Some((before, delay)) = script.pause_before
+                    && index == before
+                {
+                    tokio::time::sleep(delay).await;
+                }
                 if !script.message_delay.is_zero() {
                     tokio::time::sleep(script.message_delay).await;
                 }

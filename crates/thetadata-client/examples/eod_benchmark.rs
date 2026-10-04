@@ -145,6 +145,9 @@ enum Mode {
         rows: u32,
         #[arg(long, default_value_t = 4, value_parser = clap::value_parser!(u32).range(1..=16))]
         streams: u32,
+        /// Pause after each checked batch while retaining that batch's ownership.
+        #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u32).range(0..=1000))]
+        consumer_delay_ms: u32,
     },
     Compare {
         #[arg(long)]
@@ -184,6 +187,7 @@ struct Report {
     warmups: u32,
     rows: u32,
     streams: u32,
+    consumer_delay_ms: u32,
     batches_per_stream: u32,
     runtime: String,
     measurement_scope: String,
@@ -278,10 +282,11 @@ fn provenance() -> Result<Provenance, Failure> {
         ),
         client_sha256: hash(
             format!(
-                "{}{}{}",
+                "{}{}{}{}",
                 source_hash(include_bytes!("../src/lib.rs")),
                 source_hash(include_bytes!("../src/eod.rs")),
-                source_hash(include_bytes!("../src/envelope.rs"))
+                source_hash(include_bytes!("../src/envelope.rs")),
+                source_hash(include_bytes!("../src/framing.rs"))
             )
             .as_bytes(),
         ),
@@ -326,6 +331,7 @@ async fn delivery(
     expected: Arc<Output>,
     streams: u32,
     engine: Engine,
+    consumer_delay_ms: u32,
 ) -> Result<Delivery, Failure> {
     let stopped = Arc::new(AtomicBool::new(false));
     let stop = stopped.clone();
@@ -376,6 +382,10 @@ async fn delivery(
                 // consumer. Per-batch wait ends before equality/output drop.
                 assert_eq!(&batch, expected.as_ref());
                 black_box(&batch);
+                if consumer_delay_ms != 0 {
+                    tokio::time::sleep(Duration::from_millis(consumer_delay_ms.into())).await;
+                    black_box(&batch); // Retain ownership throughout the caller pause.
+                }
                 count += 1;
             }
             assert_eq!(count, 3);
@@ -420,6 +430,7 @@ fn run(
     rows: u32,
     streams: u32,
     engine: Engine,
+    consumer_delay_ms: u32,
 ) -> Result<(), Failure> {
     if cfg!(debug_assertions) {
         return Err("benchmark requires a --release build".into());
@@ -493,8 +504,13 @@ fn run(
             let mut batch_wait_ns = Vec::new();
             let mut executor_lateness_ns = Vec::new();
             for iteration in 0..warmups + samples {
-                let sample =
-                    runtime.block_on(delivery(&client, expected.clone(), streams, engine))?;
+                let sample = runtime.block_on(delivery(
+                    &client,
+                    expected.clone(),
+                    streams,
+                    engine,
+                    consumer_delay_ms,
+                ))?;
                 if iteration >= warmups {
                     first_batch_ns.push(sample.first);
                     delivery_ns.push(sample.total);
@@ -536,9 +552,9 @@ fn run(
             drop(fixture);
         }
     }
-    write_json(output, &Report { engine, format: "thetadata-eod-baseline-v2".into(), synthetic: true, provenance, samples, warmups, rows, streams, batches_per_stream: 3,
+    write_json(output, &Report { engine, format: "thetadata-eod-baseline-v3".into(), synthetic: true, provenance, samples, warmups, rows, streams, consumer_delay_ms, batches_per_stream: 3,
         runtime: "one current-thread consumer runtime; separate one-thread loopback server runtime".into(),
-        measurement_scope: "decode includes decompression/protobuf/conversion/validation; excludes input clone and output check/drop. Delivery includes loopback serving, transport, decoding, full equality consumer and output drop; excludes connection/auth/setup. Timed allocator calls retain an inactive thread-local probe check. Separate allocation probe includes input clone and requested Rust heap only, excludes C ZSTD allocator/RSS. Timer is maximum 1ms sleep lateness per delivery sample, including timer granularity and equality consumer.".into(), cases })
+        measurement_scope: "decode includes decompression/protobuf/conversion/validation; excludes input clone and output check/drop. Delivery includes loopback serving, transport, decoding, full equality consumer, configured pauses retaining one batch per stream, and output drop; excludes connection/auth/setup. Timed allocator calls retain an inactive thread-local probe check. Separate allocation probe includes input clone and requested Rust heap only, excludes C ZSTD allocator/RSS. Timer is maximum 1ms sleep lateness per delivery sample, including timer granularity and equality consumer.".into(), cases })
 }
 
 fn write_json(path: &Path, value: &impl Serialize) -> Result<(), Failure> {
@@ -560,11 +576,12 @@ fn compatible(a: &Report, b: &Report) -> Result<(), Failure> {
             || !(1..=100).contains(&report.warmups)
             || !(1..=16).contains(&report.streams)
             || report.batches_per_stream != 3
+            || report.consumer_delay_ms > 1000
         {
             return Err("invalid sampling configuration".into());
         }
     }
-    if a.format != "thetadata-eod-baseline-v2"
+    if a.format != "thetadata-eod-baseline-v3"
         || a.format != b.format
         || !a.synthetic
         || !b.synthetic
@@ -581,6 +598,7 @@ fn compatible(a: &Report, b: &Report) -> Result<(), Failure> {
         || a.warmups != b.warmups
         || a.rows != b.rows
         || a.streams != b.streams
+        || a.consumer_delay_ms != b.consumer_delay_ms
         || a.runtime != b.runtime
         || a.measurement_scope != b.measurement_scope
         || a.batches_per_stream != b.batches_per_stream
@@ -634,7 +652,7 @@ fn compare(baseline: &Path, candidate: &Path, output: &Path) -> Result<(), Failu
     }
     write_json(
         output,
-        &serde_json::json!({"format": "thetadata-eod-comparison-v2", "baseline_engine": a.engine, "candidate_engine": b.engine, "baseline_report_sha256": hash(&fs::read(baseline)?), "candidate_report_sha256": hash(&fs::read(candidate)?), "baseline": a.provenance, "candidate": b.provenance, "interpretation": "descriptive comparison, not a calibrated regression gate; numeric output bypasses formatting, table output preserves it; repeat in AB/BA order", "cases": comparisons}),
+        &serde_json::json!({"format": "thetadata-eod-comparison-v3", "baseline_engine": a.engine, "candidate_engine": b.engine, "baseline_report_sha256": hash(&fs::read(baseline)?), "candidate_report_sha256": hash(&fs::read(candidate)?), "baseline": a.provenance, "candidate": b.provenance, "interpretation": "descriptive comparison, not a calibrated regression gate; numeric output bypasses formatting, table output preserves it; repeat in AB/BA order", "cases": comparisons}),
     )
 }
 fn main() -> Result<(), Failure> {
@@ -646,7 +664,16 @@ fn main() -> Result<(), Failure> {
             warmups,
             rows,
             streams,
-        } => run(&output, samples, warmups, rows, streams, engine),
+            consumer_delay_ms,
+        } => run(
+            &output,
+            samples,
+            warmups,
+            rows,
+            streams,
+            engine,
+            consumer_delay_ms,
+        ),
         Mode::Compare {
             baseline,
             candidate,
@@ -662,13 +689,14 @@ mod tests {
     fn report() -> Report {
         Report {
             engine: Engine::Legacy,
-            format: "thetadata-eod-baseline-v2".into(),
+            format: "thetadata-eod-baseline-v3".into(),
             synthetic: true,
             provenance: Provenance::default(),
             samples: 2,
             warmups: 1,
             rows: 1,
             streams: 1,
+            consumer_delay_ms: 0,
             batches_per_stream: 3,
             runtime: "fixture".into(),
             measurement_scope: "fixture".into(),
@@ -694,7 +722,8 @@ mod tests {
     fn comparison_rejects_incomparable_or_incomplete_evidence() {
         let baseline = report();
         assert!(compatible(&baseline, &baseline).is_ok());
-        let mutations: [fn(&mut Report); 8] = [
+        let mutations: [fn(&mut Report); 9] = [
+            |r| r.consumer_delay_ms = 1,
             |r| r.provenance.host = "another-host".into(),
             |r| r.provenance.rustc = "another-toolchain".into(),
             |r| r.provenance.harness_sha256 = "different-harness".into(),

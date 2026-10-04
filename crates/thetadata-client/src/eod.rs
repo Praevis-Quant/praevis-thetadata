@@ -1,6 +1,6 @@
 //! Typed stock EOD pull streams. Raw generated helpers retain their original API.
 pub use crate::bounded::DecodeLimits;
-use crate::{ClientConfig, ThetaClient, api, bounded, envelope, wire};
+use crate::{ClientConfig, ThetaClient, api, bounded, envelope, framing, wire};
 use chrono::Datelike;
 pub use chrono::NaiveDate;
 use std::{sync::Arc, time::Duration};
@@ -37,12 +37,6 @@ pub enum EodError {
     Unsupported,
     #[error("stock EOD resource limit: {0}")]
     Resource(&'static str),
-}
-fn status(error: tonic::Status) -> EodError {
-    match error.code() {
-        tonic::Code::NotFound => EodError::NoData,
-        code => EodError::Remote(code),
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -228,8 +222,13 @@ impl ThetaClient {
             params: Some(request.wire()),
         });
         request.set_timeout(deadline.saturating_duration_since(Instant::now()));
-        let mut stub = tonic::client::Grpc::new(self.channel.clone())
-            .max_decoding_message_size(pool.policy.decode.encoded_bytes + 1024);
+        let failure = framing::Failure::default();
+        let mut stub = tonic::client::Grpc::new(framing::GuardedChannel {
+            channel: self.channel.clone(),
+            limit: pool.policy.decode.encoded_bytes + 1024,
+            failure: failure.clone(),
+        })
+        .max_decoding_message_size(pool.policy.decode.encoded_bytes + 1024);
         check_deadline(deadline)?;
         let response = timeout_at(deadline, async {
             stub.ready().await.map_err(|_| EodError::Connection)?;
@@ -242,7 +241,7 @@ impl ThetaClient {
                 envelope::EnvelopeCodec,
             )
             .await
-            .map_err(status)
+            .map_err(|error| failure.classify(error))
         })
         .await
         .map_err(|_| EodError::Deadline)?;
@@ -257,6 +256,7 @@ impl ThetaClient {
             schema_lease: Some(Arc::new(schema_lease)),
             terminal: false,
             table,
+            failure,
         })
     }
 }
@@ -293,6 +293,7 @@ pub struct EodBatchStream {
     schema_lease: Option<Arc<OwnedSemaphorePermit>>,
     terminal: bool,
     table: bool,
+    failure: framing::Failure,
 }
 impl EodBatchStream {
     pub fn cancel(&mut self) {
@@ -352,7 +353,7 @@ impl EodBatchStream {
                             EodError::Idle
                         }
                     })?
-                    .map_err(status)?;
+                    .map_err(|error| self.failure.classify(error))?;
                 let Some(response) = response else {
                     return Ok(None);
                 };
@@ -662,5 +663,46 @@ mod tests {
             assert!(stream.next_batch().await.unwrap().is_some());
             assert_eq!(gate.entered.available_permits(), 2);
         }
+    }
+    #[tokio::test]
+    async fn admission_deadlines_release_waiters_and_expired_streams_do_no_work() {
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(
+                &fixture::table(fixture::Shape::Mixed, 1).0,
+                false,
+            ))],
+            ..Default::default()
+        });
+        let client = client(&server, Duration::from_millis(150)).await;
+        let pool = client.eod_pool.clone();
+        let capacity = pool.schemas.available_permits();
+        let schemas = pool
+            .schemas
+            .clone()
+            .acquire_many_owned(capacity as u32)
+            .await
+            .unwrap();
+        assert_eq!(
+            client.stock_eod_batches(request()).await.err().unwrap(),
+            EodError::Deadline
+        );
+        assert!(server.requests.lock().unwrap().is_empty());
+        drop(schemas);
+        let job = pool.jobs.clone().acquire_owned().await.unwrap();
+        let mut stream = client.stock_eod_batches(request()).await.unwrap();
+        assert_eq!(stream.next_batch().await.unwrap_err(), EodError::Deadline);
+        assert!(stream.next_batch().await.unwrap().is_none());
+        drop(job);
+        assert_eq!(pool.schemas.available_permits(), capacity);
+        let gate = Gate::new();
+        gate.release();
+        *pool.gate.lock().unwrap() = Some(gate.clone());
+        let mut stream = client.stock_eod_batches(request()).await.unwrap();
+        stream.deadline = Instant::now();
+        stream.idle = Duration::ZERO;
+        assert_eq!(stream.next_batch().await.unwrap_err(), EodError::Deadline);
+        assert_eq!(gate.entered.available_permits(), 0);
+        assert_eq!(pool.jobs.available_permits(), 1);
+        assert_eq!(pool.schemas.available_permits(), capacity);
     }
 }

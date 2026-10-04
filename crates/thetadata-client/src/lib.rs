@@ -3,6 +3,7 @@ mod bounded;
 mod decode;
 mod envelope;
 mod eod;
+mod framing;
 #[cfg(test)]
 extern crate self as thetadata_client;
 #[cfg(test)]
