@@ -13,7 +13,10 @@ use tokio::{
     net::TcpListener,
     sync::{mpsc, oneshot},
 };
-use tokio_stream::wrappers::{ReceiverStream, TcpListenerStream};
+use tokio_stream::{
+    StreamExt,
+    wrappers::{ReceiverStream, TcpListenerStream},
+};
 
 pub const TOKEN: &str = "synthetic-eod-session";
 pub const EMAIL: &str = "fixture@example.invalid";
@@ -238,7 +241,16 @@ impl Fixture {
                 .build()
                 .unwrap();
             runtime.block_on(async move {
-                let incoming = TcpListenerStream::new(TcpListener::from_std(listener).unwrap());
+                // Custom incoming streams bypass tonic's TCP listener options.
+                // Avoid measuring Linux delayed ACK/Nagle interaction as decode
+                // latency for small synthetic messages.
+                let incoming = TcpListenerStream::new(TcpListener::from_std(listener).unwrap())
+                    .map(|socket| {
+                        socket.and_then(|socket| {
+                            socket.set_nodelay(true)?;
+                            Ok(socket)
+                        })
+                    });
                 let server = tonic::transport::Server::builder()
                     .add_service(
                         api::beta_theta_terminal_server::BetaThetaTerminalServer::new(service)

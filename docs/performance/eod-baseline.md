@@ -45,6 +45,9 @@ API. It shuts down before measurement. A loopback gRPC service runs on a
 separate OS thread with a current-thread Tokio runtime; consumers use another
 current-thread runtime, so server execution does not masquerade as client
 executor blocking. The service trait stubs are generated from the checked-in
+descriptor; accepted mock sockets explicitly enable TCP_NODELAY to avoid
+delayed-ACK/Nagle artifacts in small-message delivery. The service trait stubs
+come from the same
 descriptor; only GetStockHistoryEod is implemented. The server checks no real
 entitlement and does not emulate undocumented vendor business semantics.
 
