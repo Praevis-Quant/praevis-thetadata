@@ -57,6 +57,21 @@ explicit implementation gap, not a validated responsiveness guarantee.
 
 ## Alternatives
 
+Implementation follow-up (2026-10-04): the large concurrent fixture exposed
+HTTP/2 connection-credit starvation when unpolled streams held receive credit
+while active streams waited for complete frames. Bound simultaneous typed
+queries as well as decode jobs. Use a dedicated typed channel, a fixed stream
+receive window, and connection credit covering all admitted streams plus one
+extra window; disable adaptive window growth. Raw helpers use a separate channel
+so they cannot bypass that admission policy on the typed connection. Connect the
+constructor's selected channel and connect the other lazily; callers still own
+the runtime and supply the session. Waiting for a query slot consumes whole-query
+time, and cancellation releases transport before its slot. See the
+[acceptance matrix](../requirements/stock-eod-matrix.md). This is a protected Rust
+resource/lifecycle enhancement under EOD-L3-019/022/023, not upstream behavior or
+approval of the full slice. Initial defaults are 16 streams, 2 MiB per-stream
+credit and 34 MiB connection credit; they supplement the application budget.
+
 - Accumulating all results matches Python's dataframe interface but removes
   caller backpressure and scales memory with query size.
 - Unbounded prefetch/offload increases parallelism while allowing unlimited

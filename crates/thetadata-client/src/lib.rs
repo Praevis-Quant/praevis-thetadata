@@ -96,6 +96,20 @@ pub struct ThetaClient {
 impl ThetaClient {
     /// Consume a session from the standalone auth crate without authenticating again.
     pub async fn with_session(config: ClientConfig, session: Session) -> Result<Self, Error> {
+        Self::connect(
+            config,
+            session,
+            eod::Pool::new(EodPolicy::default()).expect("valid default EOD policy"),
+            false,
+        )
+        .await
+    }
+    async fn connect(
+        config: ClientConfig,
+        session: Session,
+        eod_pool: std::sync::Arc<eod::Pool>,
+        typed_primary: bool,
+    ) -> Result<Self, Error> {
         if config.max_batch_bytes == 0 || config.max_batch_bytes > i32::MAX as usize {
             return Err(Error::Config("batch limit must be between 1 and i32::MAX"));
         }
@@ -126,15 +140,26 @@ impl ThetaClient {
                 ));
             }
         }
-        let channel = endpoint.connect().await?;
-        let stub = api::beta_theta_terminal_client::BetaThetaTerminalClient::new(channel.clone())
+        let typed_endpoint = endpoint
+            .clone()
+            .initial_stream_window_size(eod::STREAM_WINDOW)
+            .initial_connection_window_size(eod_pool.connection_window())
+            .http2_adaptive_window(false);
+        // Isolate raw traffic from typed admission/flow-control guarantees.
+        // Establish only the selected API's channel; the other connects lazily.
+        let (channel, raw) = if typed_primary {
+            (typed_endpoint.connect().await?, endpoint.connect_lazy())
+        } else {
+            (typed_endpoint.connect_lazy(), endpoint.connect().await?)
+        };
+        let stub = api::beta_theta_terminal_client::BetaThetaTerminalClient::new(raw)
             .max_decoding_message_size(config.max_batch_bytes + 1024);
         Ok(Self {
             channel,
             stub,
             session,
             config,
-            eod_pool: eod::Pool::new(EodPolicy::default()).expect("valid default EOD policy"),
+            eod_pool,
         })
     }
     pub fn session(&self) -> Session {

@@ -99,6 +99,42 @@ output chunks, growth checks, window parameter and input/decoder drop boundary
 remain in place. Concatenated and skippable frames remain supported; incomplete
 or no-progress decoding fails rather than looping.
 
-References: [tonic 0.14.6 framing implementation](https://github.com/hyperium/tonic/blob/v0.14.6/tonic/src/codec/decode.rs),
+The inspected locked tonic 0.14.6 `src/codec/decode.rs` has SHA-256
+`433ce180e5ee34a271f352ecad70aec31f87b5827ec31292d6a727004e6fe518`.
+Its registry source records Git commit `6cb6056b5a748bc5a29bd48f4602dbc4e552bb7d`;
+the guessed public version-tag URL returned 404, so it is not used as evidence.
+References: [tonic source repository](https://github.com/hyperium/tonic),
 [ZSTD streaming/error API](https://github.com/facebook/zstd/blob/v1.5.7/lib/zstd.h),
 [ZSTD error codes](https://github.com/facebook/zstd/blob/v1.5.7/lib/zstd_errors.h).
+
+## Concurrent transport correction
+
+The first eight-stream, 100,000-row slow-consumer run exposed a pre-existing
+stall in both the unchanged control and the initial candidate. This is retained
+as a failed calibration, not omitted or converted into a latency sample. Unpolled
+streams could consume the shared connection's receive credit while the two
+admitted jobs waited for complete messages larger than a stream window.
+
+`EodPolicy::concurrent_streams` now defaults to 16 (validated range 1-64).
+Admission occurs before RPC dispatch and uses the whole-query deadline. A
+dedicated typed channel advertises a fixed 2 MiB stream window and
+`(concurrent_streams + 1) * 2 MiB` connection credit: 34 MiB by default.
+Adaptive receive-window growth is disabled. Raw helpers have an independent
+channel and cannot consume typed connection credit. The primary constructor API
+connects eagerly; the other channel connects lazily. Session/auth behavior is
+unchanged.
+
+These windows are **flow-control credit**, not preallocated memory or a total
+transport heap bound. HTTP/2/TLS metadata, socket buffers and already copied
+tonic message storage are additional. Per-message copies remain in the existing
+application reservation; caller-retained batches remain caller-owned. Paused
+queries retain stream slots; cancellation/EOF/error releases transport before
+the slot. An unpolled stream still requires drop/cancel/resumption for cleanup.
+
+Lifecycle tests `paused_streams_cannot_exhaust_connection_credit_for_active_decode`
+and `stream_admission_bounds_dispatch_and_releases_on_pending_drop` verify one
+active 100,000-row decode beside seven unpolled streams, slot saturation before
+dispatch, whole-query expiry, pending-drop release and replacement queries.
+This supplements EOD-L3-015/019/022/023 and PERF-L3-005 evidence above. The raw
+helper API retains its existing guarantees; simultaneous use may establish two
+connections, with independent transport overhead.
