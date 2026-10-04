@@ -15,6 +15,13 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Constructed sixteen-column stock EOD regression coverage informed by the
+  reviewed live schema, with invented values and independent exact-value checks
+  across raw/numeric/Table interfaces and NONE/ZSTD. Added a revision-pinned
+  ThetaDataDx watchlist and independent project naming brief. The CLI now has
+  package-specific metadata and README; publication awaits name selection and
+  the remaining archive/consumer checks.
+
 - Connection inventory and editable SVG distinguishing direct HTTPS/gRPC from
   proposed Theta Terminal v3 REST/WebSocket adapters, with ADR-0018 and explicit
   enhancement requirements. Added a per-product/subscription manual test matrix

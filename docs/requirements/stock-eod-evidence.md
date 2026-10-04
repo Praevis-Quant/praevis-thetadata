@@ -145,3 +145,15 @@ numeric and Table interfaces on Windows/Linux; separate live numeric/Table calls
 matched it. This supplements EOD-L3-004/005 and EOD-L3-024/025 evidence for that
 specific query. It does not close the full acceptance matrix, prove Python output
 equivalence, or establish unobserved service/account/lifecycle semantics.
+
+## Constructed observed-shape regression fixture (2026-10-04)
+
+`tests/eod_observed_shape.rs` adds the reviewed sixteen-column order and type mix
+using wholly invented values. The oracle uses literal timestamp strings and
+exact integers/prices, including an integer beyond f64's exact range. It checks
+raw, numeric and Table delivery for NONE/ZSTD frames, repeated-batch schema
+sharing, equal-date wire requests and clean completion. This supplements
+EOD-L3-004/005, EOD-L3-006/007/008/009 and EOD-L3-024/025; it does not replace the
+existing generic null/text/boolean/boundary fixtures or guarantee a vendor schema.
+No private live rows are copied, no real service is contacted, and production
+decoding/benchmark workloads remain unchanged. Performance acceptance stays open.
