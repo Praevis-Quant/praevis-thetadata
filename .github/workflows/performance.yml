@@ -4,12 +4,18 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: 'Optional baseline Git ref for a same-runner before/after comparison'
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   baseline:
+    if: github.event_name != 'workflow_dispatch' || inputs.baseline_ref == ''
     name: Baseline (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -37,5 +43,50 @@ jobs:
         with:
           name: auth-performance-${{ runner.os }}-${{ github.sha }}
           path: artifacts/auth-*.json
+          if-no-files-found: error
+          retention-days: 30
+
+  compare:
+    if: github.event_name == 'workflow_dispatch' && inputs.baseline_ref != ''
+    name: Compare startup (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: candidate
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.baseline_ref }}
+          path: baseline
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+      - name: Build before and after with provenance
+        shell: bash
+        run: |
+          python candidate/tools/build_cli_benchmark.py --source baseline --output artifacts/before${{ runner.os == 'Windows' && '.exe' || '' }}
+          python candidate/tools/build_cli_benchmark.py --source candidate --output artifacts/after${{ runner.os == 'Windows' && '.exe' || '' }}
+      - name: Install Linux keyring fixture
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends dbus gnome-keyring
+      - name: Compare release binaries twice
+        shell: bash
+        run: |
+          for repetition in 1 2; do
+            if [ "$RUNNER_OS" = Linux ]; then
+              bash candidate/tools/with-test-keyring.sh python3 candidate/tools/compare_cli_startup.py --before artifacts/before --after artifacts/after --before-provenance artifacts/before.json --after-provenance artifacts/after.json --output "artifacts/comparison-$repetition.json"
+            else
+              python candidate/tools/compare_cli_startup.py --before artifacts/before.exe --after artifacts/after.exe --before-provenance artifacts/before.json --after-provenance artifacts/after.json --output "artifacts/comparison-$repetition.json"
+            fi
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: startup-comparison-${{ runner.os }}-${{ github.sha }}
+          path: artifacts/*.json
           if-no-files-found: error
           retention-days: 30

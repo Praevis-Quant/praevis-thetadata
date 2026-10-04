@@ -23,6 +23,19 @@ Status: initial baseline, 2026-10-03. Paths are relative to the repository root.
 | AUTH-L3-017 | AUTH-L2-009 | The initial commit and subsequent CI shall exclude the named vendor ZIP/directory, wheel files, build artifacts, and credential files. Checked-in descriptors and provenance metadata shall permit ordinary builds without the vendor package. | `.gitignore`; `tools/check_repository.py`; `thetadata-proto/build.rs`. |
 | AUTH-L3-018 | AUTH-L2-009 | Performance runs shall measure repeated synthetic auth/save and persisted-status CLI latency, record p50/p95 plus platform/revision/sample count, clean their test profile, and never call live auth. Initial results shall be informational, without an invented latency SLA. | `tools/benchmark_auth.py`; `.github/workflows/performance.yml`; [methodology](../performance/auth.md). |
 
+## CLI startup requirements (2026-10-04)
+
+These extend the auth baseline for roadmap recommendation #2. Existing L1 outcomes are sufficient; this implementation does not introduce a new product outcome.
+
+| ID | L2 parent | Component requirement | Implementation / verification |
+| --- | --- | --- | --- |
+| AUTH-L3-019 | AUTH-L2-010 | The CLI shall parse arguments, print help/version, and report argument errors before creating an async runtime. | Synchronous `main`; `tests/startup.rs`; control-flow review confirms no runtime creation on these paths. |
+| AUTH-L3-020 | AUTH-L2-010 | Status and logout shall run synchronously without an async runtime, credential discovery, or HTTP client construction, including absent-session and error paths. | Synchronous `run`; startup and native persistence tests, including invalid inherited credential-file/auth-URL settings; control-flow review. |
+| AUTH-L3-021 | AUTH-L2-010 | Only HTTP authentication shall create a Tokio current-thread runtime with I/O and time drivers enabled. HTTP client construction and authentication shall run inside it; persistence and output shall run after it is dropped. | Scoped `Builder::new_current_thread().enable_all().build()?.block_on(...)`; native process authentication with `TOKIO_WORKER_THREADS=0`; runtime-lifetime review. |
+| AUTH-L3-022 | AUTH-L2-010, AUTH-L2-008 | The optimization shall preserve credential precedence, auth requests/timeouts, native-store identity/format, CLI JSON/text fields, secret redaction, and exit codes on Windows/Linux. No auth-library public API or dependency boundary shall change. | Existing auth/CLI tests and both native-store CI jobs; process test checks present/absent status, successful/idempotent logout and isolation. |
+| AUTH-L3-023 | AUTH-L2-011, AUTH-L2-009 | Comparison tooling shall run before/after release binaries on the same host with identical synthetic fixtures, isolated profiles, warmups, and alternating AB/BA order. Cases shall include auth/save, persisted status, missing status, absent-record logout, help, and version. | `tools/compare_cli_startup.py`; server stops before local-command measurements; cleanup is attempted for every synthetic profile. |
+| AUTH-L3-024 | AUTH-L2-011 | Comparison reports shall retain per-sample timings, p50/p95, sample/warmup counts, platform/CPU/Python/toolchain context, binary hashes and build provenance, plus median ratios and percentage changes. Tooling shall reject mismatched provenance and report regressions as measured. Release evaluation shall repeat comparisons and record results/limitations; functional failures fail the run, latency variation alone does not. | `tools/build_cli_benchmark.py`, `tools/compare_cli_startup.py`; [startup evaluation](../performance/cli-startup.md). |
+
 ## Verification gaps retained explicitly
 
 - Live authentication, TLS trust against the actual service, token lifetime, revocation, session concurrency, and subscription semantics need an authorized live account and/or vendor confirmation.

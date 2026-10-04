@@ -13,5 +13,7 @@ Status: initial implemented baseline, 2026-10-03. Each requirement derives from 
 | AUTH-L2-007 | AUTH-L1-001, AUTH-L1-004 | Invalid inputs, transport failures, unavailable storage, absent records, and invalid persisted records shall fail explicitly without silently changing storage or lifecycle behavior. |
 | AUTH-L2-008 | AUTH-L1-005 | Automated checks shall exercise the auth contract and native persistence on Windows/Linux using synthetic data. |
 | AUTH-L2-009 | AUTH-L1-003, AUTH-L1-005 | CI and performance tooling shall exclude the vendor archive/extraction and real credentials, build from checked-in Rust/schema inputs, and report reproducible measurement context. |
+| AUTH-L2-010 | AUTH-L1-004, AUTH-L1-005 | The CLI shall initialize asynchronous execution only for HTTP authentication; local operations and argument handling shall preserve their behavior without runtime startup. |
+| AUTH-L2-011 | AUTH-L1-005 | Startup optimizations shall be evaluated using reproducible before/after release binaries on the same host, preserving native persistence and reporting measured results without assuming a speedup or imposing an uncalibrated latency SLA. |
 
 The L2 requirements specify project behavior, not additional vendor guarantees. For example, environment-bound storage is our policy; vendor staging documentation does not establish token interchangeability across environments.

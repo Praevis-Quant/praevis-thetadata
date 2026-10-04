@@ -11,6 +11,8 @@ use std::{
 
 fn cli(profile: &str, args: &[&str], credentials: bool) -> Output {
     let mut command = Command::new(env!("CARGO_BIN_EXE_theta"));
+    // Exercises auth's current-thread runtime and the synchronous local commands.
+    command.env("TOKIO_WORKER_THREADS", "0");
     command.args(["auth", "--profile", profile, "--environment", "stage"]);
     command.args(args);
     for variable in [
@@ -25,6 +27,13 @@ fn cli(profile: &str, args: &[&str], credentials: bool) -> Output {
     }
     if credentials {
         command.env("THETADATA_API_KEY", "synthetic-test-api-key");
+    } else {
+        // Local actions must bypass credential discovery and HTTP client setup.
+        command.env(
+            "THETADATA_CREDENTIALS_FILE",
+            "/nonexistent-thetadata-test-creds",
+        );
+        command.env("THETADATA_AUTH_URL", "invalid-auth-url");
     }
     command.output().unwrap()
 }
@@ -132,7 +141,14 @@ fn session_survives_process_exit_without_login_credentials() {
         .output()
         .unwrap();
     assert_eq!(other.status.code(), Some(3));
-    assert!(cli(&profile, &["logout"], false).status.success());
+    let logout = cli(&profile, &["logout", "--json"], false);
+    assert!(logout.status.success());
+    let data: serde_json::Value = serde_json::from_slice(&logout.stdout).unwrap();
+    assert_eq!(data["removed"], true);
+    let logout = cli(&profile, &["logout", "--json"], false);
+    assert!(logout.status.success());
+    let data: serde_json::Value = serde_json::from_slice(&logout.stdout).unwrap();
+    assert_eq!(data["removed"], false);
     let missing = cli(&profile, &["status", "--json"], false);
     assert_eq!(missing.status.code(), Some(3));
     let data: serde_json::Value = serde_json::from_slice(&missing.stdout).unwrap();

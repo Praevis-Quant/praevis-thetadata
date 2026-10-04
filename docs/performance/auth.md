@@ -2,6 +2,8 @@
 
 Scope: AUTH-L3-018. Initial results are observations, not an SLA or a regression gate.
 
+For the before/after CLI runtime experiment, comparison tooling, and measured results, see [CLI startup evaluation](cli-startup.md).
+
 `tools/benchmark_auth.py` measures two user-visible operations using the actual release CLI:
 
 1. `auth`: process startup, credential discovery from a synthetic environment key, localhost HTTP request/response, JSON parsing, native session save, and JSON output.

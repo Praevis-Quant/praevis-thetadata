@@ -94,7 +94,7 @@ fn credentials(args: &AuthArgs) -> Result<Credentials> {
     }
 }
 
-async fn run(cli: Cli) -> Result<ExitCode> {
+fn run(cli: Cli) -> Result<ExitCode> {
     let Command::Auth(args) = cli.command;
     let environment = match args.environment {
         Env::Prod => Environment::Prod,
@@ -182,7 +182,12 @@ async fn run(cli: Cli) -> Result<ExitCode> {
     if let Some(url) = args.auth_url {
         config.auth_url = url;
     }
-    let session = AuthClient::new(config)?.authenticate(&credentials).await?;
+    // Only HTTP authentication needs async execution. Construct the client inside
+    // the runtime, and drop the runtime before synchronous persistence/output.
+    let session = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async { AuthClient::new(config)?.authenticate(&credentials).await })?;
     store.save(&session)?;
     let mut out = io::stdout().lock();
     if args.json {
@@ -213,9 +218,8 @@ async fn run(cli: Cli) -> Result<ExitCode> {
     Ok(ExitCode::SUCCESS)
 }
 
-#[tokio::main]
-async fn main() -> ExitCode {
-    match run(Cli::parse()).await {
+fn main() -> ExitCode {
+    match run(Cli::parse()) {
         Ok(code) => code,
         Err(error) => {
             eprintln!("theta: {error}");
