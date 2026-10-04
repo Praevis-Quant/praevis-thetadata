@@ -6,6 +6,12 @@ See the [auth requirements and ADRs](docs/README.md), [roadmap](docs/ROADMAP.md)
 
 For implemented changes, see the [changelog](CHANGELOG.md). Coding agents should start with [AGENTS.md](AGENTS.md) and the shared [project guidance and Git conventions](CLAUDE.md).
 
+Start with the [connection map and SVG](docs/connections.md) to distinguish our
+direct HTTPS/gRPC client from optional Theta Terminal REST/WebSocket adapters.
+The direct path needs no Java or JAR. See [release milestones](docs/releases.md),
+[manual live checks](docs/live-verification.md) and the
+[subscription test matrix](docs/subscription-testing.md) for verified scope and gaps.
+
 Newly authored code and tooling are licensed under [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution and [the preserved upstream license](crates/thetadata-proto/LICENSE.upstream) for the bundled protocol source.
 
 ## Workspace
@@ -16,7 +22,7 @@ Newly authored code and tooling are licensed under [Apache License 2.0](LICENSE)
 | `thetadata-cli` (`theta`) | Credential discovery and auth/status/logout commands | First deliverable |
 | `thetadata-proto` | Generated protobuf types and gRPC bindings for all 82 RPCs | Foundation |
 | `thetadata-core` | Transport-independent prices, timestamps, values, tables | Foundation |
-| `thetadata-client` | gRPC requests, ZSTD decoding, bounded batch streaming | Foundation; not verified against the live service |
+| `thetadata-client` | gRPC requests, ZSTD decoding, bounded batch streaming | Experimental typed EOD; one PROD query verified, broader acceptance open |
 
 Dependency direction:
 

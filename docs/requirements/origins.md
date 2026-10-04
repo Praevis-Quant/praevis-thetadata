@@ -29,6 +29,7 @@ gaps; EOD/ARCH/PERF/EXT runtime contracts remain planned. No entry proves a spee
 | `performance` | All PERF requirements | [Performance](performance.md); numeric delivery, measured allocation/work bounds, explicit conversion and regression policy. |
 | `extensions` | All EXT requirements | [Enhancements](enhancements.md); independent upgrade protection and optional local filtering/projection. |
 | `manual-live-verification` | All LIVE requirements | [Manual live verification](live-verification.md); protect opt-in service access, CI isolation, finite capture scope, private evidence and reviewed release claims. |
+| `connection-adapters` | All CONN requirements | [Connection requirements](connections.md); protect explicit modes, distinct status/value/lifecycle contracts and Java-free direct access. |
 
 ADR classifications are exhaustive in the register and visible in the
 [ADR index](../adr/README.md). The original accepted ADR text is retained;

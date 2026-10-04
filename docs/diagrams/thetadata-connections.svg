@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080" role="img" aria-labelledby="title description">
+  <title id="title">ThetaData connection paths: direct Rust access and optional Theta Terminal</title>
+  <desc id="description">Exchange feeds reach ThetaData's MDDS query and FPSS event services. The current Rust client authenticates over HTTPS and queries MDDS directly over TLS gRPC, without Java. The vendor Theta Terminal is a separate Java gateway exposing local REST and WebSocket APIs. Rust adapters for those local APIs are planned. Finite gRPC batch streams and real-time WebSocket event subscriptions are distinct.</desc>
+  <defs>
+    <marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#087f68"/></marker>
+    <marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#64748b"/></marker>
+    <marker id="amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#a85b0a"/></marker>
+    <style>
+      text {font-family:Inter,"Segoe UI",Arial,sans-serif;fill:#152c43}
+      .title {font-size:34px;font-weight:750} .sub {font-size:18px;fill:#52677a}
+      .lane {font-size:15px;font-weight:700;letter-spacing:2px;fill:#52677a}
+      .heading {font-size:22px;font-weight:700} .body {font-size:18px}
+      .small {font-size:16px;fill:#52677a} .badge {font-size:13px;font-weight:700;letter-spacing:1px}
+      .current {fill:none;stroke:#087f68;stroke-width:3;marker-end:url(#green)}
+      .external {fill:none;stroke:#64748b;stroke-width:2.5;marker-end:url(#gray)}
+      .planned {fill:none;stroke:#a85b0a;stroke-width:3;stroke-dasharray:8 6;marker-end:url(#amber)}
+      .auth {fill:none;stroke:#087f68;stroke-width:2;stroke-dasharray:4 5;marker-start:url(#green);marker-end:url(#green)}
+    </style>
+  </defs>
+  <rect width="1600" height="1080" fill="#ffffff"/>
+  <text x="44" y="58" class="title">One data provider. Distinct connection paths.</text>
+  <text x="44" y="92" class="sub">thetadata-rs • Current direct integration and planned optional Terminal adapters • 2026-10-04</text>
+  <path d="M46 130H94" class="current"/><text x="107" y="136" class="small">Current Rust path</text>
+  <path d="M330 130H378" class="external"/><text x="391" y="136" class="small">Vendor infrastructure</text>
+  <path d="M655 130H703" class="planned"/><text x="716" y="136" class="small">Planned Rust adapter</text>
+  <text x="1050" y="136" class="small">Data-flow arrows; requests travel back to the service</text>
+
+  <rect x="30" y="175" width="220" height="755" rx="18" fill="#f4f7fa" stroke="#dce4eb"/>
+  <rect x="280" y="175" width="400" height="755" rx="18" fill="#f1f6fb" stroke="#cbdbe9"/>
+  <rect x="735" y="175" width="835" height="755" rx="18" fill="#fafcfb" stroke="#d3e4dd"/>
+  <text x="50" y="211" class="lane">MARKET SOURCES</text>
+  <text x="305" y="211" class="lane">THETADATA CLOUD</text>
+  <text x="760" y="211" class="lane">YOUR MACHINE / APPLICATION</text>
+
+  <rect x="50" y="435" width="180" height="230" rx="14" fill="#fff" stroke="#c2d0dd"/>
+  <text x="70" y="472" class="heading">Exchange feeds</text>
+  <text x="70" y="515" class="body">OPRA</text>
+  <text x="70" y="552" class="body">UTP / CTA</text>
+  <text x="70" y="589" class="body">Nasdaq Basic</text>
+  <text x="70" y="626" class="body">CBOE CGIF</text>
+
+  <rect x="305" y="245" width="350" height="105" rx="14" fill="#fff" stroke="#9ecdbc"/>
+  <text x="328" y="281" class="heading">Identity service</text>
+  <text x="328" y="313" class="body">HTTPS authentication → session</text>
+  <text x="328" y="336" class="small">Credentials remain at the auth boundary</text>
+
+  <rect x="305" y="415" width="350" height="135" rx="14" fill="#fff" stroke="#a6c3dc"/>
+  <text x="328" y="453" class="heading">MDDS • Query service</text>
+  <text x="328" y="486" class="body">Historical data and snapshots</text>
+  <text x="328" y="519" class="small">Finite responses; NONE / ZSTD envelopes</text>
+
+  <rect x="305" y="695" width="350" height="125" rx="14" fill="#fff" stroke="#a6c3dc"/>
+  <text x="328" y="733" class="heading">FPSS • Event service</text>
+  <text x="328" y="766" class="body">Real-time market subscriptions</text>
+  <text x="328" y="796" class="small">Distinct lifecycle and entitlements</text>
+
+  <path d="M230 480H293" class="external"/>
+  <path d="M230 610H267V755H293" class="external"/>
+
+  <rect x="780" y="250" width="365" height="260" rx="16" fill="#eaf7f1" stroke="#087f68" stroke-width="2"/>
+  <rect x="800" y="269" width="240" height="25" rx="12" fill="#087f68"/>
+  <text x="814" y="287" class="badge" style="fill:#fff">CURRENT • NO JAVA REQUIRED</text>
+  <text x="803" y="329" class="heading">thetadata-rs direct client</text>
+  <text x="803" y="368" class="body">thetadata-auth: explicit credentials</text>
+  <text x="803" y="400" class="body">thetadata-client: TLS gRPC queries</text>
+  <text x="803" y="439" class="small">Typed EOD: experimental, live sample verified</text>
+  <text x="803" y="465" class="small">Generated raw bindings: broader foundations</text>
+  <text x="803" y="491" class="small">Bounded decoding • numeric batches / Tables</text>
+
+  <path d="M665 295H767" class="auth"/>
+  <text x="687" y="280" class="small">HTTPS</text>
+  <path d="M655 425H768" class="current"/>
+  <text x="690" y="407" class="small">gRPC</text>
+  <text x="691" y="450" class="small">TLS</text>
+
+  <rect x="1230" y="328" width="310" height="122" rx="14" fill="#fff" stroke="#87bca7"/>
+  <text x="1252" y="369" class="heading">Rust consumer</text>
+  <text x="1252" y="403" class="body">DataBatch / Table</text>
+  <text x="1252" y="430" class="small">Caller owns runtime and backpressure</text>
+  <path d="M1145 389H1218" class="current"/>
+
+  <path d="M760 552H1545" stroke="#d3e0d9" stroke-width="1.5"/>
+  <text x="782" y="582" class="lane">OPTIONAL TERMINAL PATH • RUST ADAPTERS PLANNED</text>
+
+  <rect x="780" y="640" width="365" height="220" rx="16" fill="#f5f7fb" stroke="#94a3b8" stroke-width="2"/>
+  <text x="803" y="681" class="heading">Theta Terminal v3</text>
+  <text x="803" y="716" class="body">Vendor JAR • Java 21+</text>
+  <text x="803" y="752" class="small">Authenticates and translates vendor transport</text>
+  <text x="803" y="781" class="small">Hosts local REST and WebSocket servers</text>
+  <text x="803" y="821" class="small">Operator-managed initially; optional supervisor</text>
+  <text x="803" y="844" class="small">No JAR dependency in the direct Rust path</text>
+
+  <path d="M655 505H705V680H768" class="external"/>
+  <path d="M655 756H768" class="external"/>
+  <text x="682" y="741" class="small">Vendor</text>
+  <text x="682" y="785" class="small">transport</text>
+
+  <rect x="1230" y="612" width="310" height="112" rx="14" fill="#fff7ed" stroke="#c88a45" stroke-dasharray="7 5"/>
+  <text x="1252" y="649" class="heading">REST adapter / client</text>
+  <text x="1252" y="681" class="body">127.0.0.1:25503/v3</text>
+  <text x="1252" y="707" class="small">HTTP • explicit response-format parsing</text>
+  <path d="M1145 692H1181V668H1218" class="planned"/>
+  <rect x="1230" y="776" width="310" height="112" rx="14" fill="#fff7ed" stroke="#c88a45" stroke-dasharray="7 5"/>
+  <text x="1252" y="813" class="heading">WebSocket adapter / client</text>
+  <text x="1252" y="845" class="body">127.0.0.1:25520/v1/events</text>
+  <text x="1252" y="871" class="small">Event subscriptions • JSON messages</text>
+  <path d="M1145 814H1181V832H1218" class="planned"/>
+
+  <rect x="30" y="951" width="1540" height="91" rx="14" fill="#f2f5f8"/>
+  <text x="52" y="984" class="body" style="font-weight:650">Finite gRPC batch streams ≠ real-time event subscriptions. Authentication ≠ endpoint entitlement.</text>
+  <text x="52" y="1015" class="small">Ports shown are vendor defaults. Connection modes, errors and subscription expectations need separate verification; no automatic fallback.</text>
+  <text x="42" y="1064" font-size="13" fill="#52677a">Project-authored redraw informed by ThetaData’s Terminal overview and direct-library documentation. See docs/connections.md for sources and support boundaries.</text>
+</svg>

@@ -10,6 +10,7 @@ NOTICE text eol=lf
 *.json text eol=lf
 *.lock text eol=lf
 *.md text eol=lf
+*.svg text eol=lf
 # Preserve the verbatim review's Markdown hard line breaks.
 docs/ROADMAP.md whitespace=-blank-at-eol
 *.yml text eol=lf

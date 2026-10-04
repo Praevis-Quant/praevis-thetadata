@@ -17,7 +17,11 @@ product objective; capture instrumentation need not run on the library hot path.
 
 Provide a separately feature-gated Rust developer example with explicit capture
 and offline replay commands. Require a manually chosen environment, bounded
-query, credential-file path and live consent. Select PROD for initial integration;
+query, credential source and live consent. Sources are an explicit
+`--api-key-env` opt-in to process `THETADATA_API_KEY`, an API-key file, or an
+email/password file, with no discovery/fallback. Environment support was added
+at the user's request on 2026-10-04; the auth library remains explicit-input-only.
+Select PROD for initial integration;
 STAGE is documented as a second independent connection, not a test sandbox.
 Authenticate once, hold a session in memory, perform at most three sequential
 EOD requests without retries and leave native persistence untouched.

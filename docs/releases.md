@@ -32,16 +32,25 @@ is incomplete; change the plan explicitly rather than silently dropping features
 Initially version the five workspace crates together. A future independent
 crate-version policy needs a release decision and dependency compatibility plan.
 
+Optional Terminal track: target a first REST EOD adapter for an operator-started
+v3 JAR in the `0.2.0` prereleases, with explicit HTTP/value/resource contracts and
+manual per-tier evidence under [ADR-0018](adr/0018-explicit-connection-adapters.md).
+Target process supervision only after attached-process behavior is accepted;
+keep WebSocket subscription work in the `0.5.0` event milestone. Do not delay or
+add Java to direct auth/EOD users. Every release records available and not-run
+product/tier/connector cells in the [subscription matrix](subscription-testing.md).
+
 ## Immediate execution order
 
-1. Prepare the manual Rust capture/replay path and this release checklist.
-2. With the account holder's local credential file, run one small **PROD** stock
-   EOD query. Authenticate once; collect the raw response envelopes and compare
-   numeric/Table delivery using the same in-memory session. Keep all live
-   execution outside CI and do not automatically retry a rejection.
-3. Review actual columns, compression, nulls, values, dates/order and completion
-   against the synthetic matrix. Record differences before changing either the
-   decoder or fixtures. Promote only reviewed, permitted fixtures; otherwise
+1. Extend the synthetic corpus with constructed endpoint-shaped cases informed
+   by the [first PROD EOD and quote-denial observations](research/live-observations.md).
+   Retain the original broad edge-case fixtures and private capture hashes.
+2. Select bounded additional EOD date/schema/empty-result checks and per-tier
+   cases from the [subscription matrix](subscription-testing.md). Use explicit
+   credentials and expected outcomes; paid profiles remain not-run until available.
+   Keep live execution outside CI and do not automatically retry a rejection.
+3. Review each new observation against the synthetic matrix before changing
+   decoders or fixtures. Promote only reviewed, permitted fixtures; otherwise
    build a clearly labelled synthetic reproducer of the observed structure.
 4. Prepare alpha.1 package archives and external consumer checks in parallel
    with the existing null/price regression investigation. Publication stays a

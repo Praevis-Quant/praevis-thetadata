@@ -135,3 +135,13 @@ accept the PERF baseline or close EOD-L3-023. The unsuccessful function-layout
 experiment was reverted and its evidence retained. Next work is targeted decode
 regression investigation plus the remaining verification clauses and separate
 transport/C-memory profiling. No vendor contract or requirement origin changed.
+
+## First manual PROD interoperability evidence (2026-10-04)
+
+The [reviewed observation record](../research/live-observations.md) documents
+successful authentication and a complete one-row AAPL query with equal start/end
+date `2024-01-02`. The captured ZSTD envelope replays consistently through raw,
+numeric and Table interfaces on Windows/Linux; separate live numeric/Table calls
+matched it. This supplements EOD-L3-004/005 and EOD-L3-024/025 evidence for that
+specific query. It does not close the full acceptance matrix, prove Python output
+equivalence, or establish unobserved service/account/lifecycle semantics.
