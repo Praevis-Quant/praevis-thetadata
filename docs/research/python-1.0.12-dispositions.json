@@ -23,7 +23,11 @@
       "EOD-L3-025", "EOD-L3-026", "EOD-L3-027", "EOD-L3-028", "EOD-L3-029"
     ],
     "implementation": [],
-    "verification": []
+    "verification": [
+      "crates/thetadata-client/tests/eod_fixture.rs",
+      "crates/thetadata-client/examples/eod_benchmark.rs",
+      "docs/performance/eod-baseline.md"
+    ]
   },
   {
     "id": "artifact-packaging",
