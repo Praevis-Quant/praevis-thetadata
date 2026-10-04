@@ -1,7 +1,9 @@
 # ADR-0008: typed requests with explicit value presence
 
 Status: Proposed. Date: 2026-10-04. Owner: thetadata-client maintainers.
-Requirements: market-data request L2/L3 definitions pending; relates to AUTH-L1-001.
+Requirements: [EOD-L2-002](../requirements/L2-stock-eod.md),
+[EOD-L3-001 through EOD-L3-005](../requirements/L3-stock-eod.md); relates to
+AUTH-L1-001. Defined contracts, implementation/acceptance planned.
 
 ## Context
 

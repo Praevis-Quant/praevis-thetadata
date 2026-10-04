@@ -107,6 +107,7 @@ behavior. The organization is deliberately hybrid:
 | [docs/requirements/L1-auth.md](docs/requirements/L1-auth.md) | L1 | Product/user outcomes |
 | [docs/requirements/L2-auth.md](docs/requirements/L2-auth.md) | L2 | System behavior, linked to L1 parents |
 | [docs/requirements/L3-auth.md](docs/requirements/L3-auth.md) | L3 | Current cross-component auth obligations, implementation, and verification |
+| [Stock EOD requirements](docs/requirements/L1-stock-eod.md) | L1/L2/L3 | Defined next-slice contracts; implementation and acceptance verification planned |
 | `crates/<name>/docs/requirements/` or `apps/<name>/docs/requirements/` | Future component L3 | Add when a component has substantial independent requirements |
 | [docs/adr/](docs/adr/README.md) | Decisions | Context, alternatives, consequences, and requirement links |
 
@@ -216,8 +217,10 @@ ZIP/extraction were removed after verification; use the documented
 [hash-verified recovery procedure](docs/research/upstream-source.md#recovering-the-removed-local-artifacts)
 when regeneration is needed. Never import or execute the vendor package.
 
-The next planned work in [the roadmap](docs/ROADMAP.md) is writing the stock
-EOD slice's requirements from that evidence and [proposed ADRs 0007-0012](docs/adr/README.md).
+The next planned work in [the roadmap](docs/ROADMAP.md) is implementing the stock
+EOD slice's [defined requirements](docs/requirements/L1-stock-eod.md), beginning
+with Rust fixtures and the decoder measurement gate, from that evidence and
+[proposed ADRs 0007-0012](docs/adr/README.md).
 Those ADRs define scope, typed requests, outputs, stream behavior, verification,
 and traceability; they do not establish an implemented market-data baseline.
 Extend coverage to implementation and verification as work is selected.

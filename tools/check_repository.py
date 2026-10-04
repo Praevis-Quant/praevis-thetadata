@@ -1,4 +1,4 @@
-"""Check tracked-file exclusions, descriptor integrity, and auth documentation links."""
+"""Check tracked inputs, descriptor integrity, requirements, and document links."""
 import hashlib
 import json
 from pathlib import Path
@@ -8,6 +8,49 @@ import sys
 from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[1]
+REQUIREMENT = r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-L[123]-\d{3}"
+
+
+def audit_requirements(documents):
+    """Audit canonical table IDs and immediate-level parent links in Markdown.
+
+    Definitions use a bare ID in the first table cell inside a requirements
+    directory. L2/L3 definitions use parent IDs in the second cell. Other
+    tables should link to definitions instead of repeating their defining row.
+    This checks structure, not the truth of implementation/evidence claims.
+    """
+    definitions = {}
+    references = set()
+    errors = []
+    for path, content in documents.items():
+        references.update(re.findall(rf"\b{REQUIREMENT}\b", content))
+        for match in re.finditer(rf"^\|\s*({REQUIREMENT})\s*\|([^\n]*)", content, re.M):
+            identifier, rest = match.groups()
+            if "requirements" not in Path(path).parts:
+                errors.append(f"Definition outside requirements directory: {identifier} in {path}")
+            if identifier in definitions:
+                errors.append(f"Duplicate requirement definition: {identifier}")
+            parents = re.findall(REQUIREMENT, rest.split("|", 1)[0])
+            definitions[identifier] = parents
+    if references - definitions.keys():
+        errors.append(f"Undefined requirements: {sorted(references - definitions.keys())}")
+    namespaces = {identifier.rsplit("-L", 1)[0] for identifier in definitions}
+    for namespace in namespaces | {"AUTH"}:
+        for level in (1, 2, 3):
+            if not any(identifier.startswith(f"{namespace}-L{level}-") for identifier in definitions):
+                errors.append(f"Missing {namespace} L{level} requirements.")
+    for identifier, parents in definitions.items():
+        level = int(identifier.rsplit("-L", 1)[1][0])
+        if level == 1:
+            continue
+        if not parents:
+            errors.append(f"Missing parents: {identifier}")
+        for parent in parents:
+            if parent not in definitions:
+                errors.append(f"Undefined parent: {identifier} -> {parent}")
+            elif int(parent.rsplit("-L", 1)[1][0]) != level - 1:
+                errors.append(f"Wrong parent level: {identifier} -> {parent}")
+    return definitions, errors
 
 
 def main():
@@ -29,12 +72,12 @@ def main():
     if schema_hash != manifest["descriptor_sha256"]:
         errors.append("Descriptor bytes do not match the provenance manifest.")
     documents = [ROOT / path for path in files if path.endswith(".md")]
-    defined = set()
-    references = set()
+    contents = {document.relative_to(ROOT).as_posix(): document.read_text(encoding="utf-8")
+                for document in documents}
+    defined, requirement_errors = audit_requirements(contents)
+    errors.extend(requirement_errors)
     for document in documents:
-        content = document.read_text(encoding="utf-8")
-        defined.update(re.findall(r"^\|\s*(AUTH-L[123]-\d{3})\s*\|", content, re.M))
-        references.update(re.findall(r"AUTH-L[123]-\d{3}", content))
+        content = contents[document.relative_to(ROOT).as_posix()]
         for link in re.findall(r"\]\(([^)]+)\)", content):
             if "://" in link or link.startswith(("#", "mailto:")):
                 continue
@@ -46,11 +89,6 @@ def main():
             target = unquote(link.split("#", 1)[0])
             if target and not (document.parent / target).exists():
                 errors.append(f"Broken file link in {document.relative_to(ROOT)}: {target}")
-    if references - defined:
-        errors.append(f"Undefined requirements: {sorted(references - defined)}")
-    for level in (1, 2, 3):
-        if not any(identifier.startswith(f"AUTH-L{level}-") for identifier in defined):
-            errors.append(f"Missing L{level} requirements.")
     if errors:
         raise SystemExit("\n".join(errors))
     print(f"Checked {len(files)} tracked files, {len(defined)} requirements, local document links, and descriptor integrity.")

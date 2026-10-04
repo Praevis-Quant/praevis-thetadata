@@ -20,10 +20,11 @@ Every file, lexical class/function (including generated helpers), descriptor mes
 
 ## Feature decisions and traceability
 
-ADR/requirement/code/test cells are explicit links or `unassigned`. Existing references cover the stated scope only. There are no market-data L1/L2/L3 requirements yet.
+ADR/requirement/code/test cells are explicit links or `unassigned`. Existing references cover the stated scope only. [Stock EOD requirements](../requirements/L1-stock-eod.md) are defined; their runtime implementation and acceptance verification remain planned.
 
 | Feature ID | Disposition | Research | ADR / requirements | Implementation / verification | Reason and limits |
 | --- | --- | --- | --- | --- | --- |
+| stock-eod | planned | [analysis](thetadata-1.0.12.md#wrapper-semantics) | [docs/adr/0007-first-market-data-slice.md](../../docs/adr/0007-first-market-data-slice.md), [docs/adr/0008-typed-requests-and-presence.md](../../docs/adr/0008-typed-requests-and-presence.md), [docs/adr/0009-market-data-values-and-schema.md](../../docs/adr/0009-market-data-values-and-schema.md), [docs/adr/0010-stream-lifecycle-and-resource-bounds.md](../../docs/adr/0010-stream-lifecycle-and-resource-bounds.md), [docs/adr/0011-market-data-verification-and-artifact-retention.md](../../docs/adr/0011-market-data-verification-and-artifact-retention.md), [docs/adr/0012-requirements-and-research-traceability.md](../../docs/adr/0012-requirements-and-research-traceability.md); EOD-L1-001, EOD-L1-002, EOD-L1-003, EOD-L1-004, EOD-L1-005, EOD-L1-006, EOD-L2-001, EOD-L2-002, EOD-L2-003, EOD-L2-004, EOD-L2-005, EOD-L2-006, EOD-L2-007, EOD-L2-008, EOD-L2-009, EOD-L2-010, EOD-L2-011, EOD-L2-012, EOD-L3-001, EOD-L3-002, EOD-L3-003, EOD-L3-004, EOD-L3-005, EOD-L3-006, EOD-L3-007, EOD-L3-008, EOD-L3-009, EOD-L3-010, EOD-L3-011, EOD-L3-012, EOD-L3-013, EOD-L3-014, EOD-L3-015, EOD-L3-016, EOD-L3-017, EOD-L3-018, EOD-L3-019, EOD-L3-020, EOD-L3-021, EOD-L3-022, EOD-L3-023, EOD-L3-024, EOD-L3-025, EOD-L3-026, EOD-L3-027, EOD-L3-028, EOD-L3-029 | unassigned; unassigned | Selected one-symbol EOD slice: four source items trace to defined L1/L2/L3 contracts. Runtime implementation and acceptance verification remain planned; raw bindings do not establish typed-query support or live service behavior. See docs/requirements/stock-eod-evidence.md for deviations and gates. |
 | artifact-packaging | supported | [analysis](thetadata-1.0.12.md#artifact-and-packaging) | [docs/adr/0005-verification-and-provenance.md](../../docs/adr/0005-verification-and-provenance.md), [docs/adr/0011-market-data-verification-and-artifact-retention.md](../../docs/adr/0011-market-data-verification-and-artifact-retention.md); AUTH-L3-017 | [crates/thetadata-proto/schema/manifest.json](../../crates/thetadata-proto/schema/manifest.json); [tools/research_python.py](../../tools/research_python.py), [tools/check_repository.py](../../tools/check_repository.py) | The exact 14-member wheel is inventoried and licensed source provenance is retained; this does not claim that the Python distribution installs correctly or is published by this Rust project. |
 | wire-schema | supported | [analysis](thetadata-1.0.12.md#protocol-surface) | [docs/adr/0005-verification-and-provenance.md](../../docs/adr/0005-verification-and-provenance.md), [docs/adr/0011-market-data-verification-and-artifact-retention.md](../../docs/adr/0011-market-data-verification-and-artifact-retention.md); AUTH-L3-017 | [crates/thetadata-proto/build.rs](../../crates/thetadata-proto/build.rs), [crates/thetadata-proto/schema/thetadata.bin](../../crates/thetadata-proto/schema/thetadata.bin); [tools/research_python.py](../../tools/research_python.py), [tools/check_repository.py](../../tools/check_repository.py) | Raw descriptor types and 82 service bindings are preserved by Rust code generation. This status covers wire shape only; query defaults, server availability, entitlements, and complete typed API behavior remain unverified. |
 | construction | planned | [analysis](thetadata-1.0.12.md#constructor-and-configuration) | [docs/adr/0001-standalone-auth.md](../../docs/adr/0001-standalone-auth.md), [docs/adr/0007-first-market-data-slice.md](../../docs/adr/0007-first-market-data-slice.md), [docs/adr/0008-typed-requests-and-presence.md](../../docs/adr/0008-typed-requests-and-presence.md); unassigned | [crates/thetadata-auth/src/lib.rs](../../crates/thetadata-auth/src/lib.rs), [crates/thetadata-client/src/lib.rs](../../crates/thetadata-client/src/lib.rs); unassigned | Python combines discovery, synchronous authentication, and channel creation in one constructor. Rust intentionally separates auth, storage, and async client construction; a high-level compatibility API is not baselined. |
@@ -527,7 +528,7 @@ The feature key joins each row to all six traceability columns above. Items reta
 | `symbol:thetadata/client.py:ThetaClient.stock_snapshot_trade` | planned | query-wrappers | [detail](#item-3d42abbbd4d37380) |
 | `symbol:thetadata/client.py:ThetaClient.stock_snapshot_quote` | planned | query-wrappers | [detail](#item-f283715c8dea73c9) |
 | `symbol:thetadata/client.py:ThetaClient.stock_snapshot_market_value` | planned | query-wrappers | [detail](#item-61c8a8e8bf290ca9) |
-| `symbol:thetadata/client.py:ThetaClient.stock_history_eod` | planned | query-wrappers | [detail](#item-f0536a100eb7dbcc) |
+| `symbol:thetadata/client.py:ThetaClient.stock_history_eod` | planned | stock-eod | [detail](#item-f0536a100eb7dbcc) |
 | `symbol:thetadata/client.py:ThetaClient.stock_history_ohlc` | planned | query-wrappers | [detail](#item-52fa18cacdc11982) |
 | `symbol:thetadata/client.py:ThetaClient.stock_history_trade` | planned | query-wrappers | [detail](#item-6bab0fdc556e02c9) |
 | `symbol:thetadata/client.py:ThetaClient.stock_history_quote` | planned | query-wrappers | [detail](#item-2ca18fa3cf99396d) |
@@ -631,8 +632,8 @@ The feature key joins each row to all six traceability columns above. Items reta
 | `message:BetaEndpoints.StockSnapshotQuoteRequest` | supported | wire-schema | [detail](#item-2496be189d87893b) |
 | `message:BetaEndpoints.StockSnapshotMarketValueRequestQuery` | supported | wire-schema | [detail](#item-b827a8fd43528e03) |
 | `message:BetaEndpoints.StockSnapshotMarketValueRequest` | supported | wire-schema | [detail](#item-43b0b48a9373b60a) |
-| `message:BetaEndpoints.StockHistoryEodRequestQuery` | supported | wire-schema | [detail](#item-5d5e92001216e097) |
-| `message:BetaEndpoints.StockHistoryEodRequest` | supported | wire-schema | [detail](#item-a63a3eacf9637c00) |
+| `message:BetaEndpoints.StockHistoryEodRequestQuery` | planned | stock-eod | [detail](#item-5d5e92001216e097) |
+| `message:BetaEndpoints.StockHistoryEodRequest` | planned | stock-eod | [detail](#item-a63a3eacf9637c00) |
 | `message:BetaEndpoints.StockHistoryOhlcRequestQuery` | supported | wire-schema | [detail](#item-305eae0f91fde5ee) |
 | `message:BetaEndpoints.StockHistoryOhlcRequest` | supported | wire-schema | [detail](#item-bb455ca82413c33b) |
 | `message:BetaEndpoints.StockHistoryTradeRequestQuery` | supported | wire-schema | [detail](#item-4068094188b01bf9) |
@@ -789,7 +790,7 @@ The feature key joins each row to all six traceability columns above. Items reta
 | `rpc:BetaEndpoints.BetaThetaTerminal/GetStockSnapshotTrade` | supported | wire-schema | [detail](#item-d7035c5ab1271ea3) |
 | `rpc:BetaEndpoints.BetaThetaTerminal/GetStockSnapshotQuote` | supported | wire-schema | [detail](#item-7ffea749ac2991c5) |
 | `rpc:BetaEndpoints.BetaThetaTerminal/GetStockSnapshotMarketValue` | supported | wire-schema | [detail](#item-2b026447d9cc7aa1) |
-| `rpc:BetaEndpoints.BetaThetaTerminal/GetStockHistoryEod` | supported | wire-schema | [detail](#item-92352009630c5a88) |
+| `rpc:BetaEndpoints.BetaThetaTerminal/GetStockHistoryEod` | planned | stock-eod | [detail](#item-92352009630c5a88) |
 | `rpc:BetaEndpoints.BetaThetaTerminal/GetStockHistoryOhlc` | supported | wire-schema | [detail](#item-d63b3a52b9be66b7) |
 | `rpc:BetaEndpoints.BetaThetaTerminal/GetStockHistoryTrade` | supported | wire-schema | [detail](#item-5c3cf1d4b1b42a44) |
 | `rpc:BetaEndpoints.BetaThetaTerminal/GetStockHistoryQuote` | supported | wire-schema | [detail](#item-aafdd9afe5e034c5) |

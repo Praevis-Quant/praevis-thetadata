@@ -29,6 +29,14 @@ class ResearchClosureTests(unittest.TestCase):
         self.assertEqual(research.validate(self.original, self.decisions), 531)
         self.assertEqual(research.CATALOG.read_bytes(), research.render(self.original, self.decisions))
 
+    def test_stock_eod_selection_does_not_select_other_endpoints(self):
+        selected = [e for e in self.original["entries"] if research.decision_key(e) == "stock-eod"]
+        self.assertEqual(Counter(e["kind"] for e in selected), {"wrapper": 1, "rpc": 1, "message": 2})
+        self.assertEqual(next(e["name"] for e in selected if e["kind"] == "rpc"), "GetStockHistoryEod")
+        disposition = next(d for d in self.decisions if d["id"] == "stock-eod")
+        self.assertEqual(disposition["status"], "planned")
+        self.assertEqual(len(disposition["requirements"]), 47)
+
     def test_lost_file_fails_even_with_adjusted_counts(self):
         data = self.changed()
         self.remove(data, lambda e: e["kind"] == "file")

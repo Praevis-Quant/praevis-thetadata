@@ -280,6 +280,13 @@ def inventory(archive_path, previous=None):
 
 
 def decision_key(entry):
+    if entry["id"] in {
+        "symbol:thetadata/client.py:ThetaClient.stock_history_eod",
+        "message:BetaEndpoints.StockHistoryEodRequestQuery",
+        "message:BetaEndpoints.StockHistoryEodRequest",
+        "rpc:BetaEndpoints.BetaThetaTerminal/GetStockHistoryEod",
+    }:
+        return "stock-eod"
     if entry["kind"] == "wrapper":
         return "flat-files" if "flat_file" in entry["name"] else "query-wrappers"
     if entry["kind"] == "rpc":
@@ -323,7 +330,8 @@ def render(data, decisions):
               "Shared behavior is traced separately in the decision ledger. A covered row is not a "
               "claim that Rust implements or tests that feature.", "", "## Feature decisions and traceability", "",
               "ADR/requirement/code/test cells are explicit links or `unassigned`. Existing references "
-              "cover the stated scope only. There are no market-data L1/L2/L3 requirements yet.", "",
+              "cover the stated scope only. [Stock EOD requirements](../requirements/L1-stock-eod.md) "
+              "are defined; their runtime implementation and acceptance verification remain planned.", "",
               "| Feature ID | Disposition | Research | ADR / requirements | Implementation / verification | Reason and limits |",
               "| --- | --- | --- | --- | --- | --- |"]
     for d in decisions:

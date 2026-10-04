@@ -1,7 +1,10 @@
 # ADR-0007: stock end-of-day history as the first market-data slice
 
 Status: Proposed. Date: 2026-10-04. Owner: Praevis-Quant maintainers.
-Requirements: market-data L1/L2/L3 definitions pending; existing auth baseline unchanged.
+Requirements: [EOD-L1-001 through EOD-L1-006](../requirements/L1-stock-eod.md),
+[EOD-L2-001](../requirements/L2-stock-eod.md),
+[EOD-L3-001](../requirements/L3-stock-eod.md). Implementation/acceptance planned;
+existing auth baseline unchanged.
 
 ## Context
 
@@ -54,16 +57,17 @@ evidence. Initially preserve wire headers and order rather than inventing a
 fixed OHLC struct or claiming adjusted prices. Record those questions before
 designating an end-to-end result as vendor-validated.
 
-## Requirements to derive and verification
+## Derived requirements and verification
 
-L1 should cover obtaining historical stock data from a reusable Rust library,
-preserving value meaning, and observing completion/failure. L2 should cover
-typed request construction, explicit session use, incremental output, and
-bounded operation. L3 should cover exact field mapping, invalid inputs,
-NONE/ZSTD fixtures, multiple batches, empty results, and failures after data.
+The linked L1 requirements cover obtaining historical stock data from a
+reusable Rust library, preserving value meaning, and observing completion/failure.
+L2 covers typed requests, explicit session use, incremental output, and bounded
+operation. L3 defines exact field mapping, invalid inputs, NONE/ZSTD fixtures,
+multiple batches, empty results, and failures after data. Acceptance remains planned.
 Use [ADR-0011](0011-market-data-verification-and-artifact-retention.md) for the
 evidence boundary and [ADR-0012](0012-requirements-and-research-traceability.md)
-for document ownership. No new requirement IDs are assigned by this ADR.
+for document ownership. Canonical requirement definitions reside in the linked
+requirements documents rather than being duplicated in this ADR.
 
 ## Supporting evidence
 

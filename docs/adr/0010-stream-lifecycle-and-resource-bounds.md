@@ -1,7 +1,8 @@
 # ADR-0010: explicit stream completion, failure, and resource limits
 
 Status: Proposed. Date: 2026-10-04. Owner: thetadata-client maintainers.
-Requirements: market-data streaming/error/resource L2/L3 definitions pending;
+Requirements: [EOD-L2-005 through EOD-L2-009](../requirements/L2-stock-eod.md),
+[EOD-L3-012 through EOD-L3-023](../requirements/L3-stock-eod.md);
 preserves AUTH-L1-004 and the explicit session lifecycle.
 
 ## Context
@@ -43,7 +44,8 @@ points before large allocations, checked arithmetic, a ZSTD window ceiling,
 and concurrency accounting across cloned clients that share a budget. A
 row count checked only after protobuf allocation is insufficient. Exact
 default ceilings and the decoding strategy must be selected from fixtures
-and measurements while deriving requirements; the existing 64 MiB setting
+and measurements at the [EOD-L3-023 acceptance gate](../requirements/stock-eod-evidence.md)
+before accepting the implementation; the existing 64 MiB setting
 is an encoded/decompressed ceiling only.
 
 Keep at most the next requested batch in the library's delivery path. CPU

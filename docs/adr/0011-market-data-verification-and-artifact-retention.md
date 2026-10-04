@@ -1,7 +1,9 @@
 # ADR-0011: Rust protocol fixtures and recoverable research inputs
 
 Status: Proposed. Date: 2026-10-04. Owner: Praevis-Quant maintainers.
-Requirements: market-data verification L1/L2/L3 definitions pending;
+Requirements: [EOD-L1-006](../requirements/L1-stock-eod.md),
+[EOD-L2-010 through EOD-L2-012](../requirements/L2-stock-eod.md),
+[EOD-L3-024 through EOD-L3-029](../requirements/L3-stock-eod.md);
 extends the evidence approach of AUTH-L2-008 and AUTH-L2-009 without changing them.
 
 ## Context
