@@ -15,6 +15,16 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Added
 
+- Complete Python 1.0.12 source analysis and generated Markdown catalogue:
+  14 artifact members, 9 modules, 251 functions/methods, 80 query wrappers,
+  82 RPCs, 176 messages, 778 fields, and two enums. Added 531 inventory rows
+  and 26 feature dispositions tracing research to existing auth evidence and
+  future requirements, with explicit unresolved contracts.
+- Reproducible archive-to-inventory checks, offline CI coverage checks, and
+  omission/mutation tests. Preserve the original research and inventory by
+  hash; document undeclared dotenv, conflicting gRPC version minimums,
+  optional-field/default differences, conversion edge cases, and the two
+  descriptor-only corporate-action RPCs without claiming live-service parity.
 - Rust workspace with an independent `thetadata-auth` library and `theta`
   authentication CLI. Supports API-key and email/password authentication,
   explicit credential discovery, PROD/STAGE environments, and named profiles.

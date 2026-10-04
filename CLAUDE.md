@@ -42,6 +42,7 @@ cargo test --workspace --locked
 # Existing repository/tooling checks (Python is development tooling only)
 python -m pip install -r tools/requirements.txt
 python tools/check_repository.py
+python tools/research_python.py --check
 python -m unittest discover -s tools -p 'test_*.py'
 
 # Windows native-store integration test, using a unique synthetic profile
@@ -205,14 +206,19 @@ for a newer release or inability to verify. A failure initiates compatibility
 research; it does not authorize silently bumping the baseline. The checker
 does not install or execute the upstream package.
 
-The next planned work is the deep Python feature/function analysis in
-[the roadmap](docs/ROADMAP.md). Expand and reconcile the existing research,
-inventory every source module and observable function/feature with hashes and
-references, reconcile 80 wrappers against 82 RPCs, and record explicit
-dispositions and gaps. Build coverage from inventory to research and then to
-selected ADRs, requirements, implementation, and verification. Mechanical
-counts and hashes must demonstrate that the inspected artifact was covered;
-they cannot prove undocumented live-service behavior.
+The [deep analysis and coverage matrix](docs/research/python-1.0.12-catalog.md)
+inventory every source module/function, all 80 wrappers and 82 RPCs, protocol
+fields, and explicit feature dispositions. `tools/research_python.py --check`
+verifies committed evidence and generated documentation without the vendor
+archive or research dependencies. Archive regeneration additionally needs
+`tools/research-requirements.txt` and the original ignored ZIP; never import
+or execute the vendor package to build the inventory.
+
+The next planned work in [the roadmap](docs/ROADMAP.md) is selecting one small
+market-data scope and writing its ADRs and requirements from that evidence.
+Extend coverage to implementation and verification as work is selected.
+Preserve the original research and unresolved contracts. Mechanical coverage
+cannot prove undocumented live-service behavior or approve market-data scope.
 
 ## Reference documents
 
