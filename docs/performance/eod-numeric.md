@@ -2,6 +2,8 @@
 
 Status: implemented experiment; full EOD acceptance remains open. No live vendor
 traffic or account is required. Raw helpers still use the retained decoder.
+The [Windows/Linux results](eod-numeric-results.md) retain both gains and
+regressions, raw-report/binary hashes and the final measured source revision.
 
 ## Design and provisional policy
 

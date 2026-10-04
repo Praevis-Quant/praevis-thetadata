@@ -1,9 +1,11 @@
 # L1: stock end-of-day history outcomes
 
-Status: **Defined; implementation and acceptance verification planned**, 2026-10-04.
+Status: **Defined; partial experimental implementation, full acceptance open**, 2026-10-04.
 Owner of every L1 requirement: Praevis-Quant maintainers. This is the selected
 next slice, not a claim of implemented or live-validated market-data support.
-The authentication baseline remains separate.
+The authentication baseline remains separate. See the
+[typed experiment evidence](stock-eod-evidence.md#typed-numeric-experiment-2026-10-04)
+for implemented cases and remaining gaps.
 
 Scope: a reusable Rust library query for **one stock symbol and an explicit
 calendar-date range**, using a caller-supplied session. Python 1.0.12 evidence

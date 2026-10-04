@@ -235,8 +235,9 @@ ZIP/extraction were removed after verification; use the documented
 when regeneration is needed. Never import or execute the vendor package.
 
 The next planned work in [the roadmap](docs/ROADMAP.md) is implementing the stock
-EOD slice's [defined requirements](docs/requirements/L1-stock-eod.md), beginning
-with Rust fixtures and the decoder measurement gate, from that evidence and
+EOD slice's [defined requirements](docs/requirements/L1-stock-eod.md), closing
+the [typed experiment's remaining resource/fault gates](docs/performance/eod-numeric.md)
+using its fixtures and measured results, from that evidence and
 [proposed ADRs 0007-0012](docs/adr/README.md).
 Those ADRs define scope, typed requests, outputs, stream behavior, verification,
 and traceability; they do not establish an implemented market-data baseline.
