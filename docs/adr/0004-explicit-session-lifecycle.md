@@ -8,7 +8,7 @@ An opaque session ID exists in the wheel, but no reviewed artifact defines expir
 
 ## Decision
 
-`theta auth` authenticates and saves a fresh session only after success. `theta auth status` reads local storage without credentials or network access and reports `validity: not_checked`. `theta auth logout` deletes only the selected local record. Applications explicitly load sessions; if the server rejects a session, they request reauthentication. Do not invent JWT parsing, expiry timers, silent refresh, or revocation calls.
+`praevis-thetadata auth` authenticates and saves a fresh session only after success. `praevis-thetadata auth status` reads local storage without credentials or network access and reports `validity: not_checked`. `praevis-thetadata auth logout` deletes only the selected local record. Applications explicitly load sessions; if the server rejects a session, they request reauthentication. Do not invent JWT parsing, expiry timers, silent refresh, or revocation calls.
 
 ## Alternatives
 

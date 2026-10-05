@@ -7,14 +7,14 @@ behavior. Full slice acceptance and ADR acceptance remain separate decisions.
 
 Test locations used below:
 
-- **contracts**: [public numeric/Table acceptance tests](../../crates/thetadata-client/tests/eod_contracts.rs).
-- **typed**: [typed wire/lifecycle fixtures](../../crates/thetadata-client/tests/eod_typed.rs).
-- **lifecycle**: [stream implementation and deterministic worker/admission tests](../../crates/thetadata-client/src/eod.rs).
-- **framing**: [local gRPC frame guard and fragmentation tests](../../crates/thetadata-client/src/framing.rs).
-- **bounded**: [preflight/decompression tests](../../crates/thetadata-client/src/bounded.rs).
-- **envelope**: [outer protobuf parser tests](../../crates/thetadata-client/src/envelope.rs).
-- **core**: [exact prices/Table](../../crates/thetadata-core/src/lib.rs) and [numeric timestamps/batches](../../crates/thetadata-core/src/batch.rs).
-- **harness**: [Rust release measurements and allocator tests](../../crates/thetadata-client/examples/eod_benchmark.rs).
+- **contracts**: [public numeric/Table acceptance tests](../../crates/praevis-thetadata-client/tests/eod_contracts.rs).
+- **typed**: [typed wire/lifecycle fixtures](../../crates/praevis-thetadata-client/tests/eod_typed.rs).
+- **lifecycle**: [stream implementation and deterministic worker/admission tests](../../crates/praevis-thetadata-client/src/eod.rs).
+- **framing**: [local gRPC frame guard and fragmentation tests](../../crates/praevis-thetadata-client/src/framing.rs).
+- **bounded**: [preflight/decompression tests](../../crates/praevis-thetadata-client/src/bounded.rs).
+- **envelope**: [outer protobuf parser tests](../../crates/praevis-thetadata-client/src/envelope.rs).
+- **core**: [exact prices/Table](../../crates/praevis-thetadata-core/src/lib.rs) and [numeric timestamps/batches](../../crates/praevis-thetadata-core/src/batch.rs).
+- **harness**: [Rust release measurements and allocator tests](../../crates/praevis-thetadata-client/examples/eod_benchmark.rs).
 
 ## Requirement-by-requirement evidence
 

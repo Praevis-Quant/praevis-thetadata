@@ -66,12 +66,10 @@ separate consumer requirements, state budgets and provenance/invalidation rules.
 
 ## Initial crates.io presence
 
-Select an independent project/crate/executable name from the
-[naming brief](project-naming.md) before first publication, then check availability
-and naming conflicts and perform a coordinated rename. Give each package its own
-public identity and README; distinguish the CLI package from its executable and
-the virtual workspace. Preserve credential/store compatibility and historical
-upstream evidence through any branding changes.
+Prepare the selected [praevis-thetadata package family](project-naming.md) for
+publication. Recheck registry availability and give each package its own public
+README; distinguish the CLI package from its executable and the virtual workspace.
+Preserve credential/store compatibility and historical upstream evidence.
 
 Prepare useful experimental prereleases of the five existing workspace crates
 using the [crates.io release plan](crates-io-release-plan.md). Resolve package

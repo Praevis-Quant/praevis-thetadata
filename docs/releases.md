@@ -3,7 +3,7 @@
 Status: selected release plan, 2026-10-04. These are ordered, gate-based targets,
 not published versions or calendar promises. The current workspace's `0.1.0`
 is an unpublished development version. Preserve the independent Python baseline
-in the [protocol manifest](../crates/thetadata-proto/schema/manifest.json).
+in the [protocol manifest](../crates/praevis-thetadata-proto/schema/manifest.json).
 
 The first supported release will cover authentication and one stock EOD slice.
 Generated bindings for 82 RPCs do not make 82 supported features. Every release

@@ -82,7 +82,7 @@ Run one release binary per platform, no competing builds, with defaults of
 10,000 rows, 12 samples, 3 warmups, four streams and three batches per stream:
 
 ```text
-cargo build --release --locked -p thetadata-client --example eod_benchmark
+cargo build --release --locked -p praevis-thetadata-client --example eod_benchmark
 eod_benchmark run --engine legacy  --output artifacts/eod/legacy-1.json
 eod_benchmark run --engine table   --output artifacts/eod/table-1.json
 eod_benchmark run --engine numeric --output artifacts/eod/numeric-1.json

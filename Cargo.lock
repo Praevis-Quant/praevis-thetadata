@@ -1554,6 +1554,72 @@ dependencies = [
 ]
 
 [[package]]
+name = "praevis-thetadata-auth"
+version = "0.1.0"
+dependencies = [
+ "keyring",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "praevis-thetadata-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "praevis-thetadata-auth",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "praevis-thetadata-client"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "clap",
+ "heck",
+ "http-body",
+ "praevis-thetadata-auth",
+ "praevis-thetadata-core",
+ "praevis-thetadata-proto",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "zstd",
+]
+
+[[package]]
+name = "praevis-thetadata-core"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "praevis-thetadata-proto"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "prost-types",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+]
+
+[[package]]
 name = "prettyplease"
 version = "0.2.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2201,72 +2267,6 @@ dependencies = [
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "thetadata-auth"
-version = "0.1.0"
-dependencies = [
- "keyring",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "thetadata-cli"
-version = "0.1.0"
-dependencies = [
- "clap",
- "serde_json",
- "thetadata-auth",
- "tokio",
-]
-
-[[package]]
-name = "thetadata-client"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "clap",
- "heck",
- "http-body",
- "prost",
- "prost-types",
- "serde",
- "serde_json",
- "sha2",
- "thetadata-auth",
- "thetadata-core",
- "thetadata-proto",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tonic",
- "zstd",
-]
-
-[[package]]
-name = "thetadata-core"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "chrono-tz",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "thetadata-proto"
-version = "0.1.0"
-dependencies = [
- "prost",
- "prost-types",
- "tonic",
- "tonic-prost",
- "tonic-prost-build",
 ]
 
 [[package]]

@@ -99,7 +99,7 @@ def compare(before, after, samples, warmups, stage_binaries=False):
             measure("help_ms", lambda label: invoke(label, ["--help"], parse=False),
                     lambda data: require("Usage:" in data))
             measure("version_ms", lambda label: invoke(label, ["--version"], parse=False),
-                    lambda data: require(data.startswith("theta ")))
+                    lambda data: require(data.startswith(("theta ", "praevis-thetadata "))))
             for label in binaries:
                 _, data = invoke(label, ["status", "--json"], profile=profiles[label])
                 storage[label] = data["storage"]

@@ -8,7 +8,7 @@ Other Praevis-Quant projects need the same authentication. The Python client con
 
 ## Decision
 
-Use a Cargo workspace with `thetadata-auth` for credentials, async HTTP login, opaque sessions, and persistence. `theta` owns environment/argument handling. `thetadata-client` consumes a session and owns gRPC; `thetadata-proto` owns recovered bindings; `thetadata-core` owns transport-independent data. Authentication does not import those three crates. Use `reqwest` with reusable clients; persistence remains a synchronous native-store API, which async applications can offload if needed.
+Use a Cargo workspace with `praevis-thetadata-auth` for credentials, async HTTP login, opaque sessions, and persistence. `praevis-thetadata` owns environment/argument handling. `praevis-thetadata-client` consumes a session and owns gRPC; `praevis-thetadata-proto` owns recovered bindings; `praevis-thetadata-core` owns transport-independent data. Authentication does not import those three crates. Use `reqwest` with reusable clients; persistence remains a synchronous native-store API, which async applications can offload if needed.
 
 ## Alternatives
 

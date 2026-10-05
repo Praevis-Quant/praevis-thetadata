@@ -23,10 +23,10 @@ regressions remain open; the original audit is retained as evidence.
 | Every tiny message paid blocking-task scheduling costs | Offer opt-in inline decoding only for NONE responses whose actual entire envelope is at most 4 KiB; default 0 retains offload. Compressed messages always offload. | Same-harness numeric/Table versus forced-offload measurements; limits and output validation remain identical |
 | Inline empty batches could form a ready loop | Release the batch slot and yield when skipping a schemaless empty response | Empty-message trickle still reaches the whole-query deadline rather than resetting it indefinitely |
 
-Tests live in [the envelope module](../../crates/thetadata-client/src/envelope.rs),
-[typed lifecycle module](../../crates/thetadata-client/src/eod.rs),
-[typed fixture suite](../../crates/thetadata-client/tests/eod_typed.rs) and
-[allocation-instrumented Rust harness](../../crates/thetadata-client/examples/eod_benchmark.rs).
+Tests live in [the envelope module](../../crates/praevis-thetadata-client/src/envelope.rs),
+[typed lifecycle module](../../crates/praevis-thetadata-client/src/eod.rs),
+[typed fixture suite](../../crates/praevis-thetadata-client/tests/eod_typed.rs) and
+[allocation-instrumented Rust harness](../../crates/praevis-thetadata-client/examples/eod_benchmark.rs).
 The worker latch is compiled only for unit tests; production and release
 benchmark builds contain no latch, lock, wait or hook branch.
 

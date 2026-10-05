@@ -23,8 +23,8 @@ The request query has exactly three string fields: symbol #1, start_date #2,
 end_date #3. Its request envelope carries QueryInfo #1 and params #2; the
 RPC returns a finite stream of ResponseData batches.
 
-Deliver this through `thetadata-client`, using `thetadata-core` values and an
-explicit session from `thetadata-auth`. Keep authentication independently
+Deliver this through `praevis-thetadata-client`, using `praevis-thetadata-core` values and an
+explicit session from `praevis-thetadata-auth`. Keep authentication independently
 usable. Do not add a market-data CLI, a crate per asset class, or a second
 authentication path in this slice. Dates, prices, timestamps, empty results,
 multi-batch output, and terminal errors receive explicit contracts through
@@ -75,5 +75,5 @@ requirements documents rather than being duplicated in this ADR.
 - [Request query fields](../research/python-1.0.12-catalog.md#item-5d5e92001216e097),
   [request envelope](../research/python-1.0.12-catalog.md#item-a63a3eacf9637c00),
   and [RPC path/stream shape](../research/python-1.0.12-catalog.md#item-92352009630c5a88).
-- [Current client foundation](../../crates/thetadata-client/src/lib.rs) and
-  [generated helper construction](../../crates/thetadata-client/build.rs).
+- [Current client foundation](../../crates/praevis-thetadata-client/src/lib.rs) and
+  [generated helper construction](../../crates/praevis-thetadata-client/build.rs).

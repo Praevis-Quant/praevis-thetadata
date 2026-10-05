@@ -6,9 +6,9 @@ is the shared context rather than a second, agent-specific set of rules.
 
 ## Project overview
 
-ThetaData Rust is a Rust workspace derived from the ThetaData Python 1.0.12
+Praevis ThetaData is a Rust workspace derived from the ThetaData Python 1.0.12
 distribution. Its first deliverable is a reusable authentication library and
-the `theta` CLI with Windows/Linux native session persistence. Authentication
+the `praevis-thetadata` CLI with Windows/Linux native session persistence. Authentication
 is the accepted requirements baseline. The protobuf, core, and market-data
 client crates are foundations, not a claim of complete Python compatibility or
 verified live market-data access.
@@ -16,7 +16,7 @@ verified live market-data access.
 The workspace uses Rust edition 2024, currently declares version `0.1.0`, and
 sets `publish = false`. The Rust crate version and the tracked Python version
 are different concepts. The canonical upstream compatibility version is
-`source_version` in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
+`source_version` in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 Do not maintain a second version literal in the scheduled PyPI checker.
 
 [docs/ROADMAP.md](docs/ROADMAP.md) contains future work and the preserved
@@ -32,7 +32,7 @@ require neither Python nor `protoc`.
 
 ```text
 # Build only the authentication CLI
-cargo build --locked -p thetadata-cli
+cargo build --locked -p praevis-thetadata-cli
 
 # Rust checks used by CI
 cargo fmt --all -- --check
@@ -46,15 +46,15 @@ python tools/research_python.py --check
 python -m unittest discover -s tools -p 'test_*.py'
 
 # Windows native-store integration test, using a unique synthetic profile
-cargo test --locked -p thetadata-cli --test persistence -- --ignored
+cargo test --locked -p praevis-thetadata-cli --test persistence -- --ignored
 
 # Linux equivalent, using a private D-Bus session and disposable keyring
 bash tools/test-linux-persistence.sh
 
 # CLI examples (requires credentials only for the first command)
-cargo run --locked -p thetadata-cli -- auth
-cargo run --locked -p thetadata-cli -- auth status --json
-cargo run --locked -p thetadata-cli -- auth logout
+cargo run --locked -p praevis-thetadata-cli -- auth
+cargo run --locked -p praevis-thetadata-cli -- auth status --json
+cargo run --locked -p praevis-thetadata-cli -- auth logout
 ```
 
 The CLI examples use the user's selected real profile. For verification, use
@@ -76,7 +76,7 @@ Keep them outside every CI workflow. PROD is selected for
 initial integration; STAGE is an independent vendor connection, not an assumed
 sandbox. Captures stay private under ignored `artifacts/live`; no automatic
 fixture promotion or uploads. Test the runner locally with
-`cargo test --locked -p thetadata-client --features live-tests --example live_eod`.
+`cargo test --locked -p praevis-thetadata-client --features live-tests --example live_eod`.
 Follow the [release milestones](docs/releases.md) when proposing supported scope;
 successful mocks or a single live query do not grant full EOD acceptance.
 
@@ -94,11 +94,11 @@ one bounded negative check; never sweep endpoints or parse remote text for tiers
 
 | Package | Responsibility | Boundary |
 | --- | --- | --- |
-| `crates/thetadata-auth` | HTTP authentication, credentials, sessions, native persistence | Reusable independently of market data; callers own async runtime |
-| `apps/thetadata-cli` | Argument parsing, credential discovery, auth/status/logout, output and exit codes | Depends on auth, not the market-data client |
-| `crates/thetadata-proto` | Generated protobuf types and gRPC bindings for 82 RPCs | Generated at build time from the checked-in descriptor |
-| `crates/thetadata-core` | Prices, timestamps, values, tables | Transport-independent data types |
-| `crates/thetadata-client` | gRPC requests, ZSTD decoding, batch streaming | Composes auth, core, and proto; still a foundation |
+| `crates/praevis-thetadata-auth` | HTTP authentication, credentials, sessions, native persistence | Reusable independently of market data; callers own async runtime |
+| `apps/praevis-thetadata-cli` | Argument parsing, credential discovery, auth/status/logout, output and exit codes | Depends on auth, not the market-data client |
+| `crates/praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for 82 RPCs | Generated at build time from the checked-in descriptor |
+| `crates/praevis-thetadata-core` | Prices, timestamps, values, tables | Transport-independent data types |
+| `crates/praevis-thetadata-client` | gRPC requests, ZSTD decoding, batch streaming | Composes auth, core, and proto; still a foundation |
 
 Keep credential discovery in the CLI. The auth library accepts explicit
 credentials and configuration; it must not silently read environment variables
@@ -278,8 +278,8 @@ cannot prove undocumented live-service behavior or approve market-data scope.
 - [docs/README.md](docs/README.md): requirements organization and documentation index.
 - [Architecture decisions](docs/adr/README.md): auth boundaries, wire contract, persistence, lifecycle, provenance, runtime.
 - [Vendor research](docs/research/thetadata-1.0.12.md) and [artifact inventory](docs/research/vendor-1.0.12.json): current evidence to preserve and expand.
-- [Protocol manifest](crates/thetadata-proto/schema/manifest.json): upstream baseline and descriptor provenance.
-- [LICENSE](LICENSE), [NOTICE](NOTICE), and [upstream license](crates/thetadata-proto/LICENSE.upstream): Apache-2.0 licensing and attribution; preserve upstream material.
+- [Protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json): upstream baseline and descriptor provenance.
+- [LICENSE](LICENSE), [NOTICE](NOTICE), and [upstream license](crates/praevis-thetadata-proto/LICENSE.upstream): Apache-2.0 licensing and attribution; preserve upstream material.
 - [CI workflow](.github/workflows/ci.yml): current Windows/Linux verification commands.
 
 ## Git conventions

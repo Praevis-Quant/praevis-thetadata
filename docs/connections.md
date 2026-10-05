@@ -17,8 +17,8 @@ It does not repeat vendor throughput marketing as a measured Rust result.
 
 | Connection | Address / protocol | Identity and lifecycle | Current project support |
 | --- | --- | --- | --- |
-| Hosted identity | `https://nexus-api.thetadata.us/identity/terminal/auth_user` | Explicit API key or email/password; yields environment-bound session; HTTP status domain | `thetadata-auth`; CLI authenticates/persists, manual tests retain session only in memory |
-| Direct PROD MDDS | `https://mdds-01.thetadata.us:443`, gRPC over TLS | Session UUID/email hint in query envelope; finite server-streaming batches | `thetadata-client`; typed EOD experimental with one real-query observation; generated raw helpers are broader foundations |
+| Hosted identity | `https://nexus-api.thetadata.us/identity/terminal/auth_user` | Explicit API key or email/password; yields environment-bound session; HTTP status domain | `praevis-thetadata-auth`; CLI authenticates/persists, manual tests retain session only in memory |
+| Direct PROD MDDS | `https://mdds-01.thetadata.us:443`, gRPC over TLS | Session UUID/email hint in query envelope; finite server-streaming batches | `praevis-thetadata-client`; typed EOD experimental with one real-query observation; generated raw helpers are broader foundations |
 | Direct STAGE MDDS | `https://mdds-stage.thetadata.us:443`, gRPC over TLS | Independently authenticated environment; separate connection | Explicit config supported; not an assumed testing sandbox or free entitlement bypass |
 | Terminal v3 REST | Normally `http://127.0.0.1:25503/v3` | Terminal owns its service session; caller talks to local HTTP gateway | Planned optional adapter; no current REST client implementation |
 | Terminal WebSocket events | Normally `ws://127.0.0.1:25520/v1/events` | Long-lived JSON event subscription over Terminal/FPSS; its own connection/subscription lifecycle | Planned adapter; finite gRPC batch streams are not this feature |
@@ -41,7 +41,7 @@ an arbitrary local/remote HTTP URL. Connector choice must be explicit.
 | Other non-OK gRPC status | `Remote(code)` for each code, including Unavailable and ResourceExhausted | Status retained | Preserve original HTTP/status domain and define explicit mappings |
 | Local deadline, cancellation, decoding or resource failure | Distinct `Deadline`, `Idle`, `Cancelled`, `Decode`, `Schema`, `Unsupported`, `Resource(...)` variants | Legacy raw errors have different granularity | Must distinguish local failures from upstream and Terminal failures |
 
-The synthetic [EOD contracts](../crates/thetadata-client/tests/eod_contracts.rs)
+The synthetic [EOD contracts](../crates/praevis-thetadata-client/tests/eod_contracts.rs)
 exercise all sixteen non-OK gRPC statuses on numeric and Table paths, at initial
 headers and after a valid batch. NOT_FOUND alone maps to no-data. Permission
 denial is never an empty success and does not cause an automatic retry, login,

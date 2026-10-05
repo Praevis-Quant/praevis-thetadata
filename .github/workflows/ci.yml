@@ -38,13 +38,13 @@ jobs:
       - name: Tests
         run: cargo test --workspace --locked
       - name: Native EOD benchmark checks
-        run: cargo test --locked -p thetadata-client --example eod_benchmark
+        run: cargo test --locked -p praevis-thetadata-client --example eod_benchmark
       - name: Credential-free EOD benchmark smoke test
         run: |
-          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine legacy --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-legacy.json
-          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine table --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-table.json
-          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine numeric --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-numeric.json
-          cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --engine numeric-offload --rows 64 --samples 2 --warmups 1 --streams 2 --consumer-delay-ms 1 --output artifacts/eod-smoke-offload.json
+          cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- run --engine legacy --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-legacy.json
+          cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- run --engine table --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-table.json
+          cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- run --engine numeric --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-numeric.json
+          cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- run --engine numeric-offload --rows 64 --samples 2 --warmups 1 --streams 2 --consumer-delay-ms 1 --output artifacts/eod-smoke-offload.json
       - name: Install Linux keyring fixture
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends dbus gnome-keyring
@@ -53,4 +53,4 @@ jobs:
         run: bash tools/test-linux-persistence.sh
       - name: Windows native persistence
         if: runner.os == 'Windows'
-        run: cargo test --locked -p thetadata-cli --test persistence -- --ignored
+        run: cargo test --locked -p praevis-thetadata-cli --test persistence -- --ignored

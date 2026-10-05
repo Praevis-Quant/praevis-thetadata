@@ -11,7 +11,7 @@ for program in cargo dbus-run-session gnome-keyring-daemon timeout; do
 done
 
 # Compile before isolating the keyring. Keep the user's Rust environment intact.
-cargo test --locked -p thetadata-cli --test persistence --no-run
+cargo test --locked -p praevis-thetadata-cli --test persistence --no-run
 test_home=$(mktemp -d "${TMPDIR:-/tmp}/thetadata-keyring-test.XXXXXXXX")
 trap 'rm -rf -- "$test_home"' EXIT
 export XDG_DATA_HOME="$test_home/data"
@@ -27,5 +27,5 @@ timeout 90s dbus-run-session -- bash -c '
     set -euo pipefail
     printf "%s" "thetadata-synthetic-test-keyring" |
         gnome-keyring-daemon --unlock --components=secrets >/dev/null
-    cargo test --locked -p thetadata-cli --test persistence -- --ignored
+    cargo test --locked -p praevis-thetadata-cli --test persistence -- --ignored
 '

@@ -18,25 +18,25 @@ Names are first come, first served; availability checks do not reserve them.
 
 ## Readiness observations
 
-**Naming gate:** existing names below are historical availability observations,
-not the selected public brand. Resolve [project/package naming](project-naming.md)
-before first publication and repeat availability checks for the chosen family.
-The root manifest is a virtual workspace; `thetadata-rs` is not a sixth package.
-`apps/thetadata-cli` is a separate binary package whose current executable is
-`theta`. Its own README and explicit manifest metadata distinguish that install
+**Selected names:** use the [praevis-thetadata family](project-naming.md) below.
+Repeat registry availability checks immediately before publication.
+The root manifest is a virtual workspace; `praevis-thetadata` is not a sixth package.
+`apps/praevis-thetadata-cli` is a separate binary package whose current executable is
+`praevis-thetadata`. Its own README and explicit manifest metadata distinguish that install
 surface from the libraries and repository overview.
 
-The five public API lookups below returned HTTP 404 on 2026-10-04. Check again
-immediately before publication. These are the existing workspace package names;
-do not create speculative umbrella or future PyO3 packages just to claim names.
+Earlier lookups on 2026-10-04 returned HTTP 404 for the former `thetadata-auth`,
+`thetadata-core`, `thetadata-proto`, `thetadata-client` and `thetadata-cli` names.
+Those results do not establish availability of the renamed packages below.
+Do not create speculative umbrella or future PyO3 packages just to claim names.
 
 | Package | Useful initial contents | Publication order / dependency |
 | --- | --- | --- |
-| `thetadata-auth` | Explicit HTTP authentication, sessions, native persistence | First wave; independent |
-| `thetadata-core` | Exact values, tables and validated numeric batches | First wave; independent |
-| `thetadata-proto` | Checked-in descriptor and generated bindings for 82 RPCs | First wave; independent |
-| `thetadata-client` | Raw RPC foundations and experimental typed EOD path | After auth/core/proto resolve from the registry |
-| `thetadata-cli` | Working `theta auth`, local status and logout | After auth resolves from the registry |
+| `praevis-thetadata-auth` | Explicit HTTP authentication, sessions, native persistence | First wave; independent |
+| `praevis-thetadata-core` | Exact values, tables and validated numeric batches | First wave; independent |
+| `praevis-thetadata-proto` | Checked-in descriptor and generated bindings for 82 RPCs | First wave; independent |
+| `praevis-thetadata-client` | Raw RPC foundations and experimental typed EOD path | After auth/core/proto resolve from the registry |
+| `praevis-thetadata-cli` | Working `praevis-thetadata auth`, local status and logout | After auth resolves from the registry |
 
 Cargo's default-registry token entry exists in the local `credentials.toml`;
 no environment token override was present. Its value was never printed or
@@ -63,9 +63,9 @@ packages. This lists candidates; it does not build/verify distributable archives
 | Client | Missing | Missing | Metadata/attribution, sibling descriptor and internal benchmark/manual-runner inputs |
 | CLI | Present; explicitly selected in manifest | Missing | Attribution files, registry dependency versions and standalone install verification |
 
-An actual offline CLI packaging attempt failed because `thetadata-auth` has no
+An actual offline CLI packaging attempt failed because `praevis-thetadata-auth` has no
 registry version requirement. Adding a version alone would not make an unpublished
-dependency resolvable. Finalize the name/version family and prepare the first-wave
+dependency resolvable. Set the release versions for the selected name family and prepare the first-wave
 archives before verifying dependent archives against an isolated staging registry
 or published, approved dependencies. `publish = false` remains in place. No
 registry credentials were read and no package was uploaded during this inspection.

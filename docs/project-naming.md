@@ -1,53 +1,61 @@
-# Project and package naming decision brief
+# Project and package naming decision
 
-Status: suggestions, not a selected rename. Reviewed 2026-10-04.
+Status: selected by the project owner, 2026-10-04. Supersedes the earlier
+Praevis Feed/Wire/Tick/Stream suggestions; those names were not adopted.
 
-Prefer an independent project brand with a descriptive subtitle such as
-"Independent Rust client for ThetaData." Keep package names consistent across
-libraries and the CLI, while preserving vendor names in protocol provenance,
-compatibility documentation and attribution.
+Public project name: **Praevis ThetaData**. Repository: **praevis-thetadata**.
 
-In the United States, names identifying the source of goods/services principally
-raise trademark questions; copyright covers original expression. See the
-[USPTO distinction](https://www.uspto.gov/trademarks/basics/trademark-patent-copyright).
-[Apache-2.0 section 6](https://www.apache.org/licenses/LICENSE-2.0#trademarks)
-does not generally grant the licensor's trademark rights. A suffix or an
-unaffiliated disclaimer alone does not establish permission or legal clearance.
-ThetaDataDx's name is not evidence of permission for our project. This brief
-does not determine whether an existing or proposed name infringes a mark.
+> Independently maintained Rust client libraries for ThetaData services. This project is not affiliated with, sponsored by, or endorsed by Theta Data Inc. “ThetaData” identifies the service with which this software interoperates.
 
-| Candidate | Example crate prefix | Why consider it | Tradeoff |
-| --- | --- | --- | --- |
-| **Praevis Feed** (preferred) | `praevis-feed-*` | Connects to the organization; covers historical and live market data | Needs a ThetaData compatibility subtitle for discovery |
-| Praevis Wire | `praevis-wire-*` | Emphasizes efficient transport and precise delivery | Sounds lower-level than a complete SDK |
-| Praevis Tick | `praevis-tick-*` | Short and recognizably market-data related | Tick focus understates EOD/calendar/rate scope |
-| Praevis Stream | `praevis-stream-*` | Fits incremental delivery and future event subscriptions | May suggest real-time support before it is implemented |
+| Cargo package | Source directory | Rust import / executable |
+| --- | --- | --- |
+| `praevis-thetadata-auth` | `crates/praevis-thetadata-auth` | `praevis_thetadata_auth` |
+| `praevis-thetadata-core` | `crates/praevis-thetadata-core` | `praevis_thetadata_core` |
+| `praevis-thetadata-proto` | `crates/praevis-thetadata-proto` | `praevis_thetadata_proto` |
+| `praevis-thetadata-client` | `crates/praevis-thetadata-client` | `praevis_thetadata_client` |
+| `praevis-thetadata-cli` | `apps/praevis-thetadata-cli` | executable `praevis-thetadata` |
 
-These are unselected ideas, not availability or trademark clearance results.
-Before selection/publication check exact crate names, hyphen/underscore
-collisions, repository/domain/package-ecosystem use and relevant trademark/common
-law usage; seek qualified advice if a conflict remains. Record the dated checks.
+The root is a virtual workspace, not a sixth publishable package. The un-suffixed
+name identifies the repository and executable. Package publication is still
+disabled; the rename neither publishes nor reserves crates.io names. Recheck
+exact registry names before publication under the [release plan](crates-io-release-plan.md).
 
-For the preferred option, use repository `praevis-feed`, packages
-`praevis-feed-auth`, `praevis-feed-core`, `praevis-feed-proto`,
-`praevis-feed-client`, and `praevis-feed-cli`, with executable `praevis-feed`.
-There is no need for an empty umbrella package. `apps/` versus `crates/` is a
-source-layout convention; either location can contain a separately published
-Cargo package. See [Cargo workspaces](https://doc.rust-lang.org/cargo/reference/workspaces.html).
+## Compatibility and evidence
 
-## Rename scope after selection
+- Replace old `thetadata-*` Cargo dependencies/imports with the corresponding
+  `praevis-thetadata-*` package / `praevis_thetadata_*` import. Public Rust type
+  names, including `ThetaClient`, retain their meaning.
+- Use `praevis-thetadata auth`, `auth status`, and `auth logout` in place of
+  `theta`. There is no newly installed `theta` alias. Existing old binaries in a
+  developer's target directory or PATH are not removed by a source rename.
+- Preserve all `THETADATA_*` credential/configuration variables, the native-store
+  service `praevis.thetadata.auth.v1`, profile/environment isolation, record format,
+  wire names and the Python `thetadata` compatibility baseline. No session migration
+  or new authentication is required because of the rename.
+- Preserve protocol bytes, upstream licenses, artifact hashes and the original
+  research/review. Historical benchmark commands and reports may use earlier
+  package names; run those commands against their recorded source revisions.
+  The CLI benchmark builder discovers both old and new checkout identities.
+- The GitHub repository becomes `Praevis-Quant/praevis-thetadata`. Current links
+  and the local origin use that URL. The account holder renames the local root
+  directory after this session; current source and tooling do not depend on its name.
 
-1. Update manifests, dependency/import names, binary/help text, installation
-   examples, repository/documentation URLs, workflows and package READMEs together.
-   Keep each package's README specific to that package, especially the CLI.
-2. Preserve upstream artifact hashes, original research, the roadmap's verbatim
-   review and attribution. Historical names remain valid historical evidence.
-3. Keep credential environment names and the persisted session-store identity
-   stable unless a separate migration decision explicitly changes them; branding
-   must not strand sessions or silently change authentication contracts.
-4. Re-run Windows/Linux tests, external consumer/archive checks and name checks.
-   Do not enable publication or reserve new names as part of this discussion.
+Two retained detached benchmark worktrees live under ignored `artifacts/` and
+remain historical source evidence. If moving the root breaks their registered
+absolute paths, run the following from the moved root:
 
-This decision is a first-publication gate in the
-[packaging plan](crates-io-release-plan.md). Performance regression investigation
-and credential-free EOD tests can continue before a name is selected.
+```text
+git worktree repair artifacts/cli-startup/baseline-source artifacts/eod/acceptance-control
+git worktree list
+```
+
+Do not delete those baselines or rewrite their historical sources for branding.
+
+## Naming context
+
+The owner selected this descriptive, organization-prefixed name. This decision
+does not assert trademark clearance or vendor endorsement. See the
+[USPTO distinction](https://www.uspto.gov/trademarks/basics/trademark-patent-copyright)
+and [Apache-2.0 section 6](https://www.apache.org/licenses/LICENSE-2.0#trademarks)
+for the distinction between source licensing and trademark rights. Third-party
+names such as ThetaDataDx do not establish permission for this project.

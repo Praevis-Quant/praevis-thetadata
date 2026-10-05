@@ -40,7 +40,7 @@ def latest_stable(index):
 def fetch_index():
     request = urllib.request.Request(URL, headers={
         "Accept": "application/vnd.pypi.simple.v1+json",
-        "User-Agent": "thetadata-rs-upstream-monitor/1",
+        "User-Agent": "praevis-thetadata-upstream-monitor/1",
     })
     for attempt in range(3):
         try:
@@ -65,7 +65,7 @@ def check(index, tracked):
 
 def main():
     try:
-        manifest = json.loads((ROOT / "crates/thetadata-proto/schema/manifest.json").read_text())
+        manifest = json.loads((ROOT / "crates/praevis-thetadata-proto/schema/manifest.json").read_text())
         tracked = manifest["source_version"]
         latest, newer = check(fetch_index(), tracked)
         print(f"Tracked Python compatibility: thetadata {tracked}; latest stable PyPI release: {latest}")

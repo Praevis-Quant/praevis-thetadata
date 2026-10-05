@@ -22,15 +22,15 @@
       "EOD-L3-019", "EOD-L3-020", "EOD-L3-021", "EOD-L3-022", "EOD-L3-023", "EOD-L3-024",
       "EOD-L3-025", "EOD-L3-026", "EOD-L3-027", "EOD-L3-028", "EOD-L3-029"
     ],
-    "implementation": ["crates/thetadata-client/src/eod.rs", "crates/thetadata-client/src/bounded.rs", "crates/thetadata-client/src/envelope.rs", "crates/thetadata-client/src/framing.rs", "crates/thetadata-core/src/batch.rs"],
+    "implementation": ["crates/praevis-thetadata-client/src/eod.rs", "crates/praevis-thetadata-client/src/bounded.rs", "crates/praevis-thetadata-client/src/envelope.rs", "crates/praevis-thetadata-client/src/framing.rs", "crates/praevis-thetadata-core/src/batch.rs"],
     "verification": [
-      "crates/thetadata-client/tests/eod_fixture.rs",
-      "crates/thetadata-client/tests/eod_typed.rs",
-      "crates/thetadata-client/tests/eod_contracts.rs",
+      "crates/praevis-thetadata-client/tests/eod_fixture.rs",
+      "crates/praevis-thetadata-client/tests/eod_typed.rs",
+      "crates/praevis-thetadata-client/tests/eod_contracts.rs",
       "docs/requirements/stock-eod-matrix.md",
       "docs/performance/eod-acceptance-results.md",
       "docs/performance/eod-numeric.md",
-      "crates/thetadata-client/examples/eod_benchmark.rs",
+      "crates/praevis-thetadata-client/examples/eod_benchmark.rs",
       "docs/performance/eod-baseline.md"
     ]
   },
@@ -47,7 +47,7 @@
       "AUTH-L3-017"
     ],
     "implementation": [
-      "crates/thetadata-proto/schema/manifest.json"
+      "crates/praevis-thetadata-proto/schema/manifest.json"
     ],
     "verification": [
       "tools/research_python.py",
@@ -67,8 +67,8 @@
       "AUTH-L3-017"
     ],
     "implementation": [
-      "crates/thetadata-proto/build.rs",
-      "crates/thetadata-proto/schema/thetadata.bin"
+      "crates/praevis-thetadata-proto/build.rs",
+      "crates/praevis-thetadata-proto/schema/thetadata.bin"
     ],
     "verification": [
       "tools/research_python.py",
@@ -87,8 +87,8 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-auth/src/lib.rs",
-      "crates/thetadata-client/src/lib.rs"
+      "crates/praevis-thetadata-auth/src/lib.rs",
+      "crates/praevis-thetadata-client/src/lib.rs"
     ],
     "verification": []
   },
@@ -105,11 +105,11 @@
       "AUTH-L3-002"
     ],
     "implementation": [
-      "crates/thetadata-auth/src/lib.rs",
-      "apps/thetadata-cli/src/main.rs"
+      "crates/praevis-thetadata-auth/src/lib.rs",
+      "apps/praevis-thetadata-cli/src/main.rs"
     ],
     "verification": [
-      "crates/thetadata-auth/src/tests.rs",
+      "crates/praevis-thetadata-auth/src/tests.rs",
       "docs/requirements/L3-auth.md"
     ]
   },
@@ -128,10 +128,10 @@
       "AUTH-L3-006"
     ],
     "implementation": [
-      "crates/thetadata-auth/src/lib.rs"
+      "crates/praevis-thetadata-auth/src/lib.rs"
     ],
     "verification": [
-      "crates/thetadata-auth/src/tests.rs"
+      "crates/praevis-thetadata-auth/src/tests.rs"
     ]
   },
   {
@@ -151,11 +151,11 @@
       "AUTH-L3-012"
     ],
     "implementation": [
-      "crates/thetadata-auth/src/store.rs",
-      "crates/thetadata-client/src/lib.rs"
+      "crates/praevis-thetadata-auth/src/store.rs",
+      "crates/praevis-thetadata-client/src/lib.rs"
     ],
     "verification": [
-      "apps/thetadata-cli/tests/persistence.rs",
+      "apps/praevis-thetadata-cli/tests/persistence.rs",
       "docs/requirements/L3-auth.md"
     ]
   },
@@ -171,7 +171,7 @@
       "AUTH-L3-001"
     ],
     "implementation": [
-      "apps/thetadata-cli/src/main.rs"
+      "apps/praevis-thetadata-cli/src/main.rs"
     ],
     "verification": [
       "docs/requirements/L3-auth.md"
@@ -189,11 +189,11 @@
       "AUTH-L3-014"
     ],
     "implementation": [
-      "crates/thetadata-auth/src/lib.rs"
+      "crates/praevis-thetadata-auth/src/lib.rs"
     ],
     "verification": [
-      "crates/thetadata-auth/src/tests.rs",
-      "apps/thetadata-cli/tests/persistence.rs"
+      "crates/praevis-thetadata-auth/src/tests.rs",
+      "apps/praevis-thetadata-cli/tests/persistence.rs"
     ]
   },
   {
@@ -208,8 +208,8 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-client/build.rs",
-      "crates/thetadata-client/src/lib.rs"
+      "crates/praevis-thetadata-client/build.rs",
+      "crates/praevis-thetadata-client/src/lib.rs"
     ],
     "verification": []
   },
@@ -247,7 +247,7 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-client/src/lib.rs"
+      "crates/praevis-thetadata-client/src/lib.rs"
     ],
     "verification": []
   },
@@ -261,7 +261,7 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-client/src/lib.rs"
+      "crates/praevis-thetadata-client/src/lib.rs"
     ],
     "verification": []
   },
@@ -278,11 +278,11 @@
       "AUTH-L3-006"
     ],
     "implementation": [
-      "crates/thetadata-auth/src/lib.rs",
-      "crates/thetadata-client/src/lib.rs"
+      "crates/praevis-thetadata-auth/src/lib.rs",
+      "crates/praevis-thetadata-client/src/lib.rs"
     ],
     "verification": [
-      "crates/thetadata-auth/src/tests.rs"
+      "crates/praevis-thetadata-auth/src/tests.rs"
     ]
   },
   {
@@ -296,12 +296,12 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-client/src/decode.rs",
-      "crates/thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-client/src/decode.rs",
+      "crates/praevis-thetadata-core/src/lib.rs"
     ],
     "verification": [
-      "crates/thetadata-client/src/decode.rs",
-      "crates/thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-client/src/decode.rs",
+      "crates/praevis-thetadata-core/src/lib.rs"
     ]
   },
   {
@@ -314,10 +314,10 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-core/src/lib.rs"
     ],
     "verification": [
-      "crates/thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-core/src/lib.rs"
     ]
   },
   {
@@ -330,10 +330,10 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-core/src/lib.rs"
     ],
     "verification": [
-      "crates/thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-core/src/lib.rs"
     ]
   },
   {
@@ -346,7 +346,7 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-core/src/lib.rs"
     ],
     "verification": []
   },
@@ -360,7 +360,7 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-client/src/decode.rs"
+      "crates/praevis-thetadata-client/src/decode.rs"
     ],
     "verification": []
   },
@@ -375,10 +375,10 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-client/src/decode.rs"
+      "crates/praevis-thetadata-client/src/decode.rs"
     ],
     "verification": [
-      "crates/thetadata-client/src/decode.rs"
+      "crates/praevis-thetadata-client/src/decode.rs"
     ]
   },
   {
@@ -392,7 +392,7 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-proto/schema/thetadata.bin"
+      "crates/praevis-thetadata-proto/schema/thetadata.bin"
     ],
     "verification": [
       "tools/research_python.py"
@@ -408,7 +408,7 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/thetadata-proto/build.rs"
+      "crates/praevis-thetadata-proto/build.rs"
     ],
     "verification": [
       "tools/research_python.py"
