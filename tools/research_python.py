@@ -24,8 +24,8 @@ DECISIONS = RESEARCH / "python-1.0.12-dispositions.json"
 CATALOG = RESEARCH / "python-1.0.12-catalog.md"
 REPORT = RESEARCH / "thetadata-1.0.12.md"
 LEGACY = RESEARCH / "vendor-1.0.12.json"
-MANIFEST = ROOT / "crates/thetadata-proto/schema/manifest.json"
-DESCRIPTOR = ROOT / "crates/thetadata-proto/schema/thetadata.bin"
+MANIFEST = ROOT / "crates/praevis-thetadata-proto/schema/manifest.json"
+DESCRIPTOR = ROOT / "crates/praevis-thetadata-proto/schema/thetadata.bin"
 STATUSES = {"supported", "planned", "intentionally excluded", "unresolved"}
 REVIEW_MARKER = b"## Original review and recommendations (verbatim)"
 

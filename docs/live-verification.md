@@ -43,7 +43,7 @@ without observing them.
 Run from this source checkout with a current Rust toolchain and Git available:
 
 ```powershell
-cargo build --locked -p thetadata-client --features live-tests --example live_eod
+cargo build --locked -p praevis-thetadata-client --features live-tests --example live_eod
 $env:THETADATA_API_KEY = [Environment]::GetEnvironmentVariable('THETADATA_API_KEY', 'User')
 if ([string]::IsNullOrWhiteSpace($env:THETADATA_API_KEY)) { throw 'User-level THETADATA_API_KEY is missing' }
 .\target\debug\examples\live_eod.exe capture --confirm-live --environment PROD --api-key-env --run-id prod-aapl-001 --symbol AAPL --start 2024-01-02 --end 2024-01-02
@@ -151,7 +151,7 @@ probe is deliberately one endpoint, not an all-endpoint subscription scanner.
 ## Replay without service access
 
 ```text
-cargo run --locked -p thetadata-client --features live-tests --example live_eod -- replay --run-id prod-aapl-001
+cargo run --locked -p praevis-thetadata-client --features live-tests --example live_eod -- replay --run-id prod-aapl-001
 ```
 
 Replay requires no real credential file and contacts only fresh loopback mock
@@ -186,8 +186,8 @@ as vendor evidence. No automatic fixture promotion is implemented.
 ## Verify the runner itself, without credentials
 
 ```text
-cargo test --locked -p thetadata-client --features live-tests --example live_eod
-cargo clippy --locked -p thetadata-client --features live-tests --example live_eod -- -D warnings
+cargo test --locked -p praevis-thetadata-client --features live-tests --example live_eod
+cargo clippy --locked -p praevis-thetadata-client --features live-tests --example live_eod -- -D warnings
 ```
 
 These explicit local checks exercise CLI opt-in, path/query validation, complete

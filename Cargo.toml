@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/thetadata-auth", "crates/thetadata-proto", "crates/thetadata-core", "crates/thetadata-client", "apps/thetadata-cli"]
+members = ["crates/praevis-thetadata-auth", "crates/praevis-thetadata-proto", "crates/praevis-thetadata-core", "crates/praevis-thetadata-client", "apps/praevis-thetadata-cli"]
 resolver = "3"
 
 [workspace.package]
@@ -7,12 +7,13 @@ version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
 publish = false
+repository = "https://github.com/Praevis-Quant/praevis-thetadata"
 
 [workspace.dependencies]
-thetadata-auth = { path = "crates/thetadata-auth" }
-thetadata-proto = { path = "crates/thetadata-proto" }
-thetadata-core = { path = "crates/thetadata-core" }
-thetadata-client = { path = "crates/thetadata-client" }
+praevis-thetadata-auth = { path = "crates/praevis-thetadata-auth" }
+praevis-thetadata-proto = { path = "crates/praevis-thetadata-proto" }
+praevis-thetadata-core = { path = "crates/praevis-thetadata-core" }
+praevis-thetadata-client = { path = "crates/praevis-thetadata-client" }
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
 clap = { version = "4.6", features = ["derive", "env"] }

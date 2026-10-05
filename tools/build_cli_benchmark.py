@@ -6,6 +6,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,6 +24,20 @@ def source_hash(root):
     return digest.hexdigest()
 
 
+def cli_identity(root):
+    """Read the selected checkout, including retained pre-rename baselines."""
+    candidates = [root / "apps" / name / "Cargo.toml"
+                  for name in ("praevis-thetadata-cli", "thetadata-cli")]
+    manifests = [path for path in candidates if path.is_file()]
+    if len(manifests) != 1:
+        raise ValueError("Expected exactly one CLI manifest in the source checkout")
+    manifest = tomllib.loads(manifests[0].read_text(encoding="utf-8"))
+    binaries = manifest.get("bin", [])
+    if len(binaries) != 1:
+        raise ValueError("Expected exactly one CLI binary target")
+    return manifest["package"]["name"], binaries[0]["name"]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -35,7 +50,8 @@ def main():
     # when Cargo considers another checkout's cached artifacts fresh. Also avoid
     # mixing Windows and WSL output when they share the source tree.
     target = root / "target" / "cli-benchmark" / platform.system().lower()
-    command = ["cargo", "build", "--release", "--locked", "-p", "thetadata-cli",
+    package, binary = cli_identity(root)
+    command = ["cargo", "build", "--release", "--locked", "-p", package,
                "--target-dir", str(target), "--message-format=json"]
     if args.offline:
         command.append("--offline")
@@ -44,7 +60,7 @@ def main():
         raise SystemExit(build.stderr)
     executable = next(Path(item["executable"]) for line in build.stdout.splitlines()
                       if (item := json.loads(line)).get("reason") == "compiler-artifact"
-                      and item.get("executable") and item["target"]["name"] == "theta")
+                      and item.get("executable") and item["target"]["name"] == binary)
     if source_hash(root) != before:
         raise RuntimeError("Source changed during build; rerun before recording provenance")
     args.output.parent.mkdir(parents=True, exist_ok=True)

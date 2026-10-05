@@ -12,14 +12,14 @@ For the before/after CLI runtime experiment, comparison tooling, and measured re
 Each case has two warmup iterations and 30 measured iterations by default. The report includes min, mean, median/p50, nearest-rank p95, max, sample count, timestamp, platform, Python version, Git revision, executable SHA-256, and backend. The script verifies the response and checks that synthetic secrets never appear in CLI output. A unique profile is removed in `finally`. Linux runs inside a disposable keyring; Windows uses a unique synthetic credential entry.
 
 ```powershell
-cargo build --release --locked -p thetadata-cli
-python tools/benchmark_auth.py --binary target/release/theta.exe --samples 30 --output artifacts/auth-windows.json
+cargo build --release --locked -p praevis-thetadata-cli
+python tools/benchmark_auth.py --binary target/release/praevis-thetadata.exe --samples 30 --output artifacts/auth-windows.json
 ```
 
 ```bash
-cargo build --release --locked -p thetadata-cli
+cargo build --release --locked -p praevis-thetadata-cli
 bash tools/with-test-keyring.sh python3 tools/benchmark_auth.py \
-  --binary target/release/theta --samples 30 --output artifacts/auth-linux.json
+  --binary target/release/praevis-thetadata --samples 30 --output artifacts/auth-linux.json
 ```
 
 The **Auth performance** workflow runs on pushes to `main` and manual dispatch, on Windows and Ubuntu. It uploads the JSON summaries for 30 days. Runtime/functional failures fail the workflow; latency variation does not. Reports remain build artifacts, not committed credentials or benchmark output.

@@ -9,7 +9,7 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 The workspace currently declares `0.1.0` with publishing disabled. No release
 tag exists as of 2026-10-04; the entries below describe implemented work, not a
 published `0.1.0` release. The Python compatibility baseline is separately
-tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
+tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
 
@@ -109,7 +109,7 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
   hash; document undeclared dotenv, conflicting gRPC version minimums,
   optional-field/default differences, conversion edge cases, and the two
   descriptor-only corporate-action RPCs without claiming live-service parity.
-- Rust workspace with an independent `thetadata-auth` library and `theta`
+- Rust workspace with an independent `praevis-thetadata-auth` library and `theta`
   authentication CLI. Supports API-key and email/password authentication,
   explicit credential discovery, PROD/STAGE environments, and named profiles.
 - Native session persistence through Windows Credential Manager and Linux
@@ -148,6 +148,14 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 ### Changed
 
+- Renamed the project/repository to `praevis-thetadata`, the five Cargo packages
+  and member directories to `praevis-thetadata-*`, Rust imports to
+  `praevis_thetadata_*`, and the CLI executable from `theta` to `praevis-thetadata`.
+  Updated documentation, tooling, workflow package targets and repository links;
+  added the explicit independent-maintenance/non-affiliation statement. Credential
+  variables, native session-store identity, wire protocol and upstream evidence
+  remain unchanged. Older benchmark checkouts remain supported by the build helper.
+
 - CLI parsing, help/version, status, and logout now run synchronously. Only
   HTTP authentication starts a current-thread Tokio runtime, which ends before
   persistence/output. The async auth library remains caller-runtime-owned;
@@ -173,7 +181,7 @@ tracked in [the protocol manifest](crates/thetadata-proto/schema/manifest.json).
 
 - Adopted Apache-2.0 for newly authored Rust code and tooling, added the root
   [LICENSE](LICENSE) and [NOTICE](NOTICE), and retained
-  [the upstream Apache-2.0 license](crates/thetadata-proto/LICENSE.upstream).
+  [the upstream Apache-2.0 license](crates/praevis-thetadata-proto/LICENSE.upstream).
 
 The initial implementation was recorded on 2026-10-03 (`0caf272`); upstream
 monitoring, licensing, source investigation, startup optimization, and its

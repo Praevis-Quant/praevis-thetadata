@@ -1,6 +1,6 @@
 # ADR-0009: exact values and explicit batch schemas
 
-Status: Proposed. Date: 2026-10-04. Owner: thetadata-core and thetadata-client maintainers.
+Status: Proposed. Date: 2026-10-04. Owner: praevis-thetadata-core and praevis-thetadata-client maintainers.
 Requirements: [EOD-L1-002](../requirements/L1-stock-eod.md),
 [EOD-L2-003 and EOD-L2-004](../requirements/L2-stock-eod.md),
 [EOD-L3-006 through EOD-L3-012](../requirements/L3-stock-eod.md).
@@ -76,6 +76,6 @@ preserving observed wire data, not inventing those business meanings.
 
 - [Conversion analysis](../research/thetadata-1.0.12.md#conversion-and-output).
 - [Wire value definitions](../research/thetadata-1.0.12.md#protocol-surface).
-- [Current core representation and tests](../../crates/thetadata-core/src/lib.rs).
-- [Current decoder](../../crates/thetadata-client/src/decode.rs) and
+- [Current core representation and tests](../../crates/praevis-thetadata-core/src/lib.rs).
+- [Current decoder](../../crates/praevis-thetadata-client/src/decode.rs) and
   [stream lifecycle proposal](0010-stream-lifecycle-and-resource-bounds.md).

@@ -92,8 +92,8 @@ slice. Canonical requirements and origin classifications are unchanged.
 | EOD-L3-024 through EOD-L3-027; PERF-L3-007/008 | Typed/raw fixtures, compiled API example and three-engine Rust harness | Credential-free checks and comparable measurement method implemented; policy remains provisional and performance thresholds uncalibrated |
 | EOD-L3-028/029 | Origin register, feature ledger, this evidence record | Existing offline coverage checks retained; no claim of live validation |
 
-Paths in this table are relative to `crates/thetadata-client` and
-`crates/thetadata-core` as indicated. Tests establish the listed cases, not every
+Paths in this table are relative to `crates/praevis-thetadata-client` and
+`crates/praevis-thetadata-core` as indicated. Tests establish the listed cases, not every
 verification clause of each grouped requirement. ADRs 0007-0016 remain proposed;
 the resource-policy gate and full slice acceptance are still open.
 

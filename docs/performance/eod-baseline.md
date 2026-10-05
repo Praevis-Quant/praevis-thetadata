@@ -20,12 +20,12 @@ service-contract evidence; contributors and CI use this mock setup by default.
 Run from the repository root with Git and Rust available:
 
 ```text
-cargo test --locked -p thetadata-client --test eod_fixture
-cargo test --locked -p thetadata-client --example eod_benchmark
-cargo build --release --locked -p thetadata-client --example eod_benchmark
-cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --output artifacts/eod/baseline-1.json
-cargo run --release --locked -p thetadata-client --example eod_benchmark -- run --output artifacts/eod/baseline-2.json
-cargo run --release --locked -p thetadata-client --example eod_benchmark -- compare --baseline artifacts/eod/baseline-1.json --candidate artifacts/eod/baseline-2.json --output artifacts/eod/repeatability.json
+cargo test --locked -p praevis-thetadata-client --test eod_fixture
+cargo test --locked -p praevis-thetadata-client --example eod_benchmark
+cargo build --release --locked -p praevis-thetadata-client --example eod_benchmark
+cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- run --output artifacts/eod/baseline-1.json
+cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- run --output artifacts/eod/baseline-2.json
+cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- compare --baseline artifacts/eod/baseline-1.json --candidate artifacts/eod/baseline-2.json --output artifacts/eod/repeatability.json
 ```
 
 Default: three warmups, twelve measured samples, 10,000 rows for large shapes,
@@ -40,7 +40,7 @@ default-size runs and uploads raw JSON for 30 days on Windows/Ubuntu.
 
 ## Fixture design and verification
 
-[Shared support](../../crates/thetadata-client/tests/support/mod.rs) builds
+[Shared support](../../crates/praevis-thetadata-client/tests/support/mod.rs) builds
 deterministic protobuf and NONE/ZSTD messages with mixed, null-heavy,
 timestamp-heavy and price-heavy rows. The expected Table is independently
 constructed, including fixed timestamp strings, exact negative price scaling,
@@ -57,7 +57,7 @@ are generated from the checked-in descriptor; only GetStockHistoryEod is
 implemented. The server checks no real
 entitlement and does not emulate undocumented vendor business semantics.
 
-[Integration tests](../../crates/thetadata-client/tests/eod_fixture.rs) exercise
+[Integration tests](../../crates/praevis-thetadata-client/tests/eod_fixture.rs) exercise
 wire identity/parameters, exact NONE/ZSTD equivalence, multiple batches,
 successful empty/schema-empty results, NOT_FOUND, permission failure after
 partial delivery, corrupt/unsupported/shape errors, idle timeout and insecure

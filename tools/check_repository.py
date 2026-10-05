@@ -115,8 +115,8 @@ def main():
                 or name == "creds.txt" or name.endswith(".credentials")
                 or (name.startswith(".env") and name != ".env.example")):
             errors.append(f"Forbidden tracked input: {path}")
-    manifest = json.loads((ROOT / "crates/thetadata-proto/schema/manifest.json").read_text())
-    schema_hash = hashlib.sha256((ROOT / "crates/thetadata-proto/schema/thetadata.bin").read_bytes()).hexdigest()
+    manifest = json.loads((ROOT / "crates/praevis-thetadata-proto/schema/manifest.json").read_text())
+    schema_hash = hashlib.sha256((ROOT / "crates/praevis-thetadata-proto/schema/thetadata.bin").read_bytes()).hexdigest()
     if schema_hash != manifest["descriptor_sha256"]:
         errors.append("Descriptor bytes do not match the provenance manifest.")
     documents = [ROOT / path for path in files if path.endswith(".md")]

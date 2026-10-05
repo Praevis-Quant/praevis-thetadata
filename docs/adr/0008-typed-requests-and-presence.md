@@ -1,6 +1,6 @@
 # ADR-0008: typed requests with explicit value presence
 
-Status: Proposed. Date: 2026-10-04. Owner: thetadata-client maintainers.
+Status: Proposed. Date: 2026-10-04. Owner: praevis-thetadata-client maintainers.
 Requirements: [EOD-L2-002](../requirements/L2-stock-eod.md),
 [EOD-L3-001 through EOD-L3-005](../requirements/L3-stock-eod.md); relates to
 AUTH-L1-001. Defined contracts, implementation/acceptance planned.
@@ -16,9 +16,9 @@ wire structs alone do not express the intended public input contract.
 ## Proposed decision
 
 Keep the descriptor-generated types as the exact wire representation and add
-typed request construction in `thetadata-client`. Do not put market-data
-discovery or implicit environment reads in `thetadata-auth` or
-`thetadata-core`. Preserve access to the raw bindings for advanced callers,
+typed request construction in `praevis-thetadata-client`. Do not put market-data
+discovery or implicit environment reads in `praevis-thetadata-auth` or
+`praevis-thetadata-core`. Preserve access to the raw bindings for advanced callers,
 with explicit documentation that they bypass typed validation/defaults.
 
 For the first EOD request, require a nonempty symbol and two explicit calendar

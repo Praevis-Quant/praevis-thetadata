@@ -12,7 +12,7 @@ from google.protobuf import descriptor_pb2, struct_pb2
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "thetadata-1.0.12-py3-none-any" / "thetadata"
-DEST = ROOT / "crates" / "thetadata-proto" / "schema"
+DEST = ROOT / "crates" / "praevis-thetadata-proto" / "schema"
 
 
 def main():

@@ -29,16 +29,16 @@ jobs:
         with:
           toolchain: stable
       - name: Build release CLI
-        run: cargo build --locked --release -p thetadata-cli
+        run: cargo build --locked --release -p praevis-thetadata-cli
       - name: Install Linux keyring fixture
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends dbus gnome-keyring
       - name: Linux baseline
         if: runner.os == 'Linux'
-        run: bash tools/with-test-keyring.sh python3 tools/benchmark_auth.py --binary target/release/theta --samples 30 --output artifacts/auth-linux.json
+        run: bash tools/with-test-keyring.sh python3 tools/benchmark_auth.py --binary target/release/praevis-thetadata --samples 30 --output artifacts/auth-linux.json
       - name: Windows baseline
         if: runner.os == 'Windows'
-        run: python tools/benchmark_auth.py --binary target/release/theta.exe --samples 30 --output artifacts/auth-windows.json
+        run: python tools/benchmark_auth.py --binary target/release/praevis-thetadata.exe --samples 30 --output artifacts/auth-windows.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: auth-performance-${{ runner.os }}-${{ github.sha }}

@@ -1,6 +1,6 @@
 # ADR-0010: explicit stream completion, failure, and resource limits
 
-Status: Proposed. Date: 2026-10-04. Owner: thetadata-client maintainers.
+Status: Proposed. Date: 2026-10-04. Owner: praevis-thetadata-client maintainers.
 Requirements: [EOD-L2-005 through EOD-L2-009](../requirements/L2-stock-eod.md),
 [EOD-L3-012 through EOD-L3-023](../requirements/L3-stock-eod.md);
 preserves AUTH-L1-004 and the explicit session lifecycle.
@@ -92,6 +92,6 @@ vendor throughput guarantee follows from this proposal.
 
 - [Transport/error analysis](../research/thetadata-1.0.12.md#transport-and-errors)
   and [conversion analysis](../research/thetadata-1.0.12.md#conversion-and-output).
-- [Current stream implementation](../../crates/thetadata-client/src/lib.rs).
+- [Current stream implementation](../../crates/praevis-thetadata-client/src/lib.rs).
 - [Explicit auth lifecycle](0004-explicit-session-lifecycle.md).
 - [Preserved performance recommendations](../ROADMAP.md#original-review-and-recommendations-verbatim).

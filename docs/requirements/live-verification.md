@@ -2,7 +2,7 @@
 
 Status: Defined, 2026-10-04. Origin: Rust enhancement throughout.
 Policy: [ADR-0017](../adr/0017-manual-live-verification.md).
-Implementation: [manual Rust runner](../../crates/thetadata-client/examples/live_eod.rs).
+Implementation: [manual Rust runner](../../crates/praevis-thetadata-client/examples/live_eod.rs).
 Operation: [runbook](../live-verification.md). Release gates: [milestones](../releases.md).
 Local implementation/testing does not establish passing live evidence.
 

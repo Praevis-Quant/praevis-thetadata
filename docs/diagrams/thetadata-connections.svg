@@ -19,7 +19,7 @@
   </defs>
   <rect width="1600" height="1080" fill="#ffffff"/>
   <text x="44" y="58" class="title">One data provider. Distinct connection paths.</text>
-  <text x="44" y="92" class="sub">thetadata-rs • Current direct integration and planned optional Terminal adapters • 2026-10-04</text>
+  <text x="44" y="92" class="sub">praevis-thetadata • Current direct integration and planned optional Terminal adapters • 2026-10-04</text>
   <path d="M46 130H94" class="current"/><text x="107" y="136" class="small">Current Rust path</text>
   <path d="M330 130H378" class="external"/><text x="391" y="136" class="small">Vendor infrastructure</text>
   <path d="M655 130H703" class="planned"/><text x="716" y="136" class="small">Planned Rust adapter</text>
@@ -60,9 +60,9 @@
   <rect x="780" y="250" width="365" height="260" rx="16" fill="#eaf7f1" stroke="#087f68" stroke-width="2"/>
   <rect x="800" y="269" width="240" height="25" rx="12" fill="#087f68"/>
   <text x="814" y="287" class="badge" style="fill:#fff">CURRENT • NO JAVA REQUIRED</text>
-  <text x="803" y="329" class="heading">thetadata-rs direct client</text>
-  <text x="803" y="368" class="body">thetadata-auth: explicit credentials</text>
-  <text x="803" y="400" class="body">thetadata-client: TLS gRPC queries</text>
+  <text x="803" y="329" class="heading">Praevis ThetaData client</text>
+  <text x="803" y="368" class="body">Auth library: explicit credentials</text>
+  <text x="803" y="400" class="body">Client library: TLS gRPC queries</text>
   <text x="803" y="439" class="small">Typed EOD: experimental, live sample verified</text>
   <text x="803" y="465" class="small">Generated raw bindings: broader foundations</text>
   <text x="803" y="491" class="small">Bounded decoding • numeric batches / Tables</text>
