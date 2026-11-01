@@ -15,6 +15,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Python compatibility baseline 1.0.12 → 1.0.17.** The descriptor
+  (`35572458…5a58`) and manifest were regenerated from the hash-verified
+  1.0.17 wheel. `praevis-thetadata-proto` now binds 100 RPCs instead of 82
+  (17 futures RPCs and `GetStockFlatFileQuote` were added) and 212 messages.
+  **Source-breaking for raw proto struct literals:** `Endpoints::ZonedDateTime`
+  gained `nanos` and `precision`, so construct it with `..Default::default()`.
+  Runtime decoding is unchanged: both decoders still ignore those fields,
+  pending the ADR-0019 policy. The 1.0.17 inventory, catalogue and dispositions
+  ledger are now the checked baseline, and the 1.0.12 set stays frozen. Futures
+  RPCs and the new `stock_flat_file_quote` are `unresolved`, like the other
+  flat files. The upstream monitor reports tracked = latest, 1.0.17.
+  Auth requests, credentials and persisted sessions are unchanged.
+
 - Research tooling is now version-agnostic. `research_python.py` takes its
   paths from the manifest `source_version`. It checks the frozen 1.0.12
   evidence alongside any newer baseline, and it fails if upstream removes,

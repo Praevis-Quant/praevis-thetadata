@@ -77,6 +77,38 @@ Recovery depends on continued artifact availability; a hash alone is not an
 archive. See [ADR-0011](../adr/0011-market-data-verification-and-artifact-retention.md)
 for the proposed retention and Rust-native verification policy.
 
+## Releases 1.0.13–1.0.17 and the current 1.0.17 baseline
+
+Checked 2026-11-01. PyPI's integrity API attests every wheel from 1.0.13 to
+1.0.17 to the same `AXIOMXLLC/thetadata-python` repository, `publish.yml`
+workflow and `pypi` environment. Each statement subject equals the wheel hash.
+The certificate-embedded commits are:
+
+| Version | Wheel SHA-256 | Attested commit |
+| --- | --- | --- |
+| 1.0.13 | `df9c7c7b3081c4afe34554468aa9ec4dd46ee532733cbe03ef545b556871a5c2` | `fe20e17f99aa6a26adbb1f521ac1637239ae6893` |
+| 1.0.14 | `7114e7f5ca09420d798b1fa5b87298c4723b51ee58292d7d18e7ede692c263e5` | `9dc295cbdf8b120dcfcd2392d44febb293405a29` |
+| 1.0.15 | `68104130571ac70a4bad7a9433e794a01ff81cc2e952e1f86513785e84533c17` | `46e346b05fe793b1ef82be9cc5d15a5cc6766b9f` |
+| 1.0.16 | `709fed6738f9450931ff405795b0783ea45604761467584473d85b1e485ab6b0` | `226cceb174bb7e98e8868b91740fbfedb0546edd` |
+| 1.0.17 | `a43a2fe0fc4896047b9287a9cbf725214386566e3adf930523e5f8aeabf81fea` | `7d8def5003d30423ec75144e95b26f682b434464` |
+
+Applied to 1.0.12, the same extraction reproduces the commit above. The
+repository still returns 404. Every sdist's Python modules match its wheel
+byte-for-byte. The machine-readable record, including the provenance
+response hashes, is in [the delta data](python-1.0.13-1.0.17-delta.json).
+
+To recover the current 1.0.17 wheel, download
+[PyPI's versioned file](https://files.pythonhosted.org/packages/fe/5c/24aaae12bc2bde3e66dda1bfed0c03dc26b5a00c2058402e6174b6cb1799/thetadata-1.0.17-py3-none-any.whl)
+to ignored research storage. Compare its SHA-256 with `artifact_sha256` in
+[vendor-1.0.17.json](vendor-1.0.17.json), not with a newly downloaded
+checksum alone. Then run, without installing or importing the package:
+
+```bash
+python -m pip install -r tools/research-requirements.txt
+python tools/research_python.py --archive artifacts/research/thetadata-1.0.17-py3-none-any.whl --check
+python tools/extract_protocol.py --archive artifacts/research/thetadata-1.0.17-py3-none-any.whl --check
+```
+
 ## Remaining research actions
 
 - Preserve the hash-matched wheel/source-distribution identities. Wheel coverage does not include the source distribution's additional packaging files; examine those separately if packaging/build provenance becomes part of the port's requirements.

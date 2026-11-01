@@ -198,10 +198,12 @@ async fn local_faults_before_and_after_delivery_fuse_and_release_single_job() {
         DataType::Timestamp(wire::ZonedDateTime {
             epoch_ms: u64::MAX,
             zone: 1,
+            ..Default::default()
         }),
         DataType::Timestamp(wire::ZonedDateTime {
             epoch_ms: 0,
             zone: 42,
+            ..Default::default()
         }),
     ] {
         cases.push((

@@ -5,8 +5,9 @@ tracked **1.0.12** baseline with its predecessor. It separates observed
 artifact behavior, documented vendor behavior and project inference, as in
 [the 1.0.12 research](thetadata-1.0.12.md). No vendor code was installed,
 imported or executed, and no production login or data request was made.
-The compatibility baseline is still 1.0.12. This document does not change it;
-see [the update plan](../upstream-update-1.0.17.md).
+When this research was written, the compatibility baseline was 1.0.12. The
+[update plan](../upstream-update-1.0.17.md) was approved on 2026-11-01, and
+plan step 3 moved the baseline to 1.0.17.
 
 ## Trigger
 

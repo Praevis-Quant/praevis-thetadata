@@ -1,10 +1,10 @@
 {
-  "source_version": "1.0.12",
+  "source_version": "1.0.17",
   "source_sha256": {
-    "_proto/endpoints_pb2.py": "456b2071124590c1bfa1afaf9a11e3be0787a57028d2729995e2803664569ed7",
-    "_proto/v3grpc/endpoints_pb2.py": "00f5a667755de6fbff860839250f35b4129b39ec182f277ad836f29fb122991d"
+    "_proto/endpoints_pb2.py": "379104ca0510bc41575a7e7e3763e11c7018a444fdb126f672e497ef0f23a34d",
+    "_proto/v3grpc/endpoints_pb2.py": "11cdd93caa8db12b903cb0883e801c6a043e9171fab42b0feb416c523768ea2a"
   },
-  "descriptor_sha256": "b5b7ba02cebfb7ec7d817af12012dd52dcd9a23ad0ce02fe04cce299d1310373",
+  "descriptor_sha256": "35572458782193a20b112e4b62c9179ca380d6f9dfd919b79494de584a3f5a58",
   "methods": [
     {
       "rpc": "GetStockListSymbols",
@@ -493,8 +493,116 @@
       "server_streaming": true
     },
     {
+      "rpc": "GetStockFlatFileQuote",
+      "request": ".BetaEndpoints.StockFlatFileQuoteRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
       "rpc": "GetIndexFlatFileEod",
       "request": ".BetaEndpoints.IndexFlatFileEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureListSymbols",
+      "request": ".BetaEndpoints.FutureListSymbolsRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureListDates",
+      "request": ".BetaEndpoints.FutureListDatesRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureHistoryTrade",
+      "request": ".BetaEndpoints.FutureHistoryTradeRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureHistoryBbo",
+      "request": ".BetaEndpoints.FutureHistoryBboRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureHistoryTradeBbo",
+      "request": ".BetaEndpoints.FutureHistoryTradeBboRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureHistoryOhlc",
+      "request": ".BetaEndpoints.FutureHistoryOhlcRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureHistoryEod",
+      "request": ".BetaEndpoints.FutureHistoryEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureHistorySettlement",
+      "request": ".BetaEndpoints.FutureHistorySettlementRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureAtTimeTrade",
+      "request": ".BetaEndpoints.FutureAtTimeTradeRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureAtTimeBbo",
+      "request": ".BetaEndpoints.FutureAtTimeBboRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureSnapshotBbo",
+      "request": ".BetaEndpoints.FutureSnapshotBboRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureSnapshotTrade",
+      "request": ".BetaEndpoints.FutureSnapshotTradeRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureSnapshotOhlc",
+      "request": ".BetaEndpoints.FutureSnapshotOhlcRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureSnapshotMarketValue",
+      "request": ".BetaEndpoints.FutureSnapshotMarketValueRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureFlatFileTradeBbo",
+      "request": ".BetaEndpoints.FutureFlatFileTradeBboRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureFlatFileEod",
+      "request": ".BetaEndpoints.FutureFlatFileEodRequest",
+      "response": ".Endpoints.ResponseData",
+      "server_streaming": true
+    },
+    {
+      "rpc": "GetFutureFlatFileBbo",
+      "request": ".BetaEndpoints.FutureFlatFileBboRequest",
       "response": ".Endpoints.ResponseData",
       "server_streaming": true
     }
