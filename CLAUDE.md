@@ -7,7 +7,7 @@ is the shared context rather than a second, agent-specific set of rules.
 ## Project overview
 
 Praevis ThetaData is a Rust workspace derived from the ThetaData Python 1.0.12
-distribution. Its first deliverable is a reusable authentication library and
+distribution and now tracking 1.0.17 (`source_version` in the proto manifest). Its first deliverable is a reusable authentication library and
 the `praevis-thetadata` CLI with Windows/Linux native session persistence. Authentication
 is the accepted requirements baseline. The protobuf, core, and market-data
 client crates are foundations, not a claim of complete Python compatibility or
@@ -96,7 +96,7 @@ one bounded negative check; never sweep endpoints or parse remote text for tiers
 | --- | --- | --- |
 | `crates/praevis-thetadata-auth` | HTTP authentication, credentials, sessions, native persistence | Reusable independently of market data; callers own async runtime |
 | `apps/praevis-thetadata-cli` | Argument parsing, credential discovery, auth/status/logout, output and exit codes | Depends on auth, not the market-data client |
-| `crates/praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for 82 RPCs | Generated at build time from the checked-in descriptor |
+| `crates/praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for 100 RPCs | Generated at build time from the checked-in descriptor |
 | `crates/praevis-thetadata-core` | Prices, timestamps, values, tables | Transport-independent data types |
 | `crates/praevis-thetadata-client` | gRPC requests, ZSTD decoding, batch streaming | Composes auth, core, and proto; still a foundation |
 
@@ -251,11 +251,15 @@ for a newer release or inability to verify. A failure initiates compatibility
 research; it does not authorize silently bumping the baseline. The checker
 does not install or execute the upstream package.
 
-The [deep analysis and coverage matrix](docs/research/python-1.0.12-catalog.md)
-inventory every source module/function, all 80 wrappers and 82 RPCs, protocol
-fields, and explicit feature dispositions. `tools/research_python.py --check`
-verifies committed evidence and generated documentation without the vendor
-archive or research dependencies. Archive regeneration additionally needs
+The [current 1.0.17 catalogue](docs/research/python-1.0.17-catalog.md)
+inventories every source module/function, all 81 wrappers and 100 RPCs, protocol
+fields, and explicit feature dispositions. The [frozen 1.0.12 catalogue](docs/research/python-1.0.12-catalog.md)
+(80 wrappers, 82 RPCs) is preserved alongside it, and the
+[1.0.13–1.0.17 records](docs/research/README.md) document every change.
+`tools/research_python.py --check` verifies the current and frozen evidence,
+additions-only compatibility and generated documentation without the vendor
+archive or research dependencies; `tools/upstream_delta.py check` verifies the
+generated change records. Archive regeneration additionally needs
 `tools/research-requirements.txt` and the exact original wheel bytes. The local
 ZIP/extraction were removed after verification; use the documented
 [hash-verified recovery procedure](docs/research/upstream-source.md#recovering-the-removed-local-artifacts)

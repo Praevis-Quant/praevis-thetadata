@@ -6,7 +6,7 @@ is an unpublished development version. Preserve the independent Python baseline
 in the [protocol manifest](../crates/praevis-thetadata-proto/schema/manifest.json).
 
 The first supported release will cover authentication and one stock EOD slice.
-Generated bindings for 82 RPCs do not make 82 supported features. Every release
+Generated bindings for 100 RPCs (Python 1.0.17 baseline) do not make 100 supported features. Every release
 must state its supported surface and distinguish experimental raw bindings.
 Maintainers own release decisions; client/core owners own EOD acceptance;
 the account holder operates the optional live checks.
@@ -15,7 +15,7 @@ the account holder operates the optional live checks.
 
 | Target | Concrete deliverable | Exit gates | Depends on / remaining work |
 | --- | --- | --- | --- |
-| `0.1.0-alpha.1` | Useful first publication of auth, core, proto, client and CLI; client EOD clearly experimental | Self-contained archives and licenses; dependency versions/order; Windows/Linux external consumer builds; verified registry owner/publish capability; manually recorded PROD auth and small EOD result, or explicit documented service blocker before reconsidering scope; exact archive review and publication approval | [Packaging plan](crates-io-release-plan.md), [manual live verification](live-verification.md). No empty placeholder crates. |
+| `0.1.0-alpha.1` | Useful first publication of auth, core, proto, client and CLI; client EOD clearly experimental | Proto bindings and research at the current reviewed upstream baseline (1.0.17, [update plan](upstream-update-1.0.17.md), decision D5); self-contained archives and licenses; dependency versions/order; Windows/Linux external consumer builds; verified registry owner/publish capability; manually recorded PROD auth and small EOD result, or explicit documented service blocker before reconsidering scope; exact archive review and publication approval | [Packaging plan](crates-io-release-plan.md), [manual live verification](live-verification.md). No empty placeholder crates. |
 | `0.1.0-alpha.2` | EOD feature-complete candidate: exact numeric delivery and Table adapter, bounded lifecycle and documented real-service behavior | Close every applicable clause in the [EOD matrix](requirements/stock-eod-matrix.md); resolve measured null/price regressions or approve a measured per-workload tradeoff; calibrate resource defaults; compare authorized live captures with all three local interfaces; record unresolved service semantics explicitly | Alpha.1; current performance and resource work; real account/entitlements and captures. |
 | `0.1.0-beta.1` | Freeze auth/EOD public API for the first supported release; runnable consumer examples and troubleshooting | Accept or revise the applicable proposed ADRs; requirement-to-test/evidence review; partial-result and cancellation examples; install/build outside workspace; document supported platforms, native-store prerequisites, resource policy and compatibility boundaries | Alpha.2; release review covers API stability, packaging and diagnostics. |
 | `0.1.0` | Supported auth + single-symbol stock EOD libraries and auth CLI | No unresolved blocker for the declared surface; green synthetic Windows/Linux checks; maintainer-reviewed manual PROD report on the release candidate; retained benchmark comparison and calibrated acceptance decision; signed-off release checklist below | Beta.1. This is not full Python parity and makes no flat-file/real-time promise. |
@@ -43,6 +43,11 @@ product/tier/connector cells in the [subscription matrix](subscription-testing.m
 ## Immediate execution order
 
 Start with alpha.1 packaging and a reproducible Python comparison baseline.
+The upstream baseline update to Python 1.0.17 ([plan](upstream-update-1.0.17.md))
+landed before alpha.1 publication, as decision D5 requires: research (#15),
+tooling (#16), baseline (#17), timestamp precision (#18) and documentation.
+The first published `praevis-thetadata-proto` therefore carries the 1.0.17
+schema rather than the earlier 82-RPC schema.
 The sixteen-column synthetic EOD regression corpus and the Praevis ThetaData
 naming decision are complete at `1899725`; archive readiness and performance
 acceptance are still open. Existing timings compare Rust implementations, not

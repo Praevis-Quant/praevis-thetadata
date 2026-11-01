@@ -34,7 +34,7 @@ Do not create speculative umbrella or future PyO3 packages just to claim names.
 | --- | --- | --- |
 | `praevis-thetadata-auth` | Explicit HTTP authentication, sessions, native persistence | First wave; independent |
 | `praevis-thetadata-core` | Exact values, tables and validated numeric batches | First wave; independent |
-| `praevis-thetadata-proto` | Checked-in descriptor and generated bindings for 82 RPCs | First wave; independent |
+| `praevis-thetadata-proto` | Checked-in descriptor and generated bindings for 100 RPCs (Python 1.0.17) | First wave; independent |
 | `praevis-thetadata-client` | Raw RPC foundations and experimental typed EOD path | After auth/core/proto resolve from the registry |
 | `praevis-thetadata-cli` | Working `praevis-thetadata auth`, local status and logout | After auth resolves from the registry |
 

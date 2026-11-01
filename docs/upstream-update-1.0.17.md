@@ -1,6 +1,6 @@
 # Upstream update plan: Python 1.0.12 → 1.0.17
 
-Status: **approved 2026-11-01 (D1–D6 as recommended, with the D3 flat-file correction below); in progress**. Date: 2026-11-01. Each step's
+Status: **approved 2026-11-01 (D1–D6 as recommended, with the D3 flat-file correction below); complete (steps 1–5 landed)**. Date: 2026-11-01. Each step's
 Status line records what has landed. This document follows the
 [upstream update template](upstream-update-template.md) and
 [ADR-0015](adr/0015-upstream-and-enhancement-contracts.md). Evidence is in
@@ -166,6 +166,11 @@ Status: implemented in the step-4 PR as EOD-L3-030 and ADR-0019.
   Windows and Linux. Report the per-cell branch cost.
 
 ### Step 5: documentation and comparator alignment
+
+Status: implemented in the step-5 PR. Follow-ups, including the ADR-0019
+Table-decode observation and the missing Windows benchmark, are tracked in the
+[ROADMAP](ROADMAP.md#respond-to-upstream-compatibility-changes).
+
 
 - Apply the documentation list below that the earlier steps did not cover.
   Move the Python comparator pin to 1.0.17 (D4).

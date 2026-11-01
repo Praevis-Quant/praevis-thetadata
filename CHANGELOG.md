@@ -15,6 +15,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- Documentation for the 1.0.17 baseline. The Python performance comparator is
+  pinned to 1.0.17 (D4); its EOD wrapper and conversion code are unchanged
+  from 1.0.12. The release plan records that the baseline update landed before
+  alpha.1 (D5) and that the proto now has 100 RPCs. The ROADMAP lists the
+  remaining follow-ups: futures research, explicit presence for the new
+  optional fields, ADR-0019 supersession, and a possible ~1–2% Table-decode
+  shift on mixed uncompressed fixtures that has not been measured on Windows.
+  CLAUDE.md, the crates.io plan and the subscription matrix are updated, and
+  the subscription matrix notes the documented service-side changes.
+
 - **Timestamps with sub-millisecond or unknown precision are now rejected
   instead of silently truncated** ([ADR-0019](docs/adr/0019-timestamp-precision.md),
   EOD-L3-030). Python 1.0.16 added `ZonedDateTime.nanos`/`precision` with
