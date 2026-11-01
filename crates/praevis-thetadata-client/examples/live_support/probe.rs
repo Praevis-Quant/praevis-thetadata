@@ -101,6 +101,8 @@ impl Report {
                     symbol: self.symbol.clone(),
                     venue: Some(self.venue.into()),
                     min_time: None,
+                    // Added in 1.0.13; left absent to keep the pre-1.0.13 request shape.
+                    current_day_only: None,
                 }),
             });
             request.set_timeout(Duration::from_secs(30));
