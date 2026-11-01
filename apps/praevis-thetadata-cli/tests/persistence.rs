@@ -45,20 +45,10 @@ impl Drop for Cleanup {
     }
 }
 
-#[test]
-#[ignore = "writes a temporary synthetic session to the native credential store"]
-fn session_survives_process_exit_without_login_credentials() {
-    let profile = format!(
-        "test-{}-{}",
-        std::process::id(),
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    );
-    let _cleanup = Cleanup(profile.clone());
+/// One-shot synthetic identity endpoint. Checks the request carries the synthetic API key.
+fn identity_server(status: u16) -> (String, std::thread::JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let address = listener.local_addr().unwrap();
+    let address = listener.local_addr().unwrap().to_string();
     let server = std::thread::spawn(move || {
         let (mut socket, _) = listener.accept().unwrap();
         socket
@@ -84,25 +74,59 @@ fn session_survives_process_exit_without_login_credentials() {
             }
         }
         assert!(String::from_utf8_lossy(&bytes).contains("synthetic-test-api-key"));
-        let body = r#"{"sessionId":"synthetic-persisted-session","user":{"email":"test@example.com","stockSubscription":"TEST"}}"#;
-        write!(socket, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+        let body = if status == 200 {
+            r#"{"sessionId":"synthetic-persisted-session","user":{"email":"test@example.com","stockSubscription":"TEST"}}"#
+        } else {
+            r#"{"error":"synthetic rejection"}"#
+        };
+        write!(socket, "HTTP/1.1 {status} X\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
     });
-    let login = cli(
-        &profile,
-        &[
-            "--auth-url",
-            &format!("http://{address}/auth"),
-            "--insecure",
-            "--json",
-        ],
-        true,
+    (address, server)
+}
+
+#[test]
+#[ignore = "writes a temporary synthetic session to the native credential store"]
+fn session_survives_process_exit_without_login_credentials() {
+    let profile = format!(
+        "test-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
     );
+    let _cleanup = Cleanup(profile.clone());
+    let login = |args: &[&str], server: &str| {
+        let url = format!("http://{server}/auth");
+        let mut all = vec!["--auth-url", &url, "--insecure", "--json"];
+        all.extend_from_slice(args);
+        cli(&profile, &all, true)
+    };
+    // Without --save, a successful login does not touch the native store (ADR-0020).
+    let (address, server) = identity_server(200);
+    let unsaved = login(&[], &address);
+    server.join().unwrap();
+    assert!(
+        unsaved.status.success(),
+        "{}",
+        String::from_utf8_lossy(&unsaved.stderr)
+    );
+    let data: serde_json::Value = serde_json::from_slice(&unsaved.stdout).unwrap();
+    assert_eq!(data["persisted"], false);
+    assert_eq!(
+        cli(&profile, &["status", "--json"], false).status.code(),
+        Some(3)
+    );
+    // With --save, the same login stores the v1 record.
+    let (address, server) = identity_server(200);
+    let login_output = login(&["--save"], &address);
+    server.join().unwrap();
+    let login = login_output;
     assert!(
         login.status.success(),
         "{}",
         String::from_utf8_lossy(&login.stderr)
     );
-    server.join().unwrap();
     // The HTTP server and login process have exited, and this child has no credentials.
     let status = cli(&profile, &["status", "--json"], false);
     assert!(
@@ -127,6 +151,21 @@ fn session_survives_process_exit_without_login_credentials() {
         assert!(!text.contains("synthetic-test-api-key"));
         assert!(!text.contains("synthetic-persisted-session"));
     }
+    // A failed login, even with --save, leaves the saved record intact.
+    let (address, server) = identity_server(401);
+    let url = format!("http://{address}/auth");
+    let failed = cli(
+        &profile,
+        &["--auth-url", &url, "--insecure", "--json", "--save"],
+        true,
+    );
+    server.join().unwrap();
+    assert_eq!(failed.status.code(), Some(1));
+    let kept = cli(&profile, &["status", "--json"], false);
+    assert!(kept.status.success());
+    let kept: serde_json::Value = serde_json::from_slice(&kept.stdout).unwrap();
+    assert_eq!(kept["user"]["email"], "test@example.com");
+    assert_eq!(kept["savedAtUnix"], data["savedAtUnix"]);
     // Same profile in PROD cannot see the STAGE session.
     let other = Command::new(env!("CARGO_BIN_EXE_praevis-thetadata"))
         .args([

@@ -70,7 +70,8 @@ def main():
     server = ThreadingHTTPServer(("127.0.0.1", 0), IdentityFixture)
     thread = threading.Thread(target=lambda: server.serve_forever(poll_interval=0.05), daemon=True)
     thread.start()
-    auth_args = ["--auth-url", f"http://127.0.0.1:{server.server_port}/auth", "--insecure", "--json"]
+    # `auth` saves only with --save since ADR-0020; this case measures auth plus save.
+    auth_args = ["--auth-url", f"http://127.0.0.1:{server.server_port}/auth", "--insecure", "--json", "--save"]
     timings = {"auth_and_save_ms": [], "persisted_status_ms": []}
     try:
         for index in range(args.samples + 2):

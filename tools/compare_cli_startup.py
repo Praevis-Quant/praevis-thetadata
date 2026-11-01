@@ -80,7 +80,11 @@ def compare(before, after, samples, warmups, stage_binaries=False):
                 raise RuntimeError("Benchmark response failed validation")
 
         try:
-            measure("auth_and_save_ms", lambda label: invoke(label, auth, login=True, profile=profiles[label]),
+            # Before ADR-0020, `auth` always saved; afterwards saving needs --save. Detect it per
+            # binary so the same auth-and-save work is compared across that change.
+            saves = {label: auth + (["--save"] if "--save" in invoke(label, ["auth", "--help"], parse=False)[1] else [])
+                     for label in binaries}
+            measure("auth_and_save_ms", lambda label: invoke(label, saves[label], login=True, profile=profiles[label]),
                     lambda data: require(data.get("authenticated") is True and data.get("persisted") is True
                                          and data.get("user", {}).get("email") == "benchmark@example.invalid"))
             server.shutdown()

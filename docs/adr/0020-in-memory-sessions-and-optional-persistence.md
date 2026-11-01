@@ -98,5 +98,6 @@ Records saved by earlier builds therefore keep loading.
 
 CI tests auth with the feature off and on, checks that default auth and client
 dependency trees contain no keyring/D-Bus packages, and keeps the native-store
-process tests on Windows and Linux. The library change landed first; the CLI
-precedence and `--save` change follows in a separate PR.
+process tests on Windows and Linux. The library feature gate landed first (#21),
+followed by the CLI precedence and `--save` change. A record saved by the
+pre-change CLI was confirmed to be read and removed by the new CLI.

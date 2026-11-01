@@ -21,14 +21,18 @@ praevis-thetadata --help
 After setting `THETADATA_API_KEY` in your process environment:
 
 ```text
-praevis-thetadata auth
+praevis-thetadata auth              # log in and report the account; nothing is saved
+praevis-thetadata auth --save       # also save the session in the native credential store
 praevis-thetadata auth status --json
 praevis-thetadata auth logout
 ```
 
-Authentication saves the session in Windows Credential Manager or Linux Secret
-Service. Linux requires an available D-Bus session and an unlocked persistent
-keyring. Status checks local storage only; logout removes the selected local
+Like the vendor Python package, `auth` keeps the session in memory only. With
+`--save` it is stored in Windows Credential Manager or Linux Secret Service;
+on Linux that requires an available D-Bus session and an unlocked persistent
+keyring. Credential order follows Python: `--creds-file`, then
+`THETADATA_API_KEY`, then `THETADATA_EMAIL`/`THETADATA_PASSWORD` (a Rust-only
+extra), then `THETADATA_CREDENTIALS_FILE` or `./creds.txt`. Status checks local storage only; logout removes the selected local
 record without revoking the server session. API keys and passwords are not saved.
 The CLI needs no Java, gRPC or market-data decoding dependencies.
 

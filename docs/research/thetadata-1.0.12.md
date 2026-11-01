@@ -751,3 +751,21 @@ query message, request envelope, and RPC. All 531 source inventory items remain.
 The other endpoints retain their prior dispositions. Runtime implementation,
 synthetic acceptance, resource-default measurements, and live service evidence
 are not established by this documentation update.
+
+## Auth model update (2026-11-01)
+
+[ADR-0020](../adr/0020-in-memory-sessions-and-optional-persistence.md) aligns the Rust
+default with the evidence above. Earlier rows in this report that describe the
+Rust side of authentication are superseded as follows; the Python observations
+are unchanged and still hold for 1.0.17.
+
+| Behavior | Python 1.0.12–1.0.17 | Rust after ADR-0020 | Classification |
+| --- | --- | --- | --- |
+| Session lifetime | In memory; reuse through `existing_authorized_client` | In memory by default (clone `Session`) | Vendor-equivalent |
+| Native persistence | None | Optional `native-store` feature; CLI `auth --save`; v1 record and identity unchanged | Rust enhancement |
+| Credential order | Explicit file, then API key, then complete email/password, then `THETADATA_CREDENTIALS_FILE`/`./creds.txt` | `--creds-file`, then `THETADATA_API_KEY`, then a complete `THETADATA_EMAIL`/`THETADATA_PASSWORD` pair, then `THETADATA_CREDENTIALS_FILE`/`./creds.txt` | Vendor order |
+| `THETADATA_CREDENTIALS_FILE` | Final fallback only | Final fallback only (previously highest precedence in Rust) | Vendor-equivalent |
+| Incomplete email/password | Falls through to the default file | Falls through | Vendor-equivalent |
+| Email/password source | Constructor arguments | Environment variables (no argv secrets) | Rust-only extra |
+| `.env` loading | Loaded when no explicit file is given | Never | Deliberate difference |
+

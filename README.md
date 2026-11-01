@@ -51,13 +51,17 @@ Requires a current stable Rust toolchain. On Windows, install the Visual Studio 
 
 ```powershell
 cargo build -p praevis-thetadata-cli
-# With THETADATA_API_KEY already set in your environment:
+# With THETADATA_API_KEY already set in your environment: log in and report the account.
+# The session is not stored (in memory only, like the vendor Python package).
 .\target\debug\praevis-thetadata.exe auth
 
-# Or use a Theta Terminal compatible two-line credentials file:
-.\target\debug\praevis-thetadata.exe auth --creds-file C:\private\creds.txt
+# Log in and also save the session in Windows Credential Manager:
+.\target\debug\praevis-thetadata.exe auth --save
 
-# Run this in a second terminal/process without supplying login credentials:
+# Or use a Theta Terminal compatible two-line credentials file:
+.\target\debug\praevis-thetadata.exe auth --save --creds-file C:\private\creds.txt
+
+# After --save, run this in a second terminal/process without supplying login credentials:
 .\target\debug\praevis-thetadata.exe auth status
 .\target\debug\praevis-thetadata.exe auth status --json
 
@@ -70,7 +74,7 @@ On Linux (Ubuntu/Debian):
 ```bash
 sudo apt-get install build-essential pkg-config dbus gnome-keyring
 cargo build --locked -p praevis-thetadata-cli
-./target/debug/praevis-thetadata auth --creds-file /private/creds.txt
+./target/debug/praevis-thetadata auth --save --creds-file /private/creds.txt
 ./target/debug/praevis-thetadata auth status --json
 ./target/debug/praevis-thetadata auth logout
 ```
@@ -86,49 +90,56 @@ dbus-run-session -- bash
 read -r -s -p 'Keyring password: ' keyring_password; echo
 printf '%s' "$keyring_password" | gnome-keyring-daemon --unlock --components=secrets
 unset keyring_password
-./target/debug/praevis-thetadata auth --creds-file /private/creds.txt
+./target/debug/praevis-thetadata auth --save --creds-file /private/creds.txt
 ./target/debug/praevis-thetadata auth status
 ```
 
 Services and containers need access to an unlocked Secret Service and persistent keyring storage under the same OS account. GNOME Keyring normally stores its encrypted keyrings under `$XDG_DATA_HOME/keyrings` (default `~/.local/share/keyrings`); preserve that storage across container replacements. The CLI does not save the keyring unlock password or automatically start/unlock the service. An unavailable service returns an actionable error, distinct from “no saved session”; there is no plaintext or process-only fallback.
 
-Credential precedence for `praevis-thetadata auth`:
+The D-Bus/keyring setup above is needed only for `--save`, `status` and `logout`.
+Plain `auth` never touches the native store.
 
-1. `--creds-file` or `THETADATA_CREDENTIALS_FILE` (email on line one, password on line two).
+Credential precedence for `praevis-thetadata auth` follows the vendor Python
+package ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md)):
+
+1. `--creds-file PATH`, a two-line file (email on line one, password on line two).
 2. `THETADATA_API_KEY`.
-3. Both `THETADATA_EMAIL` and `THETADATA_PASSWORD`.
-4. `./creds.txt`.
+3. Both `THETADATA_EMAIL` and `THETADATA_PASSWORD`. These variables are a
+   Rust-only extra; Python takes this pair only as constructor arguments. If only
+   one is set, or either is blank, discovery falls through, as Python's does.
+4. `THETADATA_CREDENTIALS_FILE`, otherwise `./creds.txt`, as the final fallback.
 
-The CLI does not load `.env` files automatically. Credentials and tokens are never printed. `--json` emits account/subscription details and storage status. Exit codes: **0** success, **1** operational/authentication error, **2** invalid command arguments, **3** no persisted session when checking status.
+A file selected by `--creds-file` or `THETADATA_CREDENTIALS_FILE` that is
+missing or invalid is an error; later sources are not tried. There are no
+password or API-key command-line flags. The CLI does not load `.env` files
+automatically. Credentials and tokens are never printed. `--json` emits
+account/subscription details and whether the session was saved (`persisted`). Exit codes: **0** success, **1** operational/authentication error, **2** invalid command arguments, **3** no persisted session when checking status.
 
 `--environment prod|stage` defaults to PROD; `THETADATA_MDDS_TYPE` is also supported. `--profile NAME` defaults to `default`. These options also work with `status` and `logout`:
 
 ```powershell
-.\target\debug\praevis-thetadata.exe auth --profile research --environment stage
+.\target\debug\praevis-thetadata.exe auth --save --profile research --environment stage
 .\target\debug\praevis-thetadata.exe auth status --profile research --environment stage --json
 ```
 
 ## How authentication persists
 
-`THETADATA_API_KEY` supplies a login credential. Credential Manager stores the
-**session returned by login**, so another process can reuse it without receiving
-the API key or logging in again. The CLI always saves a successful login; the
-environment variable does not switch that behavior off. The API key and password
-are never copied into the saved record.
+By default a session lives only in memory, as in the vendor Python package,
+which reuses it through `existing_authorized_client` and has no native session
+store ([reviewed artifact](docs/research/thetadata-1.0.12.md#what-the-wheel-establishes-about-authentication)).
+`praevis-thetadata auth` logs in, reports the account and exits without storing
+anything. Library callers authenticate and pass the session directly to
+`ThetaClient::with_session`. The manual
+[`live_eod --api-key-env` workflow](docs/live-verification.md) does the same.
 
-Persistence is an explicit Rust feature from
-[ADR-0003](docs/adr/0003-native-session-persistence.md). Python 1.0.12–1.0.17 supports
-environment API keys and `existing_authorized_client` reuse in memory, but has
-no equivalent native session store in the
-[reviewed artifact](docs/research/thetadata-1.0.12.md#what-the-wheel-establishes-about-authentication).
-Library callers can authenticate and pass a session directly to
-`ThetaClient::with_session` without calling `SessionStore`. The manual
-[`live_eod --api-key-env` workflow](docs/live-verification.md) uses an in-memory
-session and does not save it in Credential Manager. Native persistence as an
-optional build dependency is separately proposed in
-[ADR-0013](docs/adr/0013-library-boundaries.md); it is not yet implemented.
+Saving a session across processes is an optional Rust enhancement
+([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md),
+superseding ADR-0003). In the library it requires the `native-store` feature; in
+the CLI it requires `auth --save`. The credential store holds the **session
+returned by login**, so another process can reuse it without the API key or a
+new login. The API key and password are never copied into the saved record.
 
-1. `praevis-thetadata auth` submits credentials to the same HTTPS authentication endpoint and with the same request shape as Python 1.0.12, unchanged through 1.0.17.
+1. `praevis-thetadata auth --save` submits credentials to the same HTTPS authentication endpoint and with the same request shape as Python 1.0.12, unchanged through 1.0.17.
 2. After a successful response, `SessionStore::save` stores a versioned JSON record **inside the native credential store**, not in a project file. The record contains the session ID, account/subscription metadata, environment, and save time. The API key and password are not stored.
 3. The stable identifier is `praevis.thetadata.auth.v1:PROD:default` for the default production profile. Windows uses it as the credential target. Linux uses it as the Secret Service `service` attribute, with the profile as `username`, in the default collection. Changing the profile or environment selects a different entry. All applications using this library and identifier share that record under the same OS user and credential service. Windows and Linux stores are independent; sessions are not automatically synchronized between them.
 4. `praevis-thetadata auth status` starts independently and reads the record from the native store. It does not authenticate, require login credentials, or contact ThetaData. It reports the account, save time, and storage location without exposing the token.
@@ -136,7 +147,7 @@ optional build dependency is separately proposed in
 
 The Windows backend uses the keyring crate's native `CRED_PERSIST_ENTERPRISE` storage. Records survive process exit and subsequent Windows logons; Windows account/roaming policy controls whether credentials can also roam. The store is scoped to the Windows user, not isolated from other applications running as that user. See [Windows credential persistence](https://learn.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentiala).
 
-**Persistence does not establish server validity.** The supplied Python package provides no token expiry, refresh, validation, or revocation contract. Status therefore reports `validity: "not_checked"`. Re-running `praevis-thetadata auth` obtains and saves a new session; failed login leaves the old record intact. Applications load an existing session explicitly and should prompt for authentication again if the server rejects it. There is no background refresh or saved password. Concurrent successful logins to the same target replace the stored record; the last write wins.
+**Persistence does not establish server validity.** The supplied Python package provides no token expiry, refresh, validation, or revocation contract. Status therefore reports `validity: "not_checked"`. Re-running `praevis-thetadata auth --save` obtains and saves a new session; a failed login, with or without `--save`, leaves the old record intact. Records saved by earlier versions, which saved on every `auth`, keep working: the identity and v1 format are unchanged. Applications load an existing session explicitly and should prompt for authentication again if the server rejects it. There is no background refresh or saved password. Concurrent successful logins to the same target replace the stored record; the last write wins.
 
 Native persistence supports Windows and Linux. Linux uses a persistent Secret Service collection, so records survive CLI exits and keyring daemon restarts; the collection must be unlocked again when required by the provider. The HTTP authentication API can be used on other platforms; persistence operations return an explicit unsupported-platform error there.
 

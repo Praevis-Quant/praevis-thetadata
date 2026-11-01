@@ -6,7 +6,7 @@ For the before/after CLI runtime experiment, comparison tooling, and measured re
 
 `tools/benchmark_auth.py` measures two user-visible operations using the actual release CLI:
 
-1. `auth`: process startup, credential discovery from a synthetic environment key, localhost HTTP request/response, JSON parsing, native session save, and JSON output.
+1. `auth --save` (plain `auth` no longer saves since ADR-0020): process startup, credential discovery from a synthetic environment key, localhost HTTP request/response, JSON parsing, native session save, and JSON output.
 2. `auth status`: a separate process with no login credentials, native session load, and JSON status output. The identity fixture is stopped before these measurements.
 
 Each case has two warmup iterations and 30 measured iterations by default. The report includes min, mean, median/p50, nearest-rank p95, max, sample count, timestamp, platform, Python version, Git revision, executable SHA-256, and backend. The script verifies the response and checks that synthetic secrets never appear in CLI output. A unique profile is removed in `finally`. Linux runs inside a disposable keyring; Windows uses a unique synthetic credential entry.
