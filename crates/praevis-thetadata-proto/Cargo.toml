@@ -5,6 +5,12 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+description = "Generated protobuf types and gRPC bindings recovered from the ThetaData Python distribution (independent, unofficial)"
+readme = "README.md"
+documentation = "https://docs.rs/praevis-thetadata-proto"
+keywords = ["thetadata", "grpc", "protobuf", "market-data"]
+categories = ["api-bindings", "network-programming"]
 
 [dependencies]
 prost.workspace = true

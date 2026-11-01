@@ -5,6 +5,12 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+description = "Transport-independent exact prices, timestamps, values, tables and numeric batches for the independent praevis-thetadata clients"
+readme = "README.md"
+documentation = "https://docs.rs/praevis-thetadata-core"
+keywords = ["thetadata", "market-data", "finance", "timestamps"]
+categories = ["finance", "data-structures"]
 
 [dependencies]
 chrono.workspace = true

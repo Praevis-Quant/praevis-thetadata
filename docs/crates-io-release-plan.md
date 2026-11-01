@@ -70,6 +70,30 @@ archives before verifying dependent archives against an isolated staging registr
 or published, approved dependencies. `publish = false` remains in place. No
 registry credentials were read and no package was uploaded during this inspection.
 
+### Metadata, licenses and versions (alpha.1 PR A, 2026-11-01)
+
+All five packages are `0.1.0-alpha.1`, versioned together and independently
+of the Python compatibility baseline (`source_version` 1.0.17). Internal
+dependencies carry exact registry requirements (`=0.1.0-alpha.1`) next to
+their workspace paths. `rust-version = "1.88"` is verified with
+`cargo +1.88 check --workspace --all-targets --locked` and
+`cargo +1.88 test --workspace --locked` (62 passed); the locked tonic 0.14 and
+ICU 2.x dependencies require 1.88. Each package has a description, a README,
+docs.rs documentation, keywords and categories, an explicit supported-platform
+statement, and an independence/experimental/no-full-parity note. Library
+READMEs are also the crate-level docs, so their examples compile as doctests.
+Byte-identical `LICENSE` and `NOTICE` copies sit in every package directory,
+and `tools/check_repository.py` fails if a copy drifts from the root file;
+proto also carries `LICENSE.upstream`. `publish = false` remains.
+
+| Package | README | LICENSE / NOTICE in `cargo package --list` | Remaining before staging rehearsal |
+| --- | --- | --- | --- |
+| Auth | Added | Yes / yes | Extracted-archive consumer build |
+| Core | Added | Yes / yes | Extracted-archive consumer build |
+| Proto | Added | Yes / yes, plus `LICENSE.upstream` | Extracted-archive consumer build |
+| Client | Added | Yes / yes | Build script still reads the sibling proto descriptor; examples reference sibling sources |
+| CLI | Updated | Yes / yes | Dependent archive verification against a staging registry |
+
 ### Work to close
 
 1. Choose and review the exact version and scope of each initial package.

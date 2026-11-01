@@ -1555,7 +1555,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-auth"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "keyring",
  "reqwest",
@@ -1567,7 +1567,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-cli"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "clap",
  "praevis-thetadata-auth",
@@ -1577,7 +1577,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-client"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "chrono",
  "clap",
@@ -1600,7 +1600,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-core"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -1610,7 +1610,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-proto"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "prost",
  "prost-types",

@@ -59,6 +59,28 @@ def audit_origins(registry, requirements, adr_paths, tracked_paths):
     return errors
 
 
+PACKAGE_DIRS = ["crates/praevis-thetadata-auth", "crates/praevis-thetadata-core", "crates/praevis-thetadata-proto",
+                "crates/praevis-thetadata-client", "apps/praevis-thetadata-cli"]
+
+
+def audit_package_files(read, tracked):
+    """Each package archive carries byte-identical LICENSE/NOTICE copies and its own README.
+
+    Cargo packages only files inside a package directory, so root files must be copied.
+    `read(path)` returns bytes; `tracked` is the set of tracked paths.
+    """
+    errors = []
+    for directory in PACKAGE_DIRS:
+        for name in ("LICENSE", "NOTICE", "README.md"):
+            if f"{directory}/{name}" not in tracked:
+                errors.append(f"Missing package file: {directory}/{name}")
+            elif name != "README.md" and read(f"{directory}/{name}").replace(b"\r\n", b"\n") != read(name).replace(b"\r\n", b"\n"):
+                errors.append(f"Package copy differs from root {name}: {directory}/{name}")
+    if "crates/praevis-thetadata-proto/LICENSE.upstream" not in tracked:
+        errors.append("Missing upstream license in the proto package")
+    return errors
+
+
 def audit_requirements(documents):
     """Audit canonical table IDs and immediate-level parent links in Markdown.
 
@@ -115,6 +137,7 @@ def main():
                 or name == "creds.txt" or name.endswith(".credentials")
                 or (name.startswith(".env") and name != ".env.example")):
             errors.append(f"Forbidden tracked input: {path}")
+    errors.extend(audit_package_files(lambda path: (ROOT / path).read_bytes(), set(files)))
     manifest = json.loads((ROOT / "crates/praevis-thetadata-proto/schema/manifest.json").read_text())
     schema_hash = hashlib.sha256((ROOT / "crates/praevis-thetadata-proto/schema/thetadata.bin").read_bytes()).hexdigest()
     if schema_hash != manifest["descriptor_sha256"]:
@@ -143,7 +166,7 @@ def main():
     if errors:
         raise SystemExit("\n".join(errors))
     print(f"Checked {len(files)} tracked files, {len(defined)} requirements, {len(adrs)} ADR origins, "
-          "exhaustive requirement origins, local document links, and descriptor integrity.")
+          "exhaustive requirement origins, local document links, package license copies, and descriptor integrity.")
 
 
 if __name__ == "__main__":
