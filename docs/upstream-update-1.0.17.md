@@ -62,13 +62,21 @@ on Windows and Linux.
 
 ### Step 1: research and plan (this PR)
 
-- Add the research document, the generated delta JSON, `tools/upstream_delta.py`
-  with its offline test, and this plan. Index them in docs/README.md.
+- Add the analysis document and `tools/upstream_delta.py` with its offline tests.
+  Add the generated 1.0.17 research set: per-release and cumulative change
+  records, delta JSON, `python-1.0.17-inventory.json`, `vendor-1.0.17.json` and
+  `python-1.0.17-catalog.md`. Keep the 1.0.12 files frozen, as D6 proposes.
+  Add this plan, and index everything in docs/README.md and
+  docs/research/README.md.
 - No baseline, descriptor or Rust change. The monitor stays red by design.
+- The new catalogue shows carried-forward 1.0.12 dispositions and marks new
+  items `undecided`. Recording decisions waits for D3 and step 3.
 
 ### Step 2: version-parameterized research tooling (no baseline change)
 
-- `tools/research_python.py`: derive the paths (`python-<v>-inventory.json`,
+- `tools/research_python.py`: fold in the inventory builder from
+  `upstream_delta.py`, which already reproduces the 1.0.12 inventory exactly,
+  so there is one implementation. Derive the paths (`python-<v>-inventory.json`,
   dispositions, catalogue, report) from the manifest `source_version`. Treat
   `vendor-1.0.12.json` plus the 1.0.12 inventory, catalogue and dispositions
   as **frozen historical evidence**: check their hashes, but stop validating
@@ -101,10 +109,11 @@ on Windows and Linux.
   1.0.12–1.0.17 (unchanged)". The value and request shape stay the same
   (AUTH-L3-003).
 - **core / CLI:** no change.
-- **Research:** generate `python-1.0.17-inventory.json`, its dispositions
-  (27 carried forward plus `futures`), and its catalogue. Add the five
-  attested commits to `upstream-source.md`, plus a recovery procedure for the
-  1.0.17 wheel.
+- **Research:** make the step-1 `python-1.0.17-inventory.json` the checked
+  current inventory. Add `python-1.0.17-dispositions.json` (27 carried forward
+  plus `futures`, per D3) and re-render the catalogue with traceability links.
+  Add the five attested commits to `upstream-source.md`, plus a recovery
+  procedure for the 1.0.17 wheel.
 - **PyPI checker:** no code change. `check_upstream.py` reads `source_version`
   and will report tracked 1.0.17 = latest 1.0.17, exit 0. Its synthetic tests
   use literal versions and stay valid. Run the workflow once with
@@ -159,7 +168,8 @@ on Windows and Linux.
 | docs/performance/python-comparison.md | Comparator pin 1.0.12 → 1.0.17 (D4) | 5 |
 | docs/upstream-monitor.md | "currently 1.0.12" → 1.0.17; add the latest live validation | 3 |
 | docs/requirements: stock-eod-matrix, stock-eod-evidence, L3-stock-eod, origins.json/md | New timestamp-precision requirement(s), matrix rows, evidence and origin classification | 4 |
-| docs/research: upstream-source.md, python-1.0.17-* | Attested commits, wheel recovery, regenerated inventory, catalogue and dispositions | 2–3 |
+| docs/research: python-1.0.17-*, vendor-1.0.17.json, per-release delta records, research index | Generated 1.0.17 set (done here) | 1 |
+| docs/research: upstream-source.md, python-1.0.17-dispositions.json | Attested commits, wheel recovery, dispositions and traceability | 3 |
 | docs/adr: README, new 0019 | Precision decision; cross-reference from 0009 and 0014 | 4 |
 | CHANGELOG.md | Baseline update, source-breaking proto change, timestamp policy | 3, 4 |
 | crates/praevis-thetadata-proto/src/lib.rs, auth client-id comment | Version references | 3 |

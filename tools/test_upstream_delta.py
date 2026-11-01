@@ -41,14 +41,18 @@ class UpstreamDeltaTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             old = upstream_delta.load(*wheel(directory, "1.0.0", OLD))
             new = upstream_delta.load(*wheel(directory, "1.0.1", NEW))
-            result = upstream_delta.delta(old, new)
+            result = upstream_delta.delta(old, new, upstream_delta.inventory(old), upstream_delta.inventory(new))
         change = result["wrappers_changed"]["ThetaClient.stock_snapshot_quote"]
         self.assertEqual([p["name"] for p in change["parameters_added"]], ["current_day_only"])
         self.assertEqual(change["parameters_added"][0]["default"], "False")
         self.assertEqual(change["bindings_added"], [{"target": "query.current_day_only",
                                                      "expression": "current_day_only", "when": ["current_day_only"]}])
-        self.assertEqual(result["metadata_changes"], {"Version": {"old": ["1.0.0"], "new": ["1.0.1"]}})
-        self.assertEqual(result["rpcs"], {"added": {}, "removed": [], "changed": []})
+        self.assertEqual(change["metadata_added"],
+                         [])  # synthetic wrapper has no metadata-map try block
+        self.assertEqual(result["text_member_diffs"]["METADATA"], ["-Version: 1.0.0", "+Version: 1.0.1"])
+        self.assertEqual((result["rpcs_added"], result["rpcs_removed"]), ([], []))
+        self.assertEqual(result["unchanged_client_symbols"], [])
+        self.assertIn("stock_snapshot_quote", upstream_delta.render_delta(result, "t", "i").decode())
 
     def test_rejects_unexpected_digest_and_invalid_record(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -58,6 +62,21 @@ class UpstreamDeltaTests(unittest.TestCase):
             path, digest = wheel(directory, "1.0.2", OLD, corrupt=True)
             with self.assertRaisesRegex(ValueError, "RECORD entry"):
                 upstream_delta.load(path, digest)
+
+
+    def test_committed_generated_research_is_current(self):
+        # Offline: re-renders every generated Markdown/summary from committed JSON.
+        upstream_delta.check()
+
+    def test_stale_generated_research_fails(self):
+        target = upstream_delta.RESEARCH / "python-1.0.14-delta.md"
+        original = target.read_bytes()
+        try:
+            target.write_bytes(original + b"edited\n")
+            with self.assertRaisesRegex(ValueError, "python-1.0.14-delta.md is stale"):
+                upstream_delta.check()
+        finally:
+            target.write_bytes(original)
 
 
 if __name__ == "__main__":

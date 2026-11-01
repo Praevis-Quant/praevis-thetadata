@@ -51,21 +51,47 @@ there is still no public Git tree to compare.
 
 Comparison is static, using [tools/upstream_delta.py](../../tools/upstream_delta.py).
 It reuses the AST helpers in `research_python.py` (definitions, parameters,
-defaults and `query.*` bindings with their guarding conditions) and parses
-serialized descriptors from `AddSerializedFile` literals with
-`google.protobuf`. Its deterministic output is committed as
-[python-1.0.13-1.0.17-delta.json](python-1.0.13-1.0.17-delta.json). Each entry
-compares one release with the previous one. Regenerate it with:
+defaults, `query.*` bindings with their guarding conditions, metadata-map
+construction and raised expressions). It parses serialized descriptors from
+`AddSerializedFile` literals with `google.protobuf`. It builds a full
+inventory of every wheel and diffs the inventories. Applied to the 1.0.12
+wheel, it reproduces every entry and field of the frozen
+[1.0.12 inventory](python-1.0.12-inventory.json) and every comparable field of
+[vendor-1.0.12.json](vendor-1.0.12.json). It adds one field,
+`truthiness_guarded_parameters`, carried over from the vendor summary. The
+only differences are inherent: the original artifact was a `.zip` with a
+separate extraction, and the OpenAPI block is not regenerated. This
+cross-check is the basis for trusting the newer inventories.
+
+### Generated research set (exhaustive; do not edit by hand)
+
+| File | Content |
+| --- | --- |
+| [python-1.0.13-delta.md](python-1.0.13-delta.md) … [python-1.0.17-delta.md](python-1.0.17-delta.md) | One record per release against its predecessor: artifact members and text diffs, dependencies, every RPC/message/field/enum change, every wrapper signature, default, wire binding with condition, metadata-map entry, raised expression and description diff, other symbols, imports, environment reads and constants |
+| [python-1.0.12-to-1.0.17-delta.md](python-1.0.12-to-1.0.17-delta.md) | The same record for a single 1.0.12 → 1.0.17 comparison, plus artifact identities, sdist equality and attested commits for all six versions |
+| [python-1.0.13-1.0.17-delta.json](python-1.0.13-1.0.17-delta.json) | Machine-readable source of the records above: per-release and cumulative deltas, artifacts, and per-item history |
+| [python-1.0.17-inventory.json](python-1.0.17-inventory.json) | Full 1.0.17 inventory with the same entry schema as `python-1.0.12-inventory.json` |
+| [vendor-1.0.17.json](vendor-1.0.17.json) | 1.0.17 summary in the shape of `vendor-1.0.12.json` |
+| [python-1.0.17-catalog.md](python-1.0.17-catalog.md) | Every 1.0.17 item, marked unchanged, changed or added since 1.0.12, with its 1.0.12 feature key and disposition; new items are marked undecided |
+
+The 1.0.12 inventory, catalogue, dispositions and vendor summary remain frozen
+(plan decision D6). Generation needs the downloaded artifacts; checking does not:
 
 ```bash
+# Offline, standard library only (also run by the tool tests in CI):
+python tools/upstream_delta.py check
+# Regenerate from the PyPI JSON, the downloaded wheels/sdists and the optional
+# provenance responses (see the tool docstring for the inputs):
 python -m pip install -r tools/research-requirements.txt
-python tools/upstream_delta.py --output docs/research/python-1.0.13-1.0.17-delta.json \
-  path/thetadata-1.0.12-py3-none-any.whl=d9a5f4d1...  # one WHEEL=SHA256 per version, oldest first
+python tools/upstream_delta.py generate --pypi pypi.json --artifacts DIR --provenance DIR \
+  1.0.12 1.0.13 1.0.14 1.0.15 1.0.16 1.0.17
 ```
 
-The committed delta JSON was regenerated twice from the same inputs and was
-byte-identical both times. Its SHA-256 is
-`3ecf4939eb2dcb9ea161685b47fbdf977f7eea2b9b9e088288622caa19755cb9`.
+`check` re-renders every Markdown record, the vendor summary and the catalogue
+from the committed JSON. It fails on any stale or hand-edited output, a broken
+release chain, a baseline that is not the frozen 1.0.12 artifact, or counts
+that disagree with the inventory. Generation is deterministic: two runs on the
+same inputs produced byte-identical files.
 
 The descriptor-set procedure in `tools/extract_protocol.py`, applied in memory
 to the 1.0.12 wheel, reproduces the committed `thetadata.bin` hash
@@ -81,7 +107,9 @@ API version 3.0.0 with 86 operations. It describes the Terminal REST surface,
 not gRPC. It is used only for parameter semantics and defaults that the
 wheel does not document.
 
-## Summary across 1.0.13–1.0.17
+## Cumulative summary: 1.0.12 → 1.0.17
+
+Exhaustive record: [python-1.0.12-to-1.0.17-delta.md](python-1.0.12-to-1.0.17-delta.md).
 
 | Area | Change from 1.0.12 to 1.0.17 |
 | --- | --- |
@@ -91,11 +119,20 @@ wheel does not document.
 | RPCs | 82 → **100**. Added `GetStockFlatFileQuote` (1.0.14) and 17 `GetFuture*` RPCs (1.0.16). None removed or renamed, and no request/response/streaming shape changed. |
 | Python wrappers | 80 → **81**. Added `stock_flat_file_quote` (1.0.14). The futures RPCs have **no** wrapper. Nothing was removed or renamed. |
 | Messages / enums | 176 → 212 messages; 2 → 3 enums. Added `Endpoints.TimestampPrecision`. Existing fields were only added: none were renumbered, retyped or removed. |
+| Request parameters and defaults | 43 wrappers changed (24 gained one parameter, 10 two, 4 three, 5 four). All six new parameters are trailing keyword arguments, so positional calls are unaffected: `current_day_only=False` (21 wrappers, 1.0.13), `option_use_nbbo=True` (2, 1.0.13), `use_time_based_trade_quote=True` (2, 1.0.13), `annual_dividend_amount=None` (29, 1.0.15), `exercise_style=None` (13, 1.0.16), `implied_vol_method='own_quote'` (9, 1.0.17). No existing parameter default changed. The only annotation change is `expiration: datetime.date` → `Union[datetime.date, str]` in 9 history Greeks wrappers (1.0.17). |
+| Wire presence | Every new wire field is `proto3_optional` and is set only when the argument is truthy. As a result, `option_use_nbbo`, `use_time_based_trade_quote` and `implied_vol_method` are **sent by default**, explicit `False`/`0.0`/`''` **cannot be sent**, and the metadata map records every non-`None` value as a string. |
+| Request messages | 44 existing messages gained fields: 76 query-field additions in 43 messages, plus `ZonedDateTime`. 36 messages were added (18 request envelopes and 18 queries). |
+| Response decoding / schema | Python decoding code is unchanged. `ZonedDateTime` gained `nanos = 3` and `precision = 4` (new enum `TimestampPrecision`), and Python ignores both. `Price`, `DataValue`, `DataTable`, `ResponseData`, `CompressionDescription` and `FlatFileManifest` are unchanged. |
+| Error handling | Exception classes and the `NOT_FOUND` → `NoDataFoundError` mapping are unchanged. The `NoDataFoundError` message text gained the new arguments in all 43 changed wrappers. |
+| Generated scaffolding | 36 generated functions were added (stub, servicer and experimental helpers for the 18 RPCs). The containers `BetaThetaTerminal`, `BetaThetaTerminalServicer`, `BetaThetaTerminalStub`, `BetaThetaTerminalStub.__init__`, `add_BetaThetaTerminalServicer_to_server` and `ThetaClient` changed only through their members. |
+| Documented server-side behavior (unverified) | 33 wrapper descriptions changed. Snapshots now look back 7 days, and `current_day_only` restricts them to today (1.0.13). Greeks EOD defaults to the NBBO midpoint (1.0.13). Current-day trade-quote matching changed (1.0.13). The 1-minute stock quote flat file is new (1.0.14). Binomial Greeks price European index roots as European by default (1.0.16). OpenAPI also documents `annual_dividend_amount` (≥ 0 and not combinable with `annual_dividend`) and `implied_vol_method` constraints that Python does not check. |
 | Stock EOD (selected slice) | **No change** to the `stock_history_eod` wrapper, `StockHistoryEodRequest(Query)`, `QueryInfo` or its RPC. The **response** `ZonedDateTime` message gained fields in 1.0.16. |
 
 <a id="release-1-0-13"></a>
 
 ## 1.0.13 (2026-10-08): snapshot recency, Greeks price source, trade-quote matching
+
+Exhaustive record: [python-1.0.13-delta.md](python-1.0.13-delta.md).
 
 **Protocol.** 25 request-query messages gained one explicit-presence
 (`proto3_optional`) bool. There were no other descriptor changes.
@@ -149,6 +186,8 @@ includes the new argument.
 
 ## 1.0.14 (2026-10-09): stock 1-minute quote flat file
 
+Exhaustive record: [python-1.0.14-delta.md](python-1.0.14-delta.md).
+
 **Protocol.** Added the `StockFlatFileQuoteRequest` envelope (`query_info`
 field 1, `params` field 2), `StockFlatFileQuoteRequestQuery { date = 1 (string) }`
 and server-streaming RPC `GetStockFlatFileQuote` returning
@@ -173,6 +212,8 @@ outside the selected scope.
 
 ## 1.0.15 (2026-10-14): dollar dividend input for Greeks
 
+Exhaustive record: [python-1.0.15-delta.md](python-1.0.15-delta.md).
+
 **Protocol.** 29 option Greeks request-query messages gained
 `optional double annual_dividend_amount`: history, history trade, snapshot,
 binomial and binomial-trade variants, including EOD and implied volatility.
@@ -190,6 +231,8 @@ non-zero `annual_dividend`**. Python validates neither rule locally.
 <a id="release-1-0-16"></a>
 
 ## 1.0.16 (2026-10-28): futures RPCs, binomial exercise style, nanosecond timestamps
+
+Exhaustive record: [python-1.0.16-delta.md](python-1.0.16-delta.md).
 
 **Protocol: shared response schema.** This is the most consequential change in the range.
 
@@ -252,6 +295,8 @@ This is a **documented server-side default change** for European roots. In
 <a id="release-1-0-17"></a>
 
 ## 1.0.17 (2026-10-30): implied-vol source and an expiration bug fix
+
+Exhaustive record: [python-1.0.17-delta.md](python-1.0.17-delta.md).
 
 **Protocol.** 9 binomial Greeks queries (history all/first/second/third/EOD and
 snapshot all/first/second/third) gained `optional string implied_vol_method`.
