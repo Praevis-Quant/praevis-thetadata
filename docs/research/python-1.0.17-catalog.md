@@ -43,9 +43,6 @@ Wheel `thetadata-1.0.17-py3-none-any.whl`, SHA-256 `a43a2fe0fc4896047b9287a9cbf7
 | `file:thetadata/_proto/v3grpc/__init__.py` | unchanged | artifact-packaging / supported | [detail](#item-1e75174210e5a4a0) |
 | `file:thetadata/_proto/v3grpc/endpoints_pb2.py` | changed (last in 1.0.17) | artifact-packaging / supported | [detail](#item-76954c1f188b0395) |
 | `file:thetadata/_proto/v3grpc/endpoints_pb2_grpc.py` | changed (last in 1.0.16) | artifact-packaging / supported | [detail](#item-af5085e86a729316) |
-| `file:thetadata/client.py` | changed (last in 1.0.17) | artifact-packaging / supported | [detail](#item-8a69898042ad5e21) |
-| `file:thetadata/errors.py` | unchanged | artifact-packaging / supported | [detail](#item-0957118282b5a3fc) |
-| `file:thetadata/py.typed` | unchanged | artifact-packaging / supported | [detail](#item-7fe95fe9e58a4551) |
 | `symbol:thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalStub` | changed (last in 1.0.16) | generated-python / intentionally excluded | [detail](#item-2a8558d647c6f16f) |
 | `symbol:thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalStub.__init__` | changed (last in 1.0.16) | generated-python / intentionally excluded | [detail](#item-f167250e9fdb93fb) |
 | `symbol:thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer` | changed (last in 1.0.16) | generated-python / intentionally excluded | [detail](#item-e3ac6f518c000083) |
@@ -251,6 +248,7 @@ Wheel `thetadata-1.0.17-py3-none-any.whl`, SHA-256 `a43a2fe0fc4896047b9287a9cbf7
 | `symbol:thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureFlatFileTradeBbo` | added in 1.0.16 | new: undecided | [detail](#item-05b7d7fbfd39547d) |
 | `symbol:thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureFlatFileEod` | added in 1.0.16 | new: undecided | [detail](#item-6afeac443c327ee3) |
 | `symbol:thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureFlatFileBbo` | added in 1.0.16 | new: undecided | [detail](#item-d016b34321aa456e) |
+| `file:thetadata/client.py` | changed (last in 1.0.17) | artifact-packaging / supported | [detail](#item-8a69898042ad5e21) |
 | `symbol:thetadata/client.py:_fmt_time` | unchanged | date-time / planned | [detail](#item-3e35c9469640ad92) |
 | `symbol:thetadata/client.py:_fmt_if_date` | unchanged | date-time / planned | [detail](#item-e99cd39e8ff32e37) |
 | `symbol:thetadata/client.py:ThetaClient` | changed (last in 1.0.17) | construction / planned | [detail](#item-16801fb11a874515) |
@@ -338,8 +336,10 @@ Wheel `thetadata-1.0.17-py3-none-any.whl`, SHA-256 `a43a2fe0fc4896047b9287a9cbf7
 | `symbol:thetadata/client.py:ThetaClient.stock_flat_file_eod` | unchanged | flat-files / unresolved | [detail](#item-b15c6ab9f6b7a5bf) |
 | `symbol:thetadata/client.py:ThetaClient.stock_flat_file_quote` | added in 1.0.14 | new: undecided | [detail](#item-8ec41f5cb645b294) |
 | `symbol:thetadata/client.py:ThetaClient.index_flat_file_eod` | unchanged | flat-files / unresolved | [detail](#item-ba80caef389d9c57) |
+| `file:thetadata/errors.py` | unchanged | artifact-packaging / supported | [detail](#item-0957118282b5a3fc) |
 | `symbol:thetadata/errors.py:AuthenticationError` | unchanged | errors / planned | [detail](#item-8b60687ce053236d) |
 | `symbol:thetadata/errors.py:NoDataFoundError` | unchanged | errors / planned | [detail](#item-73d1956edaf554f6) |
+| `file:thetadata/py.typed` | unchanged | artifact-packaging / supported | [detail](#item-7fe95fe9e58a4551) |
 | `message:Endpoints.AuthToken` | unchanged | wire-schema / supported | [detail](#item-91119af19d078074) |
 | `message:Endpoints.ContractSpec` | unchanged | wire-schema / supported | [detail](#item-a1a2667e34b5c778) |
 | `message:Endpoints.CompressionDescription` | unchanged | wire-schema / supported | [detail](#item-243d38d6c69431db) |
@@ -859,24 +859,6 @@ Artifact member; 119106 bytes; SHA-256 `11cdd93caa8db12b903cb0883e801c6a043e9171
 ### `thetadata/_proto/v3grpc/endpoints_pb2_grpc.py`
 
 Artifact member; 190897 bytes; SHA-256 `2fb67af5f7cc2e571af1e99aad72dea712a887c544238bd8a48b110e1a5cfc2f`.
-
-<a id="item-8a69898042ad5e21"></a>
-
-### `thetadata/client.py`
-
-Artifact member; 293312 bytes; SHA-256 `ff09f426804afa45d8b1fb15d382dce087781c0561f2a72a2f3a392aa5f1c2c3`.
-
-<a id="item-0957118282b5a3fc"></a>
-
-### `thetadata/errors.py`
-
-Artifact member; 186 bytes; SHA-256 `e79a53018b3728e8a61468e3c4d900aa9abf5f0c47316f85f19ffccc5e50f715`.
-
-<a id="item-7fe95fe9e58a4551"></a>
-
-### `thetadata/py.typed`
-
-Artifact member; 0 bytes; SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
 
 <a id="item-2a8558d647c6f16f"></a>
 
@@ -2921,6 +2903,12 @@ Source: `thetadata/_proto/v3grpc/endpoints_pb2_grpc.py`, lines 4331-4355.
 ```text
 BetaThetaTerminal.GetFutureFlatFileBbo(request, target, options=(), channel_credentials=None, call_credentials=None, insecure=False, compression=None, wait_for_ready=None, timeout=None, metadata=None)
 ```
+
+<a id="item-8a69898042ad5e21"></a>
+
+### `thetadata/client.py`
+
+Artifact member; 293312 bytes; SHA-256 `ff09f426804afa45d8b1fb15d382dce087781c0561f2a72a2f3a392aa5f1c2c3`.
 
 <a id="item-3e35c9469640ad92"></a>
 
@@ -7953,6 +7941,12 @@ Artifact description (unverified vendor usage/entitlement claims):
 >
 > Only the 7 most recent calendar days are available; data for the previous day is typically ready by 12:30-1am ET. See Flat Files Getting Started (/Flat-Files/Getting-Started) for details, or contact sales (mailto:sales@thetadata.net) for more history.
 
+<a id="item-0957118282b5a3fc"></a>
+
+### `thetadata/errors.py`
+
+Artifact member; 186 bytes; SHA-256 `e79a53018b3728e8a61468e3c4d900aa9abf5f0c47316f85f19ffccc5e50f715`.
+
 <a id="item-8b60687ce053236d"></a>
 
 ### `AuthenticationError`
@@ -7968,6 +7962,12 @@ Bases: `Exception`.
 Source: `thetadata/errors.py`, lines 6-8.
 
 Bases: `Exception`.
+
+<a id="item-7fe95fe9e58a4551"></a>
+
+### `thetadata/py.typed`
+
+Artifact member; 0 bytes; SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
 
 <a id="item-91119af19d078074"></a>
 

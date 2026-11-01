@@ -19,13 +19,25 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 RESEARCH = ROOT / "docs/research"
-INVENTORY = RESEARCH / "python-1.0.12-inventory.json"
-DECISIONS = RESEARCH / "python-1.0.12-dispositions.json"
-CATALOG = RESEARCH / "python-1.0.12-catalog.md"
-REPORT = RESEARCH / "thetadata-1.0.12.md"
-LEGACY = RESEARCH / "vendor-1.0.12.json"
 MANIFEST = ROOT / "crates/praevis-thetadata-proto/schema/manifest.json"
 DESCRIPTOR = ROOT / "crates/praevis-thetadata-proto/schema/thetadata.bin"
+# The original research set is frozen evidence; newer baselines are checked alongside it.
+FROZEN_VERSION = "1.0.12"
+BASELINE_VERSION = json.loads(MANIFEST.read_text(encoding="utf-8"))["source_version"]
+REPORT = RESEARCH / "thetadata-1.0.12.md"
+DESCRIPTOR_SOURCES = ["_proto/endpoints_pb2.py", "_proto/v3grpc/endpoints_pb2.py"]
+
+
+def evidence(version):
+    """Committed evidence paths for one upstream version."""
+    return {"inventory": RESEARCH / f"python-{version}-inventory.json",
+            "decisions": RESEARCH / f"python-{version}-dispositions.json",
+            "catalog": RESEARCH / f"python-{version}-catalog.md",
+            "legacy": RESEARCH / f"vendor-{version}.json"}
+
+
+# Current-baseline paths, kept as module names for existing callers and tests.
+INVENTORY, DECISIONS, CATALOG, LEGACY = (evidence(BASELINE_VERSION)[k] for k in ("inventory", "decisions", "catalog", "legacy"))
 STATUSES = {"supported", "planned", "intentionally excluded", "unresolved"}
 REVIEW_MARKER = b"## Original review and recommendations (verbatim)"
 
@@ -120,18 +132,12 @@ def detail_counts(entries, modules):
     }
 
 
-def inventory(archive_path, previous=None):
-    # This dependency is intentionally confined to artifact research generation.
-    from google.protobuf import descriptor_pb2
-
-    legacy = read_json(LEGACY)
-    raw = archive_path.read_bytes()
-    require(sha(raw) == legacy["artifact_sha256"], "Archive differs from the reviewed 1.0.12 artifact")
+def wheel_files(raw):
+    """Read wheel members and verify RECORD; never extracts or imports them."""
     with zipfile.ZipFile(io.BytesIO(raw)) as archive:
         names = [n for n in archive.namelist() if not n.endswith("/")]
         require(len(names) == len(set(names)), "Duplicate archive members")
         files = {n: archive.read(n) for n in names}
-    require(set(files) == set(legacy["files"]), "Archive file set differs from the original inventory")
     records = list(csv.reader(io.StringIO(files[next(n for n in files if n.endswith("/RECORD"))].decode())))
     require({r[0] for r in records} == set(files) and len(records) == len(files), "RECORD does not cover every file exactly once")
     for name, checksum, size in records:
@@ -139,10 +145,36 @@ def inventory(archive_path, previous=None):
             algorithm, digest = checksum.split("=", 1)
             require(base64.urlsafe_b64encode(hashlib.new(algorithm, files[name]).digest()).decode().rstrip("=") == digest
                     and len(files[name]) == int(size), f"Invalid RECORD entry {name}")
+    return files, sum(bool(r[1]) for r in records)
+
+
+def serialized_descriptor(source):
+    tree = ast.parse(source)
+    return next(ast.literal_eval(n.args[0]) for n in ast.walk(tree) if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Attribute) and n.func.attr == "AddSerializedFile")
+
+
+def descriptor_set(files):
+    """The checked-in descriptor-set encoding for a wheel: Struct plus both vendor descriptors."""
+    from google.protobuf import descriptor_pb2, struct_pb2
+
+    descriptor_set = descriptor_pb2.FileDescriptorSet()
+    descriptor_set.file.add().ParseFromString(struct_pb2.DESCRIPTOR.serialized_pb)
+    hashes = {}
+    for relative in DESCRIPTOR_SOURCES:
+        data = files[f"thetadata/{relative}"]
+        descriptor_set.file.add().ParseFromString(serialized_descriptor(data.decode("utf-8")))
+        hashes[relative] = sha(data)
+    methods = [{"rpc": m.name, "request": m.input_type, "response": m.output_type, "server_streaming": m.server_streaming}
+               for f in descriptor_set.file for service in f.service for m in service.method]
+    return descriptor_set.SerializeToString(deterministic=True), hashes, methods
+
+
+def build(files):
+    """Static inventory entries/modules for one wheel's members; version-independent."""
     entries, modules, wrapper_ids = [], [], []
     descriptors = []
     for name, data in sorted(files.items()):
-        require({"bytes": len(data), "sha256": sha(data)} == legacy["files"][name], f"Changed original file {name}")
         entries.append({"id": f"file:{name}", "kind": "file", "name": name,
                         "bytes": len(data), "sha256": sha(data)})
         if not name.endswith(".py"):
@@ -210,16 +242,15 @@ def inventory(archive_path, previous=None):
             entries.append(entry)
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "AddSerializedFile":
-                encoded = ast.literal_eval(node.args[0])
-                descriptor = descriptor_pb2.FileDescriptorProto.FromString(encoded)
-                descriptors.append((name, descriptor, encoded))
+                descriptors.append((name, ast.literal_eval(node.args[0])))
         module["definition_count"] = len(module_symbols)
         modules.append(module)
-    checked_descriptors = descriptor_pb2.FileDescriptorSet.FromString(DESCRIPTOR.read_bytes())
-    checked_by_name = {d.name: d for d in checked_descriptors.file}
     protocol_files = []
-    for source, descriptor, encoded in descriptors:
-        require(descriptor == checked_by_name[descriptor.name], f"Recovered descriptor mismatch: {descriptor.name}")
+    if descriptors:
+        # Research-only dependency, needed just to parse serialized descriptors.
+        from google.protobuf import descriptor_pb2
+    for source, encoded in descriptors:
+        descriptor = descriptor_pb2.FileDescriptorProto.FromString(encoded)
         protocol_files.append({"name": descriptor.name, "source": source, "sha256": sha(encoded),
                                "package": descriptor.package, "syntax": descriptor.syntax,
                                "dependencies": list(descriptor.dependency)})
@@ -258,23 +289,44 @@ def inventory(archive_path, previous=None):
                                 "response": method.output_type, "client_streaming": method.client_streaming,
                                 "server_streaming": method.server_streaming,
                                 "path": f"/{descriptor.package}.{service.name}/{method.name}"})
-    metadata_path = next(n for n in files if n.endswith("/METADATA"))
-    metadata = Parser().parsestr(files[metadata_path].decode())
+    metadata = Parser().parsestr(files[next(n for n in files if n.endswith("/METADATA"))].decode())
+    return {"entries": entries, "modules": modules, "protocol_files": protocol_files,
+            "wrapper_ids": wrapper_ids, "metadata": metadata}
+
+
+def inventory(archive_path, previous=None):
+    """Inventory one reviewed wheel against its committed vendor-<version>.json identity."""
+    raw = archive_path.read_bytes()
+    files, verified = wheel_files(raw)
+    version = Parser().parsestr(files[next(n for n in files if n.endswith("/METADATA"))].decode())["Version"]
+    legacy_path = evidence(version)["legacy"]
+    require(legacy_path.exists(), f"No reviewed artifact identity for {version}: {legacy_path.name}")
+    legacy = read_json(legacy_path)
+    require(sha(raw) == legacy["artifact_sha256"], f"Archive differs from the reviewed {version} artifact")
+    require(set(files) == set(legacy["files"]), "Archive file set differs from the original inventory")
+    for name, data in files.items():
+        require({"bytes": len(data), "sha256": sha(data)} == legacy["files"][name], f"Changed original file {name}")
+    built = build(files)
+    entries, modules = built["entries"], built["modules"]
+    encoded, _, _ = descriptor_set(files)
+    if version == BASELINE_VERSION:
+        require(encoded == DESCRIPTOR.read_bytes(), "Recovered descriptor set differs from the checked-in descriptor")
+    metadata = built["metadata"]
     # Git stores LF; older Windows checkouts may materialize this JSON as CRLF.
-    legacy_bytes = LEGACY.read_bytes().replace(b"\r\n", b"\n")
+    legacy_bytes = legacy_path.read_bytes().replace(b"\r\n", b"\n")
     preserved = previous["preserved_research"] if previous else {
         "path": REPORT.relative_to(ROOT).as_posix(), "bytes": len(REPORT.read_bytes()), "sha256": sha(REPORT.read_bytes())}
     roadmap = (ROOT / "docs/ROADMAP.md").read_bytes()
     preserved_review = previous.get("preserved_review_sha256") if previous else None
     preserved_review = preserved_review or sha(roadmap[roadmap.index(REVIEW_MARKER):])
     return {"schema_version": 1, "source_version": metadata["Version"], "artifact_sha256": sha(raw),
-            "record_entries_verified": sum(bool(r[1]) for r in records),
+            "record_entries_verified": verified,
             "legacy_inventory_sha256": sha(legacy_bytes), "preserved_research": preserved,
             "preserved_review_sha256": preserved_review,
-            "descriptor_sha256": sha(DESCRIPTOR.read_bytes()),
+            "descriptor_sha256": sha(encoded),
             "metadata": {key: metadata.get_all(key) for key in dict(metadata.items())},
             "metadata_python_examples": re.findall(r"```python\n(.*?)```", metadata.get_payload(), re.S),
-            "modules": modules, "protocol_files": protocol_files, "wrapper_ids": wrapper_ids,
+            "modules": modules, "protocol_files": built["protocol_files"], "wrapper_ids": built["wrapper_ids"],
             "detail_counts": detail_counts(entries, modules),
             "counts": dict(sorted(Counter(e["kind"] for e in entries).items())), "entries": entries}
 
@@ -290,7 +342,11 @@ def decision_key(entry):
     if entry["kind"] == "wrapper":
         return "flat-files" if "flat_file" in entry["name"] else "query-wrappers"
     if entry["kind"] == "rpc":
+        if entry["name"].startswith("GetFuture"):
+            return "futures"
         return "corporate-actions" if "CorporateAction" in entry["name"] else "wire-schema"
+    if entry["kind"] == "message" and entry["name"].startswith("BetaEndpoints.Future"):
+        return "futures"
     if entry["kind"] in {"message", "enum"}:
         return "wire-schema"
     if entry["kind"] == "file":
@@ -313,13 +369,19 @@ def cell(value):
     return str(value).replace("|", "&#124;").replace("\n", " ").replace("<", "&lt;")
 
 
+def section_link(section):
+    """A disposition section is an anchor in the 1.0.12 report, or FILE.md#anchor in research/."""
+    return section if ".md#" in section else f"thetadata-1.0.12.md#{section}"
+
+
 def render(data, decisions):
+    version = data["source_version"]
     by_key = {d["id"]: d for d in decisions}
-    lines = ["# Python 1.0.12 exhaustive artifact catalogue", "",
+    lines = [f"# Python {version} exhaustive artifact catalogue", "",
              "Generated by `python tools/research_python.py --render`; do not edit by hand.", "",
              "Read [the research analysis](thetadata-1.0.12.md#deep-analysis-2026-10-04) first. "
              "This catalogue records source observations, not service guarantees. All dispositions "
-             "are scoped by [the decision ledger](python-1.0.12-dispositions.json). "
+             f"are scoped by [the decision ledger](python-{version}-dispositions.json). "
              "`planned` means retained for future scope selection, not approved implementation.", "",
              "## Coverage closure", "", "| Inventory kind | Count |", "| --- | ---: |"]
     lines += [f"| {kind} | {count} |" for kind, count in data["counts"].items()]
@@ -337,7 +399,7 @@ def render(data, decisions):
     for d in decisions:
         def links(key):
             return ", ".join(f"[{cell(p)}](../../{p})" for p in d[key]) or "unassigned"
-        lines.append(f"| {d['id']} | {d['status']} | [analysis](thetadata-1.0.12.md#{d['section']}) | "
+        lines.append(f"| {d['id']} | {d['status']} | [analysis]({section_link(d['section'])}) | "
                      f"{links('adrs')}; {', '.join(d['requirements']) or 'unassigned'} | "
                      f"{links('implementation')}; {links('verification')} | {cell(d['rationale'])} |")
     lines += ["", "## Embedded Python examples", "",
@@ -410,19 +472,23 @@ def render(data, decisions):
 
 
 def validate(data, decisions):
+    version = data["source_version"]
+    legacy_path = evidence(version)["legacy"]
     entries = data["entries"]
     ids = [e["id"] for e in entries]
     require(len(ids) == len(set(ids)), "Duplicate inventory ID")
     require(data["counts"] == dict(Counter(e["kind"] for e in entries)), "Inventory counts do not reconcile")
     require(data["detail_counts"] == detail_counts(entries, data["modules"]), "Detail counts do not reconcile")
-    require(data["source_version"] == read_json(MANIFEST)["source_version"], "Wrong compatibility baseline")
-    require(data["descriptor_sha256"] == sha(DESCRIPTOR.read_bytes()), "Descriptor hash changed")
-    require(data["legacy_inventory_sha256"] == sha(LEGACY.read_bytes().replace(b"\r\n", b"\n")), "Original inventory was changed")
+    current = version == read_json(MANIFEST)["source_version"]
+    require(current or version == FROZEN_VERSION, "Wrong compatibility baseline")
+    if current:
+        require(data["descriptor_sha256"] == sha(DESCRIPTOR.read_bytes()), "Descriptor hash changed")
+    require(data["legacy_inventory_sha256"] == sha(legacy_path.read_bytes().replace(b"\r\n", b"\n")), "Original inventory was changed")
     preserved = data["preserved_research"]
     require(sha(REPORT.read_bytes()[:preserved["bytes"]]) == preserved["sha256"], "Original research was lost or rewritten")
     roadmap = (ROOT / "docs/ROADMAP.md").read_bytes()
     require(sha(roadmap[roadmap.index(REVIEW_MARKER):]) == data["preserved_review_sha256"], "Original roadmap review was rewritten")
-    legacy = read_json(LEGACY)
+    legacy = read_json(legacy_path)
     require(data["artifact_sha256"] == legacy["artifact_sha256"], "Wrong artifact hash")
     file_entries = {e["name"]: {"bytes": e["bytes"], "sha256": e["sha256"]} for e in entries if e["kind"] == "file"}
     require(file_entries == legacy["files"], "File coverage is incomplete")
@@ -444,7 +510,8 @@ def validate(data, decisions):
     require({w["name"].split('.')[-1]: w["rpc"] for w in wrappers} == {w["name"]: w["rpc"] for w in legacy["methods"]}, "Original wrapper mapping was lost")
     rpcs = [e for e in entries if e["kind"] == "rpc"]
     require(len(rpcs) == legacy["descriptor_rpc_count"], "RPC count mismatch")
-    require({r["name"] for r in rpcs} == {r["rpc"] for r in read_json(MANIFEST)["methods"]}, "RPC coverage mismatch")
+    if current:
+        require({r["name"] for r in rpcs} == {r["rpc"] for r in read_json(MANIFEST)["methods"]}, "RPC coverage mismatch")
     require(sorted({r["name"] for r in rpcs} - {w["rpc"] for w in wrappers}) == legacy["rpc_without_python_wrapper"], "Unmatched RPCs changed")
     types = {e["name"] for e in entries if e["kind"] == "message"}
     enums = {e["name"] for e in entries if e["kind"] == "enum"}
@@ -468,7 +535,9 @@ def validate(data, decisions):
     requirements = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / 'docs/requirements').glob('*.md'))
     for decision in decisions:
         require(decision["status"] in STATUSES and decision["rationale"].strip(), "Missing disposition/rationale")
-        require(f'<a id="{decision["section"]}"></a>' in report, f"Missing research section: {decision['id']}")
+        target, anchor = section_link(decision["section"]).split("#", 1)
+        text = report if target == REPORT.name else (RESEARCH / target).read_text(encoding="utf-8")
+        require(f'<a id="{anchor}"></a>' in text, f"Missing research section: {decision['id']}")
         for key in ("adrs", "implementation", "verification"):
             for path in decision[key]:
                 require((ROOT / path).is_file(), f"Missing {key} evidence: {path}")
@@ -479,6 +548,40 @@ def validate(data, decisions):
     return len(entries)
 
 
+def compatible(frozen, current):
+    """Upstream additions are allowed; removed, renumbered or retyped items are not."""
+    old = {e["id"]: e for e in frozen["entries"] if e["kind"] in {"wrapper", "rpc", "message", "enum"}}
+    new = {e["id"]: e for e in current["entries"]}
+    for identifier, entry in old.items():
+        require(identifier in new, f"Upstream removed {identifier}")
+        later = new[identifier]
+        if entry["kind"] == "wrapper":
+            require(later["rpc"] == entry["rpc"], f"Wrapper RPC changed: {identifier}")
+            names = [p["name"] for p in later["parameters"]]
+            require(names[:len(entry["parameters"])] == [p["name"] for p in entry["parameters"]],
+                    f"Wrapper parameters removed or reordered: {identifier}")
+        elif entry["kind"] == "rpc":
+            keys = ("request", "response", "client_streaming", "server_streaming", "path")
+            require({k: later[k] for k in keys} == {k: entry[k] for k in keys}, f"RPC shape changed: {identifier}")
+        elif entry["kind"] == "message":
+            fields = {f["name"]: f for f in later["fields"]}
+            for field in entry["fields"]:
+                require(fields.get(field["name"]) == field, f"Field removed or changed: {identifier}.{field['name']}")
+        else:
+            values = {v["name"]: v["number"] for v in later["values"]}
+            require(all(values.get(v["name"]) == v["number"] for v in entry["values"]), f"Enum value changed: {identifier}")
+    return len(old)
+
+
+def check_version(version, data=None):
+    paths = evidence(version)
+    data = data or read_json(paths["inventory"])
+    decisions = read_json(paths["decisions"])
+    count = validate(data, decisions)
+    require(paths["catalog"].read_bytes() == render(data, decisions), "Catalogue/coverage rows are stale; run --render")
+    return data, decisions, count
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path, help="Regenerate from the exact original wheel-compatible ZIP")
@@ -486,14 +589,23 @@ def main():
     parser.add_argument("--render", action="store_true", help="Render committed inventory and decision ledger")
     args = parser.parse_args()
     require(args.archive or args.check or args.render, "Choose --archive, --check, or --render")
-    previous = read_json(INVENTORY) if INVENTORY.exists() else None
-    data = inventory(args.archive, previous) if args.archive else previous
-    require(data is not None, "Generate the inventory from --archive first")
     if args.archive:
+        files, _ = wheel_files(args.archive.read_bytes())
+        version = Parser().parsestr(files[next(n for n in files if n.endswith("/METADATA"))].decode())["Version"]
+        target = evidence(version)["inventory"]
+        previous = read_json(target) if target.exists() else None
+        data = inventory(args.archive, previous)
         if args.check:
             require(data == previous, "Source regeneration differs from the committed inventory")
         else:
-            INVENTORY.write_bytes(encode(data))
+            target.write_bytes(encode(data))
+        if version != BASELINE_VERSION:
+            check_version(version, data)
+            print(f"Regenerated and checked {version} evidence.")
+            return
+    else:
+        data = read_json(INVENTORY) if INVENTORY.exists() else None
+        require(data is not None, "Generate the inventory from --archive first")
     decisions = read_json(DECISIONS)
     count = validate(data, decisions)
     rendered = render(data, decisions)
@@ -501,9 +613,14 @@ def main():
         require(CATALOG.read_bytes() == rendered, "Catalogue/coverage rows are stale; run --render")
     else:
         CATALOG.write_bytes(rendered)
+    frozen_note = ""
+    if BASELINE_VERSION != FROZEN_VERSION:
+        frozen, _, frozen_count = check_version(FROZEN_VERSION)
+        compared = compatible(frozen, data)
+        frozen_note = f" Frozen {FROZEN_VERSION}: {frozen_count} items checked; {compared} carried forward without removal."
     print(f"Checked {count} inventory items, {len(decisions)} feature dispositions, "
           f"{len(data['modules'])} modules, {data['counts']['wrapper']} wrappers / {data['counts']['rpc']} RPCs, "
-          "preserved research, and generated coverage.")
+          "preserved research, and generated coverage." + frozen_note)
 
 
 if __name__ == "__main__":

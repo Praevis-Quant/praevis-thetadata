@@ -1,6 +1,6 @@
 # Upstream update plan: Python 1.0.12 → 1.0.17
 
-Status: **proposed, awaiting maintainer review**. Date: 2026-11-01. No Rust
+Status: **approved 2026-11-01 (D1–D6 as recommended); in progress**. Date: 2026-11-01. No Rust
 code, descriptor or manifest has changed yet. This document follows the
 [upstream update template](upstream-update-template.md) and
 [ADR-0015](adr/0015-upstream-and-enhancement-contracts.md). Evidence is in
@@ -73,6 +73,9 @@ on Windows and Linux.
   items `undecided`. Recording decisions waits for D3 and step 3.
 
 ### Step 2: version-parameterized research tooling (no baseline change)
+
+Status: implemented in the step-2 PR.
+
 
 - `tools/research_python.py`: fold in the inventory builder from
   `upstream_delta.py`, which already reproduces the 1.0.12 inventory exactly,

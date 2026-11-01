@@ -8,7 +8,7 @@ currently **1.0.12**. Research is evidence, not approved scope; see
 
 ## Python 1.0.12 baseline (frozen)
 
-These files are preserved byte-for-byte and checked by `python tools/research_python.py --check`.
+These files are preserved byte-for-byte. `python tools/research_python.py --check` checks the current baseline and, once a newer baseline is adopted, also this frozen set, plus additions-only compatibility between the two.
 
 | File | Content |
 | --- | --- |
