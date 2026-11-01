@@ -1,6 +1,6 @@
 # crates.io prerelease plan
 
-Status: preparation plan, 2026-10-04. No packages have been published by this
+Status: preparation plan, 2026-10-04; archives rehearsed 2026-11-01. No packages have been published by this
 work. Keep `publish = false` until the release preparation is reviewed.
 
 The [versioned release milestones](releases.md) define scope and exit gates;
@@ -91,8 +91,90 @@ proto also carries `LICENSE.upstream`. `publish = false` remains.
 | Auth | Added | Yes / yes | Extracted-archive consumer build |
 | Core | Added | Yes / yes | Extracted-archive consumer build |
 | Proto | Added | Yes / yes, plus `LICENSE.upstream` | Extracted-archive consumer build |
-| Client | Added | Yes / yes | Build script still reads the sibling proto descriptor; examples reference sibling sources |
-| CLI | Updated | Yes / yes | Dependent archive verification against a staging registry |
+| Client | Added | Yes / yes | Resolved in part B: descriptor taken from the proto build dependency; examples excluded |
+| CLI | Updated | Yes / yes | Resolved in part B: verified and installed from the staging registry |
+
+### Archive staging rehearsal (alpha.1 part B, 2026-11-01)
+
+`python tools/staging_registry.py` rehearses publication without uploading
+anything or reading a token:
+
+1. It packages wave 1 (auth, core, proto) with `cargo package --locked`, which
+   builds each archive from its extracted contents.
+2. It stages those archives in a fresh local alternative registry (a git index
+   plus `file://` downloads).
+3. It packages wave 2 (client, CLI), resolving wave 1 **from that registry**
+   through `[patch.crates-io]`, and stages it too.
+4. It copies the consumer crates in
+   [`tools/release-consumers`](../tools/release-consumers/README.md) to a
+   temporary directory outside the workspace, then builds, runs and tests them
+   against the staged archives only.
+5. It installs the CLI from the registry with `cargo install` and runs it.
+
+Packaging runs in a copy of the tracked files, so this checkout's lockfile is
+never edited.
+
+Every archive is checked for `LICENSE`, `NOTICE`, `README.md` and `Cargo.toml`
+(plus proto's `LICENSE.upstream`), and for the absence of credentials, `.env`
+files, `artifacts/`, wheels and ZIPs. The CI job "Packaging rehearsal" runs the
+same script on **Ubuntu and Windows** and uploads `report.json` and the logs.
+
+Changes needed to make the archives self-contained:
+
+- **Client build script:** it now takes the descriptor from
+  `praevis_thetadata_proto::FILE_DESCRIPTOR_SET` through a build dependency,
+  instead of reading `../praevis-thetadata-proto/schema/thetadata.bin`.
+- **Examples:** `examples/` is excluded from the client archive. The EOD
+  benchmark and the feature-gated `live_eod` runner include sibling sources,
+  the workspace lockfile and live-capture paths, so they stay checkout-only;
+  Cargo drops their targets from the published manifest. Tests remain, because
+  they need only packaged files.
+- **Staging index:** the rehearsal surfaced and fixed a bug in the generator.
+  Features using `dep:` syntax must sit in the index's `features2`, or
+  `native-store` cannot activate the optional `keyring` dependency.
+
+Linux rehearsal at the commit adding this section. Archives are
+byte-deterministic for identical contents: no VCS info is embedded, and core
+and proto hashed identically across runs.
+
+| Wave | Archive | Bytes | SHA-256 | Reviewed file list |
+| --- | --- | ---: | --- | --- |
+| 1 | `praevis-thetadata-auth-0.1.0-alpha.1.crate` | 29207 | `687a23311d9b0b0c8173083685e5d8b0da0bf7bb9947b22c967d48912f5a5ffd` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `src/lib.rs`, `src/store.rs`, `src/tests.rs` |
+| 1 | `praevis-thetadata-core-0.1.0-alpha.1.crate` | 12818 | `27421788fc6caca4015eebcf7f7c4aa562412da856998dcec32da0d68fc9781f` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `src/batch.rs`, `src/lib.rs` |
+| 1 | `praevis-thetadata-proto-0.1.0-alpha.1.crate` | 23148 | `3688b4d2324b52e26c504e2bd1feef91f51fb7c95e3ec6af2d5165f19d446ea0` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `LICENSE.upstream`, `NOTICE`, `README.md`, `build.rs`, `schema/manifest.json`, `schema/thetadata.bin`, `src/lib.rs` |
+| 2 | `praevis-thetadata-client-0.1.0-alpha.1.crate` | 53052 | `76ec12e6abab9c81844fa2399cf9cbf9cc21a113802995cf6d7f1356bbd0b7d0` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `build.rs`, `src/bounded.rs`, `src/decode.rs`, `src/envelope.rs`, `src/eod.rs`, `src/framing.rs`, `src/lib.rs`, `tests/eod_contracts.rs`, `tests/eod_fixture.rs`, `tests/eod_observed_shape.rs`, `tests/eod_typed.rs`, `tests/support/mod.rs` |
+| 2 | `praevis-thetadata-cli-0.1.0-alpha.1.crate` | 31305 | `f99ef36ac447b9cd3d3efa97ed2179b6eeffa50c7c27fe60877a2e20bef1d6f4` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `src/main.rs`, `tests/no_save.rs`, `tests/persistence.rs`, `tests/startup.rs` |
+
+| Consumer (outside the workspace) | Result |
+| --- | --- |
+| `auth-consumer` (default features) | Builds, runs and tests; README in-memory example compiles; **no** keyring/D-Bus packages resolved |
+| `auth-store-consumer` (`native-store`) | README store example compiles; identity `praevis.thetadata.auth.v1:STAGE:release-consumer`; resolves dbus, dbus-secret-service, keyring only through the feature |
+| `core-consumer` | README example asserts pass (`123.45`, RFC 3339 epoch) |
+| `proto-consumer` | Packaged descriptor has 100 RPCs; `ZonedDateTime` round-trips |
+| `client-consumer` | README EOD example compiles; typed request validation runs; **no** keyring/D-Bus packages resolved |
+| `cargo install praevis-thetadata-cli` from the staging registry | Installs; `--version` reports `0.1.0-alpha.1`; `auth --help` lists `--save` |
+
+`cargo publish --dry-run` is not used, because `publish = false` makes Cargo
+refuse it. `cargo package` performs the same archive build and verification,
+and the staging registry covers dependent resolution.
+
+### Remaining before publication (owner decisions)
+
+1. **Token and owners:** review the crates.io account, the token's scope
+   (crate creation and publish for these five names only) and its expiry, in
+   crates.io settings, through Cargo's credential provider. Never put the
+   token on a command line or in a file in the repository. Choose a backup
+   owner or team.
+2. **Name availability:** recheck all five `praevis-thetadata-*` names
+   immediately before publishing. A check does not reserve a name.
+3. **Publication approval:** approve these exact archives. Then set
+   `publish = true` (or a crates.io-only list) in a reviewed change, publish
+   auth, core and proto, wait for registry visibility, and publish client,
+   then CLI. Record package URLs, hashes and a release tag. No workflow
+   publishes automatically.
+4. **Optional live check:** the manually recorded PROD auth and small EOD
+   result for the alpha.1 exit gate in [releases.md](releases.md) is owned by
+   the account holder.
 
 ### Work to close
 

@@ -157,19 +157,18 @@ service compatibility.
   Manager and Linux uses a persistent Secret Service collection on an
   unlocked user D-Bus session. Missing/unavailable services are errors, not
   an absent session. Do not add plaintext fallbacks.
-- **Credential order follows the vendor:** `--creds-file`, `THETADATA_API_KEY`,
-  the `THETADATA_EMAIL`/`THETADATA_PASSWORD` pair (a Rust-only extra; an
-  incomplete pair falls through), then `THETADATA_CREDENTIALS_FILE` or
-  `./creds.txt`. No `.env` loading and no secret-bearing flags.
+- **Credential order is observable and follows the vendor (ADR-0020):**
+  `--creds-file`, `THETADATA_API_KEY`, the `THETADATA_EMAIL`/`THETADATA_PASSWORD`
+  pair (a Rust-only extra; an incomplete pair falls through), then
+  `THETADATA_CREDENTIALS_FILE` or `./creds.txt`. A selected file that is missing
+  or invalid is an error. No `.env` loading and no secret-bearing flags.
+  Preserve documented invalid-input behavior rather than silently falling back
+  to a different identity.
 - **Storage identity is stable.** The target is
   `praevis.thetadata.auth.v1:{PROD|STAGE}:{profile}`. Profiles are 1-64 ASCII
   letters, digits, underscores, or hyphens. Preserve environment/profile
   isolation and the versioned record. Store the session and account metadata,
   never the API key or password. Failed login leaves an existing record intact.
-- **Credential precedence is observable.** Explicit/environment credentials
-  file, API key, email/password pair, then `./creds.txt`, in that order. The
-  CLI does not automatically load `.env`. Preserve documented invalid-input
-  behavior rather than silently falling back to a different identity.
 - **Keep secrets out of output and artifacts.** Never log credentials or
   session tokens. Do not commit credential files, `.env` files, local vendor
   archives/extractions, build output, or benchmark artifacts. Preserve
