@@ -39,7 +39,10 @@ import re
 import tarfile
 import zipfile
 
-from research_python import RESEARCH, bindings, cell, decision_key, detail_counts, encode, parameters, require, sha, symbols
+from collections import Counter
+
+import research_python as research
+from research_python import RESEARCH, cell, decision_key, detail_counts, encode, require, sha
 
 CLIENT = "thetadata/client.py"
 BASELINE_INVENTORY = RESEARCH / "python-1.0.12-inventory.json"
@@ -106,145 +109,23 @@ def provenance(path, wheel_sha):
 
 # -------------------------------------------------------------- inventory
 
-def descriptions(tree):
-    """Generated wrapper descriptions are adjacent string expressions, as in research_python."""
-    preceding = {}
-    for parent in ast.walk(tree):
-        body = getattr(parent, "body", None)
-        if isinstance(body, list):
-            for left, right in zip(body, body[1:]):
-                if isinstance(left, ast.Expr) and isinstance(left.value, ast.Constant) and isinstance(left.value.value, str):
-                    preceding[id(right)] = left.value.value
-    return preceding
-
-
 def inventory(wheel):
-    entries, modules, wrapper_ids, protocol_files = [], [], [], []
-    for name, data in sorted(wheel["archived"].items()):
-        entries.append({"id": f"file:{name}", "kind": "file", "name": name, "bytes": len(data), "sha256": sha(data)})
-    for name, data in sorted(wheel["files"].items()):
-        if not name.endswith(".py"):
-            continue
-        source = data.decode("utf-8")
-        tree = ast.parse(source)
-        preceding = descriptions(tree)
-        module = {"path": name, "symbol_ids": [], "imports": [], "environment_reads": [], "constants": []}
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.Import, ast.ImportFrom)):
-                module["imports"].append({"line": node.lineno, "statement": ast.unparse(node)})
-            if isinstance(node, ast.Call) and ast.unparse(node.func) == "os.getenv":
-                module["environment_reads"].append({"line": node.lineno, "expression": ast.unparse(node)})
-        for node in tree.body:
-            if isinstance(node, ast.Assign):
-                try:
-                    value = ast.literal_eval(node.value)
-                except (ValueError, TypeError, SyntaxError):
-                    continue
-                if not isinstance(value, bytes):
-                    module["constants"].append({"names": [ast.unparse(t) for t in node.targets], "value": value, "line": node.lineno})
-        definitions = symbols(tree)
-        for qualified, node in definitions:
-            identifier = f"symbol:{name}:{qualified}"
-            module["symbol_ids"].append(identifier)
-            entry = {"id": identifier, "kind": "class" if isinstance(node, ast.ClassDef) else "function",
-                     "name": qualified, "source": name, "line": node.lineno, "end_line": node.end_lineno,
-                     "source_sha256": sha(ast.get_source_segment(source, node).encode("utf-8")),
-                     "description": ast.get_docstring(node) or preceding.get(id(node), ""),
-                     "decorators": [ast.unparse(d) for d in node.decorator_list]}
-            if isinstance(node, ast.ClassDef):
-                entry["bases"] = [ast.unparse(b) for b in node.bases]
-            else:
-                entry.update(signature=f"{qualified}({ast.unparse(node.args)})",
-                             returns=ast.unparse(node.returns) if node.returns else None,
-                             parameters=parameters(node))
-            if name == CLIENT and qualified.startswith("ThetaClient.") and not node.name.startswith("_") \
-                    and not isinstance(node, ast.ClassDef):
-                entry["kind"] = "wrapper"
-                wrapper_ids.append(identifier)
-                rpcs = sorted({n.func.attr for n in ast.walk(node) if isinstance(n, ast.Call)
-                               and isinstance(n.func, ast.Attribute) and ast.unparse(n.func.value) == "self.stub"})
-                require(len(rpcs) == 1, f"Ambiguous RPC for {qualified}")
-                entry["rpc"] = rpcs[0]
-                entry["bindings"] = bindings(node.body)
-                entry["truthiness_guards"] = [ast.unparse(n.test) for n in node.body if isinstance(n, ast.If)]
-                entry["truthiness_guarded_parameters"] = sorted({n.test.id for n in ast.walk(node)
-                                                                 if isinstance(n, ast.If) and isinstance(n.test, ast.Name)})
-                first = node.body[0]
-                entry["metadata_construction"] = [ast.unparse(n) for n in first.body] if isinstance(first, ast.Try) else []
-                entry["exceptions"] = [ast.unparse(n.exc) for n in ast.walk(node) if isinstance(n, ast.Raise) and n.exc]
-            entries.append(entry)
-        module["definition_count"] = len(definitions)
-        modules.append(module)
-    for source, descriptor, encoded in serialized_descriptors(wheel["files"]):
-        protocol_files.append({"name": descriptor.name, "source": source, "sha256": sha(encoded),
-                               "package": descriptor.package, "syntax": descriptor.syntax,
-                               "dependencies": list(descriptor.dependency)})
-        entries.extend(descriptor_entries(descriptor, source))
-    metadata = wheel["metadata"]
-    counts = {}
-    for entry in entries:
-        counts[entry["kind"]] = counts.get(entry["kind"], 0) + 1
-    return {"schema_version": 1, "source_version": wheel["version"], "artifact": wheel["filename"],
-            "artifact_sha256": wheel["sha256"], "record_entries_verified": wheel["record_entries_verified"],
-            "metadata": {key: metadata.get_all(key) for key in dict(metadata.items())},
-            "metadata_python_examples": re.findall(r"```python\n(.*?)```", metadata.get_payload(), re.S),
-            "modules": modules, "protocol_files": protocol_files, "wrapper_ids": wrapper_ids,
-            "detail_counts": detail_counts(entries, modules), "counts": dict(sorted(counts.items())), "entries": entries}
+    """In-memory inventory from the shared research_python builder (one implementation)."""
+    built = research.build(wheel["archived"])
+    entries = built["entries"]
+    return {"source_version": wheel["version"], "artifact_sha256": wheel["sha256"],
+            "record_entries_verified": wheel["record_entries_verified"],
+            "metadata": {key: built["metadata"].get_all(key) for key in dict(built["metadata"].items())},
+            "modules": built["modules"], "protocol_files": built["protocol_files"], "wrapper_ids": built["wrapper_ids"],
+            "detail_counts": detail_counts(entries, built["modules"]),
+            "counts": dict(sorted(Counter(e["kind"] for e in entries).items())), "entries": entries}
 
 
-def serialized_descriptors(files):
-    names = [n for n in sorted(files) if n.endswith("_pb2.py")]
-    if not names:
-        return []
-    # Research-only dependency, needed just to parse serialized descriptors.
-    from google.protobuf import descriptor_pb2
-
-    result = []
-    for name in names:
-        for node in ast.walk(ast.parse(files[name])):
-            if isinstance(node, ast.Call) and getattr(node.func, "attr", "") == "AddSerializedFile":
-                encoded = ast.literal_eval(node.args[0])
-                result.append((name, descriptor_pb2.FileDescriptorProto.FromString(encoded), encoded))
-    return result
-
-
-def descriptor_entries(descriptor, source):
-    from google.protobuf import descriptor_pb2 as dp
-
-    entries = []
-
-    def message(item, prefix):
-        full = f"{prefix}.{item.name}"
-        fields = [{"name": f.name, "number": f.number,
-                   "type": f.type_name or dp.FieldDescriptorProto.Type.Name(f.type).removeprefix("TYPE_").lower(),
-                   "label": dp.FieldDescriptorProto.Label.Name(f.label).removeprefix("LABEL_").lower(),
-                   "proto3_optional": f.proto3_optional,
-                   "oneof": item.oneof_decl[f.oneof_index].name if f.HasField("oneof_index") else None}
-                  for f in item.field]
-        entries.append({"id": f"message:{full}", "kind": "message", "name": full, "source": source, "fields": fields,
-                        "oneofs": [o.name for o in item.oneof_decl], "map_entry": item.options.map_entry,
-                        "descriptor_sha256": sha(item.SerializeToString(deterministic=True))})
-        for nested in item.nested_type:
-            message(nested, full)
-        for nested_enum in item.enum_type:
-            enum(nested_enum, full)
-
-    def enum(item, prefix):
-        entries.append({"id": f"enum:{prefix}.{item.name}", "kind": "enum", "name": f"{prefix}.{item.name}",
-                        "source": source, "values": [{"name": v.name, "number": v.number} for v in item.value]})
-
-    for item in descriptor.message_type:
-        message(item, descriptor.package)
-    for item in descriptor.enum_type:
-        enum(item, descriptor.package)
-    for service in descriptor.service:
-        for method in service.method:
-            entries.append({"id": f"rpc:{descriptor.package}.{service.name}/{method.name}", "kind": "rpc",
-                            "name": method.name, "source": source, "request": method.input_type,
-                            "response": method.output_type, "client_streaming": method.client_streaming,
-                            "server_streaming": method.server_streaming,
-                            "path": f"/{descriptor.package}.{service.name}/{method.name}"})
-    return entries
+def guards(wheel):
+    """vendor-1.0.12.json's per-wrapper `if NAME:` parameters, as tools/analyze_vendor.py records them."""
+    tree = ast.parse(wheel["files"][CLIENT].decode("utf-8"))
+    return {node.name: sorted({n.test.id for n in ast.walk(node) if isinstance(n, ast.If) and isinstance(n.test, ast.Name)})
+            for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and not node.name.startswith("_")}
 
 
 def role(identifier):
@@ -261,14 +142,14 @@ def semantic(entry):
         if entry["kind"] == "wrapper" else {})
 
 
-def vendor_summary(data):
+def vendor_summary(data, artifact, truthiness):
     wrappers = [e for e in data["entries"] if e["kind"] == "wrapper"]
     rpcs = [e for e in data["entries"] if e["kind"] == "rpc"]
     groups = {}
     for wrapper in wrappers:
         group = wrapper["name"].split(".")[-1].split("_")[0]
         groups[group] = groups.get(group, 0) + 1
-    return {"artifact": data["artifact"], "artifact_sha256": data["artifact_sha256"],
+    return {"artifact": artifact, "artifact_sha256": data["artifact_sha256"],
             "record_entries_verified": data["record_entries_verified"],
             "extraction_matches_archive": None,
             "files": {e["name"]: {"bytes": e["bytes"], "sha256": e["sha256"]}
@@ -278,7 +159,7 @@ def vendor_summary(data):
             "client_streaming_rpcs": sum(r["client_streaming"] for r in rpcs),
             "rpc_without_python_wrapper": sorted({r["name"] for r in rpcs} - {w["rpc"] for w in wrappers}),
             "methods": [{"name": w["name"].split(".")[-1], "line": w["line"], "rpc": w["rpc"],
-                         "truthiness_guarded_parameters": w["truthiness_guarded_parameters"]} for w in wrappers]}
+                         "truthiness_guarded_parameters": truthiness[w["name"].split(".")[-1]]} for w in wrappers]}
 
 
 # ------------------------------------------------------------------ delta
@@ -357,7 +238,8 @@ def delta(old_wheel, new_wheel, old_inventory, new_inventory):
         a, b = old_wheel["files"].get(name, b""), new_wheel["files"].get(name, b"")
         if a != b:
             text_members[name] = text_diff(a.decode("utf-8"), b.decode("utf-8"))
-    vendor = vendor_summary(new_inventory)
+    rpc_names = {e["name"] for e in new_inventory["entries"] if e["kind"] == "rpc"}
+    wrapped = {e["rpc"] for e in new_inventory["entries"] if e["kind"] == "wrapper"}
     return {
         "from": old_inventory["source_version"], "to": new_inventory["source_version"],
         "wheel_sha256": {"old": old_inventory["artifact_sha256"], "new": new_inventory["artifact_sha256"]},
@@ -399,7 +281,7 @@ def delta(old_wheel, new_wheel, old_inventory, new_inventory):
         "unchanged_client_symbols": unchanged,
         "modules_changed": modules,
         "counts": {"old": old_inventory["counts"], "new": new_inventory["counts"]},
-        "rpc_without_python_wrapper": vendor["rpc_without_python_wrapper"],
+        "rpc_without_python_wrapper": sorted(rpc_names - wrapped),
     }
 
 
@@ -561,7 +443,7 @@ def render_delta(change, title, intro, artifacts=None):
     return ("\n".join(lines).rstrip() + "\n").encode("utf-8")
 
 
-def render_catalog(data, history):
+def render_catalog(data, artifact, history):
     baseline = json.loads(BASELINE_INVENTORY.read_text(encoding="utf-8"))
     decisions = {d["id"]: d for d in json.loads(BASELINE_DECISIONS.read_text(encoding="utf-8"))}
     baseline_entries = {role(e["id"]): e for e in baseline["entries"]}
@@ -572,7 +454,7 @@ def render_catalog(data, history):
              "items show their 1.0.12 feature key and status; items added or changed since 1.0.12 are "
              "marked for review. The compatibility baseline remains 1.0.12 until the "
              "[update plan](../upstream-update-1.0.17.md) is approved.", "",
-             f"Wheel `{data['artifact']}`, SHA-256 `{data['artifact_sha256']}`; "
+             f"Wheel `{artifact}`, SHA-256 `{data['artifact_sha256']}`; "
              f"{data['record_entries_verified']} hashed RECORD entries verified.", "",
              "## Coverage", "", "| Inventory kind | Count |", "| --- | ---: |"]
     lines += [f"| {kind} | {count} |" for kind, count in data["counts"].items()]
@@ -664,7 +546,10 @@ def history(releases, baseline_version):
 
 
 def outputs(record, latest_inventory):
+    """Every file rendered from committed JSON. The catalogue moves to research_python once the
+    version has a dispositions ledger (it then becomes the checked compatibility baseline)."""
     versions = [record["baseline"]["version"]] + [r["to"] for r in record["releases"]]
+    artifact = record["artifacts"][-1]["wheel"]["filename"]
     target = paths(versions)
     rendered = {target["release"][r["to"]]: render_delta(
         r, f"Python {r['to']} changes from {r['from']}",
@@ -676,8 +561,9 @@ def outputs(record, latest_inventory):
         f"Single comparison of the {versions[-1]} wheel against the frozen {versions[0]} baseline. "
         "Per-release records: " + ", ".join(f"[{v}]({target['release'][v].name})" for v in versions[1:]) + ".",
         record["artifacts"])
-    rendered[target["vendor"]] = encode(vendor_summary(latest_inventory))
-    rendered[target["catalog"]] = render_catalog(latest_inventory, record["latest_item_history"])
+    rendered[target["vendor"]] = encode(vendor_summary(latest_inventory, artifact, record["latest_truthiness_guards"]))
+    if not research.evidence(versions[-1])["decisions"].exists():
+        rendered[target["catalog"]] = render_catalog(latest_inventory, artifact, record["latest_item_history"])
     return target, rendered
 
 
@@ -719,10 +605,18 @@ def generate(args):
     record = {"schema_version": 2, "baseline": {"version": args.versions[0], "wheel_sha256": wheels[0]["sha256"]},
               "artifacts": artifacts, "releases": releases,
               "cumulative": delta(wheels[0], wheels[-1], inventories[0], inventories[-1]),
-              "latest_item_history": latest_history}
+              "latest_item_history": latest_history, "latest_truthiness_guards": guards(wheels[-1])}
     target, rendered = outputs(record, inventories[-1])
     target["delta"].write_bytes(encode(record))
-    target["inventory"].write_bytes(encode(inventories[-1]))
+    # research_python.inventory needs the reviewed identity (vendor-L.json) before it can run.
+    target["vendor"].write_bytes(rendered[target["vendor"]])
+    previous = json.loads(target["inventory"].read_text(encoding="utf-8")) if target["inventory"].exists() else None
+    if previous and "legacy_inventory_sha256" not in previous:
+        previous = None  # pre-shared-builder schema; regenerate preserved-research fields
+    latest = research.inventory(Path(args.artifacts) / artifacts[-1]["wheel"]["filename"], previous)
+    require(latest["entries"] == inventories[-1]["entries"], "Shared builder disagrees with the delta inventory")
+    target["inventory"].write_bytes(encode(latest))
+    target, rendered = outputs(record, latest)
     for path, data in rendered.items():
         path.write_bytes(data)
     print(f"Inventoried {len(wheels)} wheels ({', '.join(args.versions)}); wrote {2 + len(rendered)} research files.")
@@ -749,6 +643,7 @@ def check():
         require(latest["counts"] == cumulative["counts"]["new"] == record["releases"][-1]["counts"]["new"],
                 f"{path.name}: inventory counts disagree with the deltas")
         require(latest["detail_counts"] == detail_counts(latest["entries"], latest["modules"]), "Detail counts do not reconcile")
+        research.compatible(json.loads(BASELINE_INVENTORY.read_text(encoding="utf-8")), latest)
         ids = [e["id"] for e in latest["entries"]]
         require(len(ids) == len(set(ids)), "Duplicate latest inventory ID")
         require(set(record["latest_item_history"]) <= {role(i) for i in ids}, "History names unknown items")

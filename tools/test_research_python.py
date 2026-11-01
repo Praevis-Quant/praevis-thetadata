@@ -130,6 +130,49 @@ class ResearchClosureTests(unittest.TestCase):
         self.assertEqual([(v["target"], v["expression"], v["when"]) for v in values],
                          [("query.x", "x", ["x"]), ("query.x", "False", ["not (x)"])])
 
+    def test_newer_baseline_may_only_add_to_frozen_evidence(self):
+        frozen = research.read_json(research.evidence(research.FROZEN_VERSION)["inventory"])
+        latest = research.read_json(research.RESEARCH / "python-1.0.17-inventory.json")
+        self.assertEqual(research.compatible(frozen, latest), 340)
+        mutations = {
+            "Upstream removed": lambda d: d["entries"].remove(next(e for e in d["entries"] if e["kind"] == "rpc"
+                                                                  and e["name"] == "GetCorporateActionSplit")),
+            "Field removed or changed": lambda d: next(e for e in d["entries"] if e["name"] == "Endpoints.ZonedDateTime")[
+                "fields"][0].update(number=9),
+            "Wrapper RPC changed": lambda d: next(e for e in d["entries"] if e["kind"] == "wrapper").update(rpc="GetX"),
+            "Wrapper parameters removed or reordered": lambda d: next(
+                e for e in d["entries"] if e["name"] == "ThetaClient.stock_history_eod")["parameters"].reverse(),
+            "Enum value changed": lambda d: next(e for e in d["entries"] if e["name"] == "Endpoints.TimeZone")[
+                "values"].pop(),
+        }
+        for message, mutate in mutations.items():
+            changed = copy.deepcopy(latest)
+            mutate(changed)
+            with self.subTest(message), self.assertRaisesRegex(ValueError, message):
+                research.compatible(frozen, changed)
+
+    def test_futures_are_classified_separately_from_wire_schema(self):
+        self.assertEqual(research.decision_key({"id": "rpc:x", "kind": "rpc", "name": "GetFutureHistoryEod"}), "futures")
+        self.assertEqual(research.decision_key({"id": "m", "kind": "message", "name": "BetaEndpoints.FutureHistoryEodRequest"}),
+                         "futures")
+        self.assertEqual(research.decision_key({"id": "rpc:y", "kind": "rpc", "name": "GetStockHistoryOhlc"}), "wire-schema")
+
+    def test_disposition_sections_may_name_another_research_file(self):
+        self.assertEqual(research.section_link("wrapper-semantics"), "thetadata-1.0.12.md#wrapper-semantics")
+        self.assertEqual(research.section_link("thetadata-1.0.13-1.0.17.md#release-1-0-16"),
+                         "thetadata-1.0.13-1.0.17.md#release-1-0-16")
+        decisions = copy.deepcopy(self.decisions)
+        decisions[0]["section"] = "thetadata-1.0.13-1.0.17.md#no-such-anchor"
+        with self.assertRaisesRegex(ValueError, "Missing research section"):
+            research.validate(self.original, decisions)
+
+    def test_frozen_evidence_paths_are_versioned(self):
+        paths = research.evidence("1.0.12")
+        self.assertEqual([p.name for p in paths.values()],
+                         ["python-1.0.12-inventory.json", "python-1.0.12-dispositions.json",
+                          "python-1.0.12-catalog.md", "vendor-1.0.12.json"])
+        self.assertEqual(research.check_version(research.FROZEN_VERSION)[2], 531)
+
 
 if __name__ == "__main__":
     unittest.main()

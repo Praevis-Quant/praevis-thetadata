@@ -1,9 +1,16 @@
 {
   "schema_version": 1,
   "source_version": "1.0.17",
-  "artifact": "thetadata-1.0.17-py3-none-any.whl",
   "artifact_sha256": "a43a2fe0fc4896047b9287a9cbf725214386566e3adf930523e5f8aeabf81fea",
   "record_entries_verified": 13,
+  "legacy_inventory_sha256": "e7da8f9b36356ebd61815289012f77c84e3e13b226b8a05ee554007b09b820ce",
+  "preserved_research": {
+    "path": "docs/research/thetadata-1.0.12.md",
+    "bytes": 62021,
+    "sha256": "a85b89974748a538a98ddf853ea8b6d94b945824553665f75e2abc9955347b7a"
+  },
+  "preserved_review_sha256": "5a634d710d47858c8bc2c8134bfb4dd024e56c9082d98d08501c25dfd24ae836",
+  "descriptor_sha256": "35572458782193a20b112e4b62c9179ca380d6f9dfd919b79494de584a3f5a58",
   "metadata": {
     "Metadata-Version": [
       "2.5"
@@ -902,27 +909,6 @@
       "name": "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py",
       "bytes": 190897,
       "sha256": "2fb67af5f7cc2e571af1e99aad72dea712a887c544238bd8a48b110e1a5cfc2f"
-    },
-    {
-      "id": "file:thetadata/client.py",
-      "kind": "file",
-      "name": "thetadata/client.py",
-      "bytes": 293312,
-      "sha256": "ff09f426804afa45d8b1fb15d382dce087781c0561f2a72a2f3a392aa5f1c2c3"
-    },
-    {
-      "id": "file:thetadata/errors.py",
-      "kind": "file",
-      "name": "thetadata/errors.py",
-      "bytes": 186,
-      "sha256": "e79a53018b3728e8a61468e3c4d900aa9abf5f0c47316f85f19ffccc5e50f715"
-    },
-    {
-      "id": "file:thetadata/py.typed",
-      "kind": "file",
-      "name": "thetadata/py.typed",
-      "bytes": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "id": "symbol:thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalStub",
@@ -12021,6 +12007,13 @@
       ]
     },
     {
+      "id": "file:thetadata/client.py",
+      "kind": "file",
+      "name": "thetadata/client.py",
+      "bytes": 293312,
+      "sha256": "ff09f426804afa45d8b1fb15d382dce087781c0561f2a72a2f3a392aa5f1c2c3"
+    },
+    {
       "id": "symbol:thetadata/client.py:_fmt_time",
       "kind": "function",
       "name": "_fmt_time",
@@ -12259,7 +12252,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}"
       ],
@@ -12334,7 +12326,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['request_type'] = str(request_type)",
@@ -12444,11 +12435,6 @@
         "venue",
         "min_time",
         "current_day_only"
-      ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "min_time",
-        "venue"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -12562,11 +12548,6 @@
         "min_time",
         "current_day_only"
       ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "min_time",
-        "venue"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -12678,11 +12659,6 @@
         "venue",
         "min_time",
         "current_day_only"
-      ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "min_time",
-        "venue"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -12796,11 +12772,6 @@
         "min_time",
         "current_day_only"
       ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "min_time",
-        "venue"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -12891,7 +12862,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -13060,14 +13030,6 @@
         "start_date",
         "end_date"
       ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "end_time",
-        "start_date",
-        "start_time",
-        "venue"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -13228,14 +13190,6 @@
         "venue",
         "start_date",
         "end_date"
-      ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "end_time",
-        "start_date",
-        "start_time",
-        "venue"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -13408,14 +13362,6 @@
         "venue",
         "start_date",
         "end_date"
-      ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "end_time",
-        "start_date",
-        "start_time",
-        "venue"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -13608,16 +13554,6 @@
         "end_date",
         "use_time_based_trade_quote"
       ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "end_time",
-        "exclusive",
-        "start_date",
-        "start_time",
-        "use_time_based_trade_quote",
-        "venue"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -13741,9 +13677,6 @@
       "truthiness_guards": [
         "venue"
       ],
-      "truthiness_guarded_parameters": [
-        "venue"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -13863,9 +13796,6 @@
       "truthiness_guards": [
         "venue"
       ],
-      "truthiness_guarded_parameters": [
-        "venue"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -13921,7 +13851,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}"
       ],
@@ -14014,7 +13943,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['request_type'] = str(request_type)",
@@ -14082,7 +14010,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)"
@@ -14158,7 +14085,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -14265,10 +14191,6 @@
       "truthiness_guards": [
         "symbol",
         "max_dte"
-      ],
-      "truthiness_guarded_parameters": [
-        "max_dte",
-        "symbol"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -14415,12 +14337,6 @@
         "min_time",
         "current_day_only"
       ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "max_dte",
-        "min_time",
-        "strike_range"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -14554,11 +14470,6 @@
         "strike_range",
         "min_time",
         "current_day_only"
-      ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "min_time",
-        "strike_range"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -14707,12 +14618,6 @@
         "strike_range",
         "min_time",
         "current_day_only"
-      ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "max_dte",
-        "min_time",
-        "strike_range"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -14863,12 +14768,6 @@
         "min_time",
         "current_day_only"
       ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "max_dte",
-        "min_time",
-        "strike_range"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -15017,12 +14916,6 @@
         "strike_range",
         "min_time",
         "current_day_only"
-      ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "max_dte",
-        "min_time",
-        "strike_range"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -15277,19 +15170,6 @@
         "use_market_value",
         "current_day_only",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "current_day_only",
-        "max_dte",
-        "min_time",
-        "rate_type",
-        "rate_value",
-        "stock_price",
-        "strike_range",
-        "use_market_value",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -15551,19 +15431,6 @@
         "use_market_value",
         "current_day_only",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "current_day_only",
-        "max_dte",
-        "min_time",
-        "rate_type",
-        "rate_value",
-        "stock_price",
-        "strike_range",
-        "use_market_value",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -15871,22 +15738,6 @@
         "exercise_style",
         "implied_vol_method"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "current_day_only",
-        "exercise_style",
-        "implied_vol_method",
-        "max_dte",
-        "min_time",
-        "rate_type",
-        "rate_value",
-        "stock_price",
-        "strike_range",
-        "use_market_value",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -16150,19 +16001,6 @@
         "use_market_value",
         "current_day_only",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "current_day_only",
-        "max_dte",
-        "min_time",
-        "rate_type",
-        "rate_value",
-        "stock_price",
-        "strike_range",
-        "use_market_value",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -16470,22 +16308,6 @@
         "exercise_style",
         "implied_vol_method"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "current_day_only",
-        "exercise_style",
-        "implied_vol_method",
-        "max_dte",
-        "min_time",
-        "rate_type",
-        "rate_value",
-        "stock_price",
-        "strike_range",
-        "use_market_value",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -16749,19 +16571,6 @@
         "use_market_value",
         "current_day_only",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "current_day_only",
-        "max_dte",
-        "min_time",
-        "rate_type",
-        "rate_value",
-        "stock_price",
-        "strike_range",
-        "use_market_value",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -17069,22 +16878,6 @@
         "exercise_style",
         "implied_vol_method"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "current_day_only",
-        "exercise_style",
-        "implied_vol_method",
-        "max_dte",
-        "min_time",
-        "rate_type",
-        "rate_value",
-        "stock_price",
-        "strike_range",
-        "use_market_value",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -17348,19 +17141,6 @@
         "use_market_value",
         "current_day_only",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "current_day_only",
-        "max_dte",
-        "min_time",
-        "rate_type",
-        "rate_value",
-        "stock_price",
-        "strike_range",
-        "use_market_value",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -17668,22 +17448,6 @@
         "exercise_style",
         "implied_vol_method"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "current_day_only",
-        "exercise_style",
-        "implied_vol_method",
-        "max_dte",
-        "min_time",
-        "rate_type",
-        "rate_value",
-        "stock_price",
-        "strike_range",
-        "use_market_value",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -17834,10 +17598,6 @@
         }
       ],
       "truthiness_guards": [
-        "max_dte",
-        "strike_range"
-      ],
-      "truthiness_guarded_parameters": [
         "max_dte",
         "strike_range"
       ],
@@ -18031,14 +17791,6 @@
         "strike_range",
         "start_date",
         "end_date"
-      ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "end_time",
-        "start_date",
-        "start_time",
-        "strike_range"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -18236,15 +17988,6 @@
         "strike_range",
         "start_date",
         "end_date"
-      ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "end_time",
-        "max_dte",
-        "start_date",
-        "start_time",
-        "strike_range"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -18454,15 +18197,6 @@
         "strike_range",
         "start_date",
         "end_date"
-      ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "end_time",
-        "max_dte",
-        "start_date",
-        "start_time",
-        "strike_range"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -18692,17 +18426,6 @@
         "end_date",
         "use_time_based_trade_quote"
       ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "end_time",
-        "exclusive",
-        "max_dte",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "use_time_based_trade_quote"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -18871,13 +18594,6 @@
         "strike_range",
         "start_date",
         "end_date"
-      ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "max_dte",
-        "start_date",
-        "strike_range"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -19127,17 +18843,6 @@
         "strike_range",
         "option_use_nbbo",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "max_dte",
-        "option_use_nbbo",
-        "rate_type",
-        "rate_value",
-        "strike_range",
-        "underlyer_use_nbbo",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -19439,20 +19144,6 @@
         "exercise_style",
         "implied_vol_method"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "exercise_style",
-        "implied_vol_method",
-        "max_dte",
-        "option_use_nbbo",
-        "rate_type",
-        "rate_value",
-        "strike_range",
-        "underlyer_use_nbbo",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -19728,19 +19419,6 @@
         "start_date",
         "end_date",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -20061,22 +19739,6 @@
         "exercise_style",
         "implied_vol_method"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "date",
-        "end_date",
-        "end_time",
-        "exercise_style",
-        "implied_vol_method",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -20371,21 +20033,6 @@
         "end_date",
         "perf_boost_intraday",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "max_dte",
-        "perf_boost_intraday",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -20710,23 +20357,6 @@
         "annual_dividend_amount",
         "exercise_style"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "date",
-        "end_date",
-        "end_time",
-        "exercise_style",
-        "max_dte",
-        "perf_boost_intraday",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -21003,19 +20633,6 @@
         "start_date",
         "end_date",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -21336,22 +20953,6 @@
         "exercise_style",
         "implied_vol_method"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "date",
-        "end_date",
-        "end_time",
-        "exercise_style",
-        "implied_vol_method",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -21646,21 +21247,6 @@
         "end_date",
         "perf_boost_intraday",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "max_dte",
-        "perf_boost_intraday",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -21985,23 +21571,6 @@
         "annual_dividend_amount",
         "exercise_style"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "date",
-        "end_date",
-        "end_time",
-        "exercise_style",
-        "max_dte",
-        "perf_boost_intraday",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -22278,19 +21847,6 @@
         "start_date",
         "end_date",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -22611,22 +22167,6 @@
         "exercise_style",
         "implied_vol_method"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "date",
-        "end_date",
-        "end_time",
-        "exercise_style",
-        "implied_vol_method",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -22921,21 +22461,6 @@
         "end_date",
         "perf_boost_intraday",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "max_dte",
-        "perf_boost_intraday",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -23260,23 +22785,6 @@
         "annual_dividend_amount",
         "exercise_style"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "date",
-        "end_date",
-        "end_time",
-        "exercise_style",
-        "max_dte",
-        "perf_boost_intraday",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -23553,19 +23061,6 @@
         "start_date",
         "end_date",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -23886,22 +23381,6 @@
         "exercise_style",
         "implied_vol_method"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "date",
-        "end_date",
-        "end_time",
-        "exercise_style",
-        "implied_vol_method",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -24196,21 +23675,6 @@
         "end_date",
         "perf_boost_intraday",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "max_dte",
-        "perf_boost_intraday",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -24535,23 +23999,6 @@
         "annual_dividend_amount",
         "exercise_style"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "binomial_steps",
-        "date",
-        "end_date",
-        "end_time",
-        "exercise_style",
-        "max_dte",
-        "perf_boost_intraday",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -24828,19 +24275,6 @@
         "start_date",
         "end_date",
         "annual_dividend_amount"
-      ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -25134,21 +24568,6 @@
         "perf_boost_intraday",
         "annual_dividend_amount"
       ],
-      "truthiness_guarded_parameters": [
-        "annual_dividend",
-        "annual_dividend_amount",
-        "date",
-        "end_date",
-        "end_time",
-        "max_dte",
-        "perf_boost_intraday",
-        "rate_type",
-        "rate_value",
-        "start_date",
-        "start_time",
-        "strike_range",
-        "version"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -25313,10 +24732,6 @@
         "max_dte",
         "strike_range"
       ],
-      "truthiness_guarded_parameters": [
-        "max_dte",
-        "strike_range"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -25473,10 +24888,6 @@
         "max_dte",
         "strike_range"
       ],
-      "truthiness_guarded_parameters": [
-        "max_dte",
-        "strike_range"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -25536,7 +24947,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}"
       ],
@@ -25599,7 +25009,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)"
@@ -25693,10 +25102,6 @@
       "truthiness_guards": [
         "min_time",
         "current_day_only"
-      ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "min_time"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -25794,10 +25199,6 @@
         "min_time",
         "current_day_only"
       ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "min_time"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -25894,10 +25295,6 @@
         "min_time",
         "current_day_only"
       ],
-      "truthiness_guarded_parameters": [
-        "current_day_only",
-        "min_time"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -25987,7 +25384,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -26119,10 +25515,6 @@
       "truthiness_guards": [
         "start_time",
         "end_time"
-      ],
-      "truthiness_guarded_parameters": [
-        "end_time",
-        "start_time"
       ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
@@ -26280,13 +25672,6 @@
         "start_date",
         "end_date"
       ],
-      "truthiness_guarded_parameters": [
-        "date",
-        "end_date",
-        "end_time",
-        "start_date",
-        "start_time"
-      ],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -26392,7 +25777,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -26447,7 +25831,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}"
       ],
@@ -26510,7 +25893,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['date'] = str(date)"
@@ -26574,7 +25956,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['year'] = str(year)"
@@ -26662,7 +26043,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['symbol'] = str(symbol)",
@@ -26728,7 +26108,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['date'] = str(date)"
@@ -26792,7 +26171,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['date'] = str(date)"
@@ -26856,7 +26234,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['date'] = str(date)"
@@ -26920,7 +26297,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['date'] = str(date)"
@@ -26984,7 +26360,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['date'] = str(date)"
@@ -27048,7 +26423,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['date'] = str(date)"
@@ -27112,7 +26486,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['date'] = str(date)"
@@ -27176,7 +26549,6 @@
         }
       ],
       "truthiness_guards": [],
-      "truthiness_guarded_parameters": [],
       "metadata_construction": [
         "query_parameters = {'client': 'python'}",
         "query_parameters['date'] = str(date)"
@@ -27185,6 +26557,13 @@
         "NoDataFoundError(f'No data found for: index_flat_file_eod({date})')",
         "e"
       ]
+    },
+    {
+      "id": "file:thetadata/errors.py",
+      "kind": "file",
+      "name": "thetadata/errors.py",
+      "bytes": 186,
+      "sha256": "e79a53018b3728e8a61468e3c4d900aa9abf5f0c47316f85f19ffccc5e50f715"
     },
     {
       "id": "symbol:thetadata/errors.py:AuthenticationError",
@@ -27213,6 +26592,13 @@
       "bases": [
         "Exception"
       ]
+    },
+    {
+      "id": "file:thetadata/py.typed",
+      "kind": "file",
+      "name": "thetadata/py.typed",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "id": "message:Endpoints.AuthToken",

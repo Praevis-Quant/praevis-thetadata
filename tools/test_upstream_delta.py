@@ -11,13 +11,23 @@ import upstream_delta
 
 OLD = '''class ThetaClient:
     def stock_snapshot_quote(self, symbol: str, min_time=None):
+        try:
+            query_parameters = {"client": "python"}
+        except Exception:
+            query_parameters = {"client": "python"}
         query = Q()
         if min_time:
             query.min_time = min_time
-        return self.stub.GetStockSnapshotQuote(query)
+        try:
+            return self.stub.GetStockSnapshotQuote(query)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise NoDataFoundError(f"No data found for: stock_snapshot_quote({ symbol })")
+            else:
+                raise e
 '''
 NEW = OLD.replace("min_time=None):", "min_time=None, current_day_only: bool=False):").replace(
-    "        return", "        if current_day_only:\n            query.current_day_only = current_day_only\n        return")
+    "        try:\n            return", "        if current_day_only:\n            query.current_day_only = current_day_only\n        try:\n            return")
 
 
 def wheel(directory, version, client, corrupt=False):
@@ -47,8 +57,6 @@ class UpstreamDeltaTests(unittest.TestCase):
         self.assertEqual(change["parameters_added"][0]["default"], "False")
         self.assertEqual(change["bindings_added"], [{"target": "query.current_day_only",
                                                      "expression": "current_day_only", "when": ["current_day_only"]}])
-        self.assertEqual(change["metadata_added"],
-                         [])  # synthetic wrapper has no metadata-map try block
         self.assertEqual(result["text_member_diffs"]["METADATA"], ["-Version: 1.0.0", "+Version: 1.0.1"])
         self.assertEqual((result["rpcs_added"], result["rpcs_removed"]), ([], []))
         self.assertEqual(result["unchanged_client_symbols"], [])

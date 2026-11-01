@@ -13,6 +13,18 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Changed
+
+- Research tooling is now version-agnostic. `research_python.py` takes its
+  paths from the manifest `source_version`. It checks the frozen 1.0.12
+  evidence alongside any newer baseline, and it fails if upstream removes,
+  renumbers or retypes anything the frozen evidence recorded. One static
+  inventory builder is now shared with `upstream_delta.py`, and it still
+  regenerates the frozen 1.0.12 inventory byte-for-byte.
+  `extract_protocol.py` reads a hash-verified wheel directly and takes the
+  version from its METADATA. Futures RPCs get their own feature key.
+  The baseline is still 1.0.12.
+
 ### Added
 
 - Constructed sixteen-column stock EOD regression coverage informed by the
