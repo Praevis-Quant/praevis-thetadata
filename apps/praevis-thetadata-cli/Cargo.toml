@@ -16,7 +16,8 @@ name = "praevis-thetadata"
 path = "src/main.rs"
 
 [dependencies]
-praevis-thetadata-auth.workspace = true
+# The CLI is the explicit opt-in for native session persistence (ADR-0020).
+praevis-thetadata-auth = { workspace = true, features = ["native-store"] }
 clap.workspace = true
 serde_json.workspace = true
 tokio.workspace = true

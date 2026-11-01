@@ -1,6 +1,6 @@
 # ADR-0003: native persistent session storage
 
-Status: Accepted. Date: 2026-10-03. Requirements: AUTH-L2-003, AUTH-L2-004, AUTH-L2-006, AUTH-L2-007.
+Status: **Superseded** by [ADR-0020](0020-in-memory-sessions-and-optional-persistence.md) on 2026-11-01: persistence is now an optional `native-store` feature and a CLI opt-in (`auth --save`), with the identity and v1 record unchanged. Originally accepted 2026-10-03. Requirements: AUTH-L2-003, AUTH-L2-004, AUTH-L2-006, AUTH-L2-007.
 
 ## Context
 

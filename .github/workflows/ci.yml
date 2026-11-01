@@ -37,6 +37,19 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Tests
         run: cargo test --workspace --locked
+      - name: Auth feature boundary (default in-memory, optional native store)
+        shell: bash
+        run: |
+          # Selecting only the auth package builds it without the CLI's native-store feature.
+          cargo clippy --locked -p praevis-thetadata-auth --all-targets -- -D warnings
+          cargo test --locked -p praevis-thetadata-auth
+          cargo test --locked -p praevis-thetadata-auth --features native-store
+          for package in praevis-thetadata-auth praevis-thetadata-client; do
+            if cargo tree --locked -p "$package" -e normal --target all | grep -iE 'keyring|dbus'; then
+              echo "$package default build must not depend on native credential stores"; exit 1
+            fi
+          done
+          cargo tree --locked -p praevis-thetadata-auth -e normal --target all --features native-store | grep -q keyring
       - name: Native EOD benchmark checks
         run: cargo test --locked -p praevis-thetadata-client --example eod_benchmark
       - name: Credential-free EOD benchmark smoke test
