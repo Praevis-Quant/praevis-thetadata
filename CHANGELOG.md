@@ -15,6 +15,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Timestamps with sub-millisecond or unknown precision are now rejected
+  instead of silently truncated** ([ADR-0019](docs/adr/0019-timestamp-precision.md),
+  EOD-L3-030). Python 1.0.16 added `ZonedDateTime.nanos`/`precision` with
+  undefined semantics. Typed EOD streams end with `EodError::Unsupported`;
+  batches already delivered stay partial. The raw table helper returns
+  `DataError::TimestampPrecision`. Millisecond values, which is every
+  response observed so far, are unchanged. The new core helpers are
+  `check_timestamp_precision` and `timestamp_with_precision`; the existing
+  `timestamp()` and `Timestamp::from_wire()` are unchanged.
+
 - **Python compatibility baseline 1.0.12 → 1.0.17.** The descriptor
   (`35572458…5a58`) and manifest were regenerated from the hash-verified
   1.0.17 wheel. `praevis-thetadata-proto` now binds 100 RPCs instead of 82

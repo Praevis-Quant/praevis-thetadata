@@ -44,11 +44,12 @@ not select all other wrappers or RPCs.
 | Date inclusivity, market calendar, available history | Vendor confirmation or controlled live queries at boundary dates. | Forward exact dates; no client-side trimming or inclusivity guarantee. |
 | Service row ordering, duplicates, corrections/adjustments | Vendor evidence across controlled queries. | Preserve observed order/duplicates; no sorted/unique/adjusted-history promise. |
 | Entitlements, environments, token expiry/revocation | Authorized live evidence or current vendor contract. | Local fixtures do not prove access or lifecycle; no automatic refresh/retry. |
+| Timestamp `nanos`/`precision` (Python 1.0.16+) | Vendor definition of both fields, and whether stock EOD can emit `NANOSECOND`. | EOD-L3-030 rejects non-millisecond content as unsupported ([ADR-0019](../adr/0019-timestamp-precision.md)); supersede it with a representation decision once the semantics are known. |
 | Synthetic acceptance versus live validation | Link passing Rust tests/benchmarks to each requirement; record any authorized live checks separately under EOD-L3-029. | Synthetic acceptance can establish the library contract while service semantics remain unverified; explicitly label the scope of every support claim. |
 
 No source artifact needs to be reinstalled for these requirements. The
 [recovery procedure](../research/upstream-source.md#recovering-the-removed-local-artifacts)
-remains available for full regeneration. Preserve all 531 inventory items.
+remains available for full regeneration. Preserve all 531 frozen 1.0.12 and 623 current 1.0.17 inventory items.
 
 Verification status vocabulary: **planned** means required but not demonstrated;
 **inspection** identifies reviewed source/artifact evidence; **passed synthetic**

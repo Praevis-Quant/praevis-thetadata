@@ -44,7 +44,7 @@
     {
       "id": "eod-mixed",
       "origin": "mixed",
-      "requirements": ["EOD-L1-001", "EOD-L1-002", "EOD-L1-003", "EOD-L2-001", "EOD-L2-002", "EOD-L2-003", "EOD-L2-004", "EOD-L2-006", "EOD-L2-009", "EOD-L3-001", "EOD-L3-003", "EOD-L3-004", "EOD-L3-005", "EOD-L3-006", "EOD-L3-007", "EOD-L3-008", "EOD-L3-009", "EOD-L3-010", "EOD-L3-011", "EOD-L3-012", "EOD-L3-016"],
+      "requirements": ["EOD-L1-001", "EOD-L1-002", "EOD-L1-003", "EOD-L2-001", "EOD-L2-002", "EOD-L2-003", "EOD-L2-004", "EOD-L2-006", "EOD-L2-009", "EOD-L3-001", "EOD-L3-003", "EOD-L3-004", "EOD-L3-005", "EOD-L3-006", "EOD-L3-007", "EOD-L3-008", "EOD-L3-009", "EOD-L3-010", "EOD-L3-011", "EOD-L3-012", "EOD-L3-016", "EOD-L3-030"],
       "rationale": "Observed EOD request, session, compression, values and finite RPC semantics are combined with typed Rust entry points, local date validation, exact prices, strict schema/timezone checks and explicit partial/error behavior.",
       "protected_contract": "Preserve typed validation, exactness, schema/order/null decisions, safe terminal/error distinctions and the Table timestamp contract. Add numeric delivery through PERF requirements; do not silently replace the Table representation during a vendor update.",
       "evidence": ["docs/requirements/stock-eod-evidence.md", "docs/requirements/L3-stock-eod.md", "docs/research/python-1.0.12-dispositions.json"]
@@ -83,6 +83,7 @@
     }
   ],
   "adrs": [
+    {"path": "docs/adr/0019-timestamp-precision.md", "origin": "mixed", "rationale": "Upstream 1.0.16 timestamp precision fields with protected exact-value policy: reject non-millisecond content rather than truncate until vendor semantics are known."},
     {"path": "docs/adr/0018-explicit-connection-adapters.md", "origin": "rust-enhancement", "rationale": "Explicit direct/REST/WebSocket boundaries, optional Terminal process ownership and independent entitlement/performance evidence."},
     {"path": "docs/adr/0017-manual-live-verification.md", "origin": "rust-enhancement", "rationale": "Explicit manual credentialed testing outside CI, private captures, replay and release evidence policy."},
     {"path": "docs/adr/0001-standalone-auth.md", "origin": "rust-enhancement", "rationale": "Independent reusable auth and application boundary."},
