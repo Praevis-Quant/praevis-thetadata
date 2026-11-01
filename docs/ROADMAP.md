@@ -109,6 +109,28 @@ Add binding ADRs/requirements and enhancement-origin records before implementati
 
 For each newer stable release detected by [the scheduled PyPI monitor](upstream-monitor.md), research the versioned source artifacts and assess compatibility before updating the tracked Python baseline. Keep that baseline separate from the Rust crate version; a failed check initiates research and requirements review, not an automatic baseline bump.
 
+The 1.0.12 → 1.0.17 update is complete ([plan and record](upstream-update-1.0.17.md)):
+research #15, tooling #16, baseline #17, ADR-0019 timestamp precision #18 and
+documentation. Remaining follow-ups:
+
+- **Futures research (unresolved):** 17 `GetFuture*` RPCs exist only as
+  descriptor bindings. Obtain vendor documentation, entitlements and result
+  schemas before any requirement.
+- **New optional request fields:** when a typed snapshot, Greeks or trade-quote
+  slice is selected, expose `current_day_only`, `option_use_nbbo`,
+  `use_time_based_trade_quote`, `annual_dividend_amount`, `exercise_style` and
+  `implied_vol_method` with explicit presence (ADR-0008). Do not copy Python's
+  truthiness omission.
+- **Timestamp precision:** supersede ADR-0019 with a representation decision
+  once ThetaData defines `nanos`/`precision`.
+- **ADR-0019 performance follow-up:** the Linux before/after comparison in #18
+  showed a possible ~1–2% Table-adapter decode increase on `small-mixed-none`
+  and `large-mixed-none`. The shift was consistent across three rounds and just
+  outside the baseline's A/A spread. It was not seen on ZSTD variants, the
+  numeric engine or the timestamp-heavy cases. Windows was not benchmarked.
+  Reproduce on both platforms under PERF-L3-007/008 before deciding whether to
+  act; this is an open observation, not an accepted regression.
+
 Use the [upgrade impact template](upstream-update-template.md) and exhaustive
 [origin register](requirements/origins.md). Reconcile upstream contracts and
 Rust enhancements independently; preserve exact values, native-store/lifecycle

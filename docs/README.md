@@ -52,11 +52,12 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Live observation records](research/live-observations.md) | Reviewed service evidence template and synthetic comparison gaps |
 | [crates.io release plan](crates-io-release-plan.md) | Useful prereleases, name checks, credential verification limits and packaging gates |
 | [Upstream compatibility monitor](upstream-monitor.md) | Scheduled PyPI version comparison and baseline policy |
-| [Research index](research/README.md) | Frozen 1.0.12 evidence, the proposed 1.0.13–1.0.17 update set and other research |
+| [Research index](research/README.md) | Frozen 1.0.12 evidence, the current 1.0.17 baseline set and other research |
 | [Python 1.0.13–1.0.17 research](research/thetadata-1.0.13-1.0.17.md) | Analysis of every change since the 1.0.12 baseline: per release and cumulative, server-side behavior, Rust impact and open vendor questions |
 | [1.0.12 → 1.0.17 cumulative changes](research/python-1.0.12-to-1.0.17-delta.md) | Generated exhaustive record; per-release records: [1.0.13](research/python-1.0.13-delta.md), [1.0.14](research/python-1.0.14-delta.md), [1.0.15](research/python-1.0.15-delta.md), [1.0.16](research/python-1.0.16-delta.md), [1.0.17](research/python-1.0.17-delta.md) |
 | [Python 1.0.17 catalogue](research/python-1.0.17-catalog.md) | Current baseline: every item with its disposition and traceability; [inventory](research/python-1.0.17-inventory.json), [dispositions](research/python-1.0.17-dispositions.json), [vendor summary](research/vendor-1.0.17.json), [delta data and per-item history](research/python-1.0.13-1.0.17-delta.json) |
-| [Upstream update plan: 1.0.17](upstream-update-1.0.17.md) | Proposed PR-sized steps, per-crate impact, breaking changes and decisions; baseline remains 1.0.12 until reviewed |
+| [Upstream update plan: 1.0.17](upstream-update-1.0.17.md) | Approved and completed update record: decisions D1–D6 (D3 corrected), steps, breaking changes and remaining follow-ups |
+| [ADR-0019 timestamp precision](adr/0019-timestamp-precision.md) | Reject sub-millisecond or unknown timestamp precision instead of truncating |
 
 Requirement IDs are permanent. L2 requirements name their L1 parents; L3 requirements name their L2 parents. Add new requirements and ADRs as scope grows; do not quietly reinterpret existing IDs. Changes to credential precedence, persisted data, store identity, or lifecycle behavior require updating the relevant ADR and tests.
 

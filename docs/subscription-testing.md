@@ -69,7 +69,19 @@ explicit environment key/file selection; no automatic discovery, shared CI
 secrets, paid subscription purchase or account mutation. No credential should
 appear in a case definition. The runner supports EOD capture/replay and a bounded
 [stock quote denial probe](live-verification.md). Add endpoint-specific probes
-as cases are selected, rather than running all 82 RPCs.
+as cases are selected, rather than running all 100 RPCs.
+
+Python 1.0.13–1.0.16 descriptions document **service-side** changes, all
+unverified here ([research](research/thetadata-1.0.13-1.0.17.md)):
+- Snapshots return the latest message from the past 7 days, unless `current_day_only` is set.
+- Greeks EOD defaults to the closing NBBO midpoint.
+- Current-day trade-quote matching changed.
+- Binomial Greeks price European index roots as European.
+
+None of these affects stock EOD. When a snapshot, Greeks or trade-quote case
+is selected, record the observed behavior and entitlement context rather than
+assuming the documented defaults. Python cannot send `false` for
+`option_use_nbbo` or `use_time_based_trade_quote`.
 
 The account holder can run the same suite after upgrading or supply authorized
 accounts with distinct tiers. Full paid-tier verification cannot be completed

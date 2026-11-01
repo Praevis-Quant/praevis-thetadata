@@ -8,13 +8,22 @@ PERF-L3-001/007/008; it does not grant EOD acceptance or change auth behavior.
 ## Comparator and current evidence
 
 Interpret the vendor Python script as a small driver of the reviewed
-`thetadata` 1.0.12 package's `stock_history_eod`, using default Polars output
+`thetadata` **1.0.17** package's `stock_history_eod`, using default Polars output
 and a separately reported Pandas run. A different user script needs its own
 source hash and workload definition. Do not substitute the older Terminal
 client, a rewritten Python decoder, or only Pandas for the vendor default.
 
-The [pinned artifact research](../research/thetadata-1.0.12.md#conversion-and-output)
-establishes full-stream accumulation followed by dataframe construction.
+The comparator pin moved from 1.0.12 to 1.0.17 with the compatibility baseline
+([plan decision D4](../upstream-update-1.0.17.md)). The `stock_history_eod`
+wrapper, its request messages, `_convert_response_stream`, the date/time
+helpers and the declared dependencies are unchanged from 1.0.12 to 1.0.17
+([cumulative record](../research/python-1.0.12-to-1.0.17-delta.md)). The
+[artifact research](../research/thetadata-1.0.12.md#conversion-and-output)
+therefore still describes the measured path: full-stream accumulation followed
+by dataframe construction. Python 1.0.16+ ignores the new timestamp
+`nanos`/`precision` fields, while Rust rejects non-millisecond precision
+([ADR-0019](../adr/0019-timestamp-precision.md)). Comparator fixtures use
+millisecond timestamps, where both produce the same instants.
 Rust provides incremental numeric batches and a Table adapter. Python converts
 prices to floats; Rust retains exact prices. These output and lifecycle
 differences must be visible in the report. Current vendor
@@ -33,7 +42,7 @@ reuse (checked 2026-10-04). The versioned artifact remains the comparator author
 
 | Step | Deliverable | Exit condition |
 | --- | --- | --- |
-| Pin and isolate | Recover the exact wheel using the [hash-verified procedure](../research/upstream-source.md#recovering-the-removed-local-artifacts); lock Python and transitive dependency versions/hashes, including protobuf, grpcio, zstandard, Polars, Pandas and dotenv | Compatible environment reproduces the artifact's imports; declared-versus-generated dependency gaps recorded; artifact code unchanged |
+| Pin and isolate | Recover the exact 1.0.17 wheel using the hash-verified procedure in [upstream-source.md](../research/upstream-source.md) (section "Releases 1.0.13–1.0.17 and the current 1.0.17 baseline"); lock Python and transitive dependency versions/hashes, including protobuf, grpcio, zstandard, Polars, Pandas and dotenv | Compatible environment reproduces the artifact's imports; declared-versus-generated dependency gaps recorded; artifact code unchanged |
 | Establish execution scope | Add a narrowly scoped benchmark exception to the repository's static-research policy when implementing this harness | Reviewed local-only benchmark workflow with synthetic credentials, loopback endpoints and no ambient credential files/environment; ordinary builds and research checks still do not import vendor code |
 | Share inputs | Extend the Rust fixture tooling to export identical serialized response sequences for both clients; expose those through the same local gRPC fixture | Identical response/schema/compression hashes, request validation, row/batch counts and terminal status |
 | Verify outputs | Implement independent expected-value checks and documented normalization for both dataframe backends and both Rust representations | Every measured case passes; unsupported or semantically different cases appear as such, never as successful speedups |
