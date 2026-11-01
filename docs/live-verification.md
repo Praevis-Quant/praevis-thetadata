@@ -192,5 +192,10 @@ cargo clippy --locked -p praevis-thetadata-client --features live-tests --exampl
 
 These explicit local checks exercise CLI opt-in, path/query validation, complete
 and partial mock captures, safe diagnostics, hash rejection and differential
-replay. They do not call ThetaData. The feature-gated example is deliberately
-absent from existing CI commands; changes to it require these manual checks.
+replay. They do not call ThetaData.
+
+CI runs only the **compile-only** clippy line above, in the Verify job on
+Windows and Linux, so that a baseline or API change cannot silently break the
+runner again (as #17 did; fixed in #24). CI never executes the runner and
+never runs live captures, replays or probes. Run the `cargo test` line locally
+when changing the runner.

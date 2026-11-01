@@ -1,6 +1,6 @@
 # Live-service observation records
 
-The first bounded PROD run passed on 2026-10-04, as recorded below.
+The first bounded PROD run passed on 2026-10-04, and the alpha.1 exit-gate runs passed on 2026-11-01, as recorded below.
 Synthetic tests remain synthetic evidence. Retain sensitive responses only under
 private ignored artifacts; this record contains schema/counts/provenance, not rows.
 See the [runbook](../live-verification.md) and [release gates](../releases.md).
@@ -93,6 +93,64 @@ This supports LIVE-L2-004 and LIVE-L3-007/LIVE-L3-009 for this selected case.
 LIVE-L3-008 retains unavailable paid profiles as not-run. The original EOD
 capture also replayed successfully after the shared-provenance refactor,
 confirming compatibility with the retained v1 capture format on Windows.
+
+## Alpha.1 PROD exit gate (2026-11-01)
+
+The account holder ran the alpha.1 gate on their Windows machine against PROD
+on 2026-11-01. No credentials, tokens, account payloads or response rows were
+retained or shared. Values below are copied from the account holder's report.
+Abbreviated hashes are quoted as reported; the full values are in the private
+run manifests.
+
+**CLI authentication.** These runs used `main` at `7663dd1` plus the
+`live_eod` build fix (#24), with profile `alpha1-check`. They cover the
+ADR-0020 in-memory/`--save` lifecycle.
+
+| Command | Result |
+| --- | --- |
+| `auth --json` | Exit 0; `persisted: false`; FREE account (all three subscription fields 0) |
+| `auth status` | Exit 3 (nothing saved) |
+| `auth --save` | Exit 0 |
+| `auth status --json` | Exit 0; `persisted: true`; Windows Credential Manager; target `praevis.thetadata.auth.v1:PROD:alpha1-check`; `validity: "not_checked"` |
+| `auth logout`, then `auth status` | Exit 0, then exit 3 |
+
+This confirms against the real service and the real Windows store that a
+plain login stores nothing, that `--save` writes the unchanged v1
+identity/record, and that status and logout behave as specified (AUTH-L3-011
+through AUTH-L3-013, AUTH-L3-025 and AUTH-L3-026). It does not establish token
+lifetime or server-side validity.
+
+**Stock EOD capture `prod-aapl-alpha1-002`** (AAPL, start and end `2024-01-02`, PROD).
+
+| Field | Observed result |
+| --- | --- |
+| Source/platform | Clean `06b166e` (the #24 fix commit); windows-x86_64; rustc 1.99.0 |
+| Upstream/protocol | Python baseline **1.0.17**; descriptor SHA-256 `35572458782193a20b112e4b62c9179ca380d6f9dfd919b79494de584a3f5a58`; protocol manifest SHA-256 `13dd1300…0a28` |
+| Captured response | One frame: 232 bytes, ZSTD (algorithm 1), declared original size 269 bytes; frame SHA-256 `9ac71785…6764`, matching `batch-000.pb` of the 2026-10-04 capture (`9ac7178571cc281cc77dd73e81d485d72dcd168173087aacc87aa614ba376764`); terminal state complete; verification passed |
+| Replay | Numeric, Table and raw replay each report 16 columns, 1 row, 1 batch; value kinds: 8 integers, 6 prices, 2 timestamps |
+| Exact values | Semantic SHA-256 `069776c8…eb43`, identical across all three interfaces and matching the 2026-10-04 digest (`069776c82a9d9491db01239e7bc8e0876a4385626173b397a5dbccdc1859eb43`); `matches: true`; capture frames SHA-256 `9a6a8470…34e5` |
+| Timestamp precision | Both real PROD timestamps passed the ADR-0019 millisecond-precision check (EOD-L3-030); no `NANOSECOND` precision or `nanos` was observed |
+
+An earlier attempt, `prod-aapl-alpha1-001`, failed the runner's
+source-provenance check **before contacting the service**, because the
+working tree was dirty. That is the intended LIVE safeguard, not a service
+failure.
+
+Taken together, the 1.0.17 baseline, the precision policy and the alpha.1
+packages decode the same PROD response byte-for-byte and value-for-value as
+the 1.0.12-era capture.
+
+**FREE stock quote denial `prod-free-quote-alpha1-001`** (AAPL): exit 0;
+`expected_denial_passed`; gRPC code 7 (`PERMISSION_DENIED`) at the headers
+phase. This reproduces the 2026-10-04 FREE-tier result on the 1.0.17 baseline.
+
+**crates.io names (2026-11-01).** The API returned HTTP 404 for all five
+`praevis-thetadata-*` names, so none is currently taken. This does not reserve
+them; recheck immediately before publishing.
+
+The same limits apply as for the earlier runs: one account, one environment,
+one query and one point in time. There is no entitlement, date-semantics or
+performance generalization, and no full EOD/PERF acceptance.
 
 ## Template for a reviewed run
 
