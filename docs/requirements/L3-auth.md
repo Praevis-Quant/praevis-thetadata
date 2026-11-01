@@ -23,6 +23,17 @@ Status: initial baseline, 2026-10-03. Paths are relative to the repository root.
 | AUTH-L3-017 | AUTH-L2-009 | The initial commit and subsequent CI shall exclude the named vendor ZIP/directory, wheel files, build artifacts, and credential files. Checked-in descriptors and provenance metadata shall permit ordinary builds without the vendor package. | `.gitignore`; `tools/check_repository.py`; `praevis-thetadata-proto/build.rs`. |
 | AUTH-L3-018 | AUTH-L2-009 | Performance runs shall measure repeated synthetic auth/save and persisted-status CLI latency, record p50/p95 plus platform/revision/sample count, clean their test profile, and never call live auth. Initial results shall be informational, without an invented latency SLA. | `tools/benchmark_auth.py`; `.github/workflows/performance.yml`; [methodology](../performance/auth.md). |
 
+
+## In-memory default and optional persistence (2026-11-01)
+
+[ADR-0020](../adr/0020-in-memory-sessions-and-optional-persistence.md) supersedes ADR-0003. AUTH-L3-025 and AUTH-L3-026 replace AUTH-L3-001 and AUTH-L3-010 when the CLI change lands. Until then those rows remain the implemented CLI behavior.
+
+| ID | L2 parent | Component requirement | Implementation / verification |
+| --- | --- | --- | --- |
+| AUTH-L3-025 | AUTH-L2-001, AUTH-L2-012 | The CLI shall select credentials in the vendor order: `--creds-file` (flag only), then a nonblank `THETADATA_API_KEY`, then a complete nonblank `THETADATA_EMAIL`/`THETADATA_PASSWORD` pair, then `THETADATA_CREDENTIALS_FILE`, otherwise `./creds.txt`. An incomplete or blank pair falls through. A selected file that is missing or invalid fails without trying later sources. No secret-bearing flags; no `.env` loading. The email/password variables are a documented Rust-only extra. | Planned (CLI PR): `credentials`; a precedence matrix test mirroring the Python order. |
+| AUTH-L3-026 | AUTH-L2-005, AUTH-L2-012 | `auth` shall authenticate and report the account without touching the native store. `auth --save` shall also save the session with the unchanged v1 record and identity. A failed login, with or without `--save`, shall leave any existing record intact. `status` and `logout` are unchanged. | Planned (CLI PR): process tests for no-save versus `--save`, and native persistence tests with `--save`. |
+| AUTH-L3-027 | AUTH-L2-012 | The auth library's default build shall expose no `SessionStore` and shall depend on no keyring, D-Bus or Windows credential packages for any target. The `native-store` feature shall restore the unchanged store API. The client shall not enable it; the CLI shall enable it explicitly. | `crates/praevis-thetadata-auth/Cargo.toml` feature gate; the CI "Auth feature boundary" step runs clippy and tests with the feature off and on, and checks the auth and client dependency trees for every target. |
+
 ## CLI startup requirements (2026-10-04)
 
 These extend the auth baseline for roadmap recommendation #2. Existing L1 outcomes are sufficient; this implementation does not introduce a new product outcome.

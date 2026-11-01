@@ -9,8 +9,16 @@
 //! // session.session_id() is available for authenticated API requests.
 //! # Ok(()) }
 //! ```
+//!
+//! By default a [`Session`] lives only in memory; clone it to reuse it within a
+//! process, as the vendor Python package does with `existing_authorized_client`.
+//! Saving it in the OS credential store across processes is an optional Rust
+//! enhancement: enable the `native-store` feature for `SessionStore`
+//! (Windows Credential Manager and Linux Secret Service).
 
+#[cfg(feature = "native-store")]
 mod store;
+#[cfg(feature = "native-store")]
 pub use store::{SessionStore, StoreError, StoredSession};
 
 use serde::{Deserialize, Serialize};

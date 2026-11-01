@@ -142,9 +142,25 @@ Native persistence supports Windows and Linux. Linux uses a persistent Secret Se
 
 ## Reuse in another Rust project
 
-Add a path dependency on `crates/praevis-thetadata-auth` (or a Git dependency once this workspace is hosted). Authentication is explicit; the library never discovers environment variables or credentials on its own.
+Add a path dependency on `crates/praevis-thetadata-auth` (or a Git dependency once this workspace is hosted). Authentication is explicit; the library never discovers environment variables or credentials on its own. By default the session lives in memory, as in the vendor Python package: clone it to reuse it within your process ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md)). The default build has no keyring or D-Bus dependencies.
 
 ```rust,no_run
+use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials};
+
+async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    let auth = AuthClient::new(AuthConfig::default())?;
+    let session = auth.authenticate(&Credentials::from_file("creds.txt")?).await?;
+    // Pass session.session_id() to your authenticated transport; do not log it.
+    println!("Account: {}", session.user().email);
+    Ok(())
+}
+```
+
+Persisting a session across processes is an optional Rust enhancement. Enable
+`features = ["native-store"]` to use `SessionStore` (Windows Credential Manager
+or Linux Secret Service; same identity and record as the CLI):
+
+```rust,ignore
 use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, SessionStore};
 
 async fn example() -> Result<(), Box<dyn std::error::Error>> {
@@ -153,13 +169,11 @@ async fn example() -> Result<(), Box<dyn std::error::Error>> {
         Some(stored) => stored.into_session(),
         None => {
             let auth = AuthClient::new(AuthConfig::default())?;
-            let credentials = Credentials::from_file("creds.txt")?;
-            let session = auth.authenticate(&credentials).await?;
+            let session = auth.authenticate(&Credentials::from_file("creds.txt")?).await?;
             store.save(&session)?;
             session
         }
     };
-    // Pass session.session_id() to your authenticated transport; do not log it.
     println!("Account: {}", session.user().email);
     Ok(())
 }

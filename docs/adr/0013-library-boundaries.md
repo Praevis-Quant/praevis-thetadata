@@ -1,6 +1,7 @@
 # ADR-0013: cohesive libraries with explicit outer adapters
 
 Status: Proposed. Date: 2026-10-04. Owner: workspace maintainers.
+The optional-storage part is implemented and accepted by [ADR-0020](0020-in-memory-sessions-and-optional-persistence.md) (2026-11-01).
 Origin: **Rust enhancement** (architecture independent of Python packaging).
 Requirements: [ARCH L1/L2/L3](../requirements/architecture.md).
 

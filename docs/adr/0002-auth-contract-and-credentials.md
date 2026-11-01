@@ -10,7 +10,7 @@ The supplied 1.0.12 source defines an HTTPS identity request outside the public 
 
 Match the observed POST body, `TD-TERMINAL-KEY` identifier, endpoint, and `authEnv.envType`. Treat the header value shipped in the public client as a compatibility identifier, not as an account secret or a stable promised vendor contract. Default to HTTPS, reject URL-embedded credentials and redirects, and bound timeouts. Require a nonempty session ID/email and preserve subscriptions as JSON because their types are not specified.
 
-The library takes explicit credentials. The CLI uses file override, API-key environment variable, complete email/password environment pair, then default file. Do not automatically load `.env`; do not add password/API-key command-line flags. File line trimming follows the source; explicitly supplied passwords retain whitespace.
+The library takes explicit credentials. The CLI uses file override, API-key environment variable, complete email/password environment pair, then default file. *Amended 2026-11-01 by [ADR-0020](0020-in-memory-sessions-and-optional-persistence.md): the file override is the `--creds-file` flag only, and `THETADATA_CREDENTIALS_FILE` joins `./creds.txt` as the final fallback, matching the vendor order.* Do not automatically load `.env`; do not add password/API-key command-line flags. File line trimming follows the source; explicitly supplied passwords retain whitespace.
 
 ## Alternatives
 

@@ -28,7 +28,7 @@
     {
       "id": "auth-mixed",
       "origin": "mixed",
-      "requirements": ["AUTH-L1-001", "AUTH-L2-001", "AUTH-L2-002", "AUTH-L3-002", "AUTH-L3-004", "AUTH-L3-006"],
+      "requirements": ["AUTH-L1-001", "AUTH-L1-006", "AUTH-L2-001", "AUTH-L2-002", "AUTH-L2-012", "AUTH-L3-002", "AUTH-L3-004", "AUTH-L3-006", "AUTH-L3-025", "AUTH-L3-026"],
       "rationale": "Inherited credentials, environment and response shape combined with Rust library boundaries, explicit validation/discovery, bounded requests and failed-login behavior.",
       "protected_contract": "Preserve standalone auth/session reuse, explicit credentials and discovery policy, input/response validation, timeout defaults and no save after failed auth independently of upstream packaging changes.",
       "evidence": ["docs/research/thetadata-1.0.12.md", "docs/requirements/L1-auth.md", "docs/requirements/L2-auth.md", "docs/requirements/L3-auth.md"]
@@ -36,7 +36,7 @@
     {
       "id": "auth-rust-policy",
       "origin": "rust-enhancement",
-      "requirements": ["AUTH-L1-002", "AUTH-L1-003", "AUTH-L1-004", "AUTH-L1-005", "AUTH-L2-003", "AUTH-L2-004", "AUTH-L2-005", "AUTH-L2-006", "AUTH-L2-007", "AUTH-L2-008", "AUTH-L2-009", "AUTH-L2-010", "AUTH-L2-011", "AUTH-L3-001", "AUTH-L3-005", "AUTH-L3-007", "AUTH-L3-008", "AUTH-L3-009", "AUTH-L3-010", "AUTH-L3-011", "AUTH-L3-012", "AUTH-L3-013", "AUTH-L3-014", "AUTH-L3-015", "AUTH-L3-016", "AUTH-L3-017", "AUTH-L3-018", "AUTH-L3-019", "AUTH-L3-020", "AUTH-L3-021", "AUTH-L3-022", "AUTH-L3-023", "AUTH-L3-024"],
+      "requirements": ["AUTH-L1-002", "AUTH-L1-003", "AUTH-L1-004", "AUTH-L1-005", "AUTH-L2-003", "AUTH-L2-004", "AUTH-L2-005", "AUTH-L2-006", "AUTH-L2-007", "AUTH-L2-008", "AUTH-L2-009", "AUTH-L2-010", "AUTH-L2-011", "AUTH-L3-001", "AUTH-L3-005", "AUTH-L3-007", "AUTH-L3-008", "AUTH-L3-009", "AUTH-L3-010", "AUTH-L3-011", "AUTH-L3-012", "AUTH-L3-013", "AUTH-L3-014", "AUTH-L3-015", "AUTH-L3-016", "AUTH-L3-017", "AUTH-L3-018", "AUTH-L3-019", "AUTH-L3-020", "AUTH-L3-021", "AUTH-L3-022", "AUTH-L3-023", "AUTH-L3-024", "AUTH-L3-027"],
       "rationale": "Rust CLI, native persistence, local status/logout, redaction, transport safety, lifecycle and verification/performance policy are independent product obligations, not Python parity.",
       "protected_contract": "Retain each canonical auth policy, including runtime scope, store format/identity, precedence and diagnostics, unless deliberately migrated with independent tests.",
       "evidence": ["docs/requirements/L1-auth.md", "docs/requirements/L2-auth.md", "docs/requirements/L3-auth.md", "docs/performance/cli-startup.md"]
@@ -83,6 +83,7 @@
     }
   ],
   "adrs": [
+    {"path": "docs/adr/0020-in-memory-sessions-and-optional-persistence.md", "origin": "mixed", "rationale": "Vendor-equivalent in-memory sessions and credential order, with native persistence kept as an optional Rust enhancement."},
     {"path": "docs/adr/0019-timestamp-precision.md", "origin": "mixed", "rationale": "Upstream 1.0.16 timestamp precision fields with protected exact-value policy: reject non-millisecond content rather than truncate until vendor semantics are known."},
     {"path": "docs/adr/0018-explicit-connection-adapters.md", "origin": "rust-enhancement", "rationale": "Explicit direct/REST/WebSocket boundaries, optional Terminal process ownership and independent entitlement/performance evidence."},
     {"path": "docs/adr/0017-manual-live-verification.md", "origin": "rust-enhancement", "rationale": "Explicit manual credentialed testing outside CI, private captures, replay and release evidence policy."},

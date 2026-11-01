@@ -6,6 +6,15 @@ license.workspace = true
 publish.workspace = true
 repository.workspace = true
 
+[features]
+# Optional native session persistence (ADR-0020). Off by default: the default build
+# authenticates into an in-memory Session, like the vendor Python package, and pulls in
+# no keyring, D-Bus or Windows credential dependencies. The CLI enables it explicitly.
+native-store = ["dep:keyring"]
+
+[package.metadata.docs.rs]
+features = ["native-store"]
+
 [dependencies]
 reqwest.workspace = true
 serde.workspace = true
@@ -13,10 +22,10 @@ serde_json.workspace = true
 thiserror.workspace = true
 
 [target.'cfg(windows)'.dependencies]
-keyring = { version = "3.6.3", features = ["windows-native"] }
+keyring = { version = "3.6.3", features = ["windows-native"], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-keyring = { version = "3.6.3", features = ["sync-secret-service", "crypto-rust", "vendored"] }
+keyring = { version = "3.6.3", features = ["sync-secret-service", "crypto-rust", "vendored"], optional = true }
 
 [dev-dependencies]
 tokio.workspace = true

@@ -15,6 +15,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Auth library: sessions are in memory by default; native persistence is
+  optional** ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md),
+  superseding ADR-0003). `SessionStore`, `StoredSession` and `StoreError`, and
+  the `keyring` dependencies behind them, now require the `native-store` Cargo
+  feature, which is off by default. A default auth build, and therefore the
+  market-data client, no longer pulls in keyring, D-Bus or Windows credential
+  packages for any target. With the feature enabled, the storage identity and
+  v1 record are unchanged, so existing saved sessions keep loading. The CLI
+  enables the feature, and its behavior is unchanged in this step. **Migration
+  for library users of `SessionStore`:** add `features = ["native-store"]`. CI
+  now tests auth with the feature off and on and checks the auth and client
+  dependency trees.
+
 - Documentation for the 1.0.17 baseline. The Python performance comparator is
   pinned to 1.0.17 (D4); its EOD wrapper and conversion code are unchanged
   from 1.0.12. The release plan records that the baseline update landed before

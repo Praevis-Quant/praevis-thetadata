@@ -6,7 +6,7 @@ Records identify their own date and status. “Accepted” records the implement
 | --- | --- | --- | --- |
 | [0001](0001-standalone-auth.md) | Accepted | Rust enhancement | Keep authentication independent of transport and applications |
 | [0002](0002-auth-contract-and-credentials.md) | Accepted | Mixed | Pin the observed wire contract and explicit credential precedence |
-| [0003](0003-native-session-persistence.md) | Accepted | Rust enhancement | Store sessions in the native Windows/Linux credential store |
+| [0003](0003-native-session-persistence.md) | Superseded by 0020 | Rust enhancement | Store sessions in the native Windows/Linux credential store |
 | [0004](0004-explicit-session-lifecycle.md) | Accepted | Rust enhancement | Separate local persistence from remote session validity |
 | [0005](0005-verification-and-provenance.md) | Accepted | Mixed | Use reproducible provenance, synthetic CI, and measured performance |
 | [0006](0006-cli-runtime-lifecycle.md) | Accepted | Rust enhancement | Initialize a current-thread CLI runtime only for HTTP authentication |
@@ -23,6 +23,7 @@ Records identify their own date and status. “Accepted” records the implement
 | [0017](0017-manual-live-verification.md) | Accepted workflow | Rust enhancement | Keep optional credentialed service checks outside CI and retain private capture/replay evidence for releases |
 | [0018](0018-explicit-connection-adapters.md) | Proposed | Rust enhancement | Keep direct gRPC, optional Terminal REST/JAR supervision and WebSocket events explicit and separately verified |
 | [0019](0019-timestamp-precision.md) | Accepted | Mixed | Reject sub-millisecond or unknown timestamp precision (Python 1.0.16+ fields) as unsupported instead of truncating |
+| [0020](0020-in-memory-sessions-and-optional-persistence.md) | Accepted | Mixed | In-memory sessions by default, Python-order CLI credentials, and native persistence as an optional feature and `auth --save` opt-in |
 
 ADRs 0007-0016 define proposed designs and linked requirements; runtime
 implementation/acceptance remains planned. Read 0007-0012 for the selected EOD

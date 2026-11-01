@@ -21,7 +21,7 @@ gaps; EOD/ARCH/PERF/EXT runtime contracts remain planned. No entry proves a spee
 | Register group | Scope | Protected behavior / canonical evidence |
 | --- | --- | --- |
 | `auth-wire` | Observed authentication JSON request | [Auth L3](L3-auth.md); evidence in the retained Python research. |
-| `auth-mixed` | Authentication plus reusable library/validation semantics | [Auth L1](L1-auth.md), [L2](L2-auth.md), [L3](L3-auth.md); preserve explicit input, standalone sessions, validation and failure behavior. |
+| `auth-mixed` | Authentication plus reusable library/validation semantics | [Auth L1](L1-auth.md), [L2](L2-auth.md), [L3](L3-auth.md); preserve explicit input, standalone sessions, validation and failure behavior. In-memory default sessions and the credential order follow the vendor; persistence is opt-in ([ADR-0020](../adr/0020-in-memory-sessions-and-optional-persistence.md)). |
 | `auth-rust-policy` | Native storage, CLI, local lifecycle, security, runtime and verification | [Auth L3](L3-auth.md); upstream changes must not reset credential precedence, stored identity, redaction or runtime scope. |
 | `eod-mixed` | EOD endpoint, request and values plus typed validation/output/error policy | [EOD evidence/deviations](stock-eod-evidence.md); preserve exact prices, strict schema/zone checks and explicit complete/partial results. Table timestamps remain formatted; numeric delivery is additive. Non-millisecond timestamp precision is rejected, not truncated ([ADR-0019](../adr/0019-timestamp-precision.md)). |
 | `eod-rust-policy` | Local symbol policy, pull lifecycle, deadlines, bounded resources, fixtures and benchmarks | [EOD L3](L3-stock-eod.md); do not discard local contracts when replacing wire bindings. |
