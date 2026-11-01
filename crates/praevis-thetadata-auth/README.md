@@ -16,26 +16,44 @@ persistence so separate processes can reuse a saved session.
   HTTPS endpoint, with the same request shape, as the vendor Python package.
 - `Credentials` are always supplied by the caller. The library never reads
   environment variables, `.env` files or credential files on its own.
-- `SessionStore` saves a versioned session record (session ID, account and
-  subscription metadata, environment and save time) in the OS credential store.
-  It never saves passwords or API keys. A saved session is **not** validated
-  against the server; there is no refresh, expiry or revocation contract.
+- By default the returned `Session` lives **only in memory**, as in the vendor
+  package; clone it to reuse it within your process. The default build has
+  **no keyring, D-Bus or Windows credential dependencies**.
+- **Optional `native-store` feature** (a Rust enhancement, off by default):
+  `SessionStore` saves a versioned session record (session ID, account and
+  subscription metadata, environment and save time) in the OS credential
+  store, so other processes can reuse it. It never saves passwords or API keys.
+  A saved session is **not** validated against the server; there is no
+  refresh, expiry or revocation contract. See
+  [ADR-0020](https://github.com/Praevis-Quant/praevis-thetadata/blob/main/docs/adr/0020-in-memory-sessions-and-optional-persistence.md).
 
 ## Supported platforms
 
-Authentication (HTTP) works on any platform supported by Rust and `reqwest` with
-rustls. Native persistence supports **Windows** (Credential Manager) and
-**Linux** (Secret Service over D-Bus, for example GNOME Keyring; the keyring
-must be unlocked). Other platforms get an explicit unsupported-platform error
-from persistence calls. CI covers Windows and Ubuntu. Linux builds compile a
-vendored D-Bus library and need a C compiler and `pkg-config`.
+The default build (HTTP authentication and in-memory sessions) is pure Rust
+with `reqwest`/rustls and works on any platform supported by Rust 1.88+.
+`native-store` supports **Windows** (Credential Manager) and **Linux** (Secret
+Service over D-Bus, for example GNOME Keyring; the keyring must be unlocked).
+Other platforms get an explicit unsupported-platform error from its calls. On
+Linux, `native-store` compiles a vendored D-Bus library and needs a C compiler
+and `pkg-config`. CI covers Windows and Ubuntu.
 
 ## Example
 
 ```rust,no_run
-use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, SessionStore};
+use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Session};
 
-async fn session() -> Result<praevis_thetadata_auth::Session, Box<dyn std::error::Error>> {
+async fn session() -> Result<Session, Box<dyn std::error::Error>> {
+    let auth = AuthClient::new(AuthConfig::default())?;
+    Ok(auth.authenticate(&Credentials::api_key("your-api-key")).await?)
+}
+```
+
+With `praevis-thetadata-auth = { version = "=0.1.0-alpha.1", features = ["native-store"] }`:
+
+```rust,ignore
+use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, Session, SessionStore};
+
+async fn saved_session() -> Result<Session, Box<dyn std::error::Error>> {
     let store = SessionStore::new("default", Environment::Prod)?;
     if let Some(saved) = store.load()? {
         return Ok(saved.into_session());
@@ -48,7 +66,8 @@ async fn session() -> Result<praevis_thetadata_auth::Session, Box<dyn std::error
 ```
 
 Never log `session.session_id()`. The `praevis-thetadata-cli` package provides
-a ready-made `praevis-thetadata auth` command using this library.
+`praevis-thetadata auth` (in memory) and `auth --save` (native store) on top of
+this library.
 
 ## License
 

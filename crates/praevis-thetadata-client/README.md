@@ -26,10 +26,10 @@ end-of-day (EOD) stream.
 
 ## Supported platforms
 
-Windows and Linux are tested in CI. The client itself has no
-platform-specific code. It depends on `praevis-thetadata-auth`, whose native
-persistence is Windows/Linux only; this client does not use that
-persistence. Requires a Tokio runtime supplied by the caller.
+Windows and Linux are tested in CI. The client has no platform-specific code.
+It uses `praevis-thetadata-auth` without its optional `native-store` feature, so
+it pulls in no keyring or D-Bus dependencies. Pass it an in-memory `Session`.
+Requires a Tokio runtime supplied by the caller.
 
 ## Example
 
