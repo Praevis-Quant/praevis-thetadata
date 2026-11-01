@@ -2,7 +2,7 @@
 
 > Independently maintained Rust client libraries for ThetaData services. This project is not affiliated with, sponsored by, or endorsed by Theta Data Inc. “ThetaData” identifies the service with which this software interoperates.
 
-Rust workspace derived from the bundled ThetaData Python **1.0.12** package. The first application is an authentication CLI, backed by an authentication library that other projects can use independently.
+Rust workspace derived from the ThetaData Python package, originally **1.0.12** and now tracking **1.0.17** ([update research](docs/research/thetadata-1.0.13-1.0.17.md)). The first application is an authentication CLI, backed by an authentication library that other projects can use independently.
 
 See the [auth requirements and ADRs](docs/README.md), [roadmap](docs/ROADMAP.md), [vendor research](docs/research/thetadata-1.0.12.md), and [performance methodology](docs/performance/auth.md). Only authentication is a baselined feature scope; the market-data crates are foundations for later work.
 
@@ -30,7 +30,7 @@ The selected naming and compatibility boundaries are recorded in
 | --- | --- | --- |
 | `praevis-thetadata-auth` | HTTP authentication, credentials, sessions, Windows/Linux session persistence | First deliverable |
 | `praevis-thetadata-cli` (`praevis-thetadata`) | Credential discovery and auth/status/logout commands | First deliverable |
-| `praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for all 82 RPCs | Foundation |
+| `praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for all 100 RPCs | Foundation |
 | `praevis-thetadata-core` | Transport-independent prices, timestamps, values, tables | Foundation |
 | `praevis-thetadata-client` | gRPC requests, ZSTD decoding, bounded batch streaming | Experimental typed EOD; one PROD query verified, broader acceptance open |
 
@@ -117,7 +117,7 @@ environment variable does not switch that behavior off. The API key and password
 are never copied into the saved record.
 
 Persistence is an explicit Rust feature from
-[ADR-0003](docs/adr/0003-native-session-persistence.md). Python 1.0.12 supports
+[ADR-0003](docs/adr/0003-native-session-persistence.md). Python 1.0.12–1.0.17 supports
 environment API keys and `existing_authorized_client` reuse in memory, but has
 no equivalent native session store in the
 [reviewed artifact](docs/research/thetadata-1.0.12.md#what-the-wheel-establishes-about-authentication).
@@ -128,7 +128,7 @@ session and does not save it in Credential Manager. Native persistence as an
 optional build dependency is separately proposed in
 [ADR-0013](docs/adr/0013-library-boundaries.md); it is not yet implemented.
 
-1. `praevis-thetadata auth` submits credentials to the same HTTPS authentication endpoint and with the same request shape as Python 1.0.12.
+1. `praevis-thetadata auth` submits credentials to the same HTTPS authentication endpoint and with the same request shape as Python 1.0.12, unchanged through 1.0.17.
 2. After a successful response, `SessionStore::save` stores a versioned JSON record **inside the native credential store**, not in a project file. The record contains the session ID, account/subscription metadata, environment, and save time. The API key and password are not stored.
 3. The stable identifier is `praevis.thetadata.auth.v1:PROD:default` for the default production profile. Windows uses it as the credential target. Linux uses it as the Secret Service `service` attribute, with the profile as `username`, in the default collection. Changing the profile or environment selects a different entry. All applications using this library and identifier share that record under the same OS user and credential service. Windows and Linux stores are independent; sessions are not automatically synchronized between them.
 4. `praevis-thetadata auth status` starts independently and reads the record from the native store. It does not authenticate, require login credentials, or contact ThetaData. It reports the account, save time, and storage location without exposing the token.
@@ -184,7 +184,7 @@ Tests cover API key and email/password request bodies, malformed/rejected authen
 
 ## Protocol provenance
 
-The Python client exposes **80 methods**; its descriptor includes **82 RPCs**, including two additional corporate-action methods. `tools/extract_protocol.py` reads the serialized descriptors using Python AST parsing without executing the vendor package. The recovered descriptor, source hashes, and RPC inventory are in `crates/praevis-thetadata-proto/schema/`.
+The Python 1.0.17 client exposes **81 methods**; its descriptor includes **100 RPCs**, including two corporate-action and seventeen futures methods without Python wrappers (1.0.12 had 80 methods and 82 RPCs). `tools/extract_protocol.py` reads the serialized descriptors using Python AST parsing without executing the vendor package. The recovered descriptor, source hashes, and RPC inventory are in `crates/praevis-thetadata-proto/schema/`.
 
 To regenerate after deliberately updating the bundled package, run `python tools/extract_protocol.py --archive <wheel>` with `google.protobuf` installed. It reads the wheel in memory and refuses any wheel whose hash differs from the reviewed `docs/research/vendor-<version>.json`; `--check` compares instead of writing. Rust builds compile the checked-in descriptor through [tonic-prost-build's descriptor API](https://docs.rs/tonic-prost-build/0.14.6/tonic_prost_build/struct.Builder.html#method.compile_fds). The upstream Apache-2.0 license is retained at `crates/praevis-thetadata-proto/LICENSE.upstream`. The original Python distribution is unchanged.
 

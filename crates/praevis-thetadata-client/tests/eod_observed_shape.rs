@@ -34,10 +34,12 @@ fn constructed_row() -> (wire::DataTable, Table) {
         DataType::Timestamp(wire::ZonedDateTime {
             epoch_ms: 0,
             zone: 1,
+            ..Default::default()
         }),
         DataType::Timestamp(wire::ZonedDateTime {
             epoch_ms: 0,
             zone: 0,
+            ..Default::default()
         }),
         DataType::Price(wire::Price {
             value: 10101,

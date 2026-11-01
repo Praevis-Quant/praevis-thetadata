@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use std::{path::Path, time::Duration};
 
 pub const DEFAULT_AUTH_URL: &str = "https://nexus-api.thetadata.us/identity/terminal/auth_user";
-// Public client identifier from Python 1.0.12, not a user's secret.
+// Public client identifier, unchanged from Python 1.0.12 through 1.0.17; not a user's secret.
 const TERMINAL_KEY: &str = "cf58ada4-4175-11f0-860f-1e2e95c79e64";
 
 #[derive(Debug, thiserror::Error)]

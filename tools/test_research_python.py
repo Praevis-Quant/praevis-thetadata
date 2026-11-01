@@ -26,7 +26,8 @@ class ResearchClosureTests(unittest.TestCase):
         data["detail_counts"] = research.detail_counts(data["entries"], data["modules"])
 
     def test_complete_checked_in_evidence(self):
-        self.assertEqual(research.validate(self.original, self.decisions), 531)
+        self.assertEqual(self.original["source_version"], "1.0.17")
+        self.assertEqual(research.validate(self.original, self.decisions), 623)
         self.assertEqual(research.CATALOG.read_bytes(), research.render(self.original, self.decisions))
 
     def test_stock_eod_selection_does_not_select_other_endpoints(self):

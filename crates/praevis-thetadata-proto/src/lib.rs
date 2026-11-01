@@ -1,4 +1,4 @@
-//! Wire definitions recovered from the ThetaData Python 1.0.12 distribution.
+//! Wire definitions recovered from the ThetaData Python 1.0.17 distribution (see `schema/manifest.json`).
 //! Prefer `praevis-thetadata-client` for authenticated requests and decoded results.
 
 pub mod endpoints {

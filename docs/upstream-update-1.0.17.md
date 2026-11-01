@@ -1,7 +1,7 @@
 # Upstream update plan: Python 1.0.12 → 1.0.17
 
-Status: **approved 2026-11-01 (D1–D6 as recommended); in progress**. Date: 2026-11-01. No Rust
-code, descriptor or manifest has changed yet. This document follows the
+Status: **approved 2026-11-01 (D1–D6 as recommended, with the D3 flat-file correction below); in progress**. Date: 2026-11-01. Each step's
+Status line records what has landed. This document follows the
 [upstream update template](upstream-update-template.md) and
 [ADR-0015](adr/0015-upstream-and-enhancement-contracts.md). Evidence is in
 [the 1.0.13–1.0.17 research](research/thetadata-1.0.13-1.0.17.md) and
@@ -27,10 +27,17 @@ code, descriptor or manifest has changed yet. This document follows the
 | --- | --- | --- | --- |
 | D1 | Policy for non-millisecond timestamps (`precision = NANOSECOND`, non-zero `nanos`, or an unknown precision value) in the Table and numeric decoders | (a) Reject as a typed unsupported-response error until semantics are confirmed. (b) Truncate silently to milliseconds, as Python does. (c) Carry nanoseconds in `Timestamp`, which is a public API change that depends on unverified semantics. | **(a)**. It matches "unsupported content shall fail explicitly" (EOD-L2-003) and exact values. It is reversible to (c) once ThetaData confirms the semantics. The raw proto still exposes the fields. |
 | D2 | Update target | Step through each version, or move directly to 1.0.17 while retaining the per-version evidence | **Directly to 1.0.17**. The per-version record already exists in the research document. |
-| D3 | Disposition of new surfaces | Futures: unresolved or planned. `stock_flat_file_quote`: planned or excluded. | **Futures: `unresolved`** (no wrapper, docs or schema, as for corporate actions). **Flat-file quote: `planned`** with the other flat files (0.4.0). New optional request fields: `planned` within their existing endpoint dispositions. |
+| D3 | Disposition of new surfaces | Futures: unresolved or planned. `stock_flat_file_quote`: planned or excluded. | **Futures: `unresolved`** (no wrapper, docs or schema, as for corporate actions). ~~Flat-file quote: `planned` with the other flat files~~ **Corrected 2026-11-01: flat-file quote stays `unresolved` with the other flat files** (see the D3 correction below). New optional request fields take their existing endpoint dispositions. |
 | D4 | Python comparator pin in [the comparison plan](performance/python-comparison.md) | Keep 1.0.12, or move to 1.0.17 | **1.0.17 after step 3**. The `stock_history_eod` and conversion code is identical, so the timings are comparable and the comparison targets the current vendor release. Keep 1.0.12 only if comparator work starts before step 3 lands. |
 | D5 | Release placement | Before or after `0.1.0-alpha.1` | **Before alpha.1**. Otherwise the first published `praevis-thetadata-proto` ships a stale 82-RPC schema and needs a breaking follow-up immediately. |
 | D6 | Research artifact layout | Overwrite the 1.0.12 inventory, or keep it frozen and add a 1.0.17 set | **Keep 1.0.12 frozen** (EOD-L3-028 and ADR-0012 forbid rewriting preserved research). Add `python-1.0.17-*` files and have the checker validate both. |
+
+**D3 correction (2026-11-01).** The recommendation above assumed the seven
+1.0.12 flat-file wrappers were `planned`. The 1.0.12 ledger actually records them
+as `unresolved`: Python ignores the manifest and has no downloader. The tooling
+puts `stock_flat_file_quote` under the same `flat-files` feature key, so the
+maintainer chose option (a). The flat-file quote stays `unresolved` with its
+siblings, and futures are `unresolved`. The 1.0.17 ledger records exactly this.
 
 ## Breaking and behavior-visible changes
 
@@ -98,6 +105,9 @@ Status: implemented in the step-2 PR.
 - Requirements: EXT-L3-002 and EOD-L3-028 (verification evidence only; no new IDs).
 
 ### Step 3: move the baseline to 1.0.17 (behavior-neutral)
+
+Status: implemented in the step-3 PR.
+
 
 - **proto:** regenerate `schema/thetadata.bin` with the step-2 tool.
   `manifest.json` becomes `source_version: "1.0.17"`, with `source_sha256`

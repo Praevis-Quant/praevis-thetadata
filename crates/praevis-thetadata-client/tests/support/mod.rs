@@ -79,6 +79,7 @@ pub fn table(shape: Shape, rows: usize) -> (wire::DataTable, Table) {
                         Some(DataType::Timestamp(wire::ZonedDateTime {
                             epoch_ms: 0,
                             zone,
+                            ..Default::default()
                         })),
                         Value::Timestamp(text.into()),
                     )
