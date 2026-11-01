@@ -8,7 +8,7 @@ An opaque session ID exists in the wheel, but no reviewed artifact defines expir
 
 ## Decision
 
-`praevis-thetadata auth` authenticates and saves a fresh session only after success. `praevis-thetadata auth status` reads local storage without credentials or network access and reports `validity: not_checked`. `praevis-thetadata auth logout` deletes only the selected local record. Applications explicitly load sessions; if the server rejects a session, they request reauthentication. Do not invent JWT parsing, expiry timers, silent refresh, or revocation calls.
+`praevis-thetadata auth` authenticates and saves a fresh session only after success. *Since [ADR-0020](0020-in-memory-sessions-and-optional-persistence.md) (2026-11-01), saving requires `auth --save`; plain `auth` keeps the session in memory. The rest of this decision is unchanged.* `praevis-thetadata auth status` reads local storage without credentials or network access and reports `validity: not_checked`. `praevis-thetadata auth logout` deletes only the selected local record. Applications explicitly load sessions; if the server rejects a session, they request reauthentication. Do not invent JWT parsing, expiry timers, silent refresh, or revocation calls.
 
 ## Alternatives
 

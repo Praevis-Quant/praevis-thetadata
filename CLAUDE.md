@@ -8,7 +8,7 @@ is the shared context rather than a second, agent-specific set of rules.
 
 Praevis ThetaData is a Rust workspace derived from the ThetaData Python 1.0.12
 distribution and now tracking 1.0.17 (`source_version` in the proto manifest). Its first deliverable is a reusable authentication library and
-the `praevis-thetadata` CLI with Windows/Linux native session persistence. Authentication
+the `praevis-thetadata` CLI with optional (`auth --save`) Windows/Linux native session persistence. Authentication
 is the accepted requirements baseline. The protobuf, core, and market-data
 client crates are foundations, not a claim of complete Python compatibility or
 verified live market-data access.
@@ -94,7 +94,7 @@ one bounded negative check; never sweep endpoints or parse remote text for tiers
 
 | Package | Responsibility | Boundary |
 | --- | --- | --- |
-| `crates/praevis-thetadata-auth` | HTTP authentication, credentials, sessions, native persistence | Reusable independently of market data; callers own async runtime |
+| `crates/praevis-thetadata-auth` | HTTP authentication, credentials, in-memory sessions; optional `native-store` persistence | Reusable independently of market data; callers own async runtime |
 | `apps/praevis-thetadata-cli` | Argument parsing, credential discovery, auth/status/logout, output and exit codes | Depends on auth, not the market-data client |
 | `crates/praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for 100 RPCs | Generated at build time from the checked-in descriptor |
 | `crates/praevis-thetadata-core` | Prices, timestamps, values, tables | Transport-independent data types |
@@ -151,10 +151,16 @@ service compatibility.
   store and reports `validity: "not_checked"`. `logout` deletes only the
   selected local record. Do not invent token expiry, refresh, validation, or
   revocation contracts absent upstream evidence.
-- **Native persistence is the contract.** Windows uses Credential Manager;
-  Linux uses a persistent Secret Service collection on an unlocked user
-  D-Bus session. Missing/unavailable services are errors, not an absent
-  session. Do not add plaintext or process-only fallbacks.
+- **Sessions are in memory by default; persistence is opt-in** (ADR-0020).
+  The auth library's `native-store` feature is off by default, and the CLI
+  saves only with `auth --save`. When enabled, Windows uses Credential
+  Manager and Linux uses a persistent Secret Service collection on an
+  unlocked user D-Bus session. Missing/unavailable services are errors, not
+  an absent session. Do not add plaintext fallbacks.
+- **Credential order follows the vendor:** `--creds-file`, `THETADATA_API_KEY`,
+  the `THETADATA_EMAIL`/`THETADATA_PASSWORD` pair (a Rust-only extra; an
+  incomplete pair falls through), then `THETADATA_CREDENTIALS_FILE` or
+  `./creds.txt`. No `.env` loading and no secret-bearing flags.
 - **Storage identity is stable.** The target is
   `praevis.thetadata.auth.v1:{PROD|STAGE}:{profile}`. Profiles are 1-64 ASCII
   letters, digits, underscores, or hyphens. Preserve environment/profile

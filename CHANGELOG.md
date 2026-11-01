@@ -15,6 +15,27 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **CLI: Python-order credentials, and saving only with `auth --save`**
+  ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md);
+  AUTH-L3-025/026 replace the retired AUTH-L3-001/010).
+  - Credential order is now `--creds-file`, `THETADATA_API_KEY`, a complete
+    `THETADATA_EMAIL`/`THETADATA_PASSWORD` pair, then `THETADATA_CREDENTIALS_FILE`
+    or `./creds.txt`, matching the vendor package. `THETADATA_CREDENTIALS_FILE`
+    is no longer the highest precedence.
+  - An incomplete or blank email/password pair falls through instead of
+    failing. A selected file that fails still errors.
+  - `praevis-thetadata auth` now logs in and reports the account **without
+    saving**; `auth --save` saves as before. `--save` with `status` or
+    `logout` is an argument error (exit 2).
+  - Status, logout, the storage identity and the v1 record are unchanged, so
+    records saved by earlier versions keep working. A failed login still
+    leaves an existing record intact.
+  - **Migration:** scripts that relied on `auth` saving must add `--save`, and
+    scripts that relied on `THETADATA_CREDENTIALS_FILE` overriding
+    `THETADATA_API_KEY` must unset the key or pass `--creds-file`. The
+    benchmark tools pass `--save`; the before/after comparator detects
+    whether each binary supports it.
+
 - **Auth library: sessions are in memory by default; native persistence is
   optional** ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md),
   superseding ADR-0003). `SessionStore`, `StoredSession` and `StoreError`, and
