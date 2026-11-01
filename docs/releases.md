@@ -42,20 +42,52 @@ product/tier/connector cells in the [subscription matrix](subscription-testing.m
 
 ## Immediate execution order
 
-1. Extend the synthetic corpus with constructed endpoint-shaped cases informed
-   by the [first PROD EOD and quote-denial observations](research/live-observations.md).
-   Retain the original broad edge-case fixtures and private capture hashes.
-2. Select bounded additional EOD date/schema/empty-result checks and per-tier
-   cases from the [subscription matrix](subscription-testing.md). Use explicit
-   credentials and expected outcomes; paid profiles remain not-run until available.
-   Keep live execution outside CI and do not automatically retry a rejection.
-3. Review each new observation against the synthetic matrix before changing
-   decoders or fixtures. Promote only reviewed, permitted fixtures; otherwise
-   build a clearly labelled synthetic reproducer of the observed structure.
-4. Prepare alpha.1 package archives and external consumer checks in parallel
-   with the existing null/price regression investigation. Publication stays a
-   separate action on exact reviewed artifacts.
-5. Close alpha.2 EOD acceptance, then freeze and release the supported surface.
+Start with alpha.1 packaging and a reproducible Python comparison baseline.
+The sixteen-column synthetic EOD regression corpus and the Praevis ThetaData
+naming decision are complete at `1899725`; archive readiness and performance
+acceptance are still open. Existing timings compare Rust implementations, not
+the vendor Python package. The [Python comparison plan](performance/python-comparison.md)
+defines the evidence needed before advertising an advantage over Python.
+
+```mermaid
+flowchart TD
+    A[Current experimental auth and EOD foundations] --> B[Self-contained packages and external consumers]
+    B --> C[Review exact archives and publication capability]
+    C --> D[alpha.1 experimental publication]
+    A --> E[Pin Python comparator and verify equivalent work]
+    E --> F[Windows and Linux baseline measurements]
+    F --> G[Profile and resolve null and price regressions]
+    G --> H[EOD correctness and resource acceptance]
+    D --> I[alpha.2 EOD candidate]
+    H --> I
+    F --> J[Review scoped Python performance claims]
+    G --> J
+    I --> K[beta.1 API freeze and consumer examples]
+    K --> L[0.1.0 supported auth and single-symbol EOD]
+```
+
+The Python comparison is a selected demonstration objective. It does not add an
+unmeasured universal-speedup condition to alpha.1 or replace the existing EOD
+acceptance gates. If a workload shows no advantage, retain that result and
+limit the claim. A faster decoder alone does not close a correctness gate.
+
+| Order and owner | Concrete next change | Completion evidence | Milestone |
+| --- | --- | --- | --- |
+| 1. Release maintainer | Add the four missing library READMEs, archive licenses/NOTICE, registry dependency versions and self-contained client build inputs; decide internal benchmark/manual-runner archive inclusion | Reviewed five-package file lists and extracted archives; no sibling checkout dependencies; candidate hashes | alpha.1 preparation |
+| 2. Release maintainer | Rehearse first-wave then dependent packaging in an isolated staging registry; build/install external consumers on Windows and Linux | Archive builds, consumer logs and dependency resolution from outside the workspace; name/owner/token capability checks recorded without secrets | alpha.1 exit |
+| 3. Performance maintainer, alongside packaging | Implement the pinned Python comparator and common fixture/output checks described in the comparison plan | Hash-verified artifact and dependency lock, harness provenance, passing semantic checks, repeatable local commands; no performance claim yet | Demonstration baseline |
+| 4. Client/core owners | Measure the unchanged Rust candidate against Python and the retained Rust control; profile null/price costs, then change one cause at a time | Repeated Windows/Linux per-workload latency, throughput and process-memory reports; equivalent outputs and all regressions retained | alpha.2 performance evidence |
+| 5. Client/core owners | Close remaining EOD matrix clauses and resource calibration | Dependency-log/session/URL sentinels, timeout metadata, controlled-clock interleavings, timestamp boundaries, partial-result example, text/header extremes and supported query-cap range; transport/C allocation measured separately | alpha.2 acceptance |
+| 6. Account holder and maintainer | Select bounded additional live EOD date/schema/empty-result cases and available tier checks | Explicit query/credential selection, private capture hashes, raw/numeric/Table replay and reviewed observations; unavailable paid tiers remain not-run | Live evidence for declared scope |
+| 7. Maintainers | Review the exact alpha.1 artifacts for publication; later review EOD acceptance and API freeze | Publication approval after archive/consumer checks; alpha.2 evidence decision; beta examples and accepted/revised ADRs; final release checklist | alpha.1, then alpha.2, beta.1 and 0.1.0 |
+
+Rows 1-2 are the first implementation PR; row 3 is an independent benchmark PR.
+Run row 4's baseline before optimizing. Complete row 5 against the
+[acceptance matrix](requirements/stock-eod-matrix.md), retaining its per-clause
+evidence. Select row 6 from the [subscription matrix](subscription-testing.md);
+live checks remain manual and outside CI. Alpha.1 can precede rows 4-5, with
+experimental scope stated in its release notes. Publish no comparative numbers
+until the comparator, outputs and measurement boundaries have been reviewed.
 
 ## Checklist for every release candidate
 

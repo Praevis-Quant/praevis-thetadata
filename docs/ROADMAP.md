@@ -12,6 +12,13 @@ option/index/calendar/rate slices, flat files and real-time subscriptions before
 a reviewed stable Rust API. PyO3 remains a separate later adapter release.
 Version targets are gate-based, not promises of dates or full Python parity.
 
+Use the [release execution chart](releases.md#immediate-execution-order) for the
+next packaging and acceptance changes. The selected
+[Rust and Python comparison plan](performance/python-comparison.md) adds a pinned
+vendor baseline, equivalent consumer tasks and Windows/Linux evidence before
+making comparative performance claims. Existing Rust-only measurements do not
+establish a speedup over Python.
+
 Expand [optional manual PROD verification](live-verification.md) using the
 account holder's explicitly selected environment key or local credential file.
 Follow the [subscription matrix](subscription-testing.md): pair allowed EOD data
