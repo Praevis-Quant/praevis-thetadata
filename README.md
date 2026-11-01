@@ -110,6 +110,24 @@ The CLI does not load `.env` files automatically. Credentials and tokens are nev
 
 ## How authentication persists
 
+`THETADATA_API_KEY` supplies a login credential. Credential Manager stores the
+**session returned by login**, so another process can reuse it without receiving
+the API key or logging in again. The CLI always saves a successful login; the
+environment variable does not switch that behavior off. The API key and password
+are never copied into the saved record.
+
+Persistence is an explicit Rust feature from
+[ADR-0003](docs/adr/0003-native-session-persistence.md). Python 1.0.12 supports
+environment API keys and `existing_authorized_client` reuse in memory, but has
+no equivalent native session store in the
+[reviewed artifact](docs/research/thetadata-1.0.12.md#what-the-wheel-establishes-about-authentication).
+Library callers can authenticate and pass a session directly to
+`ThetaClient::with_session` without calling `SessionStore`. The manual
+[`live_eod --api-key-env` workflow](docs/live-verification.md) uses an in-memory
+session and does not save it in Credential Manager. Native persistence as an
+optional build dependency is separately proposed in
+[ADR-0013](docs/adr/0013-library-boundaries.md); it is not yet implemented.
+
 1. `praevis-thetadata auth` submits credentials to the same HTTPS authentication endpoint and with the same request shape as Python 1.0.12.
 2. After a successful response, `SessionStore::save` stores a versioned JSON record **inside the native credential store**, not in a project file. The record contains the session ID, account/subscription metadata, environment, and save time. The API key and password are not stored.
 3. The stable identifier is `praevis.thetadata.auth.v1:PROD:default` for the default production profile. Windows uses it as the credential target. Linux uses it as the Secret Service `service` attribute, with the profile as `username`, in the default collection. Changing the profile or environment selects a different entry. All applications using this library and identifier share that record under the same OS user and credential service. Windows and Linux stores are independent; sessions are not automatically synchronized between them.
