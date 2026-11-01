@@ -1,0 +1,4383 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "version": "1.0.12",
+    "wheel_sha256": "d9a5f4d19d0a6e7abc9861e8aee6bba3838e3551105babf76c4e361ff233d565"
+  },
+  "releases": [
+    {
+      "from": "1.0.12",
+      "to": "1.0.13",
+      "wheel_sha256": "df9c7c7b3081c4afe34554468aa9ec4dd46ee532733cbe03ef545b556871a5c2",
+      "files": {
+        "METADATA": {
+          "old_sha256": "458eefba7c038ec78ad572074b9a9cb30f83e85459e61369904899e27bc29acb",
+          "new_sha256": "431056fc9927ffd4703581e732eb493b071acdc0cc0f279c3838250f50d99dd0"
+        },
+        "RECORD": {
+          "old_sha256": "e4b15f582d09ecbc79fd4b67879bed8f54f5517f134d9746a6c0b161e30f9aad",
+          "new_sha256": "baf9a8a020e87039f0ee7f192c58e554d213aaf31df83767599678056d2a598f"
+        },
+        "thetadata/_proto/v3grpc/endpoints_pb2.py": {
+          "old_sha256": "00f5a667755de6fbff860839250f35b4129b39ec182f277ad836f29fb122991d",
+          "new_sha256": "fb1eb876e2f65f4655a21ddbb69d3e75b99181a607523ecde29a37bc72603910"
+        },
+        "thetadata/client.py": {
+          "old_sha256": "e5e9b6bee6da5538907994d01725e8049861c85446934daa9eb3bb4db2a0989d",
+          "new_sha256": "fb1806eceaf4da6ded65e057dd523a59138f921f5a0fb49970320663ec1dabee"
+        }
+      },
+      "metadata_changes": {
+        "Version": {
+          "old": [
+            "1.0.12"
+          ],
+          "new": [
+            "1.0.13"
+          ]
+        }
+      },
+      "metadata_payload_changed": false,
+      "descriptor_files": {
+        "v3grpc/endpoints.proto": {
+          "source": "thetadata/_proto/v3grpc/endpoints_pb2.py",
+          "sha256": "8de254b0aca0e3308da678329d6ad19420581ecd8c20853a089f19287da092f3"
+        }
+      },
+      "messages": {
+        "added": [],
+        "removed": [],
+        "changed": {
+          "BetaEndpoints.IndexSnapshotMarketValueRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 3,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.IndexSnapshotOhlcRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 3,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.IndexSnapshotPriceRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 3,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksEodRequestQuery": {
+            "added": {
+              "option_use_nbbo": {
+                "number": 13,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryGreeksEodRequestQuery": {
+            "added": {
+              "option_use_nbbo": {
+                "number": 12,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryTradeQuoteRequestQuery": {
+            "added": {
+              "use_time_based_trade_quote": {
+                "number": 11,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksAllRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 13,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksFirstOrderRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 13,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksSecondOrderRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 13,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksThirdOrderRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 13,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksAllRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 12,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksFirstOrderRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 12,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksImpliedVolatilityRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 12,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksSecondOrderRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 12,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksThirdOrderRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 12,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotMarketValueRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 6,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotOhlcRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 6,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotOpenInterestRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 6,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotQuoteRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 6,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotTradeRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 5,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.StockHistoryTradeQuoteRequestQuery": {
+            "added": {
+              "use_time_based_trade_quote": {
+                "number": 9,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.StockSnapshotMarketValueRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 4,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.StockSnapshotOhlcRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 4,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.StockSnapshotQuoteRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 4,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.StockSnapshotTradeRequestQuery": {
+            "added": {
+              "current_day_only": {
+                "number": 4,
+                "type": "bool",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          }
+        },
+        "added_definitions": {}
+      },
+      "enums": {
+        "added": {},
+        "removed": [],
+        "changed": {}
+      },
+      "rpcs": {
+        "added": {},
+        "removed": [],
+        "changed": []
+      },
+      "python_symbols": {
+        "added": [],
+        "removed": [],
+        "changed": [
+          "thetadata/client.py:ThetaClient",
+          "thetadata/client.py:ThetaClient.index_snapshot_market_value",
+          "thetadata/client.py:ThetaClient.index_snapshot_ohlc",
+          "thetadata/client.py:ThetaClient.index_snapshot_price",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_eod",
+          "thetadata/client.py:ThetaClient.option_history_greeks_eod",
+          "thetadata/client.py:ThetaClient.option_history_trade_quote",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_all",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_all",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_implied_volatility",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_market_value",
+          "thetadata/client.py:ThetaClient.option_snapshot_ohlc",
+          "thetadata/client.py:ThetaClient.option_snapshot_open_interest",
+          "thetadata/client.py:ThetaClient.option_snapshot_quote",
+          "thetadata/client.py:ThetaClient.option_snapshot_trade",
+          "thetadata/client.py:ThetaClient.stock_history_trade_quote",
+          "thetadata/client.py:ThetaClient.stock_snapshot_market_value",
+          "thetadata/client.py:ThetaClient.stock_snapshot_ohlc",
+          "thetadata/client.py:ThetaClient.stock_snapshot_quote",
+          "thetadata/client.py:ThetaClient.stock_snapshot_trade"
+        ]
+      },
+      "wrappers_added": {},
+      "wrappers_changed": {
+        "ThetaClient.index_snapshot_market_value": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.index_snapshot_ohlc": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.index_snapshot_price": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_eod": {
+          "parameters_added": [
+            {
+              "name": "option_use_nbbo",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.option_use_nbbo",
+              "expression": "option_use_nbbo",
+              "when": [
+                "option_use_nbbo"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_eod": {
+          "parameters_added": [
+            {
+              "name": "option_use_nbbo",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.option_use_nbbo",
+              "expression": "option_use_nbbo",
+              "when": [
+                "option_use_nbbo"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_trade_quote": {
+          "parameters_added": [
+            {
+              "name": "use_time_based_trade_quote",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.use_time_based_trade_quote",
+              "expression": "use_time_based_trade_quote",
+              "when": [
+                "use_time_based_trade_quote"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_implied_volatility": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_market_value": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_ohlc": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_open_interest": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_quote": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_trade": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.stock_history_trade_quote": {
+          "parameters_added": [
+            {
+              "name": "use_time_based_trade_quote",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.use_time_based_trade_quote",
+              "expression": "use_time_based_trade_quote",
+              "when": [
+                "use_time_based_trade_quote"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.stock_snapshot_market_value": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.stock_snapshot_ohlc": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.stock_snapshot_quote": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.stock_snapshot_trade": {
+          "parameters_added": [
+            {
+              "name": "current_day_only",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.current_day_only",
+              "expression": "current_day_only",
+              "when": [
+                "current_day_only"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        }
+      },
+      "counts": {
+        "messages": 176,
+        "enums": 2,
+        "rpcs": 82,
+        "wrappers": 80
+      }
+    },
+    {
+      "from": "1.0.13",
+      "to": "1.0.14",
+      "wheel_sha256": "7114e7f5ca09420d798b1fa5b87298c4723b51ee58292d7d18e7ede692c263e5",
+      "files": {
+        "METADATA": {
+          "old_sha256": "431056fc9927ffd4703581e732eb493b071acdc0cc0f279c3838250f50d99dd0",
+          "new_sha256": "3d29206a4c6ba76fbc9d269f862b31fd1d9054c94dd3c28f3c80d8c4f2394673"
+        },
+        "RECORD": {
+          "old_sha256": "baf9a8a020e87039f0ee7f192c58e554d213aaf31df83767599678056d2a598f",
+          "new_sha256": "ba9df40d3652aa5bc8306ff9737d5c74c53ecea57176925124b5be8288ac1ae4"
+        },
+        "thetadata/_proto/v3grpc/endpoints_pb2.py": {
+          "old_sha256": "fb1eb876e2f65f4655a21ddbb69d3e75b99181a607523ecde29a37bc72603910",
+          "new_sha256": "1265575696a6571a68adbbe6598084355dfae6ba0266c11e4a34cdbdfc96eb4f"
+        },
+        "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py": {
+          "old_sha256": "66ade255cfab5404cab8547baa8f3a538989a31e0d4ca7242b062c2c613aea79",
+          "new_sha256": "bbae819cbaf658e2f573416adee9aafcd2d333c0339e2a68462b681422549e98"
+        },
+        "thetadata/client.py": {
+          "old_sha256": "fb1806eceaf4da6ded65e057dd523a59138f921f5a0fb49970320663ec1dabee",
+          "new_sha256": "557a89276f185d955d2303d80109535f4c7c809c5ee4f56ae99454c5cc10dfd9"
+        }
+      },
+      "metadata_changes": {
+        "Version": {
+          "old": [
+            "1.0.13"
+          ],
+          "new": [
+            "1.0.14"
+          ]
+        }
+      },
+      "metadata_payload_changed": false,
+      "descriptor_files": {
+        "v3grpc/endpoints.proto": {
+          "source": "thetadata/_proto/v3grpc/endpoints_pb2.py",
+          "sha256": "c9165ee445da885adb6c16f16930c9dc6448ff9aab80da31cde39c0de9a4cffd"
+        }
+      },
+      "messages": {
+        "added": [
+          "BetaEndpoints.StockFlatFileQuoteRequest",
+          "BetaEndpoints.StockFlatFileQuoteRequestQuery"
+        ],
+        "removed": [],
+        "changed": {},
+        "added_definitions": {
+          "BetaEndpoints.StockFlatFileQuoteRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.StockFlatFileQuoteRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.StockFlatFileQuoteRequestQuery": {
+            "date": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          }
+        }
+      },
+      "enums": {
+        "added": {},
+        "removed": [],
+        "changed": {}
+      },
+      "rpcs": {
+        "added": {
+          "GetStockFlatFileQuote": {
+            "request": ".BetaEndpoints.StockFlatFileQuoteRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          }
+        },
+        "removed": [],
+        "changed": []
+      },
+      "python_symbols": {
+        "added": [
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetStockFlatFileQuote",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetStockFlatFileQuote",
+          "thetadata/client.py:ThetaClient.stock_flat_file_quote"
+        ],
+        "removed": [],
+        "changed": [
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalStub",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalStub.__init__",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:add_BetaThetaTerminalServicer_to_server",
+          "thetadata/client.py:ThetaClient"
+        ]
+      },
+      "wrappers_added": {
+        "ThetaClient.stock_flat_file_quote": {
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null,
+              "default": null,
+              "kind": "positional-or-keyword"
+            },
+            {
+              "name": "date",
+              "annotation": "datetime.date",
+              "default": null,
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "rpc": [
+            "GetStockFlatFileQuote"
+          ]
+        }
+      },
+      "wrappers_changed": {},
+      "counts": {
+        "messages": 178,
+        "enums": 2,
+        "rpcs": 83,
+        "wrappers": 81
+      }
+    },
+    {
+      "from": "1.0.14",
+      "to": "1.0.15",
+      "wheel_sha256": "68104130571ac70a4bad7a9433e794a01ff81cc2e952e1f86513785e84533c17",
+      "files": {
+        "METADATA": {
+          "old_sha256": "3d29206a4c6ba76fbc9d269f862b31fd1d9054c94dd3c28f3c80d8c4f2394673",
+          "new_sha256": "f19dbb915fae14a944cd2d8b15940c95d8e58511c233897d21a4b3dfbbb5cc0a"
+        },
+        "RECORD": {
+          "old_sha256": "ba9df40d3652aa5bc8306ff9737d5c74c53ecea57176925124b5be8288ac1ae4",
+          "new_sha256": "6938003e2468a3b5c5258aad1d369f2f08d32797bc72cd8784011fa15df8c6d8"
+        },
+        "thetadata/_proto/v3grpc/endpoints_pb2.py": {
+          "old_sha256": "1265575696a6571a68adbbe6598084355dfae6ba0266c11e4a34cdbdfc96eb4f",
+          "new_sha256": "6a75d9af98cb36b8688ce6db5d1749b6889b0ff3d5db8e6f772b287795417260"
+        },
+        "thetadata/client.py": {
+          "old_sha256": "557a89276f185d955d2303d80109535f4c7c809c5ee4f56ae99454c5cc10dfd9",
+          "new_sha256": "f0d9ae69217c4a8a962422c9931359b499931852261388debff7033b5416b277"
+        }
+      },
+      "metadata_changes": {
+        "Version": {
+          "old": [
+            "1.0.14"
+          ],
+          "new": [
+            "1.0.15"
+          ]
+        }
+      },
+      "metadata_payload_changed": false,
+      "descriptor_files": {
+        "v3grpc/endpoints.proto": {
+          "source": "thetadata/_proto/v3grpc/endpoints_pb2.py",
+          "sha256": "501d7d9a6febe9db48f78593c9278ccfe1732e6411c6ed78804a3080c4d3f7f3"
+        }
+      },
+      "messages": {
+        "added": [],
+        "removed": [],
+        "changed": {
+          "BetaEndpoints.OptionHistoryBinomialGreeksAllRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 15,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksEodRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksFirstOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 15,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksSecondOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 15,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksThirdOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 15,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialTradeGreeksAllRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 16,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialTradeGreeksFirstOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 16,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialTradeGreeksSecondOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 16,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialTradeGreeksThirdOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 16,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryGreeksAllRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryGreeksEodRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 13,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryGreeksFirstOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryGreeksImpliedVolatilityRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryGreeksSecondOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryGreeksThirdOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryTradeGreeksAllRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 15,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryTradeGreeksFirstOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 15,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryTradeGreeksImpliedVolatilityRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 15,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryTradeGreeksSecondOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 15,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryTradeGreeksThirdOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 15,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksAllRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksFirstOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksSecondOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksThirdOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 14,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksAllRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 13,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksFirstOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 13,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksImpliedVolatilityRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 13,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksSecondOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 13,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotGreeksThirdOrderRequestQuery": {
+            "added": {
+              "annual_dividend_amount": {
+                "number": 13,
+                "type": "double",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          }
+        },
+        "added_definitions": {}
+      },
+      "enums": {
+        "added": {},
+        "removed": [],
+        "changed": {}
+      },
+      "rpcs": {
+        "added": {},
+        "removed": [],
+        "changed": []
+      },
+      "python_symbols": {
+        "added": [],
+        "removed": [],
+        "changed": [
+          "thetadata/client.py:ThetaClient",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_all",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_eod",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_all",
+          "thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_history_greeks_all",
+          "thetadata/client.py:ThetaClient.option_history_greeks_eod",
+          "thetadata/client.py:ThetaClient.option_history_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_history_greeks_implied_volatility",
+          "thetadata/client.py:ThetaClient.option_history_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_history_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_history_trade_greeks_all",
+          "thetadata/client.py:ThetaClient.option_history_trade_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_history_trade_greeks_implied_volatility",
+          "thetadata/client.py:ThetaClient.option_history_trade_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_history_trade_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_all",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_all",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_implied_volatility",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_greeks_third_order"
+        ]
+      },
+      "wrappers_added": {},
+      "wrappers_changed": {
+        "ThetaClient.option_history_binomial_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_eod": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_eod": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_implied_volatility": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_trade_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_trade_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_trade_greeks_implied_volatility": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_trade_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_trade_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_implied_volatility": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "annual_dividend_amount",
+              "annotation": "Optional[float]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.annual_dividend_amount",
+              "expression": "annual_dividend_amount",
+              "when": [
+                "annual_dividend_amount"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        }
+      },
+      "counts": {
+        "messages": 178,
+        "enums": 2,
+        "rpcs": 83,
+        "wrappers": 81
+      }
+    },
+    {
+      "from": "1.0.15",
+      "to": "1.0.16",
+      "wheel_sha256": "709fed6738f9450931ff405795b0783ea45604761467584473d85b1e485ab6b0",
+      "files": {
+        "METADATA": {
+          "old_sha256": "f19dbb915fae14a944cd2d8b15940c95d8e58511c233897d21a4b3dfbbb5cc0a",
+          "new_sha256": "884cc4d874c270bc2e7f58b8ee5121ee5578f192e5e5dc26a5bf0c6bf728a11a"
+        },
+        "RECORD": {
+          "old_sha256": "6938003e2468a3b5c5258aad1d369f2f08d32797bc72cd8784011fa15df8c6d8",
+          "new_sha256": "81cfac797825f0b40233791d3812ed8ba693933414978e928d292a2c732899a2"
+        },
+        "WHEEL": {
+          "old_sha256": "5b77e4a649bbfb07fdbc123967eeecd1e5a478cfaca6eefc23c35e6fdf037848",
+          "new_sha256": "da266b2640c891e0e1d24f528a428ca85b913feb9aea66f822bd40b04478044c"
+        },
+        "thetadata/_proto/endpoints_pb2.py": {
+          "old_sha256": "456b2071124590c1bfa1afaf9a11e3be0787a57028d2729995e2803664569ed7",
+          "new_sha256": "379104ca0510bc41575a7e7e3763e11c7018a444fdb126f672e497ef0f23a34d"
+        },
+        "thetadata/_proto/v3grpc/endpoints_pb2.py": {
+          "old_sha256": "6a75d9af98cb36b8688ce6db5d1749b6889b0ff3d5db8e6f772b287795417260",
+          "new_sha256": "473585766bf1da67c2e612e8677a72360cdf79679d414e6eff5e628a7c203015"
+        },
+        "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py": {
+          "old_sha256": "bbae819cbaf658e2f573416adee9aafcd2d333c0339e2a68462b681422549e98",
+          "new_sha256": "2fb67af5f7cc2e571af1e99aad72dea712a887c544238bd8a48b110e1a5cfc2f"
+        },
+        "thetadata/client.py": {
+          "old_sha256": "f0d9ae69217c4a8a962422c9931359b499931852261388debff7033b5416b277",
+          "new_sha256": "00674fe4286330fd16a72fca5b7b41df8344d1f8c2896c4d2dc379aec10bbaf4"
+        }
+      },
+      "metadata_changes": {
+        "Version": {
+          "old": [
+            "1.0.15"
+          ],
+          "new": [
+            "1.0.16"
+          ]
+        }
+      },
+      "metadata_payload_changed": false,
+      "descriptor_files": {
+        "endpoints.proto": {
+          "source": "thetadata/_proto/endpoints_pb2.py",
+          "sha256": "58c4c1b34d46eaa3d42f2acba6ad45fe0b1142698eba0804c42d6a96a6645703"
+        },
+        "v3grpc/endpoints.proto": {
+          "source": "thetadata/_proto/v3grpc/endpoints_pb2.py",
+          "sha256": "e7cf0c46a998a4078d970817a05e4f19c77a46873786da8c644eb5cc2edf3f0e"
+        }
+      },
+      "messages": {
+        "added": [
+          "BetaEndpoints.FutureAtTimeBboRequest",
+          "BetaEndpoints.FutureAtTimeBboRequestQuery",
+          "BetaEndpoints.FutureAtTimeTradeRequest",
+          "BetaEndpoints.FutureAtTimeTradeRequestQuery",
+          "BetaEndpoints.FutureFlatFileBboRequest",
+          "BetaEndpoints.FutureFlatFileBboRequestQuery",
+          "BetaEndpoints.FutureFlatFileEodRequest",
+          "BetaEndpoints.FutureFlatFileEodRequestQuery",
+          "BetaEndpoints.FutureFlatFileTradeBboRequest",
+          "BetaEndpoints.FutureFlatFileTradeBboRequestQuery",
+          "BetaEndpoints.FutureHistoryBboRequest",
+          "BetaEndpoints.FutureHistoryBboRequestQuery",
+          "BetaEndpoints.FutureHistoryEodRequest",
+          "BetaEndpoints.FutureHistoryEodRequestQuery",
+          "BetaEndpoints.FutureHistoryOhlcRequest",
+          "BetaEndpoints.FutureHistoryOhlcRequestQuery",
+          "BetaEndpoints.FutureHistorySettlementRequest",
+          "BetaEndpoints.FutureHistorySettlementRequestQuery",
+          "BetaEndpoints.FutureHistoryTradeBboRequest",
+          "BetaEndpoints.FutureHistoryTradeBboRequestQuery",
+          "BetaEndpoints.FutureHistoryTradeRequest",
+          "BetaEndpoints.FutureHistoryTradeRequestQuery",
+          "BetaEndpoints.FutureListDatesRequest",
+          "BetaEndpoints.FutureListDatesRequestQuery",
+          "BetaEndpoints.FutureListSymbolsRequest",
+          "BetaEndpoints.FutureListSymbolsRequestQuery",
+          "BetaEndpoints.FutureSnapshotBboRequest",
+          "BetaEndpoints.FutureSnapshotBboRequestQuery",
+          "BetaEndpoints.FutureSnapshotMarketValueRequest",
+          "BetaEndpoints.FutureSnapshotMarketValueRequestQuery",
+          "BetaEndpoints.FutureSnapshotOhlcRequest",
+          "BetaEndpoints.FutureSnapshotOhlcRequestQuery",
+          "BetaEndpoints.FutureSnapshotTradeRequest",
+          "BetaEndpoints.FutureSnapshotTradeRequestQuery"
+        ],
+        "removed": [],
+        "changed": {
+          "BetaEndpoints.OptionHistoryBinomialGreeksAllRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 16,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksEodRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 15,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksFirstOrderRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 16,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksSecondOrderRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 16,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksThirdOrderRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 16,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialTradeGreeksAllRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 17,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialTradeGreeksFirstOrderRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 17,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialTradeGreeksSecondOrderRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 17,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialTradeGreeksThirdOrderRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 17,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksAllRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 15,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksFirstOrderRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 15,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksSecondOrderRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 15,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksThirdOrderRequestQuery": {
+            "added": {
+              "exercise_style": {
+                "number": 15,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "Endpoints.ZonedDateTime": {
+            "added": {
+              "nanos": {
+                "number": 3,
+                "type": "uint32",
+                "label": "optional",
+                "proto3_optional": false
+              },
+              "precision": {
+                "number": 4,
+                "type": ".Endpoints.TimestampPrecision",
+                "label": "optional",
+                "proto3_optional": false
+              }
+            },
+            "removed": [],
+            "changed": {}
+          }
+        },
+        "added_definitions": {
+          "BetaEndpoints.FutureAtTimeBboRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureAtTimeBboRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureAtTimeBboRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "start_date": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "end_date": {
+              "number": 3,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "time_of_day": {
+              "number": 4,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureAtTimeTradeRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureAtTimeTradeRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureAtTimeTradeRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "start_date": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "end_date": {
+              "number": 3,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "time_of_day": {
+              "number": 4,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureFlatFileBboRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureFlatFileBboRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureFlatFileBboRequestQuery": {
+            "date": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureFlatFileEodRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureFlatFileEodRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureFlatFileEodRequestQuery": {
+            "date": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureFlatFileTradeBboRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureFlatFileTradeBboRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureFlatFileTradeBboRequestQuery": {
+            "date": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureHistoryBboRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureHistoryBboRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureHistoryBboRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "date": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "date_type": {
+              "number": 3,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "start_time": {
+              "number": 4,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "end_time": {
+              "number": 5,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "start_date": {
+              "number": 6,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "end_date": {
+              "number": 7,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "interval": {
+              "number": 8,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            }
+          },
+          "BetaEndpoints.FutureHistoryEodRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureHistoryEodRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureHistoryEodRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "start_date": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "end_date": {
+              "number": 3,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureHistoryOhlcRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureHistoryOhlcRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureHistoryOhlcRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "date": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "date_type": {
+              "number": 3,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "start_time": {
+              "number": 4,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "end_time": {
+              "number": 5,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "start_date": {
+              "number": 6,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "end_date": {
+              "number": 7,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "interval": {
+              "number": 8,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            }
+          },
+          "BetaEndpoints.FutureHistorySettlementRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureHistorySettlementRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureHistorySettlementRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "start_date": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "end_date": {
+              "number": 3,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureHistoryTradeBboRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureHistoryTradeBboRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureHistoryTradeBboRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "date": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "date_type": {
+              "number": 3,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "start_time": {
+              "number": 4,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "end_time": {
+              "number": 5,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "start_date": {
+              "number": 6,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "end_date": {
+              "number": 7,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "exclusive": {
+              "number": 8,
+              "type": "bool",
+              "label": "optional",
+              "proto3_optional": true
+            }
+          },
+          "BetaEndpoints.FutureHistoryTradeRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureHistoryTradeRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureHistoryTradeRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "date": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "date_type": {
+              "number": 3,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "start_time": {
+              "number": 4,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "end_time": {
+              "number": 5,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "start_date": {
+              "number": 6,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            },
+            "end_date": {
+              "number": 7,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            }
+          },
+          "BetaEndpoints.FutureListDatesRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureListDatesRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureListDatesRequestQuery": {
+            "request_type": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "symbol": {
+              "number": 2,
+              "type": "string",
+              "label": "repeated",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureListSymbolsRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureListSymbolsRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureListSymbolsRequestQuery": {
+            "type": {
+              "number": 1,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            }
+          },
+          "BetaEndpoints.FutureSnapshotBboRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureSnapshotBboRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureSnapshotBboRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "repeated",
+              "proto3_optional": false
+            },
+            "min_time": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            }
+          },
+          "BetaEndpoints.FutureSnapshotMarketValueRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureSnapshotMarketValueRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureSnapshotMarketValueRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "repeated",
+              "proto3_optional": false
+            },
+            "min_time": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            }
+          },
+          "BetaEndpoints.FutureSnapshotOhlcRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureSnapshotOhlcRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureSnapshotOhlcRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "repeated",
+              "proto3_optional": false
+            },
+            "min_time": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            }
+          },
+          "BetaEndpoints.FutureSnapshotTradeRequest": {
+            "query_info": {
+              "number": 1,
+              "type": ".BetaEndpoints.QueryInfo",
+              "label": "optional",
+              "proto3_optional": false
+            },
+            "params": {
+              "number": 2,
+              "type": ".BetaEndpoints.FutureSnapshotTradeRequestQuery",
+              "label": "optional",
+              "proto3_optional": false
+            }
+          },
+          "BetaEndpoints.FutureSnapshotTradeRequestQuery": {
+            "symbol": {
+              "number": 1,
+              "type": "string",
+              "label": "repeated",
+              "proto3_optional": false
+            },
+            "min_time": {
+              "number": 2,
+              "type": "string",
+              "label": "optional",
+              "proto3_optional": true
+            }
+          }
+        }
+      },
+      "enums": {
+        "added": {
+          "Endpoints.TimestampPrecision": {
+            "MILLISECOND": 0,
+            "NANOSECOND": 1
+          }
+        },
+        "removed": [],
+        "changed": {}
+      },
+      "rpcs": {
+        "added": {
+          "GetFutureAtTimeBbo": {
+            "request": ".BetaEndpoints.FutureAtTimeBboRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureAtTimeTrade": {
+            "request": ".BetaEndpoints.FutureAtTimeTradeRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureFlatFileBbo": {
+            "request": ".BetaEndpoints.FutureFlatFileBboRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureFlatFileEod": {
+            "request": ".BetaEndpoints.FutureFlatFileEodRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureFlatFileTradeBbo": {
+            "request": ".BetaEndpoints.FutureFlatFileTradeBboRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureHistoryBbo": {
+            "request": ".BetaEndpoints.FutureHistoryBboRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureHistoryEod": {
+            "request": ".BetaEndpoints.FutureHistoryEodRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureHistoryOhlc": {
+            "request": ".BetaEndpoints.FutureHistoryOhlcRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureHistorySettlement": {
+            "request": ".BetaEndpoints.FutureHistorySettlementRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureHistoryTrade": {
+            "request": ".BetaEndpoints.FutureHistoryTradeRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureHistoryTradeBbo": {
+            "request": ".BetaEndpoints.FutureHistoryTradeBboRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureListDates": {
+            "request": ".BetaEndpoints.FutureListDatesRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureListSymbols": {
+            "request": ".BetaEndpoints.FutureListSymbolsRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureSnapshotBbo": {
+            "request": ".BetaEndpoints.FutureSnapshotBboRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureSnapshotMarketValue": {
+            "request": ".BetaEndpoints.FutureSnapshotMarketValueRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureSnapshotOhlc": {
+            "request": ".BetaEndpoints.FutureSnapshotOhlcRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          },
+          "GetFutureSnapshotTrade": {
+            "request": ".BetaEndpoints.FutureSnapshotTradeRequest",
+            "response": ".Endpoints.ResponseData",
+            "client_streaming": false,
+            "server_streaming": true
+          }
+        },
+        "removed": [],
+        "changed": []
+      },
+      "python_symbols": {
+        "added": [
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureAtTimeBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureAtTimeTrade",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureFlatFileBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureFlatFileEod",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureFlatFileTradeBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureHistoryBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureHistoryEod",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureHistoryOhlc",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureHistorySettlement",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureHistoryTrade",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureHistoryTradeBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureListDates",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureListSymbols",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureSnapshotBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureSnapshotMarketValue",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureSnapshotOhlc",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal.GetFutureSnapshotTrade",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureAtTimeBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureAtTimeTrade",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureFlatFileBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureFlatFileEod",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureFlatFileTradeBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureHistoryBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureHistoryEod",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureHistoryOhlc",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureHistorySettlement",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureHistoryTrade",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureHistoryTradeBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureListDates",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureListSymbols",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureSnapshotBbo",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureSnapshotMarketValue",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureSnapshotOhlc",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureSnapshotTrade"
+        ],
+        "removed": [],
+        "changed": [
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminal",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalStub",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalStub.__init__",
+          "thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:add_BetaThetaTerminalServicer_to_server",
+          "thetadata/client.py:ThetaClient",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_all",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_eod",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_all",
+          "thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_all",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_third_order"
+        ]
+      },
+      "wrappers_added": {},
+      "wrappers_changed": {
+        "ThetaClient.option_history_binomial_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_eod": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "exercise_style",
+              "annotation": "Optional[str]",
+              "default": "None",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.exercise_style",
+              "expression": "exercise_style",
+              "when": [
+                "exercise_style"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": true,
+          "rpc_changed": false
+        }
+      },
+      "counts": {
+        "messages": 212,
+        "enums": 3,
+        "rpcs": 100,
+        "wrappers": 81
+      }
+    },
+    {
+      "from": "1.0.16",
+      "to": "1.0.17",
+      "wheel_sha256": "a43a2fe0fc4896047b9287a9cbf725214386566e3adf930523e5f8aeabf81fea",
+      "files": {
+        "METADATA": {
+          "old_sha256": "884cc4d874c270bc2e7f58b8ee5121ee5578f192e5e5dc26a5bf0c6bf728a11a",
+          "new_sha256": "4c72216c173764b5bfb3852c8f1dec14fa9d83440ce4eaa1a0756ea8d4681c78"
+        },
+        "RECORD": {
+          "old_sha256": "81cfac797825f0b40233791d3812ed8ba693933414978e928d292a2c732899a2",
+          "new_sha256": "65026b3976487635736c31725f15d1170576e920bd456ff2faba525f674243f9"
+        },
+        "thetadata/_proto/v3grpc/endpoints_pb2.py": {
+          "old_sha256": "473585766bf1da67c2e612e8677a72360cdf79679d414e6eff5e628a7c203015",
+          "new_sha256": "11cdd93caa8db12b903cb0883e801c6a043e9171fab42b0feb416c523768ea2a"
+        },
+        "thetadata/client.py": {
+          "old_sha256": "00674fe4286330fd16a72fca5b7b41df8344d1f8c2896c4d2dc379aec10bbaf4",
+          "new_sha256": "ff09f426804afa45d8b1fb15d382dce087781c0561f2a72a2f3a392aa5f1c2c3"
+        }
+      },
+      "metadata_changes": {
+        "Version": {
+          "old": [
+            "1.0.16"
+          ],
+          "new": [
+            "1.0.17"
+          ]
+        }
+      },
+      "metadata_payload_changed": false,
+      "descriptor_files": {
+        "v3grpc/endpoints.proto": {
+          "source": "thetadata/_proto/v3grpc/endpoints_pb2.py",
+          "sha256": "3243558209648a11441dbdae5036ec3847afe92be692ed8c5db90b53e00774a5"
+        }
+      },
+      "messages": {
+        "added": [],
+        "removed": [],
+        "changed": {
+          "BetaEndpoints.OptionHistoryBinomialGreeksAllRequestQuery": {
+            "added": {
+              "implied_vol_method": {
+                "number": 17,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksEodRequestQuery": {
+            "added": {
+              "implied_vol_method": {
+                "number": 16,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksFirstOrderRequestQuery": {
+            "added": {
+              "implied_vol_method": {
+                "number": 17,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksSecondOrderRequestQuery": {
+            "added": {
+              "implied_vol_method": {
+                "number": 17,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionHistoryBinomialGreeksThirdOrderRequestQuery": {
+            "added": {
+              "implied_vol_method": {
+                "number": 17,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksAllRequestQuery": {
+            "added": {
+              "implied_vol_method": {
+                "number": 16,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksFirstOrderRequestQuery": {
+            "added": {
+              "implied_vol_method": {
+                "number": 16,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksSecondOrderRequestQuery": {
+            "added": {
+              "implied_vol_method": {
+                "number": 16,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          },
+          "BetaEndpoints.OptionSnapshotBinomialGreeksThirdOrderRequestQuery": {
+            "added": {
+              "implied_vol_method": {
+                "number": 16,
+                "type": "string",
+                "label": "optional",
+                "proto3_optional": true
+              }
+            },
+            "removed": [],
+            "changed": {}
+          }
+        },
+        "added_definitions": {}
+      },
+      "enums": {
+        "added": {},
+        "removed": [],
+        "changed": {}
+      },
+      "rpcs": {
+        "added": {},
+        "removed": [],
+        "changed": []
+      },
+      "python_symbols": {
+        "added": [],
+        "removed": [],
+        "changed": [
+          "thetadata/client.py:ThetaClient",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_all",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_eod",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_history_binomial_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_history_greeks_all",
+          "thetadata/client.py:ThetaClient.option_history_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_history_greeks_implied_volatility",
+          "thetadata/client.py:ThetaClient.option_history_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_history_greeks_third_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_all",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_first_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_second_order",
+          "thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_third_order"
+        ]
+      },
+      "wrappers_added": {},
+      "wrappers_changed": {
+        "ThetaClient.option_history_binomial_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "implied_vol_method",
+              "annotation": "Optional[str]",
+              "default": "'own_quote'",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            },
+            {
+              "target": "query.implied_vol_method",
+              "expression": "implied_vol_method",
+              "when": [
+                "implied_vol_method"
+              ]
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_eod": {
+          "parameters_added": [
+            {
+              "name": "implied_vol_method",
+              "annotation": "Optional[str]",
+              "default": "'own_quote'",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.implied_vol_method",
+              "expression": "implied_vol_method",
+              "when": [
+                "implied_vol_method"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "implied_vol_method",
+              "annotation": "Optional[str]",
+              "default": "'own_quote'",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            },
+            {
+              "target": "query.implied_vol_method",
+              "expression": "implied_vol_method",
+              "when": [
+                "implied_vol_method"
+              ]
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "implied_vol_method",
+              "annotation": "Optional[str]",
+              "default": "'own_quote'",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            },
+            {
+              "target": "query.implied_vol_method",
+              "expression": "implied_vol_method",
+              "when": [
+                "implied_vol_method"
+              ]
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_binomial_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "implied_vol_method",
+              "annotation": "Optional[str]",
+              "default": "'own_quote'",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            },
+            {
+              "target": "query.implied_vol_method",
+              "expression": "implied_vol_method",
+              "when": [
+                "implied_vol_method"
+              ]
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_all": {
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_first_order": {
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_implied_volatility": {
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_second_order": {
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_history_greeks_third_order": {
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_all": {
+          "parameters_added": [
+            {
+              "name": "implied_vol_method",
+              "annotation": "Optional[str]",
+              "default": "'own_quote'",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.implied_vol_method",
+              "expression": "implied_vol_method",
+              "when": [
+                "implied_vol_method"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_first_order": {
+          "parameters_added": [
+            {
+              "name": "implied_vol_method",
+              "annotation": "Optional[str]",
+              "default": "'own_quote'",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.implied_vol_method",
+              "expression": "implied_vol_method",
+              "when": [
+                "implied_vol_method"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_second_order": {
+          "parameters_added": [
+            {
+              "name": "implied_vol_method",
+              "annotation": "Optional[str]",
+              "default": "'own_quote'",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.implied_vol_method",
+              "expression": "implied_vol_method",
+              "when": [
+                "implied_vol_method"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        },
+        "ThetaClient.option_snapshot_binomial_greeks_third_order": {
+          "parameters_added": [
+            {
+              "name": "implied_vol_method",
+              "annotation": "Optional[str]",
+              "default": "'own_quote'",
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "parameters_removed": [],
+          "parameters_changed": {},
+          "bindings_added": [
+            {
+              "target": "query.implied_vol_method",
+              "expression": "implied_vol_method",
+              "when": [
+                "implied_vol_method"
+              ]
+            }
+          ],
+          "bindings_removed": [],
+          "description_changed": false,
+          "rpc_changed": false
+        }
+      },
+      "counts": {
+        "messages": 212,
+        "enums": 3,
+        "rpcs": 100,
+        "wrappers": 81
+      }
+    }
+  ]
+}
