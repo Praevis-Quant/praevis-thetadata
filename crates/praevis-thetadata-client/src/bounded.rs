@@ -1,6 +1,8 @@
 //! Preflight before materialization; never builds an unrestricted wire DataTable.
 use crate::eod::EodError;
-use praevis_thetadata_core::{BatchValue, DataBatch, Price, Timestamp, Value};
+use praevis_thetadata_core::{
+    BatchValue, DataBatch, Price, Timestamp, Value, check_timestamp_precision,
+};
 use praevis_thetadata_proto::endpoints::{DataValue, ResponseData, data_value::DataType};
 use prost::{
     Message,
@@ -327,10 +329,15 @@ pub(crate) fn decode(
                             .map_err(|_| EodError::Decode)?
                             .map(BatchValue::Price)
                             .unwrap_or(BatchValue::Null),
-                        Some(DataType::Timestamp(v)) => BatchValue::Timestamp(
-                            Timestamp::from_wire(v.epoch_ms, v.zone)
-                                .map_err(|_| EodError::Decode)?,
-                        ),
+                        Some(DataType::Timestamp(v)) => {
+                            // ADR-0019: sub-millisecond content is unsupported, not malformed.
+                            check_timestamp_precision(v.nanos, v.precision)
+                                .map_err(|_| EodError::Unsupported)?;
+                            BatchValue::Timestamp(
+                                Timestamp::from_wire(v.epoch_ms, v.zone)
+                                    .map_err(|_| EodError::Decode)?,
+                            )
+                        }
                     });
                 }
             }
@@ -374,6 +381,53 @@ mod tests {
                     data_type: Some(DataType::Text("é".into())),
                 }],
             }],
+        }
+    }
+    #[test]
+    fn sub_millisecond_timestamps_are_unsupported_responses() {
+        let limits = DecodeLimits::default();
+        let wire = |nanos, precision| DataTable {
+            headers: vec!["created".into()],
+            data_table: vec![DataValueList {
+                values: vec![DataValue {
+                    data_type: Some(DataType::Timestamp(
+                        praevis_thetadata_proto::endpoints::ZonedDateTime {
+                            epoch_ms: 1_700_000_000_123,
+                            zone: 0,
+                            nanos,
+                            precision,
+                        },
+                    )),
+                }],
+            }],
+        };
+        for table in [false, true] {
+            for compressed in [false, true] {
+                let batch = decode(
+                    response(wire(0, 0).encode_to_vec(), compressed),
+                    &limits,
+                    None,
+                    table,
+                )
+                .unwrap();
+                assert_eq!(
+                    batch.cells()[0],
+                    BatchValue::Timestamp(Timestamp::from_wire(1_700_000_000_123, 0).unwrap())
+                );
+                for (nanos, precision) in [(1, 0), (0, 1), (999_999, 1), (0, 2)] {
+                    assert_eq!(
+                        decode(
+                            response(wire(nanos, precision).encode_to_vec(), compressed),
+                            &limits,
+                            None,
+                            table,
+                        )
+                        .unwrap_err(),
+                        EodError::Unsupported,
+                        "nanos={nanos} precision={precision} table={table}"
+                    );
+                }
+            }
         }
     }
     #[test]

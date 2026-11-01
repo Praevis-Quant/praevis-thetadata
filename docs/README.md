@@ -70,7 +70,7 @@ As independent components acquire substantial requirements, use a hybrid structu
 
 For the startup work, AUTH-L1-004 and AUTH-L1-005 already express the product outcomes. New AUTH-L2-010/011 and AUTH-L3-019 through AUTH-L3-024 refine implementation and verification without inventing another L1.
 
-The stock EOD slice has six L1 outcomes, twelve L2 requirements, and twenty-nine
+The stock EOD slice has six L1 outcomes, twelve L2 requirements, and thirty
 L3 contracts, all centrally defined with explicit owners and planned verification.
 The repository checker validates canonical definitions, duplicate/undefined IDs,
 namespace levels, and immediate-level parent links for AUTH and new namespaces,

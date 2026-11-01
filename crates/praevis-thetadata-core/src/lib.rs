@@ -13,6 +13,8 @@ pub enum DataError {
     Timestamp(u64),
     #[error("unknown timezone {0}")]
     TimeZone(i32),
+    #[error("unsupported timestamp precision {precision} with {nanos} additional nanoseconds")]
+    TimestampPrecision { precision: i32, nanos: u32 },
     #[error("row {row} has {actual} values, expected {expected}")]
     RowWidth {
         row: usize,
@@ -61,6 +63,31 @@ impl std::fmt::Display for Price {
             )
         }
     }
+}
+
+/// Wire precision value for millisecond timestamps (`Endpoints.TimestampPrecision.MILLISECOND`).
+pub const MILLISECOND_PRECISION: i32 = 0;
+
+/// ADR-0019: accept only millisecond timestamps. Any `NANOSECOND` or unknown precision,
+/// or non-zero `nanos`, is unsupported rather than silently truncated, because the
+/// vendor has not defined how `nanos` relates to `epoch_ms`.
+pub fn check_timestamp_precision(nanos: u32, precision: i32) -> Result<(), DataError> {
+    if precision == MILLISECOND_PRECISION && nanos == 0 {
+        Ok(())
+    } else {
+        Err(DataError::TimestampPrecision { precision, nanos })
+    }
+}
+
+/// [`timestamp`] after the ADR-0019 precision check, for wire values carrying 1.0.16+ fields.
+pub fn timestamp_with_precision(
+    epoch_ms: u64,
+    zone: i32,
+    nanos: u32,
+    precision: i32,
+) -> Result<String, DataError> {
+    check_timestamp_precision(nanos, precision)?;
+    timestamp(epoch_ms, zone)
 }
 
 /// Millisecond RFC 3339 representation, including the source timezone's offset.
@@ -154,5 +181,26 @@ mod tests {
         }
         assert!(timestamp(u64::MAX, 0).is_err());
         assert!(timestamp(0, 2).is_err());
+    }
+
+    #[test]
+    fn only_millisecond_precision_without_nanos_is_supported() {
+        assert!(check_timestamp_precision(0, MILLISECOND_PRECISION).is_ok());
+        assert_eq!(
+            timestamp_with_precision(0, 1, 0, 0).unwrap(),
+            timestamp(0, 1).unwrap()
+        );
+        for (nanos, precision) in [(1, 0), (999_999, 0), (0, 1), (500, 1), (0, 2), (0, -1)] {
+            assert!(matches!(
+                check_timestamp_precision(nanos, precision),
+                Err(DataError::TimestampPrecision { precision: p, nanos: n }) if p == precision && n == nanos
+            ));
+            assert!(timestamp_with_precision(0, 1, nanos, precision).is_err());
+        }
+        // Precision is checked before the instant/zone, so the unsupported category wins.
+        assert!(matches!(
+            timestamp_with_precision(u64::MAX, 42, 1, 1),
+            Err(DataError::TimestampPrecision { .. })
+        ));
     }
 }

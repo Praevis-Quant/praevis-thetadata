@@ -49,6 +49,7 @@ Test locations used below:
 | [EOD-L3-027](L3-stock-eod.md) | Common-harness control/candidate builds; provenance, repeated alternating runs, raw samples and hashes | Informational comparisons; old v2 reports remain historical, incompatible with v3 |
 | [EOD-L3-028](L3-stock-eod.md) | Repository and research audits retain 123 canonical requirements, 16 ADR origins and 531 inventory items | Mechanical checks do not prove semantic completeness |
 | [EOD-L3-029](L3-stock-eod.md) | Existing open vendor-contract table and research retained | No live verification performed |
+| [EOD-L3-030](L3-stock-eod.md) | core precision unit tests; raw and bounded decoder tests over NONE/ZSTD and numeric/Table; contracts precision faults through the local gRPC service on both APIs, with and without delivered rows (passing) | Vendor meaning of `nanos`/`precision` unknown; no live response with non-millisecond precision observed |
 
 ## Fault category and phase matrix
 

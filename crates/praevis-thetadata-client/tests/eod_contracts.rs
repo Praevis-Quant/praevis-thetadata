@@ -213,6 +213,20 @@ async fn local_faults_before_and_after_delivery_fuse_and_release_single_job() {
             EodError::Decode,
         ));
     }
+    // ADR-0019: sub-millisecond or unknown precision is unsupported, never truncated.
+    for (nanos, precision) in [(1, 0), (0, 1), (123_456, 1), (0, 2)] {
+        cases.push((
+            "timestamp precision",
+            response(&table(DataType::Timestamp(wire::ZonedDateTime {
+                epoch_ms: 0,
+                zone: 1,
+                nanos,
+                precision,
+            }))),
+            default.clone(),
+            EodError::Unsupported,
+        ));
+    }
     let mut declared = response(&good);
     declared.original_size = i32::MAX;
     cases.push((

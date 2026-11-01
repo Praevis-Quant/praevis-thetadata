@@ -326,14 +326,19 @@
     "section": "conversion-and-output",
     "rationale": "Python emits aware datetime objects and Polars millisecond columns; Rust emits RFC3339 strings and rejects unknown zones. Define output representation, timezone/DST/overflow guarantees before expanding the public API.",
     "adrs": [
-      "docs/adr/0009-market-data-values-and-schema.md"
+      "docs/adr/0009-market-data-values-and-schema.md",
+      "docs/adr/0019-timestamp-precision.md"
     ],
-    "requirements": [],
+    "requirements": [
+      "EOD-L3-009",
+      "EOD-L3-030"
+    ],
     "implementation": [
       "crates/praevis-thetadata-core/src/lib.rs"
     ],
     "verification": [
-      "crates/praevis-thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-core/src/lib.rs",
+      "crates/praevis-thetadata-client/tests/eod_contracts.rs"
     ]
   },
   {

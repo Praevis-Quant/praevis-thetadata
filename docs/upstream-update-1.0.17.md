@@ -140,6 +140,9 @@ Status: implemented in the step-3 PR.
 
 ### Step 4: timestamp precision policy (D1)
 
+Status: implemented in the step-4 PR as EOD-L3-030 and ADR-0019.
+
+
 - New **ADR-0019** "Timestamp precision under the 1.0.16 response schema",
   classified `mixed` in `origins.json`. Upstream supplies the fields; Rust
   protects exactness and explicit failure. It refines ADR-0009 (millisecond

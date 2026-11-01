@@ -1,5 +1,5 @@
 use crate::Error;
-use praevis_thetadata_core::{Price, Table, Value, timestamp};
+use praevis_thetadata_core::{Price, Table, Value, timestamp_with_precision};
 use praevis_thetadata_proto::endpoints::{DataTable, ResponseData, data_value::DataType};
 use prost::Message;
 use std::io::Read;
@@ -47,7 +47,12 @@ pub(crate) fn decode(response: ResponseData, limit: usize) -> Result<Table, Erro
                                 .unwrap_or(Value::Null)
                         }
                         Some(DataType::Timestamp(value)) => {
-                            Value::Timestamp(timestamp(value.epoch_ms, value.zone)?)
+                            Value::Timestamp(timestamp_with_precision(
+                                value.epoch_ms,
+                                value.zone,
+                                value.nanos,
+                                value.precision,
+                            )?)
                         }
                     })
                 })
@@ -132,5 +137,41 @@ mod tests {
             decode(manifest, 1024),
             Err(Error::FlatFileUnsupported)
         ));
+    }
+
+    fn timestamp_response(nanos: u32, precision: i32) -> ResponseData {
+        let table = DataTable {
+            headers: vec!["created".into()],
+            data_table: vec![DataValueList {
+                values: vec![DataValue {
+                    data_type: Some(DataType::Timestamp(
+                        praevis_thetadata_proto::endpoints::ZonedDateTime {
+                            epoch_ms: 1_700_000_000_123,
+                            zone: 1,
+                            nanos,
+                            precision,
+                        },
+                    )),
+                }],
+            }],
+        };
+        response(table.encode_to_vec(), 0)
+    }
+
+    #[test]
+    fn sub_millisecond_timestamps_are_unsupported_not_truncated() {
+        let table = decode(timestamp_response(0, 0), 4096).unwrap();
+        assert_eq!(
+            table.rows[0][0],
+            Value::Timestamp("2023-11-14T22:13:20.123Z".into())
+        );
+        for (nanos, precision) in [(456_000, 0), (0, 1), (456_789, 1), (0, 7)] {
+            assert!(matches!(
+                decode(timestamp_response(nanos, precision), 4096),
+                Err(Error::Data(
+                    praevis_thetadata_core::DataError::TimestampPrecision { .. }
+                ))
+            ));
+        }
     }
 }
