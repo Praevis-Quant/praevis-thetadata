@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+//!
 //! Standalone ThetaData authentication. No gRPC, market-data, or CLI dependencies.
 //!
 //! ```no_run

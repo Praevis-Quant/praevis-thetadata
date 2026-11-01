@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+//!
 //! Transport-independent market data values. No network or CLI dependencies.
 
 use chrono::{DateTime, SecondsFormat, Utc};

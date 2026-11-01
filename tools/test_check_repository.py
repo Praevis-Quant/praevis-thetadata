@@ -1,7 +1,7 @@
 """Mutations that must not pass the requirement hierarchy audit."""
 import unittest
 
-from check_repository import audit_requirements
+from check_repository import PACKAGE_DIRS, audit_package_files, audit_requirements
 
 
 class RequirementAuditTests(unittest.TestCase):
@@ -58,6 +58,33 @@ class RequirementAuditTests(unittest.TestCase):
         docs = self.documents()
         docs["docs/notes.md"] = docs.pop("docs/requirements/EOD.md")
         self.assertTrue(any("outside requirements directory" in e for e in audit_requirements(docs)[1]))
+
+
+
+class PackageFileAuditTests(unittest.TestCase):
+    def files(self):
+        files = {"LICENSE": b"license\n", "NOTICE": b"notice\n",
+                 "crates/praevis-thetadata-proto/LICENSE.upstream": b"upstream\n"}
+        for directory in PACKAGE_DIRS:
+            files.update({f"{directory}/LICENSE": b"license\r\n", f"{directory}/NOTICE": b"notice\n",
+                          f"{directory}/README.md": b"# readme\n"})
+        return files
+
+    def audit(self, files):
+        return audit_package_files(files.__getitem__, set(files))
+
+    def test_identical_copies_pass_including_crlf_checkouts(self):
+        self.assertEqual(self.audit(self.files()), [])
+
+    def test_missing_or_drifted_copies_fail(self):
+        files = self.files()
+        del files["crates/praevis-thetadata-core/NOTICE"]
+        files["apps/praevis-thetadata-cli/LICENSE"] = b"edited\n"
+        del files["crates/praevis-thetadata-proto/LICENSE.upstream"]
+        errors = self.audit(files)
+        self.assertIn("Missing package file: crates/praevis-thetadata-core/NOTICE", errors)
+        self.assertIn("Package copy differs from root LICENSE: apps/praevis-thetadata-cli/LICENSE", errors)
+        self.assertIn("Missing upstream license in the proto package", errors)
 
 
 if __name__ == "__main__":

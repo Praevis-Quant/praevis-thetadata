@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+//!
 //! Async batch streaming for ThetaData's direct gRPC API.
 mod bounded;
 mod decode;

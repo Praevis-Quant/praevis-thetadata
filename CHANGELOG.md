@@ -15,6 +15,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Packaging (alpha.1, part A):**
+  - All five packages are now `0.1.0-alpha.1`, versioned together and
+    independently of the Python baseline. Internal dependencies require exactly
+    `=0.1.0-alpha.1`.
+  - `rust-version` is 1.88, verified against the locked dependency graph.
+  - Each package has public metadata and a README with supported platforms and
+    an independent/experimental/no-full-parity note. Library READMEs double as
+    crate documentation, and their examples run as doctests.
+  - Every package archive includes `LICENSE` and `NOTICE` (proto also
+    `LICENSE.upstream`), and copy drift is checked. NOTICE records the 1.0.17
+    provenance.
+  - `publish = false` is unchanged. No package was published.
+
 - **CLI: Python-order credentials, and saving only with `auth --save`**
   ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md);
   AUTH-L3-025/026 replace the retired AUTH-L3-001/010).

@@ -2,8 +2,18 @@
 
 Independent authentication application for ThetaData. This **binary package**
 builds the `praevis-thetadata` executable; it is separate from the reusable `praevis-thetadata-auth`
-library and the experimental market-data client. It is not an official ThetaData
-product and has no market-data query commands yet.
+library and the experimental market-data client. It has no market-data query commands yet.
+
+> **Independent and experimental.** This is an unofficial Rust project. It is not
+> affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
+> identifies the service it interoperates with. `0.1.0-alpha.1` is an early
+> prerelease and **not** a full port of the vendor Python package.
+
+**Supported platforms:** Windows (Credential Manager) and Linux (Secret Service
+over D-Bus, with an unlocked persistent keyring). On other platforms,
+authentication runs, but saving, status and logout report an unsupported-platform
+error. Requires Rust 1.88+. Linux builds compile a vendored D-Bus library and
+need a C compiler and `pkg-config`.
 
 The repository `praevis-thetadata` is a virtual Cargo workspace, not a package to
 install. The package is `praevis-thetadata-cli`; the executable is
@@ -41,6 +51,6 @@ for setup, credential precedence, profiles, environments and exit codes. For
 embedding authentication in Rust, use the library rather than invoking this CLI.
 Do not use a crates.io install command until a reviewed release is published.
 
-Licensed under Apache-2.0; see the repository
+Licensed under Apache-2.0. The package includes `LICENSE` and `NOTICE`; see also the repository
 [LICENSE](https://github.com/Praevis-Quant/praevis-thetadata/blob/main/LICENSE) and
 [NOTICE](https://github.com/Praevis-Quant/praevis-thetadata/blob/main/NOTICE).
