@@ -1,6 +1,6 @@
 # Subscription-aware manual verification
 
-The current account is **FREE**, as reported by the account holder on 2026-10-04.
+The current account is **FREE**, as reported by the account holder on 2026-10-04 and reconfirmed by `praevis-thetadata auth --json` on PROD on 2026-11-01.
 The [PROD AAPL EOD observation](research/live-observations.md) passed. A separately
 reported Python `client.stock_snapshot_quote(symbol=["AAPL"])` request returned
 gRPC `PERMISSION_DENIED`, with a message stating that VALUE access was required.
@@ -19,7 +19,7 @@ logic. The service remains authoritative for each actual request.
 
 | Product/profile | Positive cases | Negative and boundary cases | Current evidence |
 | --- | --- | --- | --- |
-| Stocks / FREE | Small supported EOD query; exact values and clean EOF | Endpoint requiring VALUE or higher; historical date coverage; permission denial versus no-data | One PROD EOD success; AAPL stock snapshot quote denial reproduced in Rust, code 7 before data |
+| Stocks / FREE | Small supported EOD query; exact values and clean EOF | Endpoint requiring VALUE or higher; historical date coverage; permission denial versus no-data | PROD EOD success on 2026-10-04 (1.0.12 baseline) and 2026-11-01 (1.0.17 baseline, `prod-aapl-alpha1-002`, identical values); AAPL stock snapshot quote denial reproduced in Rust on both dates, code 7 before data (`prod-free-quote-alpha1-001`); CLI auth on PROD reports FREE (subscriptions 0) |
 | Stocks / VALUE | Selected EOD, quote/OHLC and delayed snapshot cases once implemented | STANDARD/PRO-only operations; delay/resolution/date boundaries | Unavailable: no paid account evidence |
 | Stocks / STANDARD | Selected trade/trade-quote and real-time snapshot cases once implemented | PRO resolution/history/subscription boundaries | Unavailable: no paid account evidence |
 | Stocks / PRO | Selected tick/history/streaming cases once implemented | Invalid query/contract, no-data and resource boundaries still apply | Unavailable: no paid account evidence |

@@ -120,6 +120,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Alpha.1 PROD exit gate recorded (2026-11-01, Windows, FREE account):**
+  - CLI auth lifecycle: `auth` stores nothing, `--save` persists the unchanged
+    v1 record, then status/logout.
+  - AAPL EOD capture `prod-aapl-alpha1-002` on the 1.0.17 baseline: one
+    232-byte ZSTD frame. Numeric, Table and raw replay match each other and
+    the 2026-10-04 capture's exact-value digest, and the real timestamps pass
+    the ADR-0019 precision check.
+  - FREE quote denial reproduced (code 7 at headers).
+  - All five crates.io names returned 404 (not reserved).
+- CI compile-checks the feature-gated `live_eod` runner with clippy, so a
+  baseline bump cannot silently break it again (it broke after #17 and was
+  fixed in #24). CI still never runs live checks.
+
 - Constructed sixteen-column stock EOD regression coverage informed by the
   reviewed live schema, with invented values and independent exact-value checks
   across raw/numeric/Table interfaces and NONE/ZSTD. Added a revision-pinned
