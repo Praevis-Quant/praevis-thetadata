@@ -1,8 +1,9 @@
 # Release milestones
 
 Status: selected release plan, 2026-10-04. These are ordered, gate-based targets,
-not published versions or calendar promises. The current workspace's `0.1.0`
-is an unpublished development version. Preserve the independent Python baseline
+not published versions or calendar promises. The workspace's
+`0.1.0-alpha.1` is the first, experimental prerelease, enabled for manual,
+owner-approved crates.io publication. Preserve the independent Python baseline
 in the [protocol manifest](../crates/praevis-thetadata-proto/schema/manifest.json).
 
 The first supported release will cover authentication and one stock EOD slice.

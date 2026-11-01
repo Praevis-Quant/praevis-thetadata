@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versioned releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROADMAP.md).
 
-The workspace currently declares `0.1.0` with publishing disabled. No release
+The workspace declares `0.1.0-alpha.1`, enabled for manual crates.io publication. No release
 tag exists as of 2026-10-04; the entries below describe implemented work, not a
 published `0.1.0` release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
@@ -14,6 +14,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 ## [Unreleased]
 
 ### Changed
+
+- **Publishing enabled for the experimental `0.1.0-alpha.1` prerelease**
+  (`publish = ["crates-io"]`). Publication itself is manual and approved by
+  the owner, in wave order (auth, core, proto, then client and CLI); no
+  workflow publishes. The READMEs now describe crates.io installs with
+  explicit prerelease versions and experimental wording.
 
 - **Packaging (alpha.1, part B):**
   - The client archive is self-contained: its build script takes the

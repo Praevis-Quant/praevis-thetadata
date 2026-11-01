@@ -17,11 +17,19 @@ need a C compiler and `pkg-config`.
 
 The repository `praevis-thetadata` is a virtual Cargo workspace, not a package to
 install. The package is `praevis-thetadata-cli`; the executable is
-`praevis-thetadata`. Publication is currently disabled.
+`praevis-thetadata`.
 
-## Install from this checkout
+## Install
 
-From the repository root:
+The experimental `0.1.0-alpha.1` prerelease is on crates.io. Prereleases are
+never selected implicitly, so name the version:
+
+```text
+cargo install praevis-thetadata-cli --version 0.1.0-alpha.1 --locked
+praevis-thetadata --help
+```
+
+Alternatively, from a checkout, run this from the repository root:
 
 ```text
 cargo install --locked --path apps/praevis-thetadata-cli
@@ -49,7 +57,7 @@ The CLI needs no Java, gRPC or market-data decoding dependencies.
 See the [workspace guide](https://github.com/Praevis-Quant/praevis-thetadata#build-and-authenticate)
 for setup, credential precedence, profiles, environments and exit codes. For
 embedding authentication in Rust, use the library rather than invoking this CLI.
-Do not use a crates.io install command until a reviewed release is published.
+This alpha is experimental: behavior and output may change between prereleases.
 
 Licensed under Apache-2.0. The package includes `LICENSE` and `NOTICE`; see also the repository
 [LICENSE](https://github.com/Praevis-Quant/praevis-thetadata/blob/main/LICENSE) and

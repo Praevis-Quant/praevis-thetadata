@@ -9,7 +9,9 @@ edition = "2024"
 # tonic 0.14 and ICU 2.x dependencies require 1.88.
 rust-version = "1.88"
 license = "Apache-2.0"
-publish = false
+# crates.io only, published manually by the owner after approval (docs/crates-io-release-plan.md).
+# No CI or scheduled workflow publishes; the packaging rehearsal stays local.
+publish = ["crates-io"]
 repository = "https://github.com/Praevis-Quant/praevis-thetadata"
 
 [workspace.dependencies]

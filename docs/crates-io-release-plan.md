@@ -1,7 +1,8 @@
 # crates.io prerelease plan
 
 Status: preparation plan, 2026-10-04; archives rehearsed 2026-11-01. No packages have been published by this
-work. Keep `publish = false` until the release preparation is reviewed.
+work. Publishing is enabled (`publish = ["crates-io"]`) in the PR the owner
+approves for publication; no workflow publishes.
 
 The [versioned release milestones](releases.md) define scope and exit gates;
 this document supplies the alpha.1 packaging/publication work. The manual live
@@ -133,17 +134,17 @@ Changes needed to make the archives self-contained:
   Features using `dep:` syntax must sit in the index's `features2`, or
   `native-store` cannot activate the optional `keyring` dependency.
 
-Linux rehearsal at the commit adding this section. Archives are
+Linux rehearsal at the publish-enable commit. These hashes replace those recorded in part B: the `publish` setting and the README install sections changed every archive. Archives are
 byte-deterministic for identical contents: no VCS info is embedded, and core
 and proto hashed identically across runs.
 
 | Wave | Archive | Bytes | SHA-256 | Reviewed file list |
 | --- | --- | ---: | --- | --- |
-| 1 | `praevis-thetadata-auth-0.1.0-alpha.1.crate` | 29207 | `687a23311d9b0b0c8173083685e5d8b0da0bf7bb9947b22c967d48912f5a5ffd` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `src/lib.rs`, `src/store.rs`, `src/tests.rs` |
-| 1 | `praevis-thetadata-core-0.1.0-alpha.1.crate` | 12818 | `27421788fc6caca4015eebcf7f7c4aa562412da856998dcec32da0d68fc9781f` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `src/batch.rs`, `src/lib.rs` |
-| 1 | `praevis-thetadata-proto-0.1.0-alpha.1.crate` | 23148 | `3688b4d2324b52e26c504e2bd1feef91f51fb7c95e3ec6af2d5165f19d446ea0` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `LICENSE.upstream`, `NOTICE`, `README.md`, `build.rs`, `schema/manifest.json`, `schema/thetadata.bin`, `src/lib.rs` |
-| 2 | `praevis-thetadata-client-0.1.0-alpha.1.crate` | 53052 | `76ec12e6abab9c81844fa2399cf9cbf9cc21a113802995cf6d7f1356bbd0b7d0` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `build.rs`, `src/bounded.rs`, `src/decode.rs`, `src/envelope.rs`, `src/eod.rs`, `src/framing.rs`, `src/lib.rs`, `tests/eod_contracts.rs`, `tests/eod_fixture.rs`, `tests/eod_observed_shape.rs`, `tests/eod_typed.rs`, `tests/support/mod.rs` |
-| 2 | `praevis-thetadata-cli-0.1.0-alpha.1.crate` | 31305 | `f99ef36ac447b9cd3d3efa97ed2179b6eeffa50c7c27fe60877a2e20bef1d6f4` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `src/main.rs`, `tests/no_save.rs`, `tests/persistence.rs`, `tests/startup.rs` |
+| 1 | `praevis-thetadata-auth-0.1.0-alpha.1.crate` | 29269 | `246f70bae29d1f0481e3fe49ec12a97f58dcf710295f2df1d94d984b08ffe7ae` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `src/lib.rs`, `src/store.rs`, `src/tests.rs` |
+| 1 | `praevis-thetadata-core-0.1.0-alpha.1.crate` | 12885 | `1702de2f3283c82571bffd915e5029f1e642526ae9328527ee89bf2897d9407b` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `src/batch.rs`, `src/lib.rs` |
+| 1 | `praevis-thetadata-proto-0.1.0-alpha.1.crate` | 23217 | `16f7189a2b8065b1fb51221e6e52b7d27bee2ef7a8f23d4f0d11677967219ea2` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `LICENSE.upstream`, `NOTICE`, `README.md`, `build.rs`, `schema/manifest.json`, `schema/thetadata.bin`, `src/lib.rs` |
+| 2 | `praevis-thetadata-client-0.1.0-alpha.1.crate` | 53101 | `9e3826b8e7288b8350dfdd180c3a498a6ba62b36e2969b2e2d95200832931662` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `build.rs`, `src/bounded.rs`, `src/decode.rs`, `src/envelope.rs`, `src/eod.rs`, `src/framing.rs`, `src/lib.rs`, `tests/eod_contracts.rs`, `tests/eod_fixture.rs`, `tests/eod_observed_shape.rs`, `tests/eod_typed.rs`, `tests/support/mod.rs` |
+| 2 | `praevis-thetadata-cli-0.1.0-alpha.1.crate` | 31367 | `69aa95aa9f04bd9b6ada22083598e241c011f3f3a0569336ac629a7feaf433bd` | `Cargo.lock`, `Cargo.toml`, `Cargo.toml.orig`, `LICENSE`, `NOTICE`, `README.md`, `src/main.rs`, `tests/no_save.rs`, `tests/persistence.rs`, `tests/startup.rs` |
 
 | Consumer (outside the workspace) | Result |
 | --- | --- |
@@ -154,9 +155,11 @@ and proto hashed identically across runs.
 | `client-consumer` | README EOD example compiles; typed request validation runs; **no** keyring/D-Bus packages resolved |
 | `cargo install praevis-thetadata-cli` from the staging registry | Installs; `--version` reports `0.1.0-alpha.1`; `auth --help` lists `--save` |
 
-`cargo publish --dry-run` is not used, because `publish = false` makes Cargo
-refuse it. `cargo package` performs the same archive build and verification,
-and the staging registry covers dependent resolution.
+With `publish = false`, Cargo refused `cargo publish --dry-run`, so the
+rehearsal used `cargo package` and the staging registry. Now that publishing is
+enabled, the owner can also run `cargo publish --dry-run --locked -p <package>`
+for wave 1 immediately before publishing. Dependent packages still need their
+dependencies published first.
 
 ### Remaining before publication (owner decisions)
 
