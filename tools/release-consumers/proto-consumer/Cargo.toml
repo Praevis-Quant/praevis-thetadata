@@ -1,0 +1,12 @@
+[package]
+name = "proto-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+praevis-thetadata-proto = { version = "=0.1.0-alpha.1", registry = "praevis-staging" }
+prost = "0.14"
+prost-types = "0.14"

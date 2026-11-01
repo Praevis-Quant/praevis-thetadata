@@ -86,7 +86,13 @@ limit the claim. A faster decoder alone does not close a correctness gate.
 | 6. Account holder and maintainer | Select bounded additional live EOD date/schema/empty-result cases and available tier checks | Explicit query/credential selection, private capture hashes, raw/numeric/Table replay and reviewed observations; unavailable paid tiers remain not-run | Live evidence for declared scope |
 | 7. Maintainers | Review the exact alpha.1 artifacts for publication; later review EOD acceptance and API freeze | Publication approval after archive/consumer checks; alpha.2 evidence decision; beta examples and accepted/revised ADRs; final release checklist | alpha.1, then alpha.2, beta.1 and 0.1.0 |
 
-Rows 1-2 are the first implementation PR; row 3 is an independent benchmark PR.
+Rows 1-2 are implemented: metadata, READMEs, license copies and versions
+(part A), and self-contained archives with a Windows/Linux staging rehearsal
+and external consumers (part B). They were rebased on the ADR-0020 auth model.
+What remains for rows 1-2 is the owner's token/owner review, the final name
+check and the publication approval listed in the
+[crates.io plan](crates-io-release-plan.md#remaining-before-publication-owner-decisions).
+Row 3 is an independent benchmark PR.
 Run row 4's baseline before optimizing. Complete row 5 against the
 [acceptance matrix](requirements/stock-eod-matrix.md), retaining its per-clause
 evidence. Select row 6 from the [subscription matrix](subscription-testing.md);
@@ -98,6 +104,7 @@ until the comparator, outputs and measurement boundaries have been reviewed.
 
 | Evidence | Owner | Required record |
 | --- | --- | --- |
+| Package archives | Release maintainer | `tools/staging_registry.py` report from the "Packaging rehearsal" CI job on Windows and Linux: per-package file lists, SHA-256 and bytes, license/NOTICE presence, forbidden-input check, wave-ordered staging, consumer builds outside the workspace, CLI install; the default auth and client consumers resolve no native-store packages ([record](crates-io-release-plan.md#archive-staging-rehearsal-alpha1-part-b-2026-11-01)) |
 | Scope and change control | Maintainers | Version, source commit, advertised APIs, known limitations, upstream version and impact review; upstream/enhancement contracts checked separately |
 | Requirements and decisions | Component owners | IDs, accepted ADR decisions, passing evidence and remaining exclusions; no gaps hidden by aggregate inventory counts |
 | Correctness | Component owners | Windows/Linux synthetic tests, fault/lifecycle matrix and documentation audits; ordinary CI stays credential-free |

@@ -1,0 +1,10 @@
+[package]
+name = "auth-store-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+praevis-thetadata-auth = { version = "=0.1.0-alpha.1", registry = "praevis-staging", features = ["native-store"] }

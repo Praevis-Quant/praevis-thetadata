@@ -67,3 +67,31 @@ jobs:
       - name: Windows native persistence
         if: runner.os == 'Windows'
         run: cargo test --locked -p praevis-thetadata-cli --test persistence -- --ignored
+
+  packaging-rehearsal:
+    # Builds the five alpha.1 archives, stages them in a local file:// registry (wave 1:
+    # auth/core/proto, then client/cli resolved from it), and builds external consumers and
+    # `cargo install` of the CLI outside the workspace. Never publishes; reads no token.
+    name: Packaging rehearsal (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+      - name: Stage archives and build consumers
+        run: python tools/staging_registry.py --work target/staging
+      - name: Keep rehearsal report and logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: packaging-rehearsal-${{ matrix.os }}
+          path: |
+            target/staging/report.json
+            target/staging/logs/
+          if-no-files-found: warn

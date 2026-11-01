@@ -15,6 +15,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Packaging (alpha.1, part B):**
+  - The client archive is self-contained: its build script takes the
+    descriptor from the proto crate (a build dependency) instead of a sibling
+    path, and the checkout-only examples (EOD benchmark, `live_eod` runner)
+    are excluded from the archive.
+  - `tools/staging_registry.py` rehearses publication in a local `file://`
+    registry: wave 1, then client and CLI resolved from it. It builds
+    consumers outside the workspace, installs the CLI, and checks file lists,
+    hashes, license files and forbidden inputs. A new "Packaging rehearsal" CI
+    job runs it on Ubuntu and Windows.
+  - Default auth and client consumers are checked to resolve no native-store
+    packages. Nothing is published; `publish = false` is unchanged.
+
 - **Packaging (alpha.1, part A):**
   - All five packages are now `0.1.0-alpha.1`, versioned together and
     independently of the Python baseline. Internal dependencies require exactly

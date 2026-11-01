@@ -11,6 +11,9 @@ readme = "README.md"
 documentation = "https://docs.rs/praevis-thetadata-client"
 keywords = ["thetadata", "grpc", "market-data", "finance", "eod"]
 categories = ["api-bindings", "finance", "network-programming"]
+# Checkout-only targets: the EOD benchmark and the manual live runner include sibling
+# sources, the workspace lockfile and live-capture paths, so they are not self-contained.
+exclude = ["examples/"]
 
 [features]
 # Manual verification only. Ordinary workspace/CI commands omit this target.
@@ -33,6 +36,8 @@ tonic.workspace = true
 zstd.workspace = true
 
 [build-dependencies]
+# The descriptor comes from the proto package itself, so the archive builds standalone.
+praevis-thetadata-proto.workspace = true
 prost.workspace = true
 prost-types.workspace = true
 heck = "0.5"

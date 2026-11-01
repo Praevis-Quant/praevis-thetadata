@@ -16,9 +16,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .replace('\n', " | ")
             .replace('\r', "")
     );
-    let schema = "../praevis-thetadata-proto/schema/thetadata.bin";
-    println!("cargo:rerun-if-changed={schema}");
-    let descriptors = prost_types::FileDescriptorSet::decode(fs::read(schema)?.as_slice())?;
+    // Same descriptor the proto package compiles, taken from its public constant.
+    let descriptors =
+        prost_types::FileDescriptorSet::decode(praevis_thetadata_proto::FILE_DESCRIPTOR_SET)?;
     let mut source = String::from("impl ThetaClient {\n");
     // Only included by tests/examples. Generate the otherwise repetitive trait
     // stubs from the same descriptor, without modifying the vendor schema.
