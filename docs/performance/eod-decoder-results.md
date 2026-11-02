@@ -79,6 +79,47 @@ accounting and error categories are unchanged.
 | Table | timestamps-none | 3 | 0.932-0.967 | 0.905-0.958 | 0.899-1.021 |
 | Table | timestamps-zstd | 3 | 0.926-0.949 | 0.918-0.961 | 0.890-0.910 |
 
+## Maintainer Windows PC (quiet x86_64 host, 2026-11-02)
+
+Host: AMD Ryzen 7 2700 (8C/16T, Zen+), Windows 11 Pro, desktop on AC power and
+otherwise idle, rustc 1.99.0. Baseline `7274474`, candidate `73bdb48`. Protocol:
+
+- separate clean detached worktrees, each with its own target directory;
+- release builds finished before measuring;
+- runs from inside each checkout, in alternating AB/BA order;
+- native `compare` and `tools/eod_compare_summary.py`.
+
+Deviations from the runner protocol: A/A used 2 rounds. Table got 3 extra A/B
+rounds (r4-r6) to check a single-round outlier. The reader-only candidate was
+not rerun, because the runner data already answers it.
+
+| Case (decode p50, candidate/baseline) | A/A (2 rounds) | A/B r1-r3 | Table A/B r4-r6 |
+| --- | --- | --- | --- |
+| Numeric nulls-none / -zstd | 0.999-1.001 / 1.003-1.014 | **0.702-0.711 / 0.701-0.736** | — |
+| Table nulls-none / -zstd | 0.969-1.047 / 1.082-1.152 | **0.755-0.796 / 0.692-0.757** | **0.665-0.845 / 0.765-0.822** |
+| Numeric prices-none / -zstd | 1.006-1.030 / 0.957-1.015 | 0.907-0.919 / 0.868-0.932 | — |
+| Table prices-none / -zstd | 0.946-0.991 / 0.992-0.992 | 0.907-**1.483** / 0.923-0.948 | 0.940-0.951 / 0.966-1.182 |
+| Numeric large-mixed-none / -zstd | 0.985-0.992 / 0.982-1.006 | 0.706-0.886 / 0.894-0.964 | — |
+| Table large-mixed-none / -zstd | 1.008-1.022 / 0.955-1.019 | 0.924-0.938 / 0.958-1.117 | 0.945-0.991 / 0.935-0.972 |
+| Numeric timestamps-none / -zstd | 0.987-0.995 / 1.018-1.036 | 0.884-0.951 / 0.529-0.944 | — |
+| Table timestamps-none / -zstd | 1.047-1.496 / 0.971-1.002 | 0.994-1.121 / 0.973-1.005 | 0.959-1.061 / 0.951-1.028 |
+
+The 16-row `small-mixed-*` fixtures were noise here as on the runners (A/A
+0.21-3.61x) and are omitted.
+
+**Reading:**
+- The PC confirms the runners. Null decode is 0.67-0.85x on both engines,
+  numeric prices are 0.87-0.93x, and large mixed is at or below 1.0x.
+- Table prices-none at 1.483x in r1-r3 is a single-round spike: r4-r6 give
+  0.940-0.951x.
+- This host shows similar occasional single-round spikes even in A/A (Table
+  nulls-zstd 1.15x, timestamps-none 1.50x). Treat a one-round excursion as
+  noise unless it repeats.
+- No workload regresses consistently beyond the A/A spread.
+
+**Gate 2 is accepted as resolved** by the maintainer on 2026-11-02, on the
+basis of the runner and Windows PC evidence above.
+
 ## Reader only (`b1f6ef7`): why the fast paths exist
 
 On aarch64 (local sandbox, 3 rounds), the reader alone cut null decode to
@@ -110,9 +151,9 @@ regression (+9-19%) is therefore at least offset on the measured runners.
 
 Because the original control cannot be rebuilt, "resolved" means **better
 than the regressed baseline by more than the regression's measured size**, on
-noise-calibrated runners. It is not a like-for-like comparison with the
-original control. A quieter local Windows x86 measurement is pending from the
-maintainer.
+noise-calibrated runners and a quiet Windows PC. It is not a like-for-like
+comparison with the original control. The maintainer accepted gate 2 as
+resolved on 2026-11-02 (see the Windows PC section).
 
 The Table `*-mixed-none` shift noted after ADR-0019 (+1-2%) is superseded:
 Table `large-mixed-none` decode is now 0.89-0.92x.
