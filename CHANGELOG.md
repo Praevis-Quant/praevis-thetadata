@@ -6,12 +6,32 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versioned releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROADMAP.md).
 
-The workspace declares `0.1.0-alpha.1`, enabled for manual crates.io publication. No release
-tag exists as of 2026-10-04; the entries below describe implemented work, not a
-published `0.1.0` release. The Python compatibility baseline is separately
+`0.1.0-alpha.1` is the first published prerelease (crates.io, tag
+`v0.1.0-alpha.1`, 2026-11-02 UTC). Entries before it describe the work that
+release contains. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
+
+### Added
+
+- Publication record for `0.1.0-alpha.1`:
+  - crates.io URLs and registry checksums, tag and commit;
+  - Windows and Linux installs from crates.io;
+  - Linux consumers built from crates.io only, with no native-store packages in
+    the default auth/client trees, and the published CLI's lifecycle;
+  - docs.rs status: four libraries built (auth with `native-store`), and the
+    CLI is binary-only;
+  - single-owner status, with a backup-owner recommendation.
+- releases.md and ROADMAP mark alpha.1 as released and alpha.2 as the next
+  target.
+
+## [0.1.0-alpha.1] - 2026-11-02
+
+First experimental prerelease on crates.io: `praevis-thetadata-auth`,
+`-core`, `-proto`, `-client` and `-cli` (tag `v0.1.0-alpha.1`, commit
+`0d3ea72`). It is independent and unofficial, APIs may change between alphas,
+and it is not full Python parity. The Python compatibility baseline is 1.0.17.
 
 ### Changed
 

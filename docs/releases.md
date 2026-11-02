@@ -16,7 +16,7 @@ the account holder operates the optional live checks.
 
 | Target | Concrete deliverable | Exit gates | Depends on / remaining work |
 | --- | --- | --- | --- |
-| `0.1.0-alpha.1` | Useful first publication of auth, core, proto, client and CLI; client EOD clearly experimental | Proto bindings and research at the current reviewed upstream baseline (1.0.17, [update plan](upstream-update-1.0.17.md), decision D5); self-contained archives and licenses; dependency versions/order; Windows/Linux external consumer builds; verified registry owner/publish capability; manually recorded PROD auth and small EOD result, or explicit documented service blocker before reconsidering scope (**met 2026-11-01**: Windows PROD auth with in-memory/`--save`/status/logout lifecycle, AAPL EOD capture/replay matching on all three interfaces, FREE quote denial; [observations](research/live-observations.md#alpha1-prod-exit-gate-2026-11-01)); exact archive review and publication approval | [Packaging plan](crates-io-release-plan.md), [manual live verification](live-verification.md). No empty placeholder crates. |
+| `0.1.0-alpha.1` | **Released 2026-11-02 UTC** ([publication record](crates-io-release-plan.md#publication-record-010-alpha1), tag `v0.1.0-alpha.1`). Useful first publication of auth, core, proto, client and CLI; client EOD clearly experimental | Proto bindings and research at the current reviewed upstream baseline (1.0.17, [update plan](upstream-update-1.0.17.md), decision D5); self-contained archives and licenses; dependency versions/order; Windows/Linux external consumer builds; verified registry owner/publish capability; manually recorded PROD auth and small EOD result, or explicit documented service blocker before reconsidering scope (**met 2026-11-01**: Windows PROD auth with in-memory/`--save`/status/logout lifecycle, AAPL EOD capture/replay matching on all three interfaces, FREE quote denial; [observations](research/live-observations.md#alpha1-prod-exit-gate-2026-11-01)); exact archive review and publication approval | [Packaging plan](crates-io-release-plan.md), [manual live verification](live-verification.md). No empty placeholder crates. |
 | `0.1.0-alpha.2` | EOD feature-complete candidate: exact numeric delivery and Table adapter, bounded lifecycle and documented real-service behavior | Close every applicable clause in the [EOD matrix](requirements/stock-eod-matrix.md); resolve measured null/price regressions or approve a measured per-workload tradeoff; calibrate resource defaults; compare authorized live captures with all three local interfaces; record unresolved service semantics explicitly | Alpha.1; current performance and resource work; real account/entitlements and captures. |
 | `0.1.0-beta.1` | Freeze auth/EOD public API for the first supported release; runnable consumer examples and troubleshooting | Accept or revise the applicable proposed ADRs; requirement-to-test/evidence review; partial-result and cancellation examples; install/build outside workspace; document supported platforms, native-store prerequisites, resource policy and compatibility boundaries | Alpha.2; release review covers API stability, packaging and diagnostics. |
 | `0.1.0` | Supported auth + single-symbol stock EOD libraries and auth CLI | No unresolved blocker for the declared surface; green synthetic Windows/Linux checks; maintainer-reviewed manual PROD report on the release candidate; retained benchmark comparison and calibrated acceptance decision; signed-off release checklist below | Beta.1. This is not full Python parity and makes no flat-file/real-time promise. |
@@ -100,6 +100,21 @@ evidence. Select row 6 from the [subscription matrix](subscription-testing.md);
 live checks remain manual and outside CI. Alpha.1 can precede rows 4-5, with
 experimental scope stated in its release notes. Publish no comparative numbers
 until the comparator, outputs and measurement boundaries have been reviewed.
+
+## Status: alpha.1 released, next target alpha.2
+
+`0.1.0-alpha.1` was released on 2026-11-02 UTC. Every checklist row below has
+alpha.1 evidence:
+
+- archives: staging rehearsal and published checksums;
+- scope: the 1.0.17 baseline and ADR-0020;
+- correctness: Windows/Linux CI;
+- live interoperability: the PROD exit gate;
+- installs and consumers from crates.io on Windows and Linux.
+
+The one exception is performance, which remains descriptive and is an alpha.2
+gate. The **next target is `0.1.0-alpha.2`**, the EOD feature-complete
+candidate. See its exit gates above and execution-order rows 3-6.
 
 ## Checklist for every release candidate
 

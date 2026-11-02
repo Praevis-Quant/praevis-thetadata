@@ -1,8 +1,70 @@
 # crates.io prerelease plan
 
-Status: preparation plan, 2026-10-04; archives rehearsed 2026-11-01. No packages have been published by this
-work. Publishing is enabled (`publish = ["crates-io"]`) in the PR the owner
-approves for publication; no workflow publishes.
+Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
+(2026-11-01 US time) after owner approval. The plan below is retained as the
+preparation record. Publishing remains manual; no workflow publishes.
+
+## Publication record: 0.1.0-alpha.1
+
+The maintainer published from `main` at `0d3ea724a88b` (#26), in wave order:
+auth, core, proto, then client, then CLI. Every upload exited 0, and Cargo
+waited for index availability each time. The annotated tag `v0.1.0-alpha.1`
+(tag object `4c008cebb81c`) points to that commit. The crates.io version API
+lists `joey-huckabee` as publisher, and none of the versions is yanked.
+
+| Package | crates.io SHA-256 | Bytes | Published (UTC) | docs.rs |
+| --- | --- | ---: | --- | --- |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.0-alpha.1) | `254443a3fc08fef752d2f0e124ad3dc855ae9bccdf0d73d0efe11b9d93da8874` | 29381 | 2026-11-02 02:37:44 | Built; [docs](https://docs.rs/praevis-thetadata-auth/0.1.0-alpha.1) include `SessionStore` (built with `native-store`) |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.0-alpha.1) | `38b53065e424baf52f431ddf9054f73ac6d8127730127d97b7aed7e55af14fb4` | 12992 | 2026-11-02 02:38:07 | Built; [docs](https://docs.rs/praevis-thetadata-core/0.1.0-alpha.1) |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.0-alpha.1) | `1d3ab38f805df728146e633ed3ca1a9d858419009a5f6bc318635112caa54254` | 23333 | 2026-11-02 02:38:50 | Built; [docs](https://docs.rs/praevis-thetadata-proto/0.1.0-alpha.1) |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.0-alpha.1) | `142dfae9f8da15a0545f9e5716e182861a1c6b389afb115b6afec8c0b2e19d8b` | 53187 | 2026-11-02 02:39:33 | Built; [docs](https://docs.rs/praevis-thetadata-client/0.1.0-alpha.1) |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.0-alpha.1) | `c171d3123da4de430172d5364e06763ed6bfbc64235cd01ed7625217be91a9ca` | 31433 | 2026-11-02 02:39:42 | Not applicable: binary-only package ("is not a library"); docs.rs build itself succeeded |
+
+The archives were built by `cargo publish` from the git checkout, so they
+include `.cargo_vcs_info.json` and differ in hash from the earlier rehearsal
+copies (see below). The hashes above are the registry's.
+
+**Windows (maintainer, 2026-11-01):**
+- `cargo install praevis-thetadata-cli --version 0.1.0-alpha.1 --locked`
+  into a temporary root succeeded, and `--version` printed `0.1.0-alpha.1`.
+- `auth status --json` read the user's existing default PROD record, saved on
+  2026-10-04 by a pre-release build: exit 0, `persisted: true`,
+  `validity: "not_checked"`. Saved v1 records therefore carry over to the
+  published build.
+
+**Linux (crates.io only, no workspace or path dependencies, 2026-11-02):**
+- The same `cargo install` into a temporary root succeeded; `--version`
+  prints `0.1.0-alpha.1`, and `auth --help` lists `--save`.
+- The published binary's lifecycle, run in a disposable keyring against a
+  synthetic local identity server:
+  - `auth` gives `persisted: false`;
+  - `status` exits 3;
+  - `auth --save` gives `persisted: true` in Linux Secret Service;
+  - `status` shows `persisted: true`, target
+    `praevis.thetadata.auth.v1:STAGE:published-check`, `not_checked`;
+  - `logout` gives `removed: true`, and `status` then exits 3.
+- Fresh consumer crates, the `tools/release-consumers` set with crates.io as
+  the only source, built, ran and tested against the published packages:
+  - `auth-consumer` (default features): 0 keyring/D-Bus packages;
+  - `auth-store-consumer` (`native-store`): 3 keyring/D-Bus packages, through
+    the feature only; the identity check passes;
+  - `core-consumer`: README values;
+  - `proto-consumer`: 100 RPCs;
+  - `client-consumer`: 0 keyring/D-Bus packages; typed request validation
+    passes.
+- The downloaded `.crate` files match the registry SHA-256 values and sizes
+  above.
+
+**Owners (public crates.io API, 2026-11-02):** each of the five crates has a
+single owner, user `joey-huckabee`. **Recommendation:** add a backup owner
+(a second trusted account or a GitHub team, `cargo owner --add <login|github:org:team> <crate>`)
+for continuity. The owner chooses who.
+
+**Follow-up for alpha.2:** the CLI package description still says "with
+native Windows/Linux session storage". Since ADR-0020, persistence is opt-in
+(`auth --save`). Update the description in the next release, because
+published metadata cannot change without a new version.
+
 
 The [versioned release milestones](releases.md) define scope and exit gates;
 this document supplies the alpha.1 packaging/publication work. The manual live
