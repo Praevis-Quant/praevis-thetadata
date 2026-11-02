@@ -15,6 +15,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **EOD benchmark policy and resource calibration** (PERF-L3-008,
+  EOD-L3-023):
+  - Decode p50 on the eight 10,000-row workloads gates performance
+    acceptance, with tolerances approved on 2026-11-02: runners 1.05/0.95;
+    the maintainer desktop 1.10/0.90 (provisional).
+  - The harness gains `--extremes`, limit-sized text and header batches, and
+    the workflow passes `run_args`.
+  - The resource defaults are kept, with their effective ceilings documented:
+    the 128 MiB accounted budget binds before the other limits combine.
+    Limit-sized batches complete at the 16-stream cap on Windows and Linux.
+
 - **Faster bounded EOD decoding.** Each cell is read by a hand-written
   decoder with prost-identical semantics, plus fast paths for two-byte
   null/boolean/small-integer cells, instead of building a prost `DataValue`.

@@ -150,6 +150,10 @@ enum Mode {
         /// Pause after each checked batch while retaining that batch's ownership.
         #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u32).range(0..=1000))]
         consumer_delay_ms: u32,
+        /// Measure limit-sized calibration batches (text and header limits) instead of the
+        /// standard workloads; `--rows` is ignored. Compare only with other extremes runs.
+        #[arg(long)]
+        extremes: bool,
     },
     Compare {
         #[arg(long)]
@@ -425,6 +429,79 @@ async fn delivery(
     })
 }
 
+/// Limit-sized calibration batches for the default `DecodeLimits` (EOD-L3-023). Every text
+/// cell is at `text_bytes` (1 MiB), and every header is at `header_bytes` (1024) with
+/// `headers` (128) columns. The 128 MiB accounted-allocation budget binds before the other
+/// maxima combine: 32 MiB of max-size text (numeric) and 1,000,000 cells at 128 columns
+/// (Table) are rejected. These sizes are the largest round values both engines accept
+/// (docs/performance/eod-calibration.md). Synthetic; values are trivial.
+fn extreme_tables() -> Vec<(&'static str, wire::DataTable, Table)> {
+    use praevis_thetadata_core::Value;
+    use wire::{DataValue, DataValueList, data_value::DataType};
+    let limits = praevis_thetadata_client::DecodeLimits::default();
+    let build = |headers: Vec<String>, rows: Vec<Vec<(DataType, Value)>>| {
+        let wire = wire::DataTable {
+            headers: headers.clone(),
+            data_table: rows
+                .iter()
+                .map(|row| DataValueList {
+                    values: row
+                        .iter()
+                        .map(|(cell, _)| DataValue {
+                            data_type: Some(cell.clone()),
+                        })
+                        .collect(),
+                })
+                .collect(),
+        };
+        let expected = Table {
+            headers,
+            rows: rows
+                .into_iter()
+                .map(|row| row.into_iter().map(|(_, v)| v).collect())
+                .collect(),
+        };
+        (wire, expected)
+    };
+    // Three rows of eight 1 MiB text cells: 24 MiB. Four rows (32 MiB) exceed the
+    // numeric engine's accounted budget, and six (48 MiB) exceed both engines'.
+    let text = "T".repeat(limits.text_bytes);
+    let (text_wire, text_expected) = build(
+        (0..8).map(|n| format!("synthetic_{n}")).collect(),
+        (0..3)
+            .map(|_| {
+                (0..8)
+                    .map(|_| (DataType::Text(text.clone()), Value::Text(text.clone())))
+                    .collect()
+            })
+            .collect(),
+    );
+    // 128 headers of exactly 1024 bytes and 3,906 rows (499,968 cells). Table rejects
+    // 7,812 rows (999,936 cells, just under the cell limit); numeric accepts both.
+    let headers: Vec<String> = (0..limits.headers)
+        .map(|n| {
+            let prefix = format!("h{n:03}_");
+            format!("{prefix}{}", "H".repeat(limits.header_bytes - prefix.len()))
+        })
+        .collect();
+    let rows = limits.cells / limits.headers / 2;
+    let (header_wire, header_expected) = build(
+        headers,
+        (0..rows)
+            .map(|row| {
+                (0..limits.headers)
+                    .map(|_| (DataType::Number(row as i64), Value::Integer(row as i64)))
+                    .collect()
+            })
+            .collect(),
+    );
+    vec![
+        ("text-max", text_wire, text_expected),
+        ("headers-max", header_wire, header_expected),
+    ]
+}
+
+#[allow(clippy::too_many_arguments)] // One parameter per CLI option of `run`.
 fn run(
     output: &Path,
     samples: u32,
@@ -433,6 +510,7 @@ fn run(
     streams: u32,
     engine: Engine,
     consumer_delay_ms: u32,
+    extremes: bool,
 ) -> Result<(), Failure> {
     if cfg!(debug_assertions) {
         return Err("benchmark requires a --release build".into());
@@ -442,14 +520,26 @@ fn run(
         .enable_all()
         .build()?;
     let mut cases = Vec::new();
-    for (name, shape, count) in [
-        ("small-mixed", support::Shape::Mixed, 16),
-        ("large-mixed", support::Shape::Mixed, rows as usize),
-        ("nulls", support::Shape::Nulls, rows as usize),
-        ("timestamps", support::Shape::Timestamps, rows as usize),
-        ("prices", support::Shape::Prices, rows as usize),
-    ] {
-        let (wire, expected) = support::table(shape, count);
+    let workloads: Vec<(&str, wire::DataTable, Table)> = if extremes {
+        extreme_tables()
+    } else {
+        [
+            ("small-mixed", support::Shape::Mixed, 16),
+            ("large-mixed", support::Shape::Mixed, rows as usize),
+            ("nulls", support::Shape::Nulls, rows as usize),
+            ("timestamps", support::Shape::Timestamps, rows as usize),
+            ("prices", support::Shape::Prices, rows as usize),
+        ]
+        .into_iter()
+        .map(|(name, shape, count)| {
+            let (wire, expected) = support::table(shape, count);
+            (name, wire, expected)
+        })
+        .collect()
+    };
+    for (name, wire, expected) in workloads {
+        let count = expected.rows.len();
+        let width = expected.headers.len();
         let expected = Arc::new(expected_output(&expected, engine));
         for compressed in [false, true] {
             let response = support::response(&wire, compressed);
@@ -530,16 +620,16 @@ fn run(
                 "decode": stats(&decode_ns), "first_batch": stats(&first_batch_ns), "delivery": stats(&delivery_ns),
                 "batch_wait": stats(&batch_wait_ns), "executor_lateness": stats(&executor_lateness_ns),
                 "decode_rows_per_second": count as f64 / seconds,
-                "decode_cells_per_second": (count * 8) as f64 / seconds,
+                "decode_cells_per_second": (count * width) as f64 / seconds,
                 "decode_wire_bytes_per_second": response.compressed_data.len() as f64 / seconds,
                 "delivery_rows_per_second": (count * 3 * streams as usize) as f64 / delivery_seconds,
-                "requested_bytes_per_cell": allocation.requested_bytes as f64 / (count * 8) as f64,
+                "requested_bytes_per_cell": allocation.requested_bytes as f64 / (count * width) as f64,
             });
             cases.push(Case {
                 name,
                 fixture_sha256: hash(&response.encode_to_vec()),
                 rows: count,
-                cells: count * 8,
+                cells: count * width,
                 encoded_bytes: response.compressed_data.len(),
                 decompressed_bytes: wire.encoded_len(),
                 decode_ns,
@@ -667,6 +757,7 @@ fn main() -> Result<(), Failure> {
             rows,
             streams,
             consumer_delay_ms,
+            extremes,
         } => run(
             &output,
             samples,
@@ -675,6 +766,7 @@ fn main() -> Result<(), Failure> {
             streams,
             engine,
             consumer_delay_ms,
+            extremes,
         ),
         Mode::Compare {
             baseline,
