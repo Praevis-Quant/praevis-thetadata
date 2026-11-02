@@ -24,6 +24,15 @@ end-of-day (EOD) stream.
 - Not included: flat-file downloads, real-time streaming or a dataframe API.
   Responses carrying a flat-file manifest are rejected.
 
+## Install
+
+Prereleases are never selected implicitly, so pin the version:
+
+```toml
+[dependencies]
+praevis-thetadata-client = "=0.1.0-alpha.1"
+```
+
 ## Supported platforms
 
 Windows and Linux are tested in CI. The client has no platform-specific code.

@@ -27,6 +27,15 @@ persistence so separate processes can reuse a saved session.
   refresh, expiry or revocation contract. See
   [ADR-0020](https://github.com/Praevis-Quant/praevis-thetadata/blob/main/docs/adr/0020-in-memory-sessions-and-optional-persistence.md).
 
+## Install
+
+Prereleases are never selected implicitly, so pin the version:
+
+```toml
+[dependencies]
+praevis-thetadata-auth = "=0.1.0-alpha.1"
+```
+
 ## Supported platforms
 
 The default build (HTTP authentication and in-memory sessions) is pure Rust

@@ -28,6 +28,15 @@ Struct literals of generated messages can break when the upstream schema adds
 fields (for example, `ZonedDateTime` gained `nanos`/`precision` in 1.0.16).
 Prefer `..Default::default()`.
 
+## Install
+
+Prereleases are never selected implicitly, so pin the version:
+
+```toml
+[dependencies]
+praevis-thetadata-proto = "=0.1.0-alpha.1"
+```
+
 ## Supported platforms
 
 Any platform supported by Rust 1.88+, `prost` and `tonic`. CI covers Windows and Ubuntu.

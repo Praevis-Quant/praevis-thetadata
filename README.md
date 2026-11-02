@@ -24,7 +24,14 @@ package. Each row below is a separate Cargo package. The CLI lives in
 package name, and builds the `praevis-thetadata` executable. Cargo places build output in
 the shared root `target/` directory; that does not make the CLI a root package.
 The selected naming and compatibility boundaries are recorded in
-[the naming decision](docs/project-naming.md). Publication remains disabled.
+[the naming decision](docs/project-naming.md). The five packages are released
+together on crates.io as the **experimental `0.1.0-alpha.1` prerelease**. It is
+independent and unofficial, APIs may change between alphas, and it is not full
+Python parity. Prereleases need an explicit version, for example
+`cargo install praevis-thetadata-cli --version 0.1.0-alpha.1 --locked` or
+`praevis-thetadata-auth = "=0.1.0-alpha.1"`. Publication is manual and
+owner-approved ([release plan](docs/crates-io-release-plan.md)); no workflow
+publishes.
 
 | Package | Responsibility | Status |
 | --- | --- | --- |
@@ -153,7 +160,7 @@ Native persistence supports Windows and Linux. Linux uses a persistent Secret Se
 
 ## Reuse in another Rust project
 
-Add a path dependency on `crates/praevis-thetadata-auth` (or a Git dependency once this workspace is hosted). Authentication is explicit; the library never discovers environment variables or credentials on its own. By default the session lives in memory, as in the vendor Python package: clone it to reuse it within your process ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md)). The default build has no keyring or D-Bus dependencies.
+Add `praevis-thetadata-auth = "=0.1.0-alpha.1"` from crates.io (experimental prerelease), or a path dependency on `crates/praevis-thetadata-auth`. Authentication is explicit; the library never discovers environment variables or credentials on its own. By default the session lives in memory, as in the vendor Python package: clone it to reuse it within your process ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md)). The default build has no keyring or D-Bus dependencies.
 
 ```rust,no_run
 use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials};

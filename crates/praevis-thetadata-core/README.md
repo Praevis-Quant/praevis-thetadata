@@ -24,6 +24,15 @@ batches.
 
 It has no HTTP, gRPC, async runtime, keyring or CLI dependencies.
 
+## Install
+
+Prereleases are never selected implicitly, so pin the version:
+
+```toml
+[dependencies]
+praevis-thetadata-core = "=0.1.0-alpha.1"
+```
+
 ## Supported platforms
 
 Pure Rust; any platform supported by Rust 1.88+ and its dependencies
