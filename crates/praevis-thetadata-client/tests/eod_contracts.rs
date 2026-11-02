@@ -61,7 +61,11 @@ async fn client(fixture: &Fixture, policy: EodPolicy) -> ThetaClient {
     .unwrap()
 }
 fn safe(error: EodError) {
-    assert!(!format!("{error:?} {error}").contains("SENTINEL"));
+    let text = format!("{error:?} {error}");
+    // No payload/status sentinel, session token or account email in any typed error.
+    for secret in ["SENTINEL", support::TOKEN, support::EMAIL] {
+        assert!(!text.contains(secret), "{text}");
+    }
     assert!(error.source().is_none());
 }
 
@@ -572,6 +576,106 @@ async fn whole_query_deadline_is_sent_as_grpc_timeout_metadata() {
         // immediately, so the remaining budget is just under it.
         assert!(sent <= Duration::from_secs(10), "{sent:?}");
         assert!(sent > Duration::from_secs(9), "{sent:?}");
+    }
+}
+
+/// EOD-L3-005: the typed path reuses the supplied session and never authenticates again.
+/// The fixture's auth listener counts every connection for the whole test.
+#[tokio::test]
+async fn typed_queries_never_authenticate_again() {
+    let (session, auth_connections) = support::session_with_auth_counter().await;
+    let good = table(DataType::Number(1));
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(support::response(&good, false))],
+        ..Default::default()
+    });
+    let client = ThetaClient::with_eod_policy(
+        ClientConfig {
+            endpoint: Some(fixture.endpoint.clone()),
+            allow_insecure: true,
+            request_timeout: Duration::from_secs(10),
+            ..Default::default()
+        },
+        session,
+        EodPolicy::default(),
+    )
+    .await
+    .unwrap();
+    for table_api in [false, true] {
+        let mut stream = Stream::open(&client, table_api).await.unwrap();
+        while stream.next().await.unwrap().is_some() {}
+    }
+    // A failing query and a cancelled one must not trigger re-authentication either.
+    let failing = Fixture::start(Script {
+        initial_error: Some(tonic::Status::unauthenticated("SENTINEL expired")),
+        ..Default::default()
+    });
+    let failing_client = ThetaClient::with_eod_policy(
+        ClientConfig {
+            endpoint: Some(failing.endpoint.clone()),
+            allow_insecure: true,
+            ..Default::default()
+        },
+        client.session(),
+        EodPolicy::default(),
+    )
+    .await
+    .unwrap();
+    // The status arrives with the response headers, so opening the stream fails.
+    let error = Stream::open(&failing_client, false).await.err().unwrap();
+    assert_eq!(error, EodError::Remote(tonic::Code::Unauthenticated));
+    safe(error);
+    let mut cancelled = client
+        .stock_eod_batches(
+            StockEodRequest::new(
+                "X",
+                NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+            )
+            .unwrap(),
+        )
+        .await
+        .unwrap();
+    cancelled.cancel();
+    let _ = cancelled.next_batch().await;
+    assert_eq!(
+        auth_connections.load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
+}
+
+/// EOD-L3-017: endpoint URLs carrying credentials, a query or a fragment are rejected
+/// before any connection, and neither the typed nor the raw error echoes them.
+#[tokio::test]
+async fn credential_bearing_endpoint_urls_are_rejected_without_echo() {
+    let session = support::session().await;
+    for url in [
+        "http://user:SENTINEL@127.0.0.1:9",
+        "https://SENTINEL@127.0.0.1:9",
+        "http://127.0.0.1:9/?token=SENTINEL",
+        "http://127.0.0.1:9/#SENTINEL",
+    ] {
+        let config = ClientConfig {
+            endpoint: Some(url.into()),
+            allow_insecure: true,
+            ..Default::default()
+        };
+        let typed =
+            ThetaClient::with_eod_policy(config.clone(), session.clone(), EodPolicy::default())
+                .await
+                .err()
+                .unwrap();
+        assert_eq!(typed, EodError::Configuration, "{url}");
+        safe(typed);
+        let raw = ThetaClient::with_session(config, session.clone())
+            .await
+            .err()
+            .unwrap();
+        let text = format!("{raw:?} {raw}");
+        assert!(
+            !text.contains("SENTINEL") && !text.contains(support::TOKEN),
+            "{url}: {text}"
+        );
     }
 }
 

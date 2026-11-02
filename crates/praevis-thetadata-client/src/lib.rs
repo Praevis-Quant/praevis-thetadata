@@ -129,6 +129,20 @@ impl ThetaClient {
             .endpoint
             .clone()
             .unwrap_or_else(|| format!("https://{host}:443"));
+        // Same rule as the auth URL (AUTH-L3-005): no embedded credentials, query or
+        // fragment. Checked on the string before tonic parses it, so no transport error,
+        // Debug or log output can echo such a URL (EOD-L3-017).
+        let authority = url
+            .split_once("://")
+            .map_or(url.as_str(), |(_, rest)| rest)
+            .split(['/', '?', '#'])
+            .next()
+            .unwrap_or_default();
+        if authority.contains('@') || url.contains('?') || url.contains('#') {
+            return Err(Error::Config(
+                "endpoint URL cannot contain credentials, a query, or a fragment",
+            ));
+        }
         let mut endpoint =
             Endpoint::from_shared(url.clone())?.connect_timeout(config.connect_timeout);
         match endpoint.uri().scheme_str() {

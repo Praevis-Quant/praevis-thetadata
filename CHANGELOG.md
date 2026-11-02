@@ -15,6 +15,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Client endpoint URLs with credentials, a query or a fragment are now
+  rejected** (`Error::Config` / `EodError::Configuration`) before tonic parses
+  them, matching the auth URL rule. No error, `Debug` or log output can echo
+  such a URL (EOD-L3-017).
+
 - **Timestamps after 9999-12-31T23:59:59.999Z are now rejected** in both the
   Table formatter and the numeric `Timestamp`. They previously formatted as
   `+10000-...`, which is not RFC 3339 (EOD-L3-009). A platform-independent
@@ -44,6 +49,10 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   ([results](docs/performance/eod-decoder-results.md)).
 
 ### Added
+
+- An EOD contract test with an injected auth-connection counter shows that
+  typed queries never re-authenticate (EOD-L3-005). Typed errors are checked
+  for the absence of the session token and account email.
 
 - EOD acceptance tests:
   - per-value price scales across rows and batches;
