@@ -19,6 +19,10 @@ on:
         description: "Space-separated engines to compare"
         required: false
         default: "numeric table"
+      run_args:
+        description: "Extra eod_benchmark run arguments for both sides, e.g. --streams 16 or --extremes --samples 4 --warmups 1"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -98,6 +102,7 @@ jobs:
         env:
           ROUNDS: ${{ inputs.rounds }}
           ENGINES: ${{ inputs.engines }}
+          RUN_ARGS: ${{ inputs.run_args }}
         run: |
           set -euo pipefail
           ext=""; [ "$RUNNER_OS" = Windows ] && ext=".exe"
@@ -108,7 +113,7 @@ jobs:
               for side in $order; do
                 # Run inside the checkout so the report records its commit and clean state.
                 (cd "../bench-$side" && "./target/release/examples/eod_benchmark$ext" run --engine "$engine" \
-                  --output "$out/eod-$engine-$side-r$round.json")
+                  $RUN_ARGS --output "$out/eod-$engine-$side-r$round.json")
               done
               "../bench-candidate/target/release/examples/eod_benchmark$ext" compare \
                 --baseline "$out/eod-$engine-baseline-r$round.json" \
