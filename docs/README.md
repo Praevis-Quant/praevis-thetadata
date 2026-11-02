@@ -39,6 +39,8 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Numeric EOD results](performance/eod-numeric-results.md) | Windows/Linux legacy, Table and numeric comparisons, regressions and retained hashes |
 | [EOD resource audit](performance/eod-resource-audit.md) | Envelope preflight, capacity accounting, admission partition, running cancellation and bounded inline work |
 | [EOD scheduling results](performance/eod-scheduling-results.md) | Repeated Windows/Linux inline/offload comparisons, portable default decision and retained hashes |
+| [EOD benchmark policy](performance/benchmark-policy.md) | PERF-L3-008: gating workloads/metric, three-host A/A noise, approved tolerances (D-B) |
+| [EOD resource calibration](performance/eod-calibration.md) | EOD-L3-023: kept defaults, effective ceilings, 16-stream and limit-sized runner measurements |
 | [EOD decoder recovery](performance/eod-decoder-results.md) | alpha.2 step 2: hand-written cell reader plus fast paths; Windows/Linux runner before/after against A/A noise; gate-2 assessment |
 | [EOD fault/resource calibration](performance/eod-acceptance-results.md) | Local error provenance, concurrent-stream stall/fix, slow-consumer measurements, retained regressions and policy rationale |
 | [Roadmap](ROADMAP.md) | Forward-looking candidates and the preserved original review |
