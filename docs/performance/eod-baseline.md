@@ -112,6 +112,27 @@ report regressions, both pair orders and variability. There is no calibrated
 latency regression threshold yet. This task captures the **before** baseline;
 it makes no optimization/speedup claim.
 
+### On GitHub-hosted runners (Windows and Linux)
+
+The **Synthetic EOD performance** workflow (`workflow_dispatch`) implements the
+same protocol on `windows-latest` and `ubuntu-latest`. Give it `baseline`, and
+optionally `candidate` (default: the dispatched commit), `rounds` (default 3)
+and `engines` (default `numeric table`). It:
+
+1. builds both commits in clean worktrees;
+2. runs each engine in alternating AB/BA order across rounds, from inside each
+   checkout so the reports record commit and clean state;
+3. compares each matched pair with the native `compare` command;
+4. uploads every raw report;
+5. writes `tools/eod_compare_summary.py` ratio tables (candidate/baseline
+   median, min-max over rounds) to the job summary.
+
+Dispatch with `baseline` equal to `candidate` for an **A/A** run: the spread of
+its ratios is the runner noise that any A/B result must be read against.
+Shared runners differ between jobs and over time, so these results stay
+informational until PERF-L3-008 tolerances are calibrated. Leave `baseline`
+empty for the original single-commit job.
+
 The [initial Windows/WSL results](eod-results.md) record two clean-commit
 repetitions, measured limitations, retained report/binary hashes, and findings.
 
