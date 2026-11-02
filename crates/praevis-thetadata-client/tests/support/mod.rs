@@ -136,10 +136,22 @@ pub fn query() -> api::StockHistoryEodRequestQuery {
 /// Obtain a real Session via public auth against a one-shot synthetic HTTP peer.
 /// Never reads credentials/environment, calls ThetaData, or touches native storage.
 pub async fn session() -> Session {
+    session_with_auth_counter().await.0
+}
+
+/// Like [`session`], but the auth listener stays up for the rest of the test and counts
+/// every connection it accepts (EOD-L3-005 injected counter). The first is the login;
+/// any later connection means something tried to authenticate again.
+pub async fn session_with_auth_counter() -> (Session, Arc<std::sync::atomic::AtomicUsize>) {
+    use std::sync::atomic::{AtomicUsize, Ordering};
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let endpoint = format!("http://{}/auth", listener.local_addr().unwrap());
-    let task = tokio::spawn(async move {
+    let connections = Arc::new(AtomicUsize::new(0));
+    let counter = connections.clone();
+    let (first_done, first_done_rx) = oneshot::channel();
+    tokio::spawn(async move {
         let (mut socket, _) = listener.accept().await.unwrap();
+        counter.fetch_add(1, Ordering::SeqCst);
         let mut request = Vec::new();
         let mut buffer = [0; 2048];
         loop {
@@ -166,6 +178,12 @@ pub async fn session() -> Session {
             body.len()
         );
         socket.write_all(reply.as_bytes()).await.unwrap();
+        let _ = first_done.send(());
+        // Keep counting any later authentication attempt; never answer it.
+        while let Ok((socket, _)) = listener.accept().await {
+            counter.fetch_add(1, Ordering::SeqCst);
+            drop(socket);
+        }
     });
     let client = AuthClient::new(AuthConfig {
         auth_url: endpoint,
@@ -177,8 +195,8 @@ pub async fn session() -> Session {
         .authenticate(&Credentials::api_key("synthetic-key"))
         .await
         .unwrap();
-    task.await.unwrap();
-    result
+    first_done_rx.await.unwrap();
+    (result, connections)
 }
 
 #[derive(Clone, Default)]
