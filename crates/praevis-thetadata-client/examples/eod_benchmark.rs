@@ -501,6 +501,7 @@ fn extreme_tables() -> Vec<(&'static str, wire::DataTable, Table)> {
     ]
 }
 
+#[allow(clippy::too_many_arguments)] // One parameter per CLI option of `run`.
 fn run(
     output: &Path,
     samples: u32,
