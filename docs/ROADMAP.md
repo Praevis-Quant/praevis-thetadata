@@ -12,6 +12,12 @@ option/index/calendar/rate slices, flat files and real-time subscriptions before
 a reviewed stable Rust API. PyO3 remains a separate later adapter release.
 Version targets are gate-based, not promises of dates or full Python parity.
 
+**`0.1.0-alpha.1` was released on crates.io on 2026-11-02 UTC**
+([record](crates-io-release-plan.md#publication-record-010-alpha1)). The next
+target is **`0.1.0-alpha.2`**: EOD feature and performance acceptance, the
+null/price regressions, resource defaults, and the Windows benchmark follow-up
+for ADR-0019.
+
 Use the [release execution chart](releases.md#immediate-execution-order) for the
 next packaging and acceptance changes. The selected
 [Rust and Python comparison plan](performance/python-comparison.md) adds a pinned
@@ -72,6 +78,14 @@ Explore bounded aggregation/windowing, export adapters and caching only with
 separate consumer requirements, state budgets and provenance/invalidation rules.
 
 ## Initial crates.io presence
+
+Done: `0.1.0-alpha.1` was published on 2026-11-02 UTC
+([record](crates-io-release-plan.md#publication-record-010-alpha1)).
+Follow-ups:
+- add a backup crates.io owner;
+- fix the CLI package description wording at the next release.
+
+The original plan is kept below.
 
 Prepare the selected [praevis-thetadata package family](project-naming.md) for
 publication. Recheck registry availability and give each package its own public
