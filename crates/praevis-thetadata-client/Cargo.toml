@@ -54,3 +54,7 @@ clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2 = "0.10"
+# Dependency-log capture test (EOD-L3-017, decision D-D a): both are already in the
+# graph through tonic/hyper/reqwest; used only to install test collectors.
+tracing = "0.1"
+log = { version = "0.4", features = ["std"] }

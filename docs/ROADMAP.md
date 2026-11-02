@@ -57,17 +57,16 @@ Verify validation/wire mapping, exact values, session use, stream/schema/empty-r
 
 Extend the coverage matrix from each selected inventory item to its ADR, requirements, implementation, and verification without dropping unselected items. Preserve source hashes and earlier research, reconcile new findings, and retain explicit planned/supported/excluded/unresolved dispositions. Close session lifecycle/identity questions before unattended use; establish separate evidence and designs for flat files, corporate actions, and real-time subscriptions. Do not turn unverified findings into requirements or claim live behavior from artifact coverage alone.
 
-## Deferred to 0.1.0 by decision D-C (2026-11-02)
+## Deferred hardening after alpha.2
 
-- **Transport and C-allocator memory profiling** (EOD-L3-023): measure HTTP/2
-  receive buffers, libzstd allocations, fragmentation and process RSS on Windows
-  and Linux under the calibration workloads. Until then, describe only the
-  client's own accounted allocations as bounded.
-- **Exhaustive adversarial decoder corpus** (EOD-L3-021): extend the alpha.2
-  bounded corpus to systematic and generated malformed, oversized and
-  amplification inputs across both decoders and the envelope parser.
-
-Both are exit gates for `0.1.0` in the [release plan](releases.md).
+Seven items were deliberately deferred from alpha.2 on 2026-11-02: memory
+profiling, the exhaustive adversarial corpus, a synthetic trusted-TLS fixture,
+controlled-clock interleavings with a transport seam, a `Price` numeric helper,
+finalizing the desktop tolerances, and a deterministic schema-lease/job-permit
+release order. They are consolidated, with sources and
+targets, in [Deferred from alpha.2](releases.md#deferred-from-alpha2). A
+dedicated hardening milestone (`0.1.0-alpha.3`) is proposed for them. Until
+item 1 closes, describe only the client's own accounted allocations as bounded.
 
 ## Performance-first library architecture and enhancements
 
