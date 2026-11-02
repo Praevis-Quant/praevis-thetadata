@@ -480,6 +480,17 @@ mod tests {
     use crate::test_fixture as fixture;
     use std::sync::{Condvar, Mutex};
 
+    /// Polls `done` with a short real-time sleep until it holds or 5 s pass.
+    async fn eventually(mut done: impl FnMut() -> bool) -> bool {
+        let end = std::time::Instant::now() + Duration::from_secs(5);
+        while !done() {
+            if std::time::Instant::now() >= end {
+                return false;
+            }
+            tokio::time::sleep(Duration::from_millis(1)).await;
+        }
+        true
+    }
     pub(super) struct Gate {
         entered: Semaphore,
         released: Mutex<bool>,
@@ -580,13 +591,13 @@ mod tests {
                 .unwrap()
                 .unwrap();
         drop(permit);
-        // The worker has finished and its abandoned output/leases are dropped.
-        for _ in 0..100 {
-            if pool.schemas.available_permits() == schema_capacity {
-                break;
-            }
-            tokio::task::yield_now().await;
-        }
+        // The abandoned worker drops its result tuple on the blocking thread,
+        // job permit first and schema lease second, so the job permit can be
+        // observed a moment before the lease. Wait boundedly; a leak still fails.
+        assert!(
+            eventually(|| pool.schemas.available_permits() == schema_capacity).await,
+            "schema lease was not released within the bound"
+        );
         assert_eq!(pool.schemas.available_permits(), schema_capacity);
         assert_eq!(pool.jobs.available_permits(), 1);
     }
