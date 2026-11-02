@@ -50,6 +50,20 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Observed PROD service semantics for stock EOD (EOD-L3-029)**, from seven
+  authorized FREE-account captures on 2026-11-02. Numeric, Table and raw
+  replay agree value-for-value on every data run. Observed (not guaranteed):
+  - both date endpoints are inclusive; rows ascend, one per frame;
+  - non-trading days are omitted;
+  - weekend, holiday and unknown-symbol queries all return `NOT_FOUND`
+    before data;
+  - FREE history excludes August 2020;
+  - history is not split-adjusted;
+  - price scale varies per value.
+
+  Open questions stay listed as unresolved in the
+  [semantics table](docs/requirements/stock-eod-evidence.md#observed-service-semantics-eod-l3-029).
+
 - A dependency-log capture test (`tests/eod_logs.rs`) shows that TRACE-level
   `tracing`/`log` output from hyper, h2, tonic and reqwest never contains the
   API key, session token, account email or remote payload/status text

@@ -19,7 +19,7 @@ logic. The service remains authoritative for each actual request.
 
 | Product/profile | Positive cases | Negative and boundary cases | Current evidence |
 | --- | --- | --- | --- |
-| Stocks / FREE | Small supported EOD query; exact values and clean EOF | Endpoint requiring VALUE or higher; historical date coverage; permission denial versus no-data | PROD EOD success on 2026-10-04 (1.0.12 baseline) and 2026-11-01 (1.0.17 baseline, `prod-aapl-alpha1-002`, identical values); AAPL stock snapshot quote denial reproduced in Rust on both dates, code 7 before data (`prod-free-quote-alpha1-001`); CLI auth on PROD reports FREE (subscriptions 0) |
+| Stocks / FREE | Small supported EOD query; exact values and clean EOF | Endpoint requiring VALUE or higher; historical date coverage; permission denial versus no-data | PROD EOD success on 2026-10-04 (1.0.12 baseline) and 2026-11-01 (1.0.17 baseline, `prod-aapl-alpha1-002`, identical values); 2026-11-02 (`*-a2-001`): AAPL four-day range, MSFT and NVDA June 2024 succeed; weekend, holiday and unknown symbol return `NOT_FOUND` (5) before data; **AAPL August 2020 returns `PERMISSION_DENIED` (7) before data, so FREE history depth excludes it** ([semantics](requirements/stock-eod-evidence.md#observed-service-semantics-eod-l3-029)); AAPL stock snapshot quote denial reproduced in Rust on both dates, code 7 before data (`prod-free-quote-alpha1-001`); CLI auth on PROD reports FREE (subscriptions 0) |
 | Stocks / VALUE | Selected EOD, quote/OHLC and delayed snapshot cases once implemented | STANDARD/PRO-only operations; delay/resolution/date boundaries | Unavailable: no paid account evidence |
 | Stocks / STANDARD | Selected trade/trade-quote and real-time snapshot cases once implemented | PRO resolution/history/subscription boundaries | Unavailable: no paid account evidence |
 | Stocks / PRO | Selected tick/history/streaming cases once implemented | Invalid query/contract, no-data and resource boundaries still apply | Unavailable: no paid account evidence |
@@ -32,8 +32,8 @@ The [vendor subscription page](https://thetadata.net/docs/Articles/Getting-Start
 provides candidate endpoint boundaries, but contains inconsistencies: FREE limits
 are described as both 20 and 30 requests/minute, and the index general-access and
 EOD tables disagree about FREE access. Do not turn those contradictions into
-hardcoded requirements. Our single January 2024 EOD result also does not settle
-the page's differing descriptions of historical coverage. Record discrepancies
+hardcoded requirements. Our FREE results (January and June 2024 allowed, August 2020 denied)
+narrow but do not settle the page's differing descriptions of historical coverage. Record discrepancies
 and use modest sequential checks; never probe throttling or subscription limits
 by load-testing the public service without a separate agreed plan.
 
