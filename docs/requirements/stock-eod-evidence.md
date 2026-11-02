@@ -40,12 +40,47 @@ not select all other wrappers or RPCs.
 | --- | --- | --- |
 | Resource defaults and decoding strategy | EOD-L3-023: first run EOD-L3-026/027 on the existing decoder. Select finite row/cell/text/accounted-allocation/ZSTD-window/shared-job defaults from observed costs on both platforms; document worst-case accounting, headroom, and the reason for synchronous or bounded offload. Then run boundary/rejection and after-change measurements. | **Calibrated 2026-11-02:** the maintainer kept the current defaults; the effective ceilings and the 16-stream cap behavior are recorded in the [calibration](../performance/eod-calibration.md). Offload remains the default. RSS/C-memory profiling is outside this record. |
 | Default timeouts | Retain existing 10/300/60-second configuration values but implement and test the distinct local timing semantics in EOD-L3-018/019. | Values are project policy, not vendor guarantees; local enforcement remains pending. |
-| Output columns and value meanings | Versioned vendor specification or authorized sanitized capture with entitlement context. | Preserve generic wire headers/values now; do not advertise a fixed OHLC or adjusted-price schema. |
-| Date inclusivity, market calendar, available history | Vendor confirmation or controlled live queries at boundary dates. | Forward exact dates; no client-side trimming or inclusivity guarantee. |
-| Service row ordering, duplicates, corrections/adjustments | Vendor evidence across controlled queries. | Preserve observed order/duplicates; no sorted/unique/adjusted-history promise. |
+| Output columns and value meanings | Versioned vendor specification or authorized sanitized capture with entitlement context. | Preserve generic wire headers/values now; do not advertise a fixed OHLC or adjusted-price schema. The same 16 columns were observed for AAPL, MSFT and NVDA on PROD/FREE ([2026-11-02](#observed-service-semantics-eod-l3-029)); their meanings remain unverified. |
+| Date inclusivity, market calendar, available history | Vendor confirmation or controlled live queries at boundary dates. | Forward exact dates; no client-side trimming or inclusivity guarantee. **Observed 2026-11-02:** inclusive at both ends, trading days only, and FREE depth excludes August 2020 ([semantics](#observed-service-semantics-eod-l3-029)). These are observations, not a library guarantee. |
+| Service row ordering, duplicates, corrections/adjustments | Vendor evidence across controlled queries. | Preserve observed order/duplicates; no sorted/unique/adjusted-history promise. **Observed 2026-11-02:** ascending, one row per frame and no duplicates in two four-day ranges; **not split-adjusted** (NVDA) ([semantics](#observed-service-semantics-eod-l3-029)). |
 | Entitlements, environments, token expiry/revocation | Authorized live evidence or current vendor contract. | Local fixtures do not prove access or lifecycle; no automatic refresh/retry. |
 | Timestamp `nanos`/`precision` (Python 1.0.16+) | Vendor definition of both fields, and whether stock EOD can emit `NANOSECOND`. | EOD-L3-030 rejects non-millisecond content as unsupported ([ADR-0019](../adr/0019-timestamp-precision.md)); supersede it with a representation decision once the semantics are known. |
 | Synthetic acceptance versus live validation | Link passing Rust tests/benchmarks to each requirement; record any authorized live checks separately under EOD-L3-029. | Synthetic acceptance can establish the library contract while service semantics remain unverified; explicitly label the scope of every support claim. |
+
+## Observed service semantics (EOD-L3-029)
+
+This table holds EOD-L3-029's open vendor-contract items. **Observed** means
+seen on PROD with the operator-declared FREE account on the stated date. It is
+not a vendor guarantee, and the library does not enforce or depend on it.
+**Unresolved** means there is no evidence, or the evidence cannot answer the
+question. Sources:
+
+- [alpha.2 runs, 2026-11-02](../research/live-observations.md#alpha2-prod-service-semantics-runs-2026-11-02);
+- [alpha.1 runs, 2026-11-01](../research/live-observations.md#alpha1-prod-exit-gate-2026-11-01);
+- [first run, 2026-10-04](../research/live-observations.md#first-prod-stock-eod-observation-2026-10-04).
+
+| Semantic | Status | Evidence | Library behavior |
+| --- | --- | --- | --- |
+| Output columns | Observed | Same 16 ordered columns for AAPL (4 dates), MSFT and NVDA (4 dates): 8 integers, 6 prices, 2 timestamps per row | Generic headers and values; no fixed schema is advertised |
+| Start/end date inclusivity | Observed: both inclusive | AAPL range frame 0 is byte-identical to the single-day frame; 4 rows for 4 trading days | Exact dates are forwarded; no trimming |
+| Row order | Observed: ascending by date | AAPL and NVDA four-day ranges | Delivered in received order; never sorted |
+| Duplicates | None observed | Two four-day ranges | Preserved if they occur |
+| Rows per response frame | Observed: one | All multi-day runs | Any batch size within `DecodeLimits` is accepted |
+| Non-trading days | Observed: omitted | No weekend or holiday rows in range | Not synthesized |
+| Range with no trading days | Observed: `NOT_FOUND` (5) at headers, zero frames | Weekend (6–7 Jan 2024) and holiday (1 Jan 2024) | `EodError::NoData`; successful empty completion (EOD-L3-012) stays supported but was not seen on PROD |
+| Unknown symbol | Observed: `NOT_FOUND` (5) at headers | `ZZZZNOTREAL` | `EodError::NoData`. **Unresolved:** at the status level the service does not distinguish an unknown symbol from no trading days, and vendor text is not parsed |
+| Determinism of a past day's row | Observed: identical | 2024-01-02 AAPL frame byte-identical on 2026-10-04, 2026-11-01 and 2026-11-02 | None assumed |
+| Split adjustment | Observed: **unadjusted** | NVDA 10:1: close(2024-06-07)/close(2024-06-10) = 9.926 | Values returned as sent; no adjustment |
+| Dividend and other corporate-action adjustment | **Unresolved** | No case run | None |
+| Later corrections to published rows | **Unresolved** | Determinism seen for one row only | None |
+| Price scale | Observed: **per value**, varying within a column | NVDA closes; varying frame sizes | Each value keeps its own scale; representational equality ([contract test](../../crates/praevis-thetadata-client/tests/eod_contracts.rs)) |
+| Timestamp precision | Observed: millisecond only | Every delivered PROD timestamp passed ADR-0019 | Non-millisecond values rejected (EOD-L3-030) |
+| Meaning of `created` and `last_trade` | **Unresolved** | Values not reviewed for meaning | Generic timestamps |
+| FREE history depth | Observed: includes 2024-01 and 2024-06; excludes 2020-08 (`PERMISSION_DENIED` (7) at headers) | AAPL 2020 split range | `EodError::Remote(Code::PermissionDenied)`; never mapped to no-data. **Unresolved:** exact boundary, and paid-tier depth |
+| Market calendar (early closes, unscheduled closures) | **Unresolved** | Only regular days and one full holiday | None |
+| Rate limits | **Unresolved** | Not probed, by policy ([subscription testing](../subscription-testing.md)) | No automatic retry |
+| Token lifetime, expiry and revocation | **Unresolved** | One in-memory session per run | No refresh or retry |
+| STAGE environment; paid tiers; options and indices | **Unresolved** (not run) | No account | None |
 
 No source artifact needs to be reinstalled for these requirements. The
 [recovery procedure](../research/upstream-source.md#recovering-the-removed-local-artifacts)

@@ -1,6 +1,6 @@
 # Live-service observation records
 
-The first bounded PROD run passed on 2026-10-04, and the alpha.1 exit-gate runs passed on 2026-11-01, as recorded below.
+The first bounded PROD run passed on 2026-10-04, the alpha.1 exit-gate runs passed on 2026-11-01, and the alpha.2 service-semantics runs were made on 2026-11-02, as recorded below.
 Synthetic tests remain synthetic evidence. Retain sensitive responses only under
 private ignored artifacts; this record contains schema/counts/provenance, not rows.
 See the [runbook](../live-verification.md) and [release gates](../releases.md).
@@ -151,6 +151,81 @@ them; recheck immediately before publishing.
 The same limits apply as for the earlier runs: one account, one environment,
 one query and one point in time. There is no entitlement, date-semantics or
 performance generalization, and no full EOD/PERF acceptance.
+
+## Alpha.2 PROD service-semantics runs (2026-11-02)
+
+The maintainer's Coordinator ran seven `live_eod` captures on Windows against
+PROD on 2026-11-02. All seven used clean `main` at `39bc601`, the operator-declared
+FREE account and the Python 1.0.17 baseline. No credentials, tokens, account
+payloads, per-row dates or prices were retained in or shared with this repository. Values
+below are copied from the report; hashes are abbreviated as reported, and the
+full values are in the private run manifests.
+
+| Run | Query | Outcome | Frames (bytes / declared original, ZSTD) | Replay on numeric, Table and raw |
+| --- | --- | --- | --- | --- |
+| `prod-aapl-range-a2-001` | AAPL, `2024-01-02`..`2024-01-05` | Exit 0; complete; verification passed | 4: 232/269, 233/269, 235/269, 229/269; SHA-256 `9ac71785…6764`, `f4fee092…06b2`, `1e822294…ee0e`, `4b24e4bf…5ae6` | 4 rows in 4 batches; 32 integers, 24 prices, 8 timestamps; semantic SHA-256 `d1c3a04c7c8ee24b106d077a1b55d8acaae354117f133df56cc38ef0da63c7d3`, identical on all three; `matches: true` |
+| `prod-aapl-weekend-a2-001` | AAPL, `2024-01-06`..`2024-01-07` (Saturday–Sunday) | Exit 1; `NOT_FOUND` (5) at response headers | 0 | None (no envelope) |
+| `prod-aapl-holiday-a2-001` | AAPL, `2024-01-01` (New Year's Day) | Exit 1; `NOT_FOUND` (5) at response headers | 0 | None |
+| `prod-msft-a2-001` | MSFT, `2024-01-02` | Exit 0; complete; verification passed | 1: 237/269; SHA-256 `88d6c822…106b` | 1 row, 1 batch; 8 integers, 6 prices, 2 timestamps; same 16-column schema as AAPL; semantic SHA-256 `804c3874c9d02aa59505cd3e840e470db6d5c09aba7d363b72189acf06b9cd86`, identical on all three; `matches: true` |
+| `prod-aapl-split-a2-001` | AAPL, `2020-08-28`..`2020-09-01` (4:1 split on 2020-08-31) | Exit 1; `PERMISSION_DENIED` (7) at response headers | 0 | None |
+| `prod-unknown-a2-001` | `ZZZZNOTREAL`, `2024-01-02` | Exit 1; `NOT_FOUND` (5) at response headers | 0 | None |
+| `prod-nvda-split-a2-001` | NVDA, `2024-06-06`..`2024-06-11` (10:1 split effective 2024-06-10) | Exit 0; complete; verification passed | 4: 238/269, 243/275, 234/271, 225/269 | 4 rows in 4 batches; 32 integers, 24 prices, 8 timestamps; semantic SHA-256 `9cd727939aed1fe389c4e61336aba7672151fdb78466219aed6f8ccea83b7cba`, identical on all three; `matches: true` |
+
+Every delivered PROD timestamp passed the ADR-0019 millisecond-precision check
+(EOD-L3-030).
+
+**Findings (observed, for this account, environment and time only):**
+
+1. **Both date endpoints are inclusive.** Frame 0 of the range run is
+   byte-identical to the single-day `2024-01-02` frame of `prod-aapl-alpha1-002`
+   and of the 2026-10-04 capture (`9ac71785…6764`). So the first row is the start
+   date. Four rows for 2–5 January 2024 equal the four NYSE trading days, so the
+   end date is included too.
+2. **Rows are ascending by date, with one row per response frame.** The first
+   frame is the start date, and each frame holds one row. The same day's frame
+   was byte-identical across captures 29 days apart, so the service response was
+   deterministic for that row.
+3. **Only trading days are returned.** No weekend or holiday rows appeared in the
+   range.
+4. **A range with no trading days returns `NOT_FOUND` at headers, never an empty
+   success.** This held for the weekend and the holiday. The typed API reports
+   it as `EodError::NoData`. Successful empty completion (EOD-L3-012) was not
+   observed on PROD.
+5. **An unknown symbol also returns `NOT_FOUND` at headers.** At the status
+   level it cannot be told apart from "no trading days". Without inspecting
+   vendor text, which this project does not parse, the typed `NoData` cannot
+   tell the caller which case occurred.
+6. **FREE history depth includes June 2024 and excludes August 2020.** The
+   2020 request was denied with `PERMISSION_DENIED` before any data. That
+   denial is an entitlement result, not no-data. The exact FREE boundary is
+   not established.
+7. **EOD history is not split-adjusted.** Across the NVDA 10:1 split,
+   close(2024-06-07) / close(2024-06-10) = **9.926**. The ratio was computed
+   locally from the private capture using the `Price::from_wire` rule. Adjusted
+   history would give a ratio near 1.
+8. **Price scale varies per value, even within one column.** A first analysis
+   that assumed one scale per column was wrong by about 100×. The varying
+   declared original sizes (269/275/271/269) agree with that. The library already
+   keeps each value's own scale, and the
+   [per-value scale contract test](../../crates/praevis-thetadata-client/tests/eod_contracts.rs)
+   (`price_scale_is_per_value_across_rows_and_batches`) pins this. No fixture or
+   adapter assumes a per-column scale. Consumers must use each value's own scale,
+   and `Price` equality is representational
+   ([deferred numeric helper](../releases.md#deferred-from-alpha2), item 5).
+9. **MSFT has the same 16-column schema and value kinds as AAPL** on the same date.
+
+These runs show, across the three interfaces, that numeric, Table and raw
+replay agree value-for-value on four PROD queries. They do not establish:
+
+- vendor guarantees for any finding;
+- behavior on other dates, products, tiers or environments;
+- dividend or other corporate-action adjustment;
+- the meaning of the `created`/`last_trade` timestamps;
+- the exact FREE history boundary;
+- token lifetime.
+
+The open items are kept in the
+[EOD-L3-029 semantics table](../requirements/stock-eod-evidence.md#observed-service-semantics-eod-l3-029).
 
 ## Template for a reviewed run
 
