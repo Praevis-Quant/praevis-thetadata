@@ -1,13 +1,12 @@
 //! Preflight before materialization; never builds an unrestricted wire DataTable.
 use crate::eod::EodError;
 use praevis_thetadata_core::{
-    BatchValue, DataBatch, Price, Timestamp, Value, check_timestamp_precision,
+    BatchValue, DataBatch, Price as CorePrice, Timestamp, Value, check_timestamp_precision,
 };
-use praevis_thetadata_proto::endpoints::{DataValue, ResponseData, data_value::DataType};
-use prost::{
-    Message,
-    encoding::{DecodeContext, WireType, decode_key, decode_varint, skip_field},
+use praevis_thetadata_proto::endpoints::{
+    Price, ResponseData, ZonedDateTime, data_value::DataType,
 };
+use prost::encoding::{DecodeContext, WireType, decode_key, decode_varint, skip_field};
 use std::{mem::size_of, sync::Arc};
 
 /// Finite per-batch limits. The accounted budget is requested storage, not RSS.
@@ -122,6 +121,78 @@ fn message<'a>(bytes: &mut &'a [u8], ty: WireType) -> Result<&'a [u8], EodError>
     let (head, tail) = bytes.split_at(n);
     *bytes = tail;
     Ok(head)
+}
+fn varint(bytes: &mut &[u8], ty: WireType) -> Result<u64, EodError> {
+    if ty != WireType::Varint {
+        return Err(EodError::Decode);
+    }
+    decode_varint(bytes).map_err(|_| EodError::Decode)
+}
+fn merge_price(price: &mut Price, mut bytes: &[u8]) -> Result<(), EodError> {
+    while !bytes.is_empty() {
+        let (tag, ty) = key(&mut bytes)?;
+        match tag {
+            1 => price.value = varint(&mut bytes, ty)? as i32,
+            2 => price.r#type = varint(&mut bytes, ty)? as i32,
+            _ => skip(&mut bytes, tag, ty)?,
+        }
+    }
+    Ok(())
+}
+fn merge_timestamp(timestamp: &mut ZonedDateTime, mut bytes: &[u8]) -> Result<(), EodError> {
+    while !bytes.is_empty() {
+        let (tag, ty) = key(&mut bytes)?;
+        match tag {
+            1 => timestamp.epoch_ms = varint(&mut bytes, ty)?,
+            2 => timestamp.zone = varint(&mut bytes, ty)? as i32,
+            3 => timestamp.nanos = varint(&mut bytes, ty)? as u32,
+            4 => timestamp.precision = varint(&mut bytes, ty)? as i32,
+            _ => skip(&mut bytes, tag, ty)?,
+        }
+    }
+    Ok(())
+}
+/// `DataValue::decode(bytes)?.data_type` with identical protobuf semantics: the last
+/// oneof member wins, a repeated message member of the same variant merges into it,
+/// unknown fields are skipped and malformed input is an error. It avoids building the
+/// generic message per cell, which dominated null- and price-heavy batches. A
+/// differential test against prost guards the equivalence.
+fn data_value(mut bytes: &[u8]) -> Result<Option<DataType>, EodError> {
+    let mut value = None;
+    while !bytes.is_empty() {
+        let (tag, ty) = key(&mut bytes)?;
+        value = Some(match tag {
+            1 => DataType::Text(
+                std::str::from_utf8(message(&mut bytes, ty)?)
+                    .map_err(|_| EodError::Decode)?
+                    .to_owned(),
+            ),
+            2 => DataType::Number(varint(&mut bytes, ty)? as i64),
+            3 => {
+                let mut price = match value.take() {
+                    Some(DataType::Price(price)) => price,
+                    _ => Price::default(),
+                };
+                merge_price(&mut price, message(&mut bytes, ty)?)?;
+                DataType::Price(price)
+            }
+            4 => {
+                let mut timestamp = match value.take() {
+                    Some(DataType::Timestamp(timestamp)) => timestamp,
+                    _ => ZonedDateTime::default(),
+                };
+                merge_timestamp(&mut timestamp, message(&mut bytes, ty)?)?;
+                DataType::Timestamp(timestamp)
+            }
+            5 => DataType::NullValue(varint(&mut bytes, ty)? as i32),
+            6 => DataType::Boolean(varint(&mut bytes, ty)? != 0),
+            _ => {
+                skip(&mut bytes, tag, ty)?;
+                continue;
+            }
+        });
+    }
+    Ok(value)
 }
 #[derive(Default)]
 struct Shape {
@@ -318,14 +389,12 @@ pub(crate) fn decode(
                         skip(&mut row, tag, ty)?;
                         continue;
                     }
-                    let value =
-                        DataValue::decode(message(&mut row, ty)?).map_err(|_| EodError::Decode)?;
-                    cells.push(match value.data_type {
+                    cells.push(match data_value(message(&mut row, ty)?)? {
                         None | Some(DataType::NullValue(_)) => BatchValue::Null,
                         Some(DataType::Text(v)) => BatchValue::Text(v),
                         Some(DataType::Number(v)) => BatchValue::Integer(v),
                         Some(DataType::Boolean(v)) => BatchValue::Boolean(v),
-                        Some(DataType::Price(v)) => Price::from_wire(v.value, v.r#type)
+                        Some(DataType::Price(v)) => CorePrice::from_wire(v.value, v.r#type)
                             .map_err(|_| EodError::Decode)?
                             .map(BatchValue::Price)
                             .unwrap_or(BatchValue::Null),
@@ -358,7 +427,9 @@ pub(crate) fn decode(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use praevis_thetadata_proto::endpoints::DataValue;
     use praevis_thetadata_proto::endpoints::{CompressionDescription, DataTable, DataValueList};
+    use prost::Message;
     fn response(bytes: Vec<u8>, compressed: bool) -> ResponseData {
         ResponseData {
             compressed_data: if compressed {
@@ -383,6 +454,114 @@ mod tests {
             }],
         }
     }
+    /// Deterministic xorshift; no dependency and reproducible failures.
+    struct Rng(u64);
+    impl Rng {
+        fn next(&mut self) -> u64 {
+            self.0 ^= self.0 << 13;
+            self.0 ^= self.0 >> 7;
+            self.0 ^= self.0 << 17;
+            self.0
+        }
+        fn below(&mut self, n: u64) -> u64 {
+            self.next() % n
+        }
+    }
+    fn push_varint(out: &mut Vec<u8>, mut value: u64) {
+        while value >= 0x80 {
+            out.push(value as u8 | 0x80);
+            value >>= 7;
+        }
+        out.push(value as u8);
+    }
+    /// Random field sequences: known and unknown tags, wrong wire types, nested
+    /// Price/ZonedDateTime messages, repeated members, extreme varints and bad UTF-8.
+    fn random_fields(rng: &mut Rng, depth: u32) -> Vec<u8> {
+        let mut out = Vec::new();
+        for _ in 0..rng.below(5) {
+            let tag = rng.below(9);
+            let ty = match rng.below(10) {
+                0 => 1, // fixed64
+                1 => 5, // fixed32
+                2 | 3 | 4 => 2,
+                _ => 0,
+            };
+            push_varint(&mut out, tag << 3 | ty);
+            match ty {
+                0 => push_varint(
+                    &mut out,
+                    match rng.below(4) {
+                        0 => u64::MAX,
+                        1 => rng.below(3),
+                        _ => rng.next() >> rng.below(64),
+                    },
+                ),
+                1 => out.extend_from_slice(&rng.next().to_le_bytes()),
+                5 => out.extend_from_slice(&(rng.next() as u32).to_le_bytes()),
+                _ => {
+                    let payload = if depth < 2 && rng.below(2) == 0 {
+                        random_fields(rng, depth + 1)
+                    } else {
+                        (0..rng.below(6))
+                            .map(|_| match rng.below(4) {
+                                0 => 0xff,
+                                _ => b'a' + rng.below(26) as u8,
+                            })
+                            .collect()
+                    };
+                    let declared = payload.len() as u64 + if rng.below(20) == 0 { 3 } else { 0 };
+                    push_varint(&mut out, declared);
+                    out.extend_from_slice(&payload);
+                }
+            }
+        }
+        if rng.below(15) == 0 {
+            out.truncate(rng.below(out.len() as u64 + 1) as usize);
+        }
+        out
+    }
+    #[test]
+    fn hand_decoder_matches_prost_data_value_semantics() {
+        let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
+        let (mut ok, mut err) = (0, 0);
+        for case in 0..200_000 {
+            let bytes = if case % 10 == 0 {
+                (0..rng.below(12)).map(|_| rng.next() as u8).collect()
+            } else {
+                random_fields(&mut rng, 0)
+            };
+            let expected = DataValue::decode(bytes.as_slice()).map(|v| v.data_type);
+            let actual = data_value(&bytes);
+            match (&expected, &actual) {
+                (Ok(e), Ok(a)) => {
+                    assert_eq!(e, a, "{bytes:?}");
+                    ok += 1;
+                }
+                (Err(_), Err(EodError::Decode)) => err += 1,
+                _ => panic!("divergence for {bytes:?}: prost {expected:?}, hand {actual:?}"),
+            }
+        }
+        // The generator must exercise both outcomes substantially.
+        assert!(ok > 50_000 && err > 20_000, "ok {ok}, err {err}");
+        // Merge and last-wins cases spelled out.
+        let merged = [26, 2, 8, 5, 26, 2, 16, 9];
+        assert_eq!(
+            data_value(&merged).unwrap(),
+            Some(DataType::Price(Price {
+                value: 5,
+                r#type: 9
+            }))
+        );
+        let replaced = [26, 2, 8, 5, 16, 7, 26, 2, 16, 9];
+        assert_eq!(
+            data_value(&replaced).unwrap(),
+            Some(DataType::Price(Price {
+                value: 0,
+                r#type: 9
+            }))
+        );
+    }
+
     #[test]
     fn sub_millisecond_timestamps_are_unsupported_responses() {
         let limits = DecodeLimits::default();
