@@ -194,12 +194,19 @@ type FixtureStream = ReceiverStream<Result<wire::ResponseData, tonic::Status>>;
 struct FixtureService {
     script: Script,
     requests: Arc<Mutex<Vec<api::StockHistoryEodRequest>>>,
+    timeouts: Arc<Mutex<Vec<Option<String>>>>,
 }
 impl FixtureService {
     async fn eod(
         &self,
         request: tonic::Request<api::StockHistoryEodRequest>,
     ) -> Result<tonic::Response<FixtureStream>, tonic::Status> {
+        let timeout = request
+            .metadata()
+            .get("grpc-timeout")
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_owned);
+        self.timeouts.lock().unwrap().push(timeout);
         self.requests.lock().unwrap().push(request.into_inner());
         if !self.script.header_delay.is_zero() {
             tokio::time::sleep(self.script.header_delay).await;
@@ -232,6 +239,9 @@ include!(concat!(env!("OUT_DIR"), "/eod_fixture_service.rs"));
 pub struct Fixture {
     pub endpoint: String,
     pub requests: Arc<Mutex<Vec<api::StockHistoryEodRequest>>>,
+    /// Raw `grpc-timeout` metadata per request, as the server received it.
+    #[allow(dead_code)] // Read only by the contract tests that include this module.
+    pub timeouts: Arc<Mutex<Vec<Option<String>>>>,
     shutdown: Option<oneshot::Sender<()>>,
     thread: Option<std::thread::JoinHandle<()>>,
 }
@@ -241,9 +251,11 @@ impl Fixture {
         listener.set_nonblocking(true).unwrap();
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
         let requests = Arc::new(Mutex::new(Vec::new()));
+        let timeouts = Arc::new(Mutex::new(Vec::new()));
         let service = FixtureService {
             script,
             requests: requests.clone(),
+            timeouts: timeouts.clone(),
         };
         let (shutdown, rx) = oneshot::channel();
         let thread = std::thread::spawn(move || {
@@ -274,6 +286,7 @@ impl Fixture {
         Self {
             endpoint,
             requests,
+            timeouts,
             shutdown: Some(shutdown),
             thread: Some(thread),
         }

@@ -195,9 +195,12 @@ service compatibility.
   Small NONE-frame inline decoding is opt-in; the portable default stays offload.
   Typed queries have a separate channel and finite active-stream admission;
   preserve the receive-credit relationship that prevents paused-stream stalls.
-  The [acceptance matrix](docs/requirements/stock-eod-matrix.md) and
-  [calibration results](docs/performance/eod-acceptance-results.md) retain current
-  verification gaps and null/price decode regressions. Do not call them accepted.
+  The [acceptance matrix](docs/requirements/stock-eod-matrix.md) retains the
+  current verification gaps; do not call them accepted. The null/price decode
+  regressions were resolved in alpha.2 ([decoder record](docs/performance/eod-decoder-results.md)).
+- **Never claim total memory is bounded.** Until transport and ZSTD C-allocator
+  profiling exists (a 0.1.0 exit gate), docs, READMEs and crate descriptions may
+  say only that the client's own accounted allocations are bounded.
   Do not claim complete heap/RSS or typed-slice acceptance from those checks.
 - **Preserve platform and wire behavior.** Exercise Windows and Linux for
   changes to native persistence or process behavior. Preserve descriptor bytes

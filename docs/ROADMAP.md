@@ -57,6 +57,18 @@ Verify validation/wire mapping, exact values, session use, stream/schema/empty-r
 
 Extend the coverage matrix from each selected inventory item to its ADR, requirements, implementation, and verification without dropping unselected items. Preserve source hashes and earlier research, reconcile new findings, and retain explicit planned/supported/excluded/unresolved dispositions. Close session lifecycle/identity questions before unattended use; establish separate evidence and designs for flat files, corporate actions, and real-time subscriptions. Do not turn unverified findings into requirements or claim live behavior from artifact coverage alone.
 
+## Deferred to 0.1.0 by decision D-C (2026-11-02)
+
+- **Transport and C-allocator memory profiling** (EOD-L3-023): measure HTTP/2
+  receive buffers, libzstd allocations, fragmentation and process RSS on Windows
+  and Linux under the calibration workloads. Until then, describe only the
+  client's own accounted allocations as bounded.
+- **Exhaustive adversarial decoder corpus** (EOD-L3-021): extend the alpha.2
+  bounded corpus to systematic and generated malformed, oversized and
+  amplification inputs across both decoders and the envelope parser.
+
+Both are exit gates for `0.1.0` in the [release plan](releases.md).
+
 ## Performance-first library architecture and enhancements
 
 Implement [ADRs 0013-0016](adr/README.md) and the [ARCH](requirements/architecture.md),

@@ -476,6 +476,105 @@ async fn both_apis_preserve_scalar_boundaries_order_and_exact_query_text() {
     }
 }
 
+/// Live PROD capture `prod-nvda-split-a2-001` showed the price scale varying per value
+/// within one column. Each cell must keep its own mantissa/exponent across rows and
+/// batches; nothing may infer or reuse a column scale. Equal numbers written with
+/// different scales stay distinct representations (`Price` equality is representational).
+#[tokio::test]
+async fn price_scale_is_per_value_across_rows_and_batches() {
+    use praevis_thetadata_core::{Price, Value};
+    let batch = |prices: &[(i32, i32)]| {
+        let wire = wire::DataTable {
+            headers: vec!["close".into()],
+            data_table: prices
+                .iter()
+                .map(|&(value, scale)| wire::DataValueList {
+                    values: vec![wire::DataValue {
+                        data_type: Some(DataType::Price(wire::Price {
+                            value,
+                            r#type: scale,
+                        })),
+                    }],
+                })
+                .collect(),
+        };
+        let expected = Table {
+            headers: wire.headers.clone(),
+            rows: prices
+                .iter()
+                .map(|&(mantissa, scale)| {
+                    vec![Value::Price(Price {
+                        mantissa,
+                        exponent: scale - 10,
+                    })]
+                })
+                .collect(),
+        };
+        (wire, expected)
+    };
+    // 123.45 as (12345, 8), then the same number as (1234500, 6); 12.3 at scale 9.
+    let (first, first_expected) = batch(&[(12345, 8), (1234500, 6), (123, 9)]);
+    let (second, second_expected) = batch(&[(98765, 7), (12345, 8), (5, 10)]);
+    assert_ne!(first_expected.rows[0], first_expected.rows[1]);
+    for compressed in [false, true] {
+        let fixture = Fixture::start(Script {
+            messages: vec![
+                Ok(support::response(&first, compressed)),
+                Ok(support::response(&second, compressed)),
+            ],
+            ..Default::default()
+        });
+        let client = client(&fixture, EodPolicy::default()).await;
+        for table_api in [false, true] {
+            let mut stream = Stream::open(&client, table_api).await.unwrap();
+            assert_eq!(stream.next().await.unwrap().unwrap(), first_expected);
+            assert_eq!(stream.next().await.unwrap().unwrap(), second_expected);
+            assert!(stream.next().await.unwrap().is_none());
+        }
+    }
+}
+
+/// EOD-L3-018: the remaining whole-query deadline is sent to the server as gRPC
+/// `grpc-timeout` metadata (captured server-side), never exceeding the configured
+/// budget and never omitted, on both public APIs.
+#[tokio::test]
+async fn whole_query_deadline_is_sent_as_grpc_timeout_metadata() {
+    fn parse(value: &str) -> Duration {
+        // gRPC wire format: up to 8 ASCII digits plus a unit (H, M, S, m, u, n).
+        let (digits, unit) = value.split_at(value.len() - 1);
+        assert!(!digits.is_empty() && digits.len() <= 8, "{value}");
+        let amount: u64 = digits.parse().unwrap();
+        match unit {
+            "H" => Duration::from_secs(amount * 3600),
+            "M" => Duration::from_secs(amount * 60),
+            "S" => Duration::from_secs(amount),
+            "m" => Duration::from_millis(amount),
+            "u" => Duration::from_micros(amount),
+            "n" => Duration::from_nanos(amount),
+            _ => panic!("unknown grpc-timeout unit in {value}"),
+        }
+    }
+    let good = table(DataType::Number(1));
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(support::response(&good, false))],
+        ..Default::default()
+    });
+    let client = client(&fixture, EodPolicy::default()).await;
+    for table_api in [false, true] {
+        let mut stream = Stream::open(&client, table_api).await.unwrap();
+        while stream.next().await.unwrap().is_some() {}
+    }
+    let timeouts = fixture.timeouts.lock().unwrap().clone();
+    assert_eq!(timeouts.len(), 2);
+    for value in timeouts {
+        let sent = parse(&value.expect("grpc-timeout metadata must be present"));
+        // The client is configured with a 10 s whole-query deadline; dispatch happens
+        // immediately, so the remaining budget is just under it.
+        assert!(sent <= Duration::from_secs(10), "{sent:?}");
+        assert!(sent > Duration::from_secs(9), "{sent:?}");
+    }
+}
+
 #[tokio::test]
 async fn all_duration_and_policy_configuration_failures_precede_connection() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
