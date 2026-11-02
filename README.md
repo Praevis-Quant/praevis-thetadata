@@ -39,7 +39,7 @@ publishes.
 | `praevis-thetadata-cli` (`praevis-thetadata`) | Credential discovery, `auth` (in memory) or `auth --save`, status and logout | First deliverable |
 | `praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for all 100 RPCs | Foundation |
 | `praevis-thetadata-core` | Transport-independent prices, timestamps, values, tables | Foundation |
-| `praevis-thetadata-client` | gRPC requests, ZSTD decoding, bounded batch streaming | Experimental typed EOD; one PROD query verified, broader acceptance open |
+| `praevis-thetadata-client` | gRPC requests, ZSTD decoding, batch streaming with limits on accounted decode allocations (not total memory) | Experimental typed EOD; one PROD query verified, broader acceptance open |
 
 Dependency direction:
 

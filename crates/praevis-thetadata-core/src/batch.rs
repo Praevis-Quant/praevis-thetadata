@@ -18,6 +18,7 @@ pub struct Timestamp {
 
 impl Timestamp {
     pub fn from_wire(epoch_ms: u64, zone: i32) -> Result<Self, DataError> {
+        crate::check_timestamp_range(epoch_ms)?;
         let millis = i64::try_from(epoch_ms).map_err(|_| DataError::Timestamp(epoch_ms))?;
         DateTime::<Utc>::from_timestamp_millis(millis).ok_or(DataError::Timestamp(epoch_ms))?;
         let zone = match zone {
