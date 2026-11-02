@@ -1583,6 +1583,7 @@ dependencies = [
  "clap",
  "heck",
  "http-body",
+ "log",
  "praevis-thetadata-auth",
  "praevis-thetadata-core",
  "praevis-thetadata-proto",
@@ -1595,6 +1596,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic",
+ "tracing",
  "zstd",
 ]
 

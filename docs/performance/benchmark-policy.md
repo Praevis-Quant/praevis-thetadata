@@ -59,7 +59,7 @@ Rationale:
   and 0.2% on the runners, 8.2% on the desktop.
 - The desktop thresholds are wider because its A/A had only two rounds. They
   stay **provisional** until a 3-round A/A on that host, after which a
-  follow-up change tightens them.
+  follow-up change tightens them ([deferred item 6](../releases.md#deferred-from-alpha2)).
 
 Decision rules:
 

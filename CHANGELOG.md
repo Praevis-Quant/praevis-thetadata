@@ -50,6 +50,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- A dependency-log capture test (`tests/eod_logs.rs`) shows that TRACE-level
+  `tracing`/`log` output from hyper, h2, tonic and reqwest never contains the
+  API key, session token, account email or remote payload/status text
+  (EOD-L3-017). It adds `tracing` and `log` as dev-dependencies (D-D(a));
+  both were already in the dependency graph.
+- releases.md lists every item deferred from alpha.2 in one block, and
+  proposes a `0.1.0-alpha.3` hardening milestone for them. Item 7 makes an
+  abandoned worker release its schema lease before its job permit, the root
+  cause of the CI race fixed in the test by #34.
+
 - An EOD contract test with an injected auth-connection counter shows that
   typed queries never re-authenticate (EOD-L3-005). Typed errors are checked
   for the absence of the session token and account email.
