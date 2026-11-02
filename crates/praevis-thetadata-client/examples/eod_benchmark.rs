@@ -41,6 +41,7 @@ mod envelope;
 mod eod {
     pub use praevis_thetadata_client::EodError;
 }
+#[allow(dead_code)] // Shared with the tests; not every helper is used here.
 #[path = "../tests/support/mod.rs"]
 mod support;
 #[global_allocator]

@@ -15,6 +15,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Timestamps after 9999-12-31T23:59:59.999Z are now rejected** in both the
+  Table formatter and the numeric `Timestamp`. They previously formatted as
+  `+10000-...`, which is not RFC 3339 (EOD-L3-009). A platform-independent
+  boundary catalogue covers epoch, the New York DST edges and the limits.
+- The client README and crate description no longer imply that total memory
+  is bounded. Only the client's own accounted allocations are, until
+  transport and ZSTD C-allocator profiling exists (a 0.1.0 exit gate, D-C).
+- `Price` documents representational equality and per-value scale.
+
 - **EOD benchmark policy and resource calibration** (PERF-L3-008,
   EOD-L3-023):
   - Decode p50 on the eight 10,000-row workloads gates performance
@@ -35,6 +44,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   ([results](docs/performance/eod-decoder-results.md)).
 
 ### Added
+
+- EOD acceptance tests:
+  - per-value price scales across rows and batches;
+  - `grpc-timeout` metadata capture;
+  - a bounded adversarial decoder corpus (40,000 classified envelopes);
+  - a runnable partial-failure consumer example (`eod_partial`).
 
 - The **Synthetic EOD performance** workflow gains a before/after mode on
   Windows and Linux runners: clean worktree builds, alternating AB/BA rounds,

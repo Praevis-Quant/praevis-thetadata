@@ -534,6 +534,47 @@ async fn price_scale_is_per_value_across_rows_and_batches() {
     }
 }
 
+/// EOD-L3-018: the remaining whole-query deadline is sent to the server as gRPC
+/// `grpc-timeout` metadata (captured server-side), never exceeding the configured
+/// budget and never omitted, on both public APIs.
+#[tokio::test]
+async fn whole_query_deadline_is_sent_as_grpc_timeout_metadata() {
+    fn parse(value: &str) -> Duration {
+        // gRPC wire format: up to 8 ASCII digits plus a unit (H, M, S, m, u, n).
+        let (digits, unit) = value.split_at(value.len() - 1);
+        assert!(!digits.is_empty() && digits.len() <= 8, "{value}");
+        let amount: u64 = digits.parse().unwrap();
+        match unit {
+            "H" => Duration::from_secs(amount * 3600),
+            "M" => Duration::from_secs(amount * 60),
+            "S" => Duration::from_secs(amount),
+            "m" => Duration::from_millis(amount),
+            "u" => Duration::from_micros(amount),
+            "n" => Duration::from_nanos(amount),
+            _ => panic!("unknown grpc-timeout unit in {value}"),
+        }
+    }
+    let good = table(DataType::Number(1));
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(support::response(&good, false))],
+        ..Default::default()
+    });
+    let client = client(&fixture, EodPolicy::default()).await;
+    for table_api in [false, true] {
+        let mut stream = Stream::open(&client, table_api).await.unwrap();
+        while stream.next().await.unwrap().is_some() {}
+    }
+    let timeouts = fixture.timeouts.lock().unwrap().clone();
+    assert_eq!(timeouts.len(), 2);
+    for value in timeouts {
+        let sent = parse(&value.expect("grpc-timeout metadata must be present"));
+        // The client is configured with a 10 s whole-query deadline; dispatch happens
+        // immediately, so the remaining budget is just under it.
+        assert!(sent <= Duration::from_secs(10), "{sent:?}");
+        assert!(sent > Duration::from_secs(9), "{sent:?}");
+    }
+}
+
 #[tokio::test]
 async fn all_duration_and_policy_configuration_failures_precede_connection() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();

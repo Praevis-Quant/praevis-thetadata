@@ -436,6 +436,7 @@ pub(crate) fn decode(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::envelope;
     use praevis_thetadata_proto::endpoints::DataValue;
     use praevis_thetadata_proto::endpoints::{CompressionDescription, DataTable, DataValueList};
     use prost::Message;
@@ -529,6 +530,148 @@ mod tests {
         }
         out
     }
+    /// Bounded adversarial corpus (EOD-L3-021, scoped by decision D-C; the exhaustive
+    /// corpus is a 0.1.0 gate). Deterministic mutations of valid encoded tables go through
+    /// the envelope parser and the bounded decoder in numeric and Table modes, under tight
+    /// limits. Each case is either accepted within the limits or rejected with a classified
+    /// error, never a panic, and the two modes always agree.
+    #[test]
+    fn bounded_mutation_corpus_is_classified_and_mode_independent() {
+        let limits = DecodeLimits {
+            encoded_bytes: 4096,
+            decompressed_bytes: 4096,
+            headers: 4,
+            rows: 8,
+            cells: 24,
+            text_bytes: 16,
+            header_bytes: 16,
+            // ZSTD reserves a fixed 16 MiB context plus the 1 MiB window. A budget just above
+            // that lets compressed inputs reach the decoder instead of all failing
+            // admission, while the count and byte limits above stay tight.
+            allocated_bytes: 18 << 20,
+            zstd_window_log: 20,
+        };
+        let seeds: Vec<Vec<u8>> = {
+            let cell = |data_type| DataValue {
+                data_type: Some(data_type),
+            };
+            let row = |values| DataValueList { values };
+            vec![
+                wire().encode_to_vec(),
+                DataTable {
+                    headers: vec!["a".into(), "b".into(), "c".into()],
+                    data_table: vec![
+                        row(vec![
+                            cell(DataType::Number(-1)),
+                            cell(DataType::Price(Price {
+                                value: 12345,
+                                r#type: 8,
+                            })),
+                            cell(DataType::Timestamp(ZonedDateTime {
+                                epoch_ms: 1,
+                                zone: 1,
+                                ..Default::default()
+                            })),
+                        ]),
+                        row(vec![
+                            cell(DataType::NullValue(0)),
+                            cell(DataType::Boolean(true)),
+                            cell(DataType::Text("é".into())),
+                        ]),
+                    ],
+                }
+                .encode_to_vec(),
+                // At the row (8), cell (24) and per-text (16 bytes) limits, so small
+                // duplications and insertions cross them.
+                DataTable {
+                    headers: vec!["x".into(), "y".into(), "z".into()],
+                    data_table: (0..8)
+                        .map(|_| {
+                            row((0..3)
+                                .map(|_| cell(DataType::Text("0123456789abcde".into())))
+                                .collect())
+                        })
+                        .collect(),
+                }
+                .encode_to_vec(),
+            ]
+        };
+        let mut rng = Rng(0x2545_f491_4f6c_dd1d);
+        let mut outcomes = std::collections::BTreeMap::<String, u32>::new();
+        for case in 0..20_000u32 {
+            let mut bytes = seeds[case as usize % seeds.len()].clone();
+            for _ in 0..=rng.below(3) {
+                if bytes.is_empty() {
+                    break;
+                }
+                let at = rng.below(bytes.len() as u64) as usize;
+                match rng.below(6) {
+                    0 => bytes[at] ^= 1 << rng.below(8),
+                    1 => bytes.truncate(at),
+                    2 => bytes[at] = 0xff, // inflate a length or varint
+                    3 => {
+                        // Duplicate a slice to repeat fields and rows.
+                        let end = (at + 1 + rng.below(8) as usize).min(bytes.len());
+                        let copy = bytes[at..end].to_vec();
+                        bytes.splice(at..at, copy);
+                    }
+                    4 => bytes.insert(at, rng.next() as u8),
+                    _ => {
+                        // Splice a fragment of the other seed.
+                        let other = &seeds[(case as usize + 1) % seeds.len()];
+                        let from = rng.below(other.len() as u64) as usize;
+                        let end = (from + 1 + rng.below(12) as usize).min(other.len());
+                        bytes.splice(at..at, other[from..end].iter().copied());
+                    }
+                }
+            }
+            for compressed in [false, true] {
+                let envelope = response(bytes.clone(), compressed).encode_to_vec();
+                let results: Vec<_> = [false, true]
+                    .into_iter()
+                    .map(|table| {
+                        envelope::parse(envelope.clone(), &limits)
+                            .and_then(|parsed| decode(parsed, &limits, None, table))
+                    })
+                    .collect();
+                let outcome = match &results[0] {
+                    Ok(batch) => {
+                        assert!(
+                            batch.row_count() <= limits.rows
+                                && batch.headers().len() <= limits.headers
+                        );
+                        assert!(batch.cells().len() <= limits.cells);
+                        "accepted".to_owned()
+                    }
+                    Err(error) => format!("{error:?}"),
+                };
+                // Numeric and Table modes classify every input identically.
+                assert_eq!(
+                    results[0].as_ref().map(|b| b.cells().len()).map_err(|e| *e),
+                    results[1].as_ref().map(|b| b.cells().len()).map_err(|e| *e),
+                    "{bytes:?}"
+                );
+                *outcomes.entry(outcome).or_default() += 1;
+            }
+        }
+        eprintln!("bounded corpus outcomes: {outcomes:?}");
+        // The corpus must reach acceptance, malformed input and several resource limits.
+        for expected in ["accepted", "Decode", "Schema"] {
+            assert!(
+                outcomes.get(expected).copied().unwrap_or(0) > 100,
+                "{outcomes:?}"
+            );
+        }
+        assert!(
+            outcomes
+                .keys()
+                .filter(|k| k.starts_with("Resource"))
+                .count()
+                >= 2,
+            "{outcomes:?}"
+        );
+    }
+
     #[test]
     fn hand_decoder_matches_prost_data_value_semantics() {
         let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
