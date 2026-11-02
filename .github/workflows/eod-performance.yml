@@ -2,12 +2,30 @@ name: Synthetic EOD performance
 
 on:
   workflow_dispatch:
+    inputs:
+      baseline:
+        description: "Before/after mode: baseline commit or ref (leave empty for the single-commit baseline job)"
+        required: false
+        default: ""
+      candidate:
+        description: "Candidate commit or ref (defaults to the dispatched commit)"
+        required: false
+        default: ""
+      rounds:
+        description: "Alternating AB/BA rounds per engine"
+        required: false
+        default: "3"
+      engines:
+        description: "Space-separated engines to compare"
+        required: false
+        default: "numeric table"
 
 permissions:
   contents: read
 
 jobs:
   baseline:
+    if: inputs.baseline == ''
     name: EOD baseline (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -40,4 +58,69 @@ jobs:
           name: synthetic-eod-${{ runner.os }}-${{ github.sha }}
           path: artifacts/eod-*.json
           if-no-files-found: error
+          retention-days: 30
+
+  compare:
+    # Before/after protocol (CLAUDE.md, EOD-L3-027): release builds of two clean commits
+    # on the same runner, warmups inside each run, alternating AB/BA order across rounds,
+    # raw reports retained. Use baseline == candidate for an A/A noise run. Shared-runner
+    # timings are informational until calibrated (PERF-L3-008); no vendor credentials.
+    if: inputs.baseline != ''
+    name: EOD before/after (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+      - name: Build baseline and candidate from clean checkouts
+        shell: bash
+        env:
+          BASELINE: ${{ inputs.baseline }}
+          CANDIDATE: ${{ inputs.candidate || github.sha }}
+        run: |
+          set -euo pipefail
+          for side in baseline candidate; do
+            ref=$([ "$side" = baseline ] && echo "$BASELINE" || echo "$CANDIDATE")
+            git worktree add --detach "../bench-$side" "$ref"
+            (cd "../bench-$side" && test -z "$(git status --porcelain)" && git rev-parse HEAD \
+              && cargo build --release --locked -p praevis-thetadata-client --example eod_benchmark)
+          done
+      - name: Alternating rounds and comparisons
+        shell: bash
+        env:
+          ROUNDS: ${{ inputs.rounds }}
+          ENGINES: ${{ inputs.engines }}
+        run: |
+          set -euo pipefail
+          ext=""; [ "$RUNNER_OS" = Windows ] && ext=".exe"
+          out="$GITHUB_WORKSPACE/artifacts"; mkdir -p "$out"
+          for round in $(seq 1 "$ROUNDS"); do
+            for engine in $ENGINES; do
+              order="baseline candidate"; [ $((round % 2)) -eq 0 ] && order="candidate baseline"
+              for side in $order; do
+                # Run inside the checkout so the report records its commit and clean state.
+                (cd "../bench-$side" && "./target/release/examples/eod_benchmark$ext" run --engine "$engine" \
+                  --output "$out/eod-$engine-$side-r$round.json")
+              done
+              "../bench-candidate/target/release/examples/eod_benchmark$ext" compare \
+                --baseline "$out/eod-$engine-baseline-r$round.json" \
+                --candidate "$out/eod-$engine-candidate-r$round.json" \
+                --output "$out/eod-$engine-compare-r$round.json"
+            done
+          done
+          python tools/eod_compare_summary.py "$out"/eod-*-compare-r*.json | tee "$out/eod-summary.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: eod-before-after-${{ runner.os }}-${{ github.run_id }}
+          path: artifacts/eod-*
+          if-no-files-found: warn
           retention-days: 30

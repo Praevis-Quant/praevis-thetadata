@@ -35,8 +35,8 @@ publishes.
 
 | Package | Responsibility | Status |
 | --- | --- | --- |
-| `praevis-thetadata-auth` | HTTP authentication, credentials, sessions, Windows/Linux session persistence | First deliverable |
-| `praevis-thetadata-cli` (`praevis-thetadata`) | Credential discovery and auth/status/logout commands | First deliverable |
+| `praevis-thetadata-auth` | HTTP authentication, credentials, in-memory sessions; optional (`native-store`) Windows/Linux session persistence | First deliverable |
+| `praevis-thetadata-cli` (`praevis-thetadata`) | Credential discovery, `auth` (in memory) or `auth --save`, status and logout | First deliverable |
 | `praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for all 100 RPCs | Foundation |
 | `praevis-thetadata-core` | Transport-independent prices, timestamps, values, tables | Foundation |
 | `praevis-thetadata-client` | gRPC requests, ZSTD decoding, bounded batch streaming | Experimental typed EOD; one PROD query verified, broader acceptance open |

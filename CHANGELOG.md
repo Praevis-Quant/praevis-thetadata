@@ -15,6 +15,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- The **Synthetic EOD performance** workflow gains a before/after mode on
+  Windows and Linux runners: clean worktree builds, alternating AB/BA rounds,
+  native comparisons, raw reports, and a ratio summary
+  (`tools/eod_compare_summary.py`). Use baseline = candidate for A/A noise.
+
 - Publication record for `0.1.0-alpha.1`:
   - crates.io URLs and registry checksums, tag and commit;
   - Windows and Linux installs from crates.io;
@@ -25,6 +30,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - single-owner status, with a backup-owner recommendation.
 - releases.md and ROADMAP mark alpha.1 as released and alpha.2 as the next
   target.
+### Fixed
+
+- The CLI package description and the README package table no longer imply
+  that saving is automatic. Saving is opt-in with `auth --save`; the published
+  alpha.1 description is corrected for the next release.
 
 ## [0.1.0-alpha.1] - 2026-11-02
 
