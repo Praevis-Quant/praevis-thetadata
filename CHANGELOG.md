@@ -13,6 +13,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Changed
+
+- **Faster bounded EOD decoding.** Each cell is read by a hand-written
+  decoder with prost-identical semantics, plus fast paths for two-byte
+  null/boolean/small-integer cells, instead of building a prost `DataValue`.
+  On the Windows and Linux x86 runners, decode is faster by 21-36% for nulls,
+  8-16% for mixed and 6-12% for prices, against `main`. This recovers the
+  recorded null/price regression; preflight, limits and errors are unchanged
+  ([results](docs/performance/eod-decoder-results.md)).
+
 ### Added
 
 - The **Synthetic EOD performance** workflow gains a before/after mode on
