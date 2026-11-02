@@ -158,6 +158,15 @@ fn merge_timestamp(timestamp: &mut ZonedDateTime, mut bytes: &[u8]) -> Result<()
 /// generic message per cell, which dominated null- and price-heavy batches. A
 /// differential test against prost guards the equivalence.
 fn data_value(mut bytes: &[u8]) -> Result<Option<DataType>, EodError> {
+    // Exact single-field encodings that dominate real tables. Each returns what the
+    // general loop below would return for the same bytes.
+    match bytes {
+        [] => return Ok(None),
+        [0x28, n] if *n < 0x80 => return Ok(Some(DataType::NullValue(i32::from(*n)))),
+        [0x30, b] if *b < 0x80 => return Ok(Some(DataType::Boolean(*b != 0))),
+        [0x10, n] if *n < 0x80 => return Ok(Some(DataType::Number(i64::from(*n)))),
+        _ => {}
+    }
     let mut value = None;
     while !bytes.is_empty() {
         let (tag, ty) = key(&mut bytes)?;
@@ -483,7 +492,7 @@ mod tests {
             let ty = match rng.below(10) {
                 0 => 1, // fixed64
                 1 => 5, // fixed32
-                2 | 3 | 4 => 2,
+                2..=4 => 2,
                 _ => 0,
             };
             push_varint(&mut out, tag << 3 | ty);
@@ -543,6 +552,17 @@ mod tests {
         }
         // The generator must exercise both outcomes substantially.
         assert!(ok > 50_000 && err > 20_000, "ok {ok}, err {err}");
+        // Every two-byte input, which covers all fast-path shapes and their near misses.
+        for first in 0..=255u8 {
+            for second in 0..=255u8 {
+                let bytes = [first, second];
+                let expected = DataValue::decode(bytes.as_slice())
+                    .map(|v| v.data_type)
+                    .ok();
+                assert_eq!(data_value(&bytes).ok(), expected, "{bytes:?}");
+            }
+        }
+        assert_eq!(data_value(&[]).unwrap(), None);
         // Merge and last-wins cases spelled out.
         let merged = [26, 2, 8, 5, 26, 2, 16, 9];
         assert_eq!(
