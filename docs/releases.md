@@ -17,7 +17,7 @@ the account holder operates the optional live checks.
 | Target | Concrete deliverable | Exit gates | Depends on / remaining work |
 | --- | --- | --- | --- |
 | `0.1.0-alpha.1` | **Released 2026-11-02 UTC** ([publication record](crates-io-release-plan.md#publication-record-010-alpha1), tag `v0.1.0-alpha.1`). Useful first publication of auth, core, proto, client and CLI; client EOD clearly experimental | Proto bindings and research at the current reviewed upstream baseline (1.0.17, [update plan](upstream-update-1.0.17.md), decision D5); self-contained archives and licenses; dependency versions/order; Windows/Linux external consumer builds; verified registry owner/publish capability; manually recorded PROD auth and small EOD result, or explicit documented service blocker before reconsidering scope (**met 2026-11-01**: Windows PROD auth with in-memory/`--save`/status/logout lifecycle, AAPL EOD capture/replay matching on all three interfaces, FREE quote denial; [observations](research/live-observations.md#alpha1-prod-exit-gate-2026-11-01)); exact archive review and publication approval | [Packaging plan](crates-io-release-plan.md), [manual live verification](live-verification.md). No empty placeholder crates. |
-| `0.1.0-alpha.2` | EOD feature-complete candidate: exact numeric delivery and Table adapter, bounded lifecycle and documented real-service behavior | Close every applicable clause in the [EOD matrix](requirements/stock-eod-matrix.md); resolve measured null/price regressions or approve a measured per-workload tradeoff; calibrate resource defaults; compare authorized live captures with all three local interfaces; record unresolved service semantics explicitly | Alpha.1; current performance and resource work; real account/entitlements and captures. |
+| `0.1.0-alpha.2` | EOD feature-complete candidate: exact numeric delivery and Table adapter, bounded lifecycle and documented real-service behavior | Close every applicable clause in the [EOD matrix](requirements/stock-eod-matrix.md); resolve measured null/price regressions or approve a measured per-workload tradeoff; calibrate resource defaults; compare authorized live captures with all three local interfaces; record unresolved service semantics explicitly. **All five met 2026-11-02; not released** ([readiness record](#alpha2-readiness-record-2026-11-02)) | Alpha.1. Release needs separate maintainer approval of the [release procedure](#alpha2-release-procedure-pending-approval). |
 | `0.1.0-alpha.3` (proposed) | **Hardening**: close the items deferred from alpha.2 without changing the public API | Deferred items 1-4, 6 and 7 below closed, with evidence linked from the EOD matrix and benchmark policy | Alpha.2. Proposed 2026-11-02 so the deferred work stays scheduled; it can be renamed or merged into beta.1 by maintainer decision. |
 | `0.1.0-beta.1` | Freeze auth/EOD public API for the first supported release; runnable consumer examples and troubleshooting | Accept or revise the applicable proposed ADRs; requirement-to-test/evidence review; partial-result and cancellation examples; install/build outside workspace; document supported platforms, native-store prerequisites, resource policy and compatibility boundaries; **API freeze review of a numeric comparison/ordering helper for `Price`** (deferred item 5) | Alpha.2; release review covers API stability, packaging and diagnostics. |
 | `0.1.0` | Supported auth + single-symbol stock EOD libraries and auth CLI | No unresolved blocker for the declared surface; green synthetic Windows/Linux checks; maintainer-reviewed manual PROD report on the release candidate; retained benchmark comparison and calibrated acceptance decision; signed-off release checklist below; **every item in [Deferred from alpha.2](#deferred-from-alpha2) closed** | Beta.1. This is not full Python parity and makes no flat-file/real-time promise. |
@@ -118,7 +118,7 @@ live checks remain manual and outside CI. Alpha.1 can precede rows 4-5, with
 experimental scope stated in its release notes. Publish no comparative numbers
 until the comparator, outputs and measurement boundaries have been reviewed.
 
-## Status: alpha.1 released, next target alpha.2
+## Status: alpha.2 gates met, release pending approval
 
 `0.1.0-alpha.1` was released on 2026-11-02 UTC. Every checklist row below has
 alpha.1 evidence:
@@ -129,9 +129,107 @@ alpha.1 evidence:
 - live interoperability: the PROD exit gate;
 - installs and consumers from crates.io on Windows and Linux.
 
-The one exception is performance, which remains descriptive and is an alpha.2
-gate. The **next target is `0.1.0-alpha.2`**, the EOD feature-complete
-candidate. See its exit gates above and execution-order rows 3-6.
+All five `0.1.0-alpha.2` exit gates were met on 2026-11-02, as recorded below.
+The workspace version stays `0.1.0-alpha.1` until the maintainer approves the
+release. Execution-order rows 4-6 are complete for alpha.2. Row 3, the pinned
+Python comparator, remains a separate follow-up and is not an alpha.2 gate.
+
+## Alpha.2 readiness record (2026-11-02)
+
+The candidate is `main` after this record. Workspace tests and the packaging
+rehearsal pass on Windows and Linux CI.
+
+| Gate | Evidence | Status |
+| --- | --- | --- |
+| 1. Close every applicable EOD matrix clause | [Matrix disposition](requirements/stock-eod-matrix.md#alpha2-disposition-2026-11-02): 24 closed, 5 closed with a named deferral, 1 not applicable by decision D-E, **0 open** (#31, #32, #33, #35) | Met |
+| 2. Resolve the null/price regressions | Per-cell hand decoder with prost-identical semantics (#29). On the x86 runners, decode is faster against the previous `main` by 21-36% for nulls, 8-16% for mixed and 6-12% for prices. Confirmed on the maintainer's Ryzen; accepted 2026-11-02 ([results](performance/eod-decoder-results.md)) | Met |
+| 3. Calibrate resource defaults | Defaults kept by maintainer decision; effective ceilings and the 16-stream cap measured on Windows/Linux runners ([calibration](performance/eod-calibration.md), #30). Tolerances approved as D-B ([policy](performance/benchmark-policy.md)); the desktop values are provisional (item 6) | Met |
+| 4. Compare authorized live captures with all three local interfaces | Seven PROD/FREE runs at `39bc601`. All four data runs match value-for-value across numeric, Table and raw replay ([observations](research/live-observations.md#alpha2-prod-service-semantics-runs-2026-11-02)) | Met; re-replay on the release commit (below) |
+| 5. Record unresolved service semantics explicitly | [EOD-L3-029 semantics table](requirements/stock-eod-evidence.md#observed-service-semantics-eod-l3-029): 20 semantics, each observed or unresolved | Met |
+
+Also completed for alpha.2:
+
+- The CLI package description now says persistence is opt-in (#28). This
+  closes the [alpha.1 follow-up](crates-io-release-plan.md#publication-record-010-alpha1).
+- Windows before/after benchmark evidence (#28, #29).
+- Dependency-log, session and URL sentinels (#32, #33).
+- Timestamp range cap, partial-result example and the bounded mutation corpus (#31).
+
+**Caveat for gate 4.** The captures were made at `39bc601`. That is before the
+cell decoder (#29), the year-9999 timestamp cap (#31) and endpoint URL
+validation (#32). Offline replay of the retained captures on the release commit
+needs no credentials. It must reproduce the recorded semantic hashes before
+publication (procedure step 3).
+
+**Behavior changes since alpha.1**, for the release notes:
+
+- Endpoint URLs with credentials, a query or a fragment are rejected.
+- Timestamps after 9999-12-31 are rejected rather than formatted as `+10000-…`.
+- `MAX_EPOCH_MS` and `check_timestamp_range` are new public items in core.
+- Decoding is faster. Its preflight, limits and error categories are unchanged.
+
+Deferred items 1-7 below are **not** alpha.2 gates. Items 1-4, 6 and 7 are
+proposed for alpha.3; item 5 belongs to the beta.1 API freeze.
+
+### Alpha.2 release procedure (pending approval)
+
+Approve this list as one decision. Nothing here has been done.
+
+1. **Version-bump PR.**
+   - Set `version = "0.1.0-alpha.2"` in the root `Cargo.toml`, and the four
+     `=0.1.0-alpha.2` internal dependency pins.
+   - Refresh `Cargo.lock` (five package versions).
+   - Update the version and install lines in the root README, the five package
+     READMEs and `CLAUDE.md`.
+   - Update the `=0.1.0-alpha.2` pins in `tools/release-consumers/*` and in
+     `tools/test_staging_registry.py`.
+   - In the CHANGELOG, retitle `[Unreleased]` as `## [0.1.0-alpha.2] - <UTC publication date>`
+     and open a new empty `[Unreleased]` section.
+   - Mark alpha.2 as released in `releases.md` and the ROADMAP.
+   - No API or code change.
+2. **CI on the bump PR.** Verify and Packaging rehearsal must pass on Windows
+   and Linux. The rehearsal builds the five archives at the new version,
+   stages them in wave order, builds the external consumers and installs the CLI.
+   Review its per-package file lists, hashes and license/NOTICE check.
+3. **Offline replay on the merged bump commit** (maintainer, Windows, no
+   credentials). Run `live_eod replay` for `prod-aapl-range-a2-001`,
+   `prod-msft-a2-001` and `prod-nvda-split-a2-001`, plus `prod-aapl-alpha1-002`.
+   The semantic hashes must equal the recorded ones, with `matches: true` on
+   all three interfaces. A fresh small PROD run on the candidate is optional.
+4. **Publish from that commit**, in the alpha.1 wave order, each step waiting
+   for index availability:
+   1. `praevis-thetadata-auth`, `praevis-thetadata-core`, `praevis-thetadata-proto`;
+   2. `praevis-thetadata-client`;
+   3. `praevis-thetadata-cli`.
+
+   This is a manual `cargo publish` by the owner, with the token never in
+   argv or logs.
+5. **Annotated tag** `v0.1.0-alpha.2` on the published commit, plus release notes:
+   - the CHANGELOG section;
+   - the behavior changes above;
+   - links to this record and to the deferred block.
+6. **Post-publication checks** on Windows and Linux:
+   - `cargo install praevis-thetadata-cli --version 0.1.0-alpha.2 --locked`
+     prints the version;
+   - the crates.io-only consumers build;
+   - downloaded `.crate` hashes match the registry;
+   - docs.rs builds.
+
+   Record all of this in a "Publication record: 0.1.0-alpha.2" section of the
+   [crates.io plan](crates-io-release-plan.md), as for alpha.1.
+
+### Beta.1 API-freeze checklist
+
+Every item must be reviewed before the auth/EOD API is frozen at `0.1.0-beta.1`.
+
+- [ ] **`Price` numeric comparison/ordering helper** (deferred item 5). Add or
+      reject it explicitly; equality stays representational, with per-value scale.
+- [ ] Accept or revise the applicable proposed ADRs.
+- [ ] Requirement-to-test/evidence review of the declared surface.
+- [ ] Partial-result and cancellation consumer examples.
+- [ ] Install and build outside the workspace.
+- [ ] Document supported platforms, native-store prerequisites, resource policy and compatibility boundaries.
+- [ ] Review the public error categories (`EodError`, `NoData` for both no-data and unknown symbol) against the observed service semantics.
 
 ## Checklist for every release candidate
 

@@ -1,9 +1,31 @@
 # Stock EOD acceptance matrix
 
-2026-10-04. This is an evidence matrix, not a replacement for the canonical
-[L3 requirements](L3-stock-eod.md). Every ID is retained below. Synthetic tests
-establish the listed cases; a passing row does not imply undocumented vendor
-behavior. Full slice acceptance and ADR acceptance remain separate decisions.
+2026-10-04; alpha.2 disposition 2026-11-02. This is an evidence matrix, not a
+replacement for the canonical [L3 requirements](L3-stock-eod.md). Every ID is
+retained below. Synthetic tests establish the listed cases; a passing row does
+not imply undocumented vendor behavior. Full slice acceptance and ADR acceptance
+remain separate decisions.
+
+## Alpha.2 disposition (2026-11-02)
+
+Every one of the 30 L3 clauses has an alpha.2 disposition. **Closed** means the
+alpha.2 evidence in the table below is complete for the library contract.
+**Closed, with deferral** means the alpha.2 part is complete and a named
+hardening item remains in the [deferred block](../releases.md#deferred-from-alpha2),
+which is a `0.1.0` exit gate. **Not applicable to alpha.2** was a maintainer
+decision. Service behavior is never closed by synthetic evidence; it is
+recorded as observed or unresolved under EOD-L3-029.
+
+| Disposition | Clauses |
+| --- | --- |
+| Closed | 001, 002, 003, 004, 006, 007, 008, 009, 010, 011, 012, 013, 014, 015, 016, 017, 018, 020, 022, 024, 025, 026, 028, 030 |
+| Closed, with deferral | 005 (trusted-TLS fixture, item 3); 021 (exhaustive corpus, item 2); 023 (C-allocator profiling, item 1; lease release order, item 7); 027 (desktop A/A, item 6); 029 (unresolved service semantics listed in the [semantics table](stock-eod-evidence.md#observed-service-semantics-eod-l3-029)) |
+| Not applicable to alpha.2 (D-E) | 019: exhaustive controlled-clock interleavings and the transport seam (item 4); its existing synthetic idle/deadline/cancellation tests pass |
+| Open | None |
+
+Closed clauses still carry the scope limits in their third column. For example,
+EOD-L3-030 rejects non-millisecond timestamps while the vendor meaning of
+`precision` remains unknown.
 
 Test locations used below:
 
@@ -47,7 +69,7 @@ Test locations used below:
 | [EOD-L3-025](L3-stock-eod.md) | Compiled incremental consumer doctest; contracts exercises a failure after one batch and fusion; runnable `examples/eod_partial.rs` (`cargo run --example eod_partial`): explicit session and typed request, incremental consumption, rows labelled complete only after clean EOF and partial after a mid-stream failure; its tests run in `cargo test --workspace` on Windows/Linux | **Closed 2026-11-02**. Earlier note: Standalone example run against synthetic partial failure remains open |
 | [EOD-L3-026](L3-stock-eod.md) | Rust harness NONE/ZSTD small/mixed/null/price/timestamp workloads; allocation probes and executor timer; `--extremes` limit-sized text/header workloads added (2026-11-02) | Slow consumer delay is explicit and retains one caller-owned batch per stream |
 | [EOD-L3-027](L3-stock-eod.md) | Common-harness control/candidate builds; provenance, repeated alternating runs, raw samples and hashes; runner before/after workflow with A/A noise and approved tolerances (D-B, [policy](../performance/benchmark-policy.md)) | Informational comparisons; old v2 reports remain historical, incompatible with v3 |
-| [EOD-L3-028](L3-stock-eod.md) | Repository and research audits retain 123 canonical requirements, 16 ADR origins and 531 inventory items | Mechanical checks do not prove semantic completeness |
+| [EOD-L3-028](L3-stock-eod.md) | Repository and research audits retain the canonical requirements (151 at 2026-11-02), ADR origins (20), the 531 frozen 1.0.12 and 623 current 1.0.17 inventory items | Mechanical checks do not prove semantic completeness |
 | [EOD-L3-029](L3-stock-eod.md) | **Closed 2026-11-02.** Seven authorized PROD/FREE captures, each recording version, environment, query, entitlement context, date and sanitized results, are kept separate from synthetic tests ([observations](../research/live-observations.md#alpha2-prod-service-semantics-runs-2026-11-02)). Numeric, Table and raw replay match value-for-value on all four data runs. Each open contract is classified as observed or unresolved in the [semantics table](stock-eod-evidence.md#observed-service-semantics-eod-l3-029) | Observations cover one FREE account on PROD only; they are not vendor guarantees. Unresolved: unknown symbol versus no-data, dividend adjustment, corrections, column meanings, calendar edge cases, exact FREE depth, paid tiers, STAGE, token lifetime |
 | [EOD-L3-030](L3-stock-eod.md) | core precision unit tests; raw and bounded decoder tests over NONE/ZSTD and numeric/Table; contracts precision faults through the local gRPC service on both APIs, with and without delivered rows (passing) | Vendor meaning of `nanos`/`precision` unknown; no live response with non-millisecond precision observed. The possible ~1–2% Table-adapter decode shift on `*-mixed-none` (#18) is superseded by the step-2 decoder: Table `large-mixed-none` decode is 0.89–0.92× on the Windows and Linux runners ([results](../performance/eod-decoder-results.md)) |
 

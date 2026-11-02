@@ -60,10 +60,10 @@ single owner, user `joey-huckabee`. **Recommendation:** add a backup owner
 (a second trusted account or a GitHub team, `cargo owner --add <login|github:org:team> <crate>`)
 for continuity. The owner chooses who.
 
-**Follow-up for alpha.2:** the CLI package description still says "with
-native Windows/Linux session storage". Since ADR-0020, persistence is opt-in
-(`auth --save`). Update the description in the next release, because
-published metadata cannot change without a new version.
+**Follow-up for alpha.2 (done in #28, ships with the next release):** the
+published alpha.1 CLI description still says "with native Windows/Linux session
+storage". Since ADR-0020, persistence is opt-in (`auth --save`). The manifest
+now says so; published metadata changes only with a new version.
 
 
 The [versioned release milestones](releases.md) define scope and exit gates;

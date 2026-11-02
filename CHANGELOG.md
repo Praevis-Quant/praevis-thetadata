@@ -50,6 +50,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **alpha.2 readiness record** (2026-11-02):
+  - All five `0.1.0-alpha.2` exit gates are met.
+  - Every EOD L3 clause has a disposition: 24 closed, 5 closed with a named
+    deferral, 1 not applicable, 0 open.
+  - releases.md lists the release procedure awaiting approval and a beta.1
+    API-freeze checklist, which includes the `Price` comparison helper.
+  - Not released: the version stays `0.1.0-alpha.1`.
+
 - **Observed PROD service semantics for stock EOD (EOD-L3-029)**, from seven
   authorized FREE-account captures on 2026-11-02. Numeric, Table and raw
   replay agree value-for-value on every data run. Observed (not guaranteed):
