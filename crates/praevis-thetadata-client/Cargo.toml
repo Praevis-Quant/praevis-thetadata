@@ -61,3 +61,7 @@ log = { version = "0.4", features = ["std"] }
 # Paused-clock lifecycle tests (EOD-L3-019, deferred item 4). A feature of the
 # existing tokio dependency, enabled for tests only; it adds no packages.
 tokio = { workspace = true, features = ["test-util"] }
+# Trusted-TLS success fixture (EOD-L3-005, decision D-F b): each test generates
+# its own CA, server certificate and key, so no key material is committed.
+# Uses the ring backend already in the graph through rustls; never aws-lc.
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"] }

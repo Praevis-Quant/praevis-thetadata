@@ -24,6 +24,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   simultaneous expiry, idle reset per message, empty trickles, consumer
   pauses, admission waits, offloaded decoding and cancellation. Neutral on
   the decode benchmark gate ([results](docs/performance/eod-clock-seam-results.md)).
+- Trusted-TLS success tests for the typed and raw EOD APIs (EOD-L3-005,
+  deferred item 3). Each test generates its own CA and server certificate with
+  `rcgen`, a new dev-dependency using the ring backend (decision D-F b), so no
+  private key is committed. An untrusted issuer and a wrong server name are
+  rejected before any request. Normal builds are unchanged: no `rcgen`,
+  OpenSSL or aws-lc.
 
 ### Fixed
 
