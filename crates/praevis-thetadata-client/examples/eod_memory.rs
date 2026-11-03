@@ -18,6 +18,12 @@
 //! ```text
 //! cargo run --release -p praevis-thetadata-client --example eod_memory -- run
 //! ```
+//!
+//! Experiment modes of `measure` (item 8 investigation): `PRAEVIS_SITES=1`
+//! attributes the live allocations of at least 1 MiB at the peak to source
+//! locations; `PRAEVIS_RETAIN=1` lists what one idle stream still holds after a
+//! delivered batch; `PRAEVIS_ENCODED_LIMIT` overrides the encoded-message limit.
+//! Build with `CARGO_PROFILE_RELEASE_DEBUG=line-tables-only` for source lines.
 use praevis_thetadata_client::{
     ClientConfig, DecodeLimits, EodPolicy, NaiveDate, StockEodRequest, ThetaClient,
 };
@@ -48,12 +54,14 @@ fn grow(bytes: usize) {
     PEAK.fetch_max(live, Ordering::Relaxed);
 }
 // SAFETY: every obligation is delegated unchanged to System. The counters are
-// lock-free atomics and never allocate.
+// lock-free atomics and never allocate; call-site tracking (`sites`) is off
+// unless the `sites` command enables it, and guards against re-entry.
 unsafe impl GlobalAlloc for Counting {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let pointer = unsafe { System.alloc(layout) };
         if !pointer.is_null() {
             grow(layout.size());
+            sites::allocated(pointer as usize, layout.size());
         }
         pointer
     }
@@ -61,14 +69,17 @@ unsafe impl GlobalAlloc for Counting {
         let pointer = unsafe { System.alloc_zeroed(layout) };
         if !pointer.is_null() {
             grow(layout.size());
+            sites::allocated(pointer as usize, layout.size());
         }
         pointer
     }
     unsafe fn dealloc(&self, pointer: *mut u8, layout: Layout) {
+        sites::freed(pointer as usize, layout.size());
         unsafe { System.dealloc(pointer, layout) };
         LIVE.fetch_sub(layout.size(), Ordering::Relaxed);
     }
     unsafe fn realloc(&self, pointer: *mut u8, layout: Layout, new: usize) -> *mut u8 {
+        sites::freed(pointer as usize, layout.size());
         let result = unsafe { System.realloc(pointer, layout, new) };
         if !result.is_null() {
             if new >= layout.size() {
@@ -76,8 +87,144 @@ unsafe impl GlobalAlloc for Counting {
             } else {
                 LIVE.fetch_sub(layout.size() - new, Ordering::Relaxed);
             }
+            sites::allocated(result as usize, new);
         }
         result
+    }
+}
+
+/// Call-site attribution of large live allocations (the `sites` command).
+/// Every allocation of at least 1 MiB records its backtrace; at each new peak
+/// of tracked live bytes the live set is snapshotted. Build with line tables
+/// for readable frames: `CARGO_PROFILE_RELEASE_DEBUG=line-tables-only`.
+mod sites {
+    use std::{
+        backtrace::Backtrace,
+        cell::Cell,
+        collections::HashMap,
+        sync::{
+            Arc, Mutex,
+            atomic::{AtomicBool, Ordering},
+        },
+    };
+    pub const THRESHOLD: usize = 1 << 20;
+    static ENABLED: AtomicBool = AtomicBool::new(false);
+    thread_local! { static BUSY: Cell<bool> = const { Cell::new(false) }; }
+    #[derive(Default)]
+    struct State {
+        live: HashMap<usize, (usize, Arc<Backtrace>)>,
+        bytes: usize,
+        peak_bytes: usize,
+        peak: Vec<(usize, Arc<Backtrace>)>,
+    }
+    static STATE: Mutex<Option<State>> = Mutex::new(None);
+    fn guarded(f: impl FnOnce()) {
+        let _ = BUSY.try_with(|busy| {
+            if !busy.replace(true) {
+                f();
+                busy.set(false);
+            }
+        });
+    }
+    pub fn start() {
+        guarded(|| *STATE.lock().unwrap() = Some(State::default()));
+        ENABLED.store(true, Ordering::SeqCst);
+    }
+    pub fn allocated(pointer: usize, size: usize) {
+        if size < THRESHOLD || !ENABLED.load(Ordering::Relaxed) {
+            return;
+        }
+        guarded(|| {
+            let trace = Arc::new(Backtrace::force_capture());
+            let mut state = STATE.lock().unwrap();
+            if let Some(state) = state.as_mut() {
+                state.live.insert(pointer, (size, trace));
+                state.bytes += size;
+                if state.bytes > state.peak_bytes {
+                    state.peak_bytes = state.bytes;
+                    state.peak = state.live.values().cloned().collect();
+                }
+            }
+        });
+    }
+    pub fn freed(pointer: usize, size: usize) {
+        if size < THRESHOLD || !ENABLED.load(Ordering::Relaxed) {
+            return;
+        }
+        guarded(|| {
+            let mut state = STATE.lock().unwrap();
+            if let Some(state) = state.as_mut()
+                && let Some((size, _)) = state.live.remove(&pointer)
+            {
+                state.bytes -= size;
+            }
+        });
+    }
+    /// The source locations that identify a site: the first three outside the
+    /// Rust standard library, this harness and the `bytes` containers, as
+    /// `crate-version/file:line`.
+    fn site(trace: &Backtrace) -> String {
+        let text = format!("{trace}");
+        let locations: Vec<String> = text
+            .lines()
+            .filter_map(|line| line.trim().strip_prefix("at "))
+            .filter(|at| {
+                !(at.starts_with("/rustc/")
+                    || at.contains("examples/eod_memory.rs")
+                    || at.contains("/bytes-")
+                    || at.contains("/hashbrown-"))
+            })
+            .map(|at| {
+                let path = at.rsplit_once(':').map_or(at, |(p, _)| p);
+                let (file, line) = path.rsplit_once(':').unwrap_or((path, ""));
+                let short = file
+                    .rsplit_once("/registry/src/")
+                    .and_then(|(_, rest)| rest.split_once('/').map(|(_, r)| r))
+                    .or_else(|| file.split_once("/crates/").map(|(_, r)| r))
+                    .unwrap_or(file);
+                format!("{short}:{line}")
+            })
+            .collect();
+        locations
+            .iter()
+            .take(3)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(" <- ")
+    }
+    /// The tracked allocations live right now, grouped by site (tracking stays on).
+    pub fn live() -> Vec<(String, usize, usize)> {
+        let snapshot: Vec<(usize, Arc<Backtrace>)> = {
+            let state = STATE.lock().unwrap();
+            state
+                .as_ref()
+                .map(|s| s.live.values().cloned().collect())
+                .unwrap_or_default()
+        };
+        group(&snapshot)
+    }
+    fn group(entries: &[(usize, Arc<Backtrace>)]) -> Vec<(String, usize, usize)> {
+        // Symbolizing holds std's backtrace lock and allocates; suppress
+        // tracking on this thread meanwhile, or a tracked allocation would try
+        // to capture a backtrace under the same lock.
+        let mut grouped: HashMap<String, (usize, usize)> = HashMap::new();
+        guarded(|| {
+            for (size, trace) in entries {
+                let entry = grouped.entry(site(trace)).or_default();
+                entry.0 += 1;
+                entry.1 += size;
+            }
+        });
+        let mut rows: Vec<_> = grouped.into_iter().map(|(s, (n, b))| (s, n, b)).collect();
+        rows.sort_by_key(|row| std::cmp::Reverse(row.2));
+        rows
+    }
+    /// Stop tracking; return the peak tracked bytes and the live set at that
+    /// peak, grouped by site: (site, allocations, bytes), largest first.
+    pub fn report() -> (usize, Vec<(String, usize, usize)>) {
+        ENABLED.store(false, Ordering::SeqCst);
+        let state = STATE.lock().unwrap().take().unwrap_or_default();
+        (state.peak_bytes, group(&state.peak))
     }
 }
 #[global_allocator]
@@ -312,6 +459,33 @@ fn measure(
         let baseline = os::sample();
         let live = LIVE.load(Ordering::Relaxed);
         PEAK.store(live, Ordering::Relaxed);
+        if std::env::var_os("PRAEVIS_RETAIN").is_some() {
+            // Retention: read and drop one batch, then hold the stream idle
+            // (no further next_batch call) and list what is still live.
+            sites::start();
+            let mut stream = client.stock_eod_batches(request()).await?;
+            drop(stream.next_batch().await?);
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            for (site, count, bytes) in sites::live() {
+                println!(
+                    "RETAINED {:>6.1} MiB  x{count:<2} {site}",
+                    bytes as f64 / (1 << 20) as f64
+                );
+            }
+            while stream.next_batch().await?.is_some() {}
+            drop(stream);
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            let after: usize = sites::live().iter().map(|r| r.2).sum();
+            println!(
+                "RETAINED after the stream completed: {:.1} MiB",
+                after as f64 / (1 << 20) as f64
+            );
+            let _ = sites::report();
+        }
+        let attribute = std::env::var_os("PRAEVIS_SITES").is_some();
+        if attribute {
+            sites::start();
+        }
         let sampler = Sampler::start();
         let started = Instant::now();
         let mut tasks = tokio::task::JoinSet::new();
@@ -325,6 +499,16 @@ fn measure(
         }
         let elapsed = started.elapsed();
         let sampled = sampler.finish();
+        if attribute {
+            let (peak, rows) = sites::report();
+            println!("SITES peak {} MiB of allocations >= 1 MiB", peak >> 20);
+            for (site, count, bytes) in rows {
+                println!(
+                    "SITE {:>7.1} MiB  x{count:<3} {site}",
+                    bytes as f64 / (1 << 20) as f64
+                );
+            }
+        }
         let os_peak = os::peak_resident().unwrap_or(sampled.resident);
         println!(
             "RESULT {batches} {} {} {} {}",
@@ -587,7 +771,12 @@ fn main() -> Result<(), Failure> {
         }
         Some("measure") => {
             // Optional fifth argument: EodPolicy::concurrent_streams.
+            // PRAEVIS_ENCODED_LIMIT overrides DecodeLimits::encoded_bytes, which
+            // also sets tonic's max_decoding_message_size (experiments only).
             let mut policy = EodPolicy::default();
+            if let Some(limit) = std::env::var_os("PRAEVIS_ENCODED_LIMIT") {
+                policy.decode.encoded_bytes = limit.to_str().ok_or("limit")?.parse()?;
+            }
             if let Some(cap) = args.get(4) {
                 policy.concurrent_streams = cap.parse()?;
             }
