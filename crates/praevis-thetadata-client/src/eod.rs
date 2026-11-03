@@ -264,7 +264,7 @@ impl ThetaClient {
         check_deadline(deadline)?;
         let inner = response?.into_inner();
         Ok(EodBatchStream {
-            inner: Some(inner),
+            inner: Some(Source::Grpc(inner)),
             pool,
             deadline,
             idle: self.config.idle_timeout,
@@ -309,8 +309,26 @@ struct JobLeases {
     _schema: Option<Arc<OwnedSemaphorePermit>>,
     _job: OwnedSemaphorePermit,
 }
+/// Response messages of one typed stream. Production always uses the gRPC
+/// stream. The test-only scripted source lets paused-clock tests drive exact
+/// deadline, idle, admission and cancellation interleavings (EOD-L3-019). With
+/// one variant outside tests, the match compiles to a direct call.
+enum Source {
+    Grpc(tonic::Streaming<Vec<u8>>),
+    #[cfg(test)]
+    Script(tests::Script),
+}
+impl Source {
+    async fn message(&mut self) -> Result<Option<Vec<u8>>, tonic::Status> {
+        match self {
+            Self::Grpc(stream) => stream.message().await,
+            #[cfg(test)]
+            Self::Script(script) => script.message().await,
+        }
+    }
+}
 pub struct EodBatchStream {
-    inner: Option<tonic::Streaming<Vec<u8>>>,
+    inner: Option<Source>,
     pool: Arc<Pool>,
     deadline: Instant,
     idle: Duration,
@@ -495,6 +513,117 @@ mod tests {
     use crate::test_fixture as fixture;
     use std::sync::{Condvar, Mutex};
 
+    /// One step of a scripted transport. `Sleep` waits on the (paused) tokio
+    /// clock before the next step; `Hang` never yields; an exhausted script is EOF.
+    pub(super) enum Step {
+        Sleep(Duration),
+        Message(Vec<u8>),
+        Status(tonic::Code),
+        Hang,
+    }
+    #[derive(Default)]
+    pub(super) struct Probe {
+        polls: std::sync::atomic::AtomicUsize,
+        dropped: std::sync::atomic::AtomicBool,
+    }
+    pub(super) struct Script {
+        steps: std::collections::VecDeque<Step>,
+        probe: Arc<Probe>,
+    }
+    impl Script {
+        pub(super) async fn message(&mut self) -> Result<Option<Vec<u8>>, tonic::Status> {
+            self.probe
+                .polls
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            loop {
+                match self.steps.pop_front() {
+                    Some(Step::Sleep(duration)) => tokio::time::sleep(duration).await,
+                    Some(Step::Message(bytes)) => return Ok(Some(bytes)),
+                    Some(Step::Status(code)) => return Err(tonic::Status::new(code, "SENTINEL")),
+                    Some(Step::Hang) => std::future::pending::<()>().await,
+                    None => return Ok(None),
+                }
+            }
+        }
+    }
+    impl Drop for Script {
+        fn drop(&mut self) {
+            self.probe
+                .dropped
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+    impl Probe {
+        fn polls(&self) -> usize {
+            self.polls.load(std::sync::atomic::Ordering::SeqCst)
+        }
+        fn dropped(&self) -> bool {
+            self.dropped.load(std::sync::atomic::Ordering::SeqCst)
+        }
+    }
+    fn batch() -> Step {
+        let wire = fixture::table(fixture::Shape::Mixed, 1).0;
+        Step::Message(prost::Message::encode_to_vec(&fixture::response(
+            &wire, false,
+        )))
+    }
+    fn empty() -> Step {
+        Step::Message(prost::Message::encode_to_vec(&fixture::response(
+            &Default::default(),
+            false,
+        )))
+    }
+    fn secs(n: u64) -> Duration {
+        Duration::from_secs(n)
+    }
+    fn ms(n: u64) -> Duration {
+        Duration::from_millis(n)
+    }
+    /// One job; inline decoding of small NONE frames, so decoding takes no
+    /// virtual time unless a test gates an offloaded worker explicitly.
+    fn clock_pool(inline_bytes: usize) -> Arc<Pool> {
+        Pool::new(EodPolicy {
+            concurrent_jobs: 1,
+            inline_bytes,
+            ..Default::default()
+        })
+        .unwrap()
+    }
+    /// A stream over a scripted source, with the same leases `eod_stream`
+    /// takes. Its whole-query deadline starts now, as at RPC dispatch.
+    fn scripted(
+        pool: &Arc<Pool>,
+        steps: Vec<Step>,
+        deadline: Duration,
+        idle: Duration,
+    ) -> (EodBatchStream, Arc<Probe>) {
+        let probe = Arc::new(Probe::default());
+        let schema = units(pool.policy.decode.schema_bytes().unwrap()).unwrap() as u32;
+        let stream = EodBatchStream {
+            inner: Some(Source::Script(Script {
+                steps: steps.into(),
+                probe: probe.clone(),
+            })),
+            pool: pool.clone(),
+            deadline: Instant::now() + deadline,
+            idle,
+            schema: None,
+            schema_lease: Some(Arc::new(
+                pool.schemas.clone().try_acquire_many_owned(schema).unwrap(),
+            )),
+            terminal: false,
+            table: false,
+            failure: framing::Failure::default(),
+            stream_lease: Some(pool.streams.clone().try_acquire_owned().unwrap()),
+        };
+        (stream, probe)
+    }
+    async fn outcome(stream: &mut EodBatchStream) -> Result<usize, EodError> {
+        stream
+            .next_batch()
+            .await
+            .map(|batch| batch.map_or(0, |batch| batch.row_count()))
+    }
     pub(super) struct Gate {
         entered: Semaphore,
         released: Mutex<bool>,
@@ -832,5 +961,307 @@ mod tests {
                 .is_err()
             );
         }
+    }
+    // Paused-clock interleavings (EOD-L3-019, deferred item 4). Every elapsed
+    // time below is exact: the tokio clock only advances to pending timers.
+    /// Name, script, deadline, idle, expected first result, exact elapsed time.
+    type Case = (
+        &'static str,
+        Vec<Step>,
+        Duration,
+        Duration,
+        Result<usize, EodError>,
+        Duration,
+    );
+    #[tokio::test(start_paused = true)]
+    async fn idle_and_deadline_boundaries_are_exact() {
+        use tonic::Code::Unavailable;
+        let cases: Vec<Case> = vec![
+            (
+                "message before idle",
+                vec![Step::Sleep(secs(10) - ms(1)), batch()],
+                secs(100),
+                secs(10),
+                Ok(1),
+                secs(10) - ms(1),
+            ),
+            // A message ready at the idle boundary is delivered: the transport
+            // is polled before the idle timer, so idle requires a strictly longer wait.
+            (
+                "message at idle",
+                vec![Step::Sleep(secs(10)), batch()],
+                secs(100),
+                secs(10),
+                Ok(1),
+                secs(10),
+            ),
+            (
+                "message after idle",
+                vec![Step::Sleep(secs(10) + ms(1)), batch()],
+                secs(100),
+                secs(10),
+                Err(EodError::Idle),
+                secs(10),
+            ),
+            (
+                "hang, idle first",
+                vec![Step::Hang],
+                secs(100),
+                secs(10),
+                Err(EodError::Idle),
+                secs(10),
+            ),
+            (
+                "status before deadline",
+                vec![Step::Sleep(secs(30) - ms(1)), Step::Status(Unavailable)],
+                secs(30),
+                secs(60),
+                Err(EodError::Remote(Unavailable)),
+                secs(30) - ms(1),
+            ),
+            // Whole-query expiry has priority over anything ready at the same instant.
+            (
+                "message at deadline",
+                vec![Step::Sleep(secs(30)), batch()],
+                secs(30),
+                secs(60),
+                Err(EodError::Deadline),
+                secs(30),
+            ),
+            (
+                "status at deadline",
+                vec![Step::Sleep(secs(30)), Step::Status(Unavailable)],
+                secs(30),
+                secs(60),
+                Err(EodError::Deadline),
+                secs(30),
+            ),
+            (
+                "EOF at deadline",
+                vec![Step::Sleep(secs(30))],
+                secs(30),
+                secs(60),
+                Err(EodError::Deadline),
+                secs(30),
+            ),
+            (
+                "hang, deadline first",
+                vec![Step::Hang],
+                secs(30),
+                secs(60),
+                Err(EodError::Deadline),
+                secs(30),
+            ),
+            (
+                "simultaneous expiry",
+                vec![Step::Hang],
+                secs(30),
+                secs(30),
+                Err(EodError::Deadline),
+                secs(30),
+            ),
+            (
+                "not-found before deadline",
+                vec![Step::Sleep(secs(1)), Step::Status(tonic::Code::NotFound)],
+                secs(30),
+                secs(60),
+                Err(EodError::NoData),
+                secs(1),
+            ),
+        ];
+        for (name, steps, deadline, idle, expected, elapsed) in cases {
+            let pool = clock_pool(4096);
+            let (mut stream, probe) = scripted(&pool, steps, deadline, idle);
+            let start = Instant::now();
+            assert_eq!(outcome(&mut stream).await, expected, "{name}");
+            assert_eq!(start.elapsed(), elapsed, "{name}");
+            if expected.is_err() {
+                assert!(probe.dropped(), "{name}: transport released on termination");
+                assert_eq!(
+                    pool.streams.available_permits(),
+                    pool.policy.concurrent_streams,
+                    "{name}"
+                );
+                assert!(
+                    stream.next_batch().await.unwrap().is_none(),
+                    "{name}: fused"
+                );
+                assert_eq!(
+                    probe.polls(),
+                    1,
+                    "{name}: no transport activity after termination"
+                );
+            }
+        }
+        // EOF just before the deadline is clean completion, not expiry.
+        let pool = clock_pool(4096);
+        let (mut stream, _) = scripted(
+            &pool,
+            vec![Step::Sleep(secs(30) - ms(1))],
+            secs(30),
+            secs(60),
+        );
+        assert!(stream.next_batch().await.unwrap().is_none());
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn idle_resets_per_message_including_skipped_empty_messages() {
+        let pool = clock_pool(4096);
+        let mut steps = Vec::new();
+        for _ in 0..5 {
+            steps.extend([Step::Sleep(secs(9)), empty()]);
+        }
+        steps.extend([Step::Sleep(secs(9)), batch(), Step::Sleep(secs(9)), batch()]);
+        let (mut stream, probe) = scripted(&pool, steps, secs(100), secs(10));
+        let start = Instant::now();
+        // 54 s in total, but no single wait reaches the 10 s idle budget.
+        assert_eq!(outcome(&mut stream).await, Ok(1));
+        assert_eq!(start.elapsed(), secs(54));
+        assert_eq!(outcome(&mut stream).await, Ok(1));
+        assert_eq!(start.elapsed(), secs(63));
+        assert!(stream.next_batch().await.unwrap().is_none());
+        assert_eq!(probe.polls(), 8);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn empty_message_trickle_cannot_outlive_the_whole_query_deadline() {
+        let pool = clock_pool(4096);
+        let mut steps = Vec::new();
+        for _ in 0..100 {
+            steps.extend([Step::Sleep(secs(9)), empty()]);
+        }
+        let (mut stream, probe) = scripted(&pool, steps, secs(30), secs(10));
+        let start = Instant::now();
+        assert_eq!(outcome(&mut stream).await, Err(EodError::Deadline));
+        assert_eq!(start.elapsed(), secs(30));
+        assert_eq!(probe.polls(), 4);
+        assert!(probe.dropped());
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn consumer_pauses_consume_the_deadline_but_not_idle() {
+        let pool = clock_pool(4096);
+        let (mut stream, probe) =
+            scripted(&pool, vec![batch(), batch(), batch()], secs(100), secs(10));
+        let start = Instant::now();
+        assert_eq!(outcome(&mut stream).await, Ok(1));
+        // A pause far beyond idle: idle only measures a pending transport wait.
+        tokio::time::sleep(secs(50)).await;
+        assert_eq!(outcome(&mut stream).await, Ok(1));
+        assert_eq!(start.elapsed(), secs(50));
+        // A pause past the whole-query deadline is detected on resumption,
+        // before the transport is polled again.
+        tokio::time::sleep(secs(60)).await;
+        assert_eq!(outcome(&mut stream).await, Err(EodError::Deadline));
+        assert_eq!(probe.polls(), 2);
+        assert!(probe.dropped());
+        assert!(stream.next_batch().await.unwrap().is_none());
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn admission_waits_consume_the_deadline_but_not_idle() {
+        // Expiry while waiting for the only job slot never polls the transport.
+        let pool = clock_pool(4096);
+        let held = pool.jobs.clone().try_acquire_owned().unwrap();
+        let (mut stream, probe) = scripted(&pool, vec![batch()], secs(30), secs(10));
+        let start = Instant::now();
+        assert_eq!(outcome(&mut stream).await, Err(EodError::Deadline));
+        assert_eq!(start.elapsed(), secs(30));
+        assert_eq!(probe.polls(), 0);
+        assert!(probe.dropped());
+        drop(held);
+        // A 20 s admission wait exceeds idle (10 s) but not the deadline. Idle
+        // starts only once the job slot is held, so a message 5 s later (25 s
+        // after the request) is delivered rather than reported as idle.
+        let pool = clock_pool(4096);
+        let held = pool.jobs.clone().try_acquire_owned().unwrap();
+        let (mut stream, probe) = scripted(
+            &pool,
+            vec![Step::Sleep(secs(5)), batch()],
+            secs(40),
+            secs(10),
+        );
+        let start = Instant::now();
+        tokio::spawn(async move {
+            tokio::time::sleep(secs(20)).await;
+            drop(held);
+        });
+        assert_eq!(outcome(&mut stream).await, Ok(1));
+        assert_eq!(start.elapsed(), secs(25));
+        assert_eq!(probe.polls(), 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn offloaded_decoding_consumes_the_deadline_but_not_idle() {
+        for (advance, expected) in [(secs(15), Ok(1)), (secs(31), Err(EodError::Deadline))] {
+            let pool = clock_pool(0);
+            let gate = Gate::new();
+            *pool.gate.lock().unwrap() = Some(gate.clone());
+            let (mut stream, _) = scripted(&pool, vec![batch()], secs(30), secs(10));
+            let start = Instant::now();
+            // While the worker is blocked, move the clock beyond idle (15 s) or
+            // beyond the deadline (31 s), then let the decode finish.
+            let driver = tokio::spawn({
+                let gate = gate.clone();
+                async move {
+                    gate.entered.acquire().await.unwrap().forget();
+                    tokio::time::advance(advance).await;
+                    gate.release();
+                }
+            });
+            assert_eq!(outcome(&mut stream).await, expected, "advance {advance:?}");
+            driver.await.unwrap();
+            assert!(start.elapsed() >= advance.min(secs(30)));
+            // The worker's job slot is retained until it exits, then released.
+            drop(pool.jobs.clone().acquire_owned().await.unwrap());
+            assert_eq!(pool.jobs.available_permits(), 1);
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn cancellation_at_each_wait_releases_transport_and_fuses() {
+        // Dropping a pending call while it waits for the transport.
+        let pool = clock_pool(4096);
+        let (mut stream, probe) = scripted(
+            &pool,
+            vec![Step::Sleep(secs(5)), batch()],
+            secs(30),
+            secs(10),
+        );
+        {
+            let pending = stream.next_batch();
+            assert!(tokio::time::timeout(secs(1), pending).await.is_err());
+        }
+        assert!(probe.dropped());
+        assert_eq!(
+            pool.streams.available_permits(),
+            pool.policy.concurrent_streams
+        );
+        tokio::time::sleep(secs(10)).await;
+        assert_eq!(outcome(&mut stream).await, Err(EodError::Cancelled));
+        assert!(stream.next_batch().await.unwrap().is_none());
+        assert_eq!(probe.polls(), 1);
+        // Dropping a pending call while it waits for admission: the transport
+        // is released without ever being polled.
+        let pool = clock_pool(4096);
+        let held = pool.jobs.clone().try_acquire_owned().unwrap();
+        let (mut stream, probe) = scripted(&pool, vec![batch()], secs(30), secs(10));
+        assert!(
+            tokio::time::timeout(secs(5), stream.next_batch())
+                .await
+                .is_err()
+        );
+        drop(held);
+        assert_eq!((probe.polls(), probe.dropped()), (0, true));
+        assert_eq!(outcome(&mut stream).await, Err(EodError::Cancelled));
+        // Explicit cancellation between batches delivers nothing more.
+        let pool = clock_pool(4096);
+        let (mut stream, probe) = scripted(&pool, vec![batch(), batch()], secs(30), secs(10));
+        assert_eq!(outcome(&mut stream).await, Ok(1));
+        stream.cancel();
+        assert!(probe.dropped());
+        assert_eq!(outcome(&mut stream).await, Err(EodError::Cancelled));
+        assert!(stream.next_batch().await.unwrap().is_none());
+        assert_eq!(probe.polls(), 1);
     }
 }

@@ -58,3 +58,6 @@ sha2 = "0.10"
 # graph through tonic/hyper/reqwest; used only to install test collectors.
 tracing = "0.1"
 log = { version = "0.4", features = ["std"] }
+# Paused-clock lifecycle tests (EOD-L3-019, deferred item 4). A feature of the
+# existing tokio dependency, enabled for tests only; it adds no packages.
+tokio = { workspace = true, features = ["test-util"] }
