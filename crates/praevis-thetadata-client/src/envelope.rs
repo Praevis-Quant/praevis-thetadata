@@ -112,8 +112,20 @@ pub(crate) fn parse(bytes: Vec<u8>, limits: &DecodeLimits) -> Result<wire::Respo
     {
         return Err(EodError::Resource("allocation bytes"));
     }
+    // PROTOTYPE (option 3): keep the payload in the frame's own allocation.
+    // Trim the envelope bytes in place (a memmove of the payload, no second
+    // message-sized allocation) instead of copying the payload out.
+    let range = if payload.is_empty() {
+        0..0
+    } else {
+        let start = payload.as_ptr() as usize - bytes.as_ptr() as usize;
+        start..start + payload.len()
+    };
+    let mut bytes = bytes;
+    bytes.truncate(range.end);
+    bytes.drain(..range.start);
     Ok(wire::ResponseData {
-        compressed_data: payload.to_vec(),
+        compressed_data: bytes,
         compression_description: compression,
         original_size,
         flat_file_manifest: None,
