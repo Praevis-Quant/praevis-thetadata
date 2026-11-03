@@ -142,6 +142,18 @@ definition, a permanent ID, parent links, an owner, and verification evidence.
 Move definitions without duplication or renumbering and update the central
 index. Never reuse a retired ID or silently reinterpret an existing one.
 
+**Lighter process (approved 2026-11-03, [plan F](docs/architecture/performance-plan.md#f-process-simplification)):**
+- Generated endpoints get **one generated coverage table** (endpoint → typed
+  builder → decoder test → live evidence status), not per-clause L1/L2/L3 and
+  acceptance matrices.
+- Write ADRs only for architecture-level choices; routine decisions are short
+  notes in the plan or the PR.
+- The stock-EOD matrices are historical. No requirement ID is deleted.
+- Every performance claim cites a measured W-workload, not synthetic data
+  alone.
+- Kept unchanged: CI rule 3, exact values, decoder and lifecycle tests, live
+  evidence and the D-B benchmark discipline.
+
 Changes to credential precedence, persisted data, store identity, or lifecycle
 behavior require corresponding ADR/requirement updates and meaningful tests.
 Separate observed artifact behavior, documented vendor behavior, project
@@ -277,15 +289,27 @@ generated change records. Archive regeneration additionally needs
 `tools/research-requirements.txt` and the exact original wheel bytes. The local
 ZIP/extraction were removed after verification; use the documented
 [hash-verified recovery procedure](docs/research/upstream-source.md#recovering-the-removed-local-artifacts)
-when regeneration is needed. Never import or execute the vendor package.
+when regeneration is needed. Never import or execute the vendor package, with
+one approved exception (2026-11-03, [plan C.1](docs/architecture/performance-plan.md#c1-vendor-python-baseline-the-approved-scoped-exception)).
+- **Only** the Python baseline harness in `bench/python-baseline/` may run it.
+  That harness is outside the Cargo workspace and excluded from packaging, CI,
+  tests and `tools/`.
+- It runs `thetadata==1.0.17` from a hash-pinned (`--require-hashes`)
+  isolated virtual environment, and only **manually by the Coordinator on the
+  user's machine**, with the user's key taken from the environment (never
+  written to disk or logs).
+- It outputs timings only; captures stay in ignored `artifacts/`.
+- No other code may import the package. A newer version needs the same
+  approval.
 
-The next planned work in [the roadmap](docs/ROADMAP.md) is implementing the stock
-EOD slice's [defined requirements](docs/requirements/L1-stock-eod.md), closing
-the [typed experiment's remaining resource/fault gates](docs/performance/eod-resource-audit.md)
-using its fixtures and measured results, from that evidence and
-[proposed ADRs 0007-0012](docs/adr/README.md).
-Those ADRs define scope, typed requests, outputs, stream behavior, verification,
-and traceability; they do not establish an implemented market-data baseline.
+The next work follows the approved
+[performance architecture plan](docs/architecture/performance-plan.md)
+(2026-11-03): phase P0 (measurement) on FREE, then generated endpoints, Arrow
+columns, the scheduler and PyO3, tied to subscription upgrades. ADR-0007 (stock
+EOD as the first slice) and the slice-by-slice roadmap are superseded. ADRs
+0008-0012 remain valid in substance where the plan does not change them; they
+define typed requests, outputs, stream behavior, verification and traceability
+for the existing EOD code.
 Extend coverage to implementation and verification as work is selected.
 Preserve the original research and unresolved contracts. Mechanical coverage
 cannot prove undocumented live-service behavior or approve market-data scope.

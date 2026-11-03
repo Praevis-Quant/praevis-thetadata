@@ -14,7 +14,7 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Stock EOD L3](requirements/L3-stock-eod.md) | Component owners and explicit acceptance contracts |
 | [Stock EOD evidence and gates](requirements/stock-eod-evidence.md) | Source trace, Python deviations, measurement gate, and unverified vendor semantics |
 | [Stock EOD acceptance matrix](requirements/stock-eod-matrix.md) | Every EOD L3 requirement, error/phase cases, passing synthetic evidence and remaining clauses |
-| [**Performance architecture plan**](architecture/performance-plan.md) | **Proposed direction (2026-11-03):** vendor tier facts, workload catalogue with targets, Python baseline method, target architecture, tier-tied roadmap and process simplification |
+| [**Performance architecture plan**](architecture/performance-plan.md) | **Approved direction (2026-11-03):** decisions, vendor tier facts, workload catalogue with targets, Python baseline method, target architecture, tier-tied roadmap, process simplification and the ThetaDataDx review |
 | [Architecture review](research/architecture-performance-review.md) | Crate assessment, Fowler/ports-adapters, Twelve-Factor applicability and performance findings |
 | [Architecture requirements](requirements/architecture.md) | ARCH L1/L2/L3: dependency boundaries and optional adapters |
 | [Performance requirements](requirements/performance.md) | PERF L1/L2/L3: numeric fast path, consumer metrics and measured acceptance |

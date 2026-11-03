@@ -16,6 +16,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- The performance architecture plan is **approved** (2026-11-03). Recorded:
+  - the user's decisions;
+  - a thin pass-through Python design over Arrow C Stream data, with
+    zero-cost vendor-name aliases and benchmark gates;
+  - the Terminal-only real-time path;
+  - the ThetaDataDx review (license and vendor terms).
+
+  CLAUDE.md gains the scoped vendor-package benchmark exception and the
+  lighter process; ADR-0007 is superseded.
 - A proposed performance architecture plan
   ([docs/architecture/performance-plan.md](docs/architecture/performance-plan.md)).
   It covers:

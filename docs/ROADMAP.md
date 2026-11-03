@@ -2,12 +2,12 @@
 
 This is a forward-looking work list, not a changelog. Recommendations become requirements when selected for implementation; their inclusion here does not approve the entire market-data scope.
 
-> **Direction reset (2026-11-03).** The proposed
+> **Direction reset (2026-11-03, plan approved the same day).** The
 > [performance architecture plan](architecture/performance-plan.md) redirects
 > the work from hand-built slices toward generated endpoints, a columnar Arrow
 > data path, a tier-aware scheduler, PyO3 and real-time streaming, measured
-> against the vendor Python package. Once approved it supersedes the
-> slice-by-slice ordering below. Item 8 / option 2a, alpha.3 and beta.1 are on hold.
+> against the vendor Python package. It supersedes the slice-by-slice ordering
+> below; P0 (measurement on FREE) is next. Item 8 / option 2a, alpha.3 and beta.1 are on hold.
 
 ## Release sequence and immediate service integration
 
