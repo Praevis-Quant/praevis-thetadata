@@ -23,6 +23,11 @@ live-tests = []
 name = "live_eod"
 required-features = ["live-tests"]
 
+# Phase P0 live measurements (performance plan C.2): manual only, never CI runs.
+[[example]]
+name = "live_p0"
+required-features = ["live-tests"]
+
 # Runnable consumer pattern (EOD-L3-025). `test = true` runs its tests in
 # `cargo test --workspace`; it is checkout-only like the other examples.
 [[example]]
