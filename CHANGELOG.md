@@ -20,6 +20,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   offline replay on the release commit, and Windows/Linux crates.io installs
   and consumers ([record](docs/crates-io-release-plan.md#publication-record-010-alpha2)).
 
+### Fixed
+
+- An abandoned offloaded decode job now releases its schema lease before its
+  job permit, using a declaration-ordered `JobLeases`. A newly admitted job can
+  no longer observe the previous job's schema lease, and the cancellation test
+  asserts this without a wait (deferred item 7). Neutral on the decode
+  benchmark gate ([results](docs/performance/eod-lease-order-results.md)).
+
+### Changed
+
+- `tools/check_repository.py` also verifies every local Markdown `#anchor`
+  link (#39).
+
 ## [0.1.0-alpha.2] - 2026-11-03
 
 ### Changed

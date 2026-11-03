@@ -19,7 +19,7 @@ recorded as observed or unresolved under EOD-L3-029.
 | Disposition | Clauses |
 | --- | --- |
 | Closed | 001, 002, 003, 004, 006, 007, 008, 009, 010, 011, 012, 013, 014, 015, 016, 017, 018, 020, 022, 024, 025, 026, 028, 030 |
-| Closed, with deferral | 005 (trusted-TLS fixture, item 3); 021 (exhaustive corpus, item 2); 023 (C-allocator profiling, item 1; lease release order, item 7); 027 (desktop A/A, item 6); 029 (unresolved service semantics listed in the [semantics table](stock-eod-evidence.md#observed-service-semantics-eod-l3-029)) |
+| Closed, with deferral | 005 (trusted-TLS fixture, item 3); 021 (exhaustive corpus, item 2); 023 (C-allocator profiling, item 1; the lease release order, item 7, closed 2026-11-03); 027 (desktop A/A, item 6); 029 (unresolved service semantics listed in the [semantics table](stock-eod-evidence.md#observed-service-semantics-eod-l3-029)) |
 | Not applicable to alpha.2 (D-E) | 019: exhaustive controlled-clock interleavings and the transport seam (item 4); its existing synthetic idle/deadline/cancellation tests pass |
 | Open | None |
 
