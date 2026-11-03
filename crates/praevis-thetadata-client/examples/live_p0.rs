@@ -61,7 +61,16 @@ enum Command {
     /// Network/server vs decode breakdown for the FREE workloads.
     Breakdown(Breakdown),
     /// Bounded probes of the FREE limits.
-    Limits(Common),
+    Limits(LimitsArgs),
+}
+
+#[derive(Args)]
+struct LimitsArgs {
+    #[command(flatten)]
+    common: Common,
+    /// Run only one probe group (for example after a stopped run).
+    #[arg(long, value_parser = ["batch-sizes"])]
+    only: Option<String>,
 }
 
 #[derive(Args)]
@@ -416,7 +425,19 @@ async fn breakdown(
     Ok(())
 }
 
-async fn limits(options: &Common, client: &ThetaClient, report: &mut Report) -> Result<(), Stop> {
+async fn limits(
+    options: &LimitsArgs,
+    client: &ThetaClient,
+    report: &mut Report,
+) -> Result<(), Stop> {
+    if options.only.as_deref() != Some("batch-sizes") {
+        concurrency_and_rate(client, report).await?;
+        tokio::time::sleep(Duration::from_secs(60)).await; // let any per-minute window reset
+    }
+    batch_sizes(&options.common, client, report).await
+}
+
+async fn concurrency_and_rate(client: &ThetaClient, report: &mut Report) -> Result<(), Stop> {
     let tiny = Wire::Stock(api::StockHistoryEodRequestQuery {
         symbol: "AAPL".into(),
         start_date: "2024-01-02".into(),
@@ -473,20 +494,54 @@ async fn limits(options: &Common, client: &ThetaClient, report: &mut Report) -> 
         }
         println!("rate probe: {sent} requests without error at {interval} s spacing");
     }
-    // 3. Batch sizes: the largest FREE EOD span, and one option chain day.
+    Ok(())
+}
+
+fn stock(start: &str, end: &str) -> Wire {
+    Wire::Stock(api::StockHistoryEodRequestQuery {
+        symbol: "AAPL".into(),
+        start_date: start.into(),
+        end_date: end.into(),
+    })
+}
+
+/// Probe group 3: date-span checks, then batch sizes.
+///
+/// A full-FREE-window EOD request (2023-06-01..2026-10-30) returned
+/// INVALID_ARGUMENT. These four requests find out whether the span or the
+/// start date was the cause; their INVALID_ARGUMENT and PERMISSION_DENIED
+/// statuses are recorded, not fatal.
+async fn batch_sizes(
+    options: &Common,
+    client: &ThetaClient,
+    report: &mut Report,
+) -> Result<(), Stop> {
     let mut pacer = Pacer {
         interval: Duration::from_secs_f64(options.min_interval.max(3.5)),
         last: None,
     };
-    tokio::time::sleep(Duration::from_secs(60)).await; // let any per-minute window reset
+    for (label, start, end) in [
+        ("span-365d", "2025-10-31", "2026-10-30"),
+        ("span-366d", "2025-10-30", "2026-10-30"),
+        ("span-731d", "2024-10-30", "2026-10-30"),
+        ("span-1y-from-free-start", "2023-06-01", "2024-05-31"),
+    ] {
+        pacer.wait().await;
+        let status = match drain(client, &stock(start, end)).await {
+            Ok((summary, _)) => summary.status,
+            Err(Stop(name)) if name == "InvalidArgument" || name == "PermissionDenied" => name,
+            Err(stop) => return Err(stop),
+        };
+        println!("span check {label} ({start}..{end}): {status}");
+        report
+            .results
+            .push(serde_json::json!({"probe": "span", "request": label,
+            "start": start, "end": end, "status": status}));
+    }
     for (label, request) in [
         (
-            "stock-eod-2023-06-01..2026-10-30",
-            Wire::Stock(api::StockHistoryEodRequestQuery {
-                symbol: "AAPL".into(),
-                start_date: "2023-06-01".into(),
-                end_date: "2026-10-30".into(),
-            }),
+            "stock-eod-AAPL-2024-01-02..2024-12-31",
+            stock("2024-01-02", "2024-12-31"),
         ),
         (
             "option-eod-SPY-2024-06-14-all",
@@ -572,7 +627,7 @@ async fn main() -> std::process::ExitCode {
     let cli = Cli::parse();
     let (common, name) = match &cli.command {
         Command::Breakdown(options) => (&options.common, "breakdown"),
-        Command::Limits(options) => (options, "limits"),
+        Command::Limits(options) => (&options.common, "limits"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -726,6 +781,29 @@ mod tests {
             for request in workloads[id]["requests"].as_array().unwrap() {
                 let _ = wire_request(method, request);
             }
+        }
+    }
+
+    #[tokio::test]
+    async fn invalid_argument_surfaces_by_the_name_the_span_checks_match() {
+        let server = fixture::Fixture::start(fixture::Script {
+            initial_error: Some(tonic::Status::invalid_argument("synthetic")),
+            ..Default::default()
+        });
+        let client = ThetaClient::with_eod_policy(
+            ClientConfig {
+                endpoint: Some(server.endpoint.clone()),
+                allow_insecure: true,
+                ..Default::default()
+            },
+            fixture::session().await,
+            EodPolicy::default(),
+        )
+        .await
+        .unwrap();
+        match drain(&client, &stock("2023-06-01", "2026-10-30")).await {
+            Err(Stop(name)) => assert_eq!(name, "InvalidArgument"),
+            Ok(_) => panic!("expected a stop"),
         }
     }
 
