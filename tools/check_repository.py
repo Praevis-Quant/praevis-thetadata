@@ -1,7 +1,8 @@
-"""Check tracked inputs, descriptor integrity, requirements, and document links."""
+"""Check tracked inputs, descriptor integrity, requirements, document links and anchors."""
 import hashlib
 import json
 from pathlib import Path
+import posixpath
 import re
 import subprocess
 import sys
@@ -123,6 +124,60 @@ def audit_requirements(documents):
     return definitions, errors
 
 
+def heading_anchors(content):
+    """GitHub-style anchors of a Markdown document: heading slugs and explicit ids.
+
+    A slug is the heading text without links, HTML, code or emphasis markup,
+    lowercased, with characters other than word characters, hyphens and spaces
+    removed and spaces turned into hyphens. Repeated slugs get -1, -2, ...
+    Headings inside fenced code blocks are ignored.
+    """
+    anchors, seen, fence = set(), {}, None
+    for line in content.splitlines():
+        marker = re.match(r"\s*(`{3,}|~{3,})", line)
+        if marker:
+            if fence is None:
+                fence = marker.group(1)[0]
+            elif marker.group(1)[0] == fence:
+                fence = None
+            continue
+        heading = None if fence else re.match(r"#{1,6}\s+(.*?)\s*#*\s*$", line)
+        if heading:
+            text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading.group(1))
+            text = re.sub(r"<[^>]+>", "", text)
+            slug = re.sub(r"[^\w\- ]", "", text.strip().lower()).replace(" ", "-")
+            count = seen.get(slug, 0)
+            anchors.add(slug if count == 0 else f"{slug}-{count}")
+            seen[slug] = count + 1
+    anchors.update(re.findall(r"""(?:id|name)=["']([^"']+)["']""", content))
+    return anchors
+
+
+def audit_anchors(contents):
+    """Report links whose #fragment names no heading or id in a tracked Markdown target.
+
+    `contents` maps repository-relative POSIX paths to Markdown text. Links to
+    external URLs, to non-Markdown files and to missing files are left to the
+    other checks.
+    """
+    cache, errors = {}, []
+    for path, content in contents.items():
+        for link in re.findall(r"\]\(([^)\s]+)\)", content):
+            if "://" in link or link.startswith("mailto:") or "#" not in link:
+                continue
+            target, fragment = link.split("#", 1)
+            target = unquote(target)
+            resolved = path if not target else posixpath.normpath(
+                posixpath.join(posixpath.dirname(path), target))
+            if resolved not in contents:
+                continue
+            if resolved not in cache:
+                cache[resolved] = heading_anchors(contents[resolved])
+            if unquote(fragment) not in cache[resolved]:
+                errors.append(f"Broken anchor link in {path}: {link}")
+    return errors
+
+
 def main():
     files = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
     files = [path for path in files if path]
@@ -163,10 +218,11 @@ def main():
             target = unquote(link.split("#", 1)[0])
             if target and not (document.parent / target).exists():
                 errors.append(f"Broken file link in {document.relative_to(ROOT)}: {target}")
+    errors.extend(audit_anchors(contents))
     if errors:
         raise SystemExit("\n".join(errors))
     print(f"Checked {len(files)} tracked files, {len(defined)} requirements, {len(adrs)} ADR origins, "
-          "exhaustive requirement origins, local document links, package license copies, and descriptor integrity.")
+          "exhaustive requirement origins, local document links and anchors, package license copies, and descriptor integrity.")
 
 
 if __name__ == "__main__":

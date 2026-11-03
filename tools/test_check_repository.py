@@ -1,7 +1,7 @@
 """Mutations that must not pass the requirement hierarchy audit."""
 import unittest
 
-from check_repository import PACKAGE_DIRS, audit_package_files, audit_requirements
+from check_repository import PACKAGE_DIRS, audit_anchors, audit_package_files, audit_requirements, heading_anchors
 
 
 class RequirementAuditTests(unittest.TestCase):
@@ -89,3 +89,36 @@ class PackageFileAuditTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AnchorAuditTests(unittest.TestCase):
+    TARGET = (
+        "# Release `0.1.0-alpha.2` (2026-11-03)\n"
+        "## Deferred from alpha.2\n"
+        "## Status: alpha.2 **released**, next [alpha.3](x.md)\n"
+        "## Repeat\n## Repeat\n"
+        '<a id="explicit-id"></a>\n'
+        "```text\n# not-a-heading\n```\n"
+    )
+
+    def test_github_slugs_duplicates_ids_and_fences(self):
+        self.assertEqual(heading_anchors(self.TARGET), {
+            "release-010-alpha2-2026-11-03", "deferred-from-alpha2",
+            "status-alpha2-released-next-alpha3", "repeat", "repeat-1", "explicit-id"})
+
+    def test_valid_relative_same_document_and_ignored_links(self):
+        docs = {"docs/releases.md": self.TARGET + "[self](#repeat-1)",
+                "docs/requirements/m.md": (
+                    "[a](../releases.md#deferred-from-alpha2) [b](../releases.md#explicit-id) "
+                    "[web](https://example.com/x.md#nope) [code](../../src/lib.rs#L10) "
+                    "[missing file](../absent.md#nope) [plain](../releases.md)")}
+        self.assertEqual(audit_anchors(docs), [])
+
+    def test_broken_fragments_are_reported(self):
+        for link in ("../releases.md#deferred-from-alpha3", "../releases.md#repeat-2",
+                     "../releases.md#not-a-heading", "#nowhere"):
+            with self.subTest(link=link):
+                docs = {"docs/releases.md": self.TARGET, "docs/requirements/m.md": f"[x]({link})"}
+                errors = audit_anchors(docs)
+                self.assertEqual(len(errors), 1)
+                self.assertIn(link, errors[0])
