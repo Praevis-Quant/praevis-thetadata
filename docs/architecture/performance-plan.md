@@ -432,8 +432,8 @@ record:
 
 Reviewed 2026-11-03 at `f42350f` of [userFRM/ThetaDataDx][dx] (Apache-2.0,
 the same license as this project). The review covered reading only; no code
-was copied, built or run. The detailed P0 review goes to
-`docs/research/thetadatadx-review.md`.
+was copied, built or run. Detailed P0 review:
+[ThetaDataDx review](../research/thetadatadx-review.md).
 
 ### H.1 What they do and how
 
