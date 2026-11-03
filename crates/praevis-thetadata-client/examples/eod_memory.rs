@@ -210,7 +210,7 @@ mod sites {
             }
         });
         let mut rows: Vec<_> = grouped.into_iter().map(|(s, (n, b))| (s, n, b)).collect();
-        rows.sort_by(|a, b| b.2.cmp(&a.2));
+        rows.sort_by_key(|row| std::cmp::Reverse(row.2));
         rows
     }
     /// Stop tracking; return the peak tracked bytes and the live set at that
