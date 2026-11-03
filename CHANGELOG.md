@@ -16,6 +16,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- A proposed performance architecture plan
+  ([docs/architecture/performance-plan.md](docs/architecture/performance-plan.md)).
+  It covers:
+  - researched vendor tier facts;
+  - a workload catalogue with baseline-relative targets;
+  - a scoped proposal to benchmark against the vendor Python package;
+  - a target design: generated endpoints, Arrow, scheduler, PyO3, real-time;
+  - a roadmap tied to subscription upgrades, and a lighter process.
+
+  Planning only; no code changes.
 - Publication record for `0.1.0-alpha.2`: registry checksums, the tag, the
   offline replay on the release commit, and Windows/Linux crates.io installs
   and consumers ([record](docs/crates-io-release-plan.md#publication-record-010-alpha2)).
