@@ -36,7 +36,7 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Compile-check the manual live runner (never executed in CI)
-        run: cargo clippy --locked -p praevis-thetadata-client --features live-tests --example live_eod -- -D warnings
+        run: cargo clippy --locked -p praevis-thetadata-client --features live-tests --example live_eod --example live_p0 -- -D warnings
       - name: Tests
         run: cargo test --workspace --locked
       - name: Auth feature boundary (default in-memory, optional native store)
