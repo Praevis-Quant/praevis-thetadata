@@ -301,6 +301,14 @@ fn check_deadline(deadline: Instant) -> Result<(), EodError> {
         Ok(())
     }
 }
+/// Leases held by one decode job. Fields drop in declaration order, so the
+/// schema lease is always released before the job permit, including when an
+/// abandoned worker drops its result on a blocking thread. Whoever acquires the
+/// returned job permit therefore never observes that job's schema lease.
+struct JobLeases {
+    _schema: Option<Arc<OwnedSemaphorePermit>>,
+    _job: OwnedSemaphorePermit,
+}
 pub struct EodBatchStream {
     inner: Option<tonic::Streaming<Vec<u8>>>,
     pool: Arc<Pool>,
@@ -413,9 +421,16 @@ impl EodBatchStream {
                             Output::Batch(batch)
                         }
                     });
-                    (output, headers, job, schema_lease)
+                    (
+                        output,
+                        headers,
+                        JobLeases {
+                            _schema: schema_lease,
+                            _job: job,
+                        },
+                    )
                 };
-                let (output, headers, _job, _schema_lease) = if inline {
+                let (output, headers, _leases) = if inline {
                     work()
                 } else {
                     tokio::task::spawn_blocking(work)
@@ -430,7 +445,7 @@ impl EodBatchStream {
                 if headers.is_empty() {
                     // An already-buffered sequence of tiny empty responses must
                     // not monopolize an executor when the inline path is used.
-                    drop((output, _job, _schema_lease));
+                    drop((output, _leases));
                     tokio::task::yield_now().await;
                     continue;
                 }
@@ -480,17 +495,6 @@ mod tests {
     use crate::test_fixture as fixture;
     use std::sync::{Condvar, Mutex};
 
-    /// Polls `done` with a short real-time sleep until it holds or 5 s pass.
-    async fn eventually(mut done: impl FnMut() -> bool) -> bool {
-        let end = std::time::Instant::now() + Duration::from_secs(5);
-        while !done() {
-            if std::time::Instant::now() >= end {
-                return false;
-            }
-            tokio::time::sleep(Duration::from_millis(1)).await;
-        }
-        true
-    }
     pub(super) struct Gate {
         entered: Semaphore,
         released: Mutex<bool>,
@@ -591,13 +595,8 @@ mod tests {
                 .unwrap()
                 .unwrap();
         drop(permit);
-        // The abandoned worker drops its result tuple on the blocking thread,
-        // job permit first and schema lease second, so the job permit can be
-        // observed a moment before the lease. Wait boundedly; a leak still fails.
-        assert!(
-            eventually(|| pool.schemas.available_permits() == schema_capacity).await,
-            "schema lease was not released within the bound"
-        );
+        // JobLeases releases the abandoned worker's schema lease before its job
+        // permit, so reacquiring the permit proves the lease is already back.
         assert_eq!(pool.schemas.available_permits(), schema_capacity);
         assert_eq!(pool.jobs.available_permits(), 1);
     }
