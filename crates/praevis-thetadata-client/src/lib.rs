@@ -112,6 +112,18 @@ impl ThetaClient {
         eod_pool: std::sync::Arc<eod::Pool>,
         typed_primary: bool,
     ) -> Result<Self, Error> {
+        let tls = ClientTlsConfig::new().with_native_roots();
+        Self::connect_with(config, session, eod_pool, typed_primary, tls).await
+    }
+    /// Private seam: production always passes the native-root configuration
+    /// above. Only the TLS success tests add a generated test root (EOD-L3-005).
+    async fn connect_with(
+        config: ClientConfig,
+        session: Session,
+        eod_pool: std::sync::Arc<eod::Pool>,
+        typed_primary: bool,
+        tls: ClientTlsConfig,
+    ) -> Result<Self, Error> {
         if config.max_batch_bytes == 0 || config.max_batch_bytes > i32::MAX as usize {
             return Err(Error::Config("batch limit must be between 1 and i32::MAX"));
         }
@@ -146,9 +158,7 @@ impl ThetaClient {
         let mut endpoint =
             Endpoint::from_shared(url.clone())?.connect_timeout(config.connect_timeout);
         match endpoint.uri().scheme_str() {
-            Some("https") => {
-                endpoint = endpoint.tls_config(ClientTlsConfig::new().with_native_roots())?
-            }
+            Some("https") => endpoint = endpoint.tls_config(tls)?,
             Some("http") if config.allow_insecure => {}
             _ => {
                 return Err(Error::Config(
@@ -214,5 +224,136 @@ impl ResponseStream {
         response
             .map(|response| decode::decode(response, self.max_batch_bytes))
             .transpose()
+    }
+}
+
+/// Trusted-TLS success fixture (EOD-L3-005, deferred item 3). Each test
+/// generates its own CA, server certificate and key with rcgen (decision D-F b),
+/// so no key material is committed. The client keeps its native roots and adds
+/// only the generated root, through the private `connect_with` seam.
+#[cfg(test)]
+mod tls_tests {
+    use super::*;
+    use crate::test_fixture as fixture;
+    use rcgen::{
+        BasicConstraints, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, Issuer,
+        KeyPair, KeyUsagePurpose,
+    };
+    use tonic::transport::Certificate;
+
+    struct Ca {
+        params: CertificateParams,
+        key: KeyPair,
+        pem: String,
+    }
+    fn ca(name: &str) -> Ca {
+        let key = KeyPair::generate().unwrap();
+        let mut params = CertificateParams::new(Vec::<String>::new()).unwrap();
+        params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
+        params.distinguished_name.push(DnType::CommonName, name);
+        params.key_usages = vec![KeyUsagePurpose::KeyCertSign, KeyUsagePurpose::CrlSign];
+        let pem = params.self_signed(&key).unwrap().pem();
+        Ca { params, key, pem }
+    }
+    /// A server certificate for `names`, signed by `ca`: (certificate PEM, key PEM).
+    fn server_cert(ca: &Ca, names: &[&str]) -> (String, String) {
+        let key = KeyPair::generate().unwrap();
+        let mut params =
+            CertificateParams::new(names.iter().map(|n| n.to_string()).collect::<Vec<_>>())
+                .unwrap();
+        params
+            .distinguished_name
+            .push(DnType::CommonName, "praevis test server");
+        params.extended_key_usages = vec![ExtendedKeyUsagePurpose::ServerAuth];
+        let issuer = Issuer::from_params(&ca.params, &ca.key);
+        let cert = params.signed_by(&key, &issuer).unwrap();
+        (cert.pem(), key.serialize_pem())
+    }
+    async fn connect(server: &fixture::Fixture, trusted: &Ca) -> Result<ThetaClient, Error> {
+        let tls = ClientTlsConfig::new()
+            .with_native_roots()
+            .ca_certificate(Certificate::from_pem(&trusted.pem));
+        ThetaClient::connect_with(
+            ClientConfig {
+                endpoint: Some(server.endpoint.clone()),
+                ..Default::default()
+            },
+            fixture::session().await,
+            eod::Pool::new(EodPolicy::default()).unwrap(),
+            true,
+            tls,
+        )
+        .await
+    }
+    fn request() -> StockEodRequest {
+        StockEodRequest::new(
+            "SYNTHETIC",
+            NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 1, 16).unwrap(),
+        )
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn trusted_tls_delivers_numeric_table_and_raw_results() {
+        let ca = ca("praevis test CA");
+        let (wire, expected) = fixture::table(fixture::Shape::Mixed, 3);
+        let script = || fixture::Script {
+            messages: vec![
+                Ok(fixture::response(&wire, true)),
+                Ok(fixture::response(&wire, false)),
+            ],
+            ..Default::default()
+        };
+        let (cert, key) = server_cert(&ca, &["127.0.0.1"]);
+        let server = fixture::Fixture::start_tls(script(), cert.clone(), key.clone());
+        assert!(server.endpoint.starts_with("https://127.0.0.1:"));
+        let client = connect(&server, &ca).await.unwrap();
+        let mut numeric = client.stock_eod_batches(request()).await.unwrap();
+        for _ in 0..2 {
+            assert_eq!(
+                numeric.next_batch().await.unwrap().unwrap().into_table(),
+                expected
+            );
+        }
+        assert!(numeric.next_batch().await.unwrap().is_none());
+        let server = fixture::Fixture::start_tls(script(), cert.clone(), key.clone());
+        let client = connect(&server, &ca).await.unwrap();
+        let mut table = client.stock_eod(request()).await.unwrap();
+        for _ in 0..2 {
+            assert_eq!(table.next_batch().await.unwrap().unwrap(), expected);
+        }
+        assert!(table.next_batch().await.unwrap().is_none());
+        let server = fixture::Fixture::start_tls(script(), cert, key);
+        let client = connect(&server, &ca).await.unwrap();
+        let mut raw = client.stock_history_eod(fixture::query()).await.unwrap();
+        for _ in 0..2 {
+            assert_eq!(raw.next_batch().await.unwrap().unwrap(), expected);
+        }
+        assert!(raw.next_batch().await.unwrap().is_none());
+        assert_eq!(server.requests.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn untrusted_issuer_and_wrong_name_are_rejected_before_any_request() {
+        let trusted = ca("praevis test CA");
+        let other = ca("unrelated CA");
+        for (issuer, names, case) in [
+            (
+                &other,
+                &["127.0.0.1"][..],
+                "certificate from an untrusted CA",
+            ),
+            (
+                &trusted,
+                &["localhost", "other.invalid"][..],
+                "certificate for another name",
+            ),
+        ] {
+            let (cert, key) = server_cert(issuer, names);
+            let server = fixture::Fixture::start_tls(fixture::Script::default(), cert, key);
+            assert!(connect(&server, &trusted).await.is_err(), "{case}");
+            assert!(server.requests.lock().unwrap().is_empty(), "{case}");
+        }
     }
 }
