@@ -14,6 +14,22 @@ the single scoped exception in [CLAUDE.md](../../CLAUDE.md):
 - It writes timings and counts only. Raw captures (with `--save-captures`) stay
   under the ignored `artifacts/` directory and are never committed or shared.
 
+## Log guard: the session token never reaches a log
+
+`thetadata` logs its whole auth response, including `sessionId`, at INFO, and
+rejection bodies at ERROR (research: "Logging hazard"). Before the package is
+imported, [`log_guard.py`](log_guard.py) silences the `thetadata` logger
+hierarchy (above CRITICAL, no propagation, `NullHandler`). It also filters out
+any record whose source file is inside the installed package, on the root
+logger, on `logging.lastResort` and on every handler added later. The harness
+self-tests the guard at startup and refuses to run if a fake token line would
+be emitted. It also refuses to write a report that contains the account email
+or the session token. The guard's own tests need no vendor package:
+
+```powershell
+.\.venv\Scripts\python -m unittest test_log_guard
+```
+
 ## What it measures
 
 Workloads come from [`workloads.json`](workloads.json); W1 and W2 are FREE-tier
@@ -38,6 +54,7 @@ Requires Python 3.12 or newer (`thetadata` 1.0.17 declares `>=3.12`).
 cd bench\python-baseline
 py -3.12 -m venv .venv
 .\.venv\Scripts\python -m pip install --require-hashes --only-binary=:all: --no-deps -r requirements.txt
+.\.venv\Scripts\python -m unittest test_log_guard
 # THETADATA_API_KEY must already be set in this shell (it is never printed).
 .\.venv\Scripts\python baseline.py --workloads W1,W2 --rounds 3 --save-captures
 ```

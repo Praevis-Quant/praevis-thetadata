@@ -31,6 +31,12 @@ import sys
 import time
 from pathlib import Path
 
+import log_guard
+
+# Before anything can import thetadata: its auth logging includes the session
+# token (research: "Logging hazard"). See log_guard.py.
+log_guard.install()
+
 ROOT = Path(__file__).resolve().parent
 PACKAGES = ("thetadata", "polars", "pandas", "grpcio", "protobuf", "zstandard", "numpy")
 PROD_TARGET = "mdds-01.thetadata.us:443"
@@ -225,6 +231,11 @@ def main() -> int:
     if not key:
         print("THETADATA_API_KEY is not set", file=sys.stderr)
         return 2
+    try:
+        log_guard.self_test()
+    except RuntimeError as error:
+        print(f"Refusing to run: {error}", file=sys.stderr)
+        return 2
     import grpc
     from thetadata import ThetaClient
     from thetadata._proto.v3grpc import endpoints_pb2_grpc
@@ -278,9 +289,17 @@ def main() -> int:
         report["stopped"] = str(stop)
         print(f"Stopped on {stop}: the vendor signalled a limit or an error. Results so far are saved.",
               file=sys.stderr)
+    text = json.dumps(report, indent=2)
+    # The report holds timings and counts only. Refuse to write it if the
+    # account email or the session token appear anywhere in it.
+    token = getattr(getattr(polars_client, "auth_token", None), "session_uuid", "") or ""
+    identity = [value for value in (str(getattr(polars_client, "email", "") or ""), token) if value]
+    if any(value in text for value in identity):
+        print("Refusing to write the report: it would contain account identity.", file=sys.stderr)
+        return 3
     args.out.mkdir(parents=True, exist_ok=True)
     path = args.out / f"{run_id}.json"
-    path.write_text(json.dumps(report, indent=2))
+    path.write_text(text)
     print(f"Wrote {path}")
     summarize(report)
     return 0 if report["stopped"] is None else 1
