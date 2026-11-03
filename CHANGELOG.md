@@ -30,6 +30,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   private key is committed. An untrusted issuer and a wrong server name are
   rejected before any request. Normal builds are unchanged: no `rcgen`,
   OpenSSL or aws-lc.
+- An adversarial decoder corpus (EOD-L3-021, deferred item 2, D-G). It runs
+  exhaustive byte edits, structural, envelope and ZSTD framing catalogues, and
+  seeded mutations through the envelope parser, both bounded modes and the
+  legacy decoder, checked against prost and the legacy decoder as oracles.
+  The short run is in CI; a 2,000,000-case long run is manual.
 
 ### Fixed
 

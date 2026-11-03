@@ -2,6 +2,8 @@
 //!
 //! Async batch streaming for ThetaData's direct gRPC API.
 mod bounded;
+#[cfg(test)]
+mod corpus;
 mod decode;
 mod envelope;
 mod eod;

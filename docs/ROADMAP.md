@@ -165,6 +165,30 @@ changes. Run separate compatibility/enhancement checks and relevant before/after
 measurements. A conflicting upstream change needs an explicit migration ADR,
 not silent removal or reinterpretation of local functionality.
 
+## Coverage-guided fuzzing (after 0.1.0)
+
+The maintainer explicitly wants this; decided 2026-11-03 (D-G). Add
+coverage-guided fuzzing with `cargo-fuzz` (libFuzzer, nightly toolchain) in a
+**separate crate outside the workspace**. Stable builds, the published
+packages and ordinary CI then never depend on nightly or the fuzzer.
+
+- **Targets:** the bounded decoder in numeric and Table modes, the legacy raw
+  decoder, the outer envelope parser, and the ZSTD framing path.
+- **Seeds:** the deterministic [adversarial corpus](../crates/praevis-thetadata-client/src/corpus.rs).
+- **Oracles:** the corpus oracles carry over:
+  - no panic;
+  - classified errors only;
+  - accepted output within `DecodeLimits`;
+  - numeric/Table agreement;
+  - envelope agreement with prost;
+  - exact-value agreement with the legacy decoder.
+- **Runs:** time-boxed manual or scheduled runs, never a blocking CI step.
+- **Findings:** each finding becomes a minimized deterministic regression case
+  in the plain-Rust corpus. Crash inputs that could contain vendor data are not
+  committed.
+
+The plain-Rust corpus (deferred item 2, closed in alpha.3) remains the CI gate.
+
 ## Native Rust development tooling
 
 Evaluate migrating the performance harness and upstream version checker to a Rust `xtask` so routine builds, verification, and benchmarks use the Rust toolchain. Preserve synthetic fixtures, native-store cleanup, before/after build provenance, raw samples, comparison semantics, and regression coverage. Validate the replacement against the existing measurements before retiring the current tooling. Keep Python-specific artifact analysis scoped to research. This is a separate candidate from the runtime startup implementation.
