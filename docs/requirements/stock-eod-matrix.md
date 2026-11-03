@@ -23,8 +23,10 @@ recorded as observed or unresolved under EOD-L3-029.
 | Not applicable to alpha.2 (D-E) | 019: exhaustive controlled-clock interleavings and the transport seam (item 4); its existing synthetic idle/deadline/cancellation tests pass |
 | Open | None |
 
-Since alpha.2: 019 closed on 2026-11-03 (deferred item 4, alpha.3 A4), and
-item 7 under 023 closed on 2026-11-03 (alpha.3 A2).
+Since alpha.2, all closed on 2026-11-03:
+- 019 (deferred item 4, alpha.3 A4);
+- item 7 under 023 (alpha.3 A2);
+- item 6 under 027 (alpha.3 A3: the desktop tolerances are final).
 
 Closed clauses still carry the scope limits in their third column. For example,
 EOD-L3-030 rejects non-millisecond timestamps while the vendor meaning of

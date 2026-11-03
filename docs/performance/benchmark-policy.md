@@ -1,6 +1,6 @@
 # EOD benchmark policy and regression tolerances (PERF-L3-008)
 
-Status: **approved by the maintainer on 2026-11-02 (decision D-B)**. The desktop thresholds are provisional. Applies to
+Status: **approved by the maintainer on 2026-11-02 (decision D-B)**. The desktop thresholds were tightened to the runner values on 2026-11-03 after its three-round A/A ([record](eod-desktop-aa-results.md)), as D-B provided. Applies to
 EOD decoder, layout, scheduling and other data-path changes from alpha.2 on.
 Functional and resource-boundary failures always fail CI. Timings never run in
 ordinary CI; they come from the dispatch-only before/after workflow or a
@@ -36,6 +36,7 @@ alternating AB/BA order, with warmups inside each run
 | GitHub `ubuntu-latest` (x86_64) | run 41380736017, 3 rounds | 3.4% | 2.0% | 23% |
 | GitHub `windows-latest` (x86_64) | run 41380736017, 3 rounds | 13.4% (one spike) | 0.2% | 26% |
 | Maintainer desktop (Ryzen 7 2700, Windows 11, idle) | 2 rounds, 2026-11-02 | 49.6% (one spike) | 8.2% | 33% |
+| Maintainer desktop, repeated | [3 rounds, 2026-11-03](eod-desktop-aa-results.md), `82d8a41` | 127.8% (one spike) | 0.3% | 59% |
 
 Single-round spikes occur on every host, including the quiet desktop. A shift
 present in **every** round is what distinguishes a real change from noise.
@@ -49,17 +50,19 @@ rounds per engine.
 | --- | ---: | ---: |
 | `ubuntu-latest` | **1.05** | **0.95** |
 | `windows-latest` | **1.05** | **0.95** |
-| Maintainer desktop | **1.10** (provisional) | **0.90** (provisional) |
+| Maintainer desktop | **1.05** (since 2026-11-03; 1.10 provisionally before) | **0.95** (since 2026-11-03; 0.90 provisionally before) |
 
 Rationale:
 
 - Using the minimum or maximum across rounds requires the change in every
   round, which absorbs the single-round spikes seen in all A/A runs.
 - Each threshold sits above that host's largest every-round A/A shift: 2.0%
-  and 0.2% on the runners, 8.2% on the desktop.
-- The desktop thresholds are wider because its A/A had only two rounds. They
-  stay **provisional** until a 3-round A/A on that host, after which a
-  follow-up change tightens them ([deferred item 6](../releases.md#deferred-from-alpha2)).
+  and 0.2% on the runners, and 0.3% on the desktop in its three-round A/A
+  (8.2% in the earlier two-round run).
+- The desktop thresholds were first wider (1.10/0.90), because its A/A had
+  only two rounds and an 8.2% every-round shift. Its three-round A/A on
+  2026-11-03 had no every-round shift above 0.3%, so they were tightened to
+  the runner values ([deferred item 6](../releases.md#deferred-from-alpha2), closed).
 
 Decision rules:
 
