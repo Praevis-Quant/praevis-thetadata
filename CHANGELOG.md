@@ -42,6 +42,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   and is bounded linearly by `concurrent_streams`; it is outside the shared
   budget, so total memory is still not claimed bounded
   ([record](docs/performance/eod-memory-profile.md); proposed item 8).
+- Root-cause investigation of EOD transport buffering (proposed item 8),
+  documentation and experiment harness only. Call-site attribution proves that
+  tonic 0.14 keeps one exact-size decode buffer per open stream
+  (`codec/decode.rs:199`) until the stream ends, independent of HTTP/2
+  windows and message limits. Four alternatives were prototyped on unmerged
+  branches and measured; own message framing would cut 16-stream peak heap
+  from about 505 to 128 MiB
+  ([record](docs/performance/eod-transport-buffering.md)). No data-path change.
 
 ### Fixed
 
