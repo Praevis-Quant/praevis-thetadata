@@ -17,9 +17,10 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   validated one-symbol requests, exact values, pull-based batches, explicit
   partial results, deadlines and cancellation. **Memory:** only the client's own
   accounted allocations are bounded: decoded batch sizes, per-batch accounted
-  bytes and in-flight decode work. Total process memory, transport (HTTP/2)
-  buffers and the ZSTD library's C allocations are neither bounded nor yet
-  profiled. This is **experimental**: synthetic acceptance is extensive, but
+  bytes and in-flight decode work. Total process memory is not bounded.
+  Profiling showed that libzstd stays within the accounted budget, but
+  transport buffering adds roughly one full encoded message per concurrently
+  open stream. For large responses, lower `EodPolicy::concurrent_streams`. This is **experimental**: synthetic acceptance is extensive, but
   live service semantics are only partly verified.
 - **Raw helpers** call every descriptor RPC with wire query types. They are
   unsupported foundations: no typed validation, and no claim that any endpoint

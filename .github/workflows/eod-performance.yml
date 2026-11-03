@@ -23,13 +23,18 @@ on:
         description: "Extra eod_benchmark run arguments for both sides, e.g. --streams 16 or --extremes --samples 4 --warmups 1"
         required: false
         default: ""
+      memory:
+        description: "Run only the process-memory profile (eod_memory) instead of timing jobs"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   baseline:
-    if: inputs.baseline == ''
+    if: inputs.baseline == '' && !inputs.memory
     name: EOD baseline (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -69,7 +74,7 @@ jobs:
     # on the same runner, warmups inside each run, alternating AB/BA order across rounds,
     # raw reports retained. Use baseline == candidate for an A/A noise run. Shared-runner
     # timings are informational until calibrated (PERF-L3-008); no vendor credentials.
-    if: inputs.baseline != ''
+    if: inputs.baseline != '' && !inputs.memory
     name: EOD before/after (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -128,4 +133,33 @@ jobs:
           name: eod-before-after-${{ runner.os }}-${{ github.run_id }}
           path: artifacts/eod-*
           if-no-files-found: warn
+          retention-days: 30
+
+  memory:
+    # Process-memory profile (EOD-L3-023, deferred item 1): OS counters and
+    # libzstd context sizes, client-only, with a synthetic child-process server.
+    if: inputs.memory
+    name: EOD memory profile (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+      - name: Profile (no vendor credentials)
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          cargo run --release --locked -p praevis-thetadata-client --example eod_memory -- run > artifacts/eod-memory-${{ runner.os }}.md
+          cat artifacts/eod-memory-${{ runner.os }}.md
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eod-memory-${{ runner.os }}-${{ github.sha }}
+          path: artifacts/eod-memory-*.md
+          if-no-files-found: error
           retention-days: 30

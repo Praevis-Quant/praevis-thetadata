@@ -66,8 +66,10 @@ controlled-clock interleavings with a transport seam, a `Price` numeric helper,
 finalizing the desktop tolerances, and a deterministic schema-lease/job-permit
 release order. They are consolidated, with sources and
 targets, in [Deferred from alpha.2](releases.md#deferred-from-alpha2). A
-dedicated hardening milestone (`0.1.0-alpha.3`) is proposed for them. Until
-item 1 closes, describe only the client's own accounted allocations as bounded.
+dedicated hardening milestone (`0.1.0-alpha.3`) is proposed for them. Item 1,
+the memory profile, found transport buffering outside the shared budget. That
+is proposed item 8, so describe only the client's own accounted allocations as
+bounded.
 
 ## Performance-first library architecture and enhancements
 
