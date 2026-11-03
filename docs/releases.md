@@ -17,7 +17,7 @@ the account holder operates the optional live checks.
 | Target | Concrete deliverable | Exit gates | Depends on / remaining work |
 | --- | --- | --- | --- |
 | `0.1.0-alpha.1` | **Released 2026-11-02 UTC** ([publication record](crates-io-release-plan.md#publication-record-010-alpha1), tag `v0.1.0-alpha.1`). Useful first publication of auth, core, proto, client and CLI; client EOD clearly experimental | Proto bindings and research at the current reviewed upstream baseline (1.0.17, [update plan](upstream-update-1.0.17.md), decision D5); self-contained archives and licenses; dependency versions/order; Windows/Linux external consumer builds; verified registry owner/publish capability; manually recorded PROD auth and small EOD result, or explicit documented service blocker before reconsidering scope (**met 2026-11-01**: Windows PROD auth with in-memory/`--save`/status/logout lifecycle, AAPL EOD capture/replay matching on all three interfaces, FREE quote denial; [observations](research/live-observations.md#alpha1-prod-exit-gate-2026-11-01)); exact archive review and publication approval | [Packaging plan](crates-io-release-plan.md), [manual live verification](live-verification.md). No empty placeholder crates. |
-| `0.1.0-alpha.2` | EOD feature-complete candidate: exact numeric delivery and Table adapter, bounded lifecycle and documented real-service behavior | Close every applicable clause in the [EOD matrix](requirements/stock-eod-matrix.md); resolve measured null/price regressions or approve a measured per-workload tradeoff; calibrate resource defaults; compare authorized live captures with all three local interfaces; record unresolved service semantics explicitly. **All five met 2026-11-02; not released** ([readiness record](#alpha2-readiness-record-2026-11-02)) | Alpha.1. Release needs separate maintainer approval of the [release procedure](#alpha2-release-procedure-pending-approval). |
+| `0.1.0-alpha.2` | EOD feature-complete candidate: exact numeric delivery and Table adapter, bounded lifecycle and documented real-service behavior | Close every applicable clause in the [EOD matrix](requirements/stock-eod-matrix.md); resolve measured null/price regressions or approve a measured per-workload tradeoff; calibrate resource defaults; compare authorized live captures with all three local interfaces; record unresolved service semantics explicitly. **All five met 2026-11-02; release approved 2026-11-02, publication pending** ([readiness record](#alpha2-readiness-record-2026-11-02)) | Alpha.1. Release follows the approved [release procedure](#alpha2-release-procedure-pending-approval). |
 | `0.1.0-alpha.3` (proposed) | **Hardening**: close the items deferred from alpha.2 without changing the public API | Deferred items 1-4, 6 and 7 below closed, with evidence linked from the EOD matrix and benchmark policy | Alpha.2. Proposed 2026-11-02 so the deferred work stays scheduled; it can be renamed or merged into beta.1 by maintainer decision. |
 | `0.1.0-beta.1` | Freeze auth/EOD public API for the first supported release; runnable consumer examples and troubleshooting | Accept or revise the applicable proposed ADRs; requirement-to-test/evidence review; partial-result and cancellation examples; install/build outside workspace; document supported platforms, native-store prerequisites, resource policy and compatibility boundaries; **API freeze review of a numeric comparison/ordering helper for `Price`** (deferred item 5) | Alpha.2; release review covers API stability, packaging and diagnostics. |
 | `0.1.0` | Supported auth + single-symbol stock EOD libraries and auth CLI | No unresolved blocker for the declared surface; green synthetic Windows/Linux checks; maintainer-reviewed manual PROD report on the release candidate; retained benchmark comparison and calibrated acceptance decision; signed-off release checklist below; **every item in [Deferred from alpha.2](#deferred-from-alpha2) closed** | Beta.1. This is not full Python parity and makes no flat-file/real-time promise. |
@@ -118,7 +118,7 @@ live checks remain manual and outside CI. Alpha.1 can precede rows 4-5, with
 experimental scope stated in its release notes. Publish no comparative numbers
 until the comparator, outputs and measurement boundaries have been reviewed.
 
-## Status: alpha.2 gates met, release pending approval
+## Status: alpha.2 approved, publication pending
 
 `0.1.0-alpha.1` was released on 2026-11-02 UTC. Every checklist row below has
 alpha.1 evidence:
@@ -130,8 +130,8 @@ alpha.1 evidence:
 - installs and consumers from crates.io on Windows and Linux.
 
 All five `0.1.0-alpha.2` exit gates were met on 2026-11-02, as recorded below.
-The workspace version stays `0.1.0-alpha.1` until the maintainer approves the
-release. Execution-order rows 4-6 are complete for alpha.2. Row 3, the pinned
+The user approved the release on 2026-11-02. The workspace version is now
+`0.1.0-alpha.2` (procedure step 1); it is not published until step 4. Execution-order rows 4-6 are complete for alpha.2. Row 3, the pinned
 Python comparator, remains a separate follow-up and is not an alpha.2 gate.
 
 ## Alpha.2 readiness record (2026-11-02)
@@ -173,7 +173,7 @@ proposed for alpha.3; item 5 belongs to the beta.1 API freeze.
 
 ### Alpha.2 release procedure (pending approval)
 
-Approve this list as one decision. Nothing here has been done.
+Approved by the user on 2026-11-02 as one decision. Step 1 is the version-bump PR; steps 2-6 follow in order.
 
 1. **Version-bump PR.**
    - Set `version = "0.1.0-alpha.2"` in the root `Cargo.toml`, and the four

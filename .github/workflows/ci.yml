@@ -71,7 +71,7 @@ jobs:
         run: cargo test --locked -p praevis-thetadata-cli --test persistence -- --ignored
 
   packaging-rehearsal:
-    # Builds the five alpha.1 archives, stages them in a local file:// registry (wave 1:
+    # Builds the five archives at the workspace version, stages them in a local file:// registry (wave 1:
     # auth/core/proto, then client/cli resolved from it), and builds external consumers and
     # `cargo install` of the CLI outside the workspace. Never publishes; reads no token.
     name: Packaging rehearsal (${{ matrix.os }})

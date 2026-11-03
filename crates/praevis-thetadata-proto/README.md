@@ -7,7 +7,7 @@ covers Python **1.0.17**, with **100 RPCs**.
 
 > **Independent and experimental.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-alpha.1` is an early
+> identifies the service it interoperates with. `0.1.0-alpha.2` is an early
 > prerelease: APIs may change between alphas, and it is **not** a full port of, or
 > drop-in replacement for, the vendor Python package. The Rust version is
 > independent of the tracked Python compatibility baseline (currently 1.0.17).
@@ -34,7 +34,7 @@ Prereleases are never selected implicitly, so pin the version:
 
 ```toml
 [dependencies]
-praevis-thetadata-proto = "=0.1.0-alpha.1"
+praevis-thetadata-proto = "=0.1.0-alpha.2"
 ```
 
 ## Supported platforms
