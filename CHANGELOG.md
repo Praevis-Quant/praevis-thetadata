@@ -35,6 +35,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   seeded mutations through the envelope parser, both bounded modes and the
   legacy decoder, checked against prost and the legacy decoder as oracles.
   The short run is in CI; a 2,000,000-case long run is manual.
+- A process-memory profile of the typed EOD client (EOD-L3-023, deferred
+  item 1, D-H), with no new dependency: the `eod_memory` example and a
+  `memory` option on the performance workflow. libzstd fits the accounted
+  budget. Transport buffering adds about one encoded message per open stream
+  and is bounded linearly by `concurrent_streams`; it is outside the shared
+  budget, so total memory is still not claimed bounded
+  ([record](docs/performance/eod-memory-profile.md); proposed item 8).
 
 ### Fixed
 
