@@ -18,11 +18,11 @@ tree.
 
 | Package | crates.io SHA-256 | Bytes | Published (UTC) | docs.rs |
 | --- | --- | ---: | --- | --- |
-| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.0-alpha.2) | `e0bba436bc667072c3f3423f20a00c91f28e26bb540e5943c333520a36bd96d4` | 29381 | 2026-11-03 05:23:36 | Queued (docs.rs backlog, 06:20 UTC); not built at record time |
-| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.0-alpha.2) | `21deb38185b3cd49654c1294bc60c76f48af800241ceeed50ba1085d47fb1734` | 14250 | 2026-11-03 05:23:41 | Queued (docs.rs backlog, 06:20 UTC); not built at record time |
-| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.0-alpha.2) | `d69fb46fda1bf0c150553c1661bf3d3b5bac0e6c00b22557cdf299d00520db9c` | 23332 | 2026-11-03 05:24:09 | Queued (docs.rs backlog, 06:20 UTC); not built at record time |
-| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.0-alpha.2) | `18c3c7d105e4e448e9cea7f9cb2dd15cd6b9a8415ec907d352894fc8ccacced1` | 61448 | 2026-11-03 05:25:03 | Queued (docs.rs backlog, 06:20 UTC); not built at record time |
-| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.0-alpha.2) | `914d63e2defc3ec904b08d608582a42722a242d47954ba474c687d7defd1451a` | 31443 | 2026-11-03 05:25:54 | Queued; binary-only, so no library docs are expected (as for alpha.1) |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.0-alpha.2) | `e0bba436bc667072c3f3423f20a00c91f28e26bb540e5943c333520a36bd96d4` | 29381 | 2026-11-03 05:23:36 | Built; [docs](https://docs.rs/praevis-thetadata-auth/0.1.0-alpha.2) include `SessionStore` (built with `native-store`) |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.0-alpha.2) | `21deb38185b3cd49654c1294bc60c76f48af800241ceeed50ba1085d47fb1734` | 14250 | 2026-11-03 05:23:41 | Built; [docs](https://docs.rs/praevis-thetadata-core/0.1.0-alpha.2) |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.0-alpha.2) | `d69fb46fda1bf0c150553c1661bf3d3b5bac0e6c00b22557cdf299d00520db9c` | 23332 | 2026-11-03 05:24:09 | Built; [docs](https://docs.rs/praevis-thetadata-proto/0.1.0-alpha.2) |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.0-alpha.2) | `18c3c7d105e4e448e9cea7f9cb2dd15cd6b9a8415ec907d352894fc8ccacced1` | 61448 | 2026-11-03 05:25:03 | Built; [docs](https://docs.rs/praevis-thetadata-client/0.1.0-alpha.2) |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.0-alpha.2) | `914d63e2defc3ec904b08d608582a42722a242d47954ba474c687d7defd1451a` | 31443 | 2026-11-03 05:25:54 | Not applicable: binary-only package ("is not a library"); docs.rs build itself succeeded |
 
 **Before publishing:**
 - The packaging rehearsal for the bump PR passed on Windows and Linux.
@@ -67,9 +67,10 @@ tree.
 The published CLI description now says persistence is opt-in, which closes
 the alpha.1 follow-up below.
 
-**docs.rs:** all five builds were in the public docs.rs queue at 06:20 UTC,
-which docs.rs reported as "too long". No build had run, so none had failed.
-Confirm the builds with the first alpha.3 PR; this record is updated only if one fails.
+**docs.rs:** the public queue was backlogged ("too long"), so the builds ran
+about 2.5 hours after publication. They were confirmed at 07:47 UTC on
+2026-11-03: auth, core, proto and client are documented, and auth includes
+`SessionStore`. The CLI is binary-only, as for alpha.1.
 
 ## Publication record: 0.1.0-alpha.1
 
