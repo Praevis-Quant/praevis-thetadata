@@ -19,6 +19,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 - Publication record for `0.1.0-alpha.2`: registry checksums, the tag, the
   offline replay on the release commit, and Windows/Linux crates.io installs
   and consumers ([record](docs/crates-io-release-plan.md#publication-record-010-alpha2)).
+- Paused-clock EOD lifecycle tests through an internal transport seam
+  (EOD-L3-019, deferred item 4). They pin exact idle and deadline boundaries,
+  simultaneous expiry, idle reset per message, empty trickles, consumer
+  pauses, admission waits, offloaded decoding and cancellation. Neutral on
+  the decode benchmark gate ([results](docs/performance/eod-clock-seam-results.md)).
 
 ### Fixed
 
