@@ -66,6 +66,13 @@ our own authorized PROD runs. **[estimate]** is a project estimate to verify.
 | Flat files | — | — | — | **PRO only** (beta); only the last 7 calendar days | [doc: flat files][flat] |
 | Futures | 17 RPCs in the descriptor | no wrapper, no docs | | | [artifact] 1.0.16; entitlement [unknown] |
 
+**P0 measurements (2026-11-03, [results](../performance/p0-results.md)), observed and not guaranteed:**
+- FREE served **≥ 3 concurrent requests in parallel** (not probed higher);
+- **no per-minute limit at up to 40/min**;
+- **an EOD request may span at most 366-730 days** (731 days gives
+  `INVALID_ARGUMENT`);
+- **one row per gRPC message**, each an independent ZSTD frame.
+
 **Our FREE observations** ([live observations](../research/live-observations.md)):
 - stock EOD works for 2024-01 and 2024-06, and 2020-08 is denied, consistent
   with the documented 2023-06-01 start;
@@ -351,7 +358,7 @@ now (it stays on hold, as instructed).
 
 | Phase | Tier needed | Build | Measure (workloads) | Exit criteria |
 | --- | --- | --- | --- | --- |
-| **P0: measure first** | **FREE** (now) | Python baseline harness (C.1); Rust breakdown instrumentation (C.2); bounded probes of FREE concurrency, per-minute limit, over-limit behavior and batch sizes (stop at the first 429-like or `RESOURCE_EXHAUSTED`); ThetaDataDx review (H) | W1, W2 | Breakdown published for both clients: share of network, server, decode and frame build; FREE limits measured; review recorded |
+| **P0: measure first** ([done 2026-11-03](../performance/p0-results.md)) | **FREE** | Python baseline harness (C.1); Rust breakdown instrumentation (C.2); bounded probes of FREE concurrency, per-minute limit, over-limit behavior and batch sizes (stop at the first 429-like or `RESOURCE_EXHAUSTED`); ThetaDataDx review (H) | W1, W2 | Breakdown published for both clients: share of network, server, decode and frame build; FREE limits measured; review recorded |
 | **P1: breadth and columnar on FREE** | **FREE** | Generated typed requests for all RPCs; columnar Arrow decoder; Parquet sink; PyO3 pass-through (D.2) for FREE-entitled endpoints; scheduler with tier profiles | W1, W2 (plus synthetic large fixtures for W4/W5 shapes) | (a) every FREE-entitled endpoint returns correct exact data on live checks; (b) W1 time to complete ≤ Python's (both capped by the limit); (c) CPU per million rows ≥ 10× better than Python with Polars on replayed captures; (d) peak memory ≤ 0.5× Python; (e) compatibility alias overhead within noise and no per-row Python objects (D.2 gates) |
 | ⬆ **Upgrade 1: options VALUE ($40/month)** | VALUE | Scheduler at 2 concurrent; 1-minute intraday | W3, W4 (1-min), W6 (IV, 1st order) | W3/W4 time to complete ≥ 1.8× the synchronous Python package and ≥ 1.0× threaded Python; CPU and memory targets hold at volume |
 | ⬆ **Upgrade 2: options STANDARD ($80/month)** | STANDARD | Tick-level option history at volume; real-time Terminal adapter; local service mode (optional) | W5, W6 (all), W10 | W5 ≥ 3.5× synchronous Python and ≥ 1.0× threaded; peak memory bounded by configuration under W5; W10 added p99 ≤ 50 µs, no drops below the documented contract limits |

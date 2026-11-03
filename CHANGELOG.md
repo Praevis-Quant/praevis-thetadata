@@ -16,6 +16,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- P0 measurement results
+  ([docs/performance/p0-results.md](docs/performance/p0-results.md)):
+  - one row per gRPC message;
+  - the vendor's network and server time dominates, varying up to 14×;
+  - our decoders use 5-7× less CPU per row than the vendor Python package
+    today, against a floor of about 2.5 µs/row set by libzstd for one ZSTD
+    frame per row;
+  - the first row arrives 7-40× sooner;
+  - FREE served ≥ 3 concurrent requests with no per-minute limit at 40/min;
+  - the EOD date span is capped at 366-730 days.
 - The performance architecture plan is **approved** (2026-11-03). Recorded:
   - the user's decisions;
   - a thin pass-through Python design over Arrow C Stream data, with
