@@ -1,0 +1,33 @@
+{
+  "_comment": "Performance plan section B. FREE-tier workloads only (P0). Shared with the Rust harness so both clients run identical requests. Dates stay inside the documented FREE window (from 2023-06-01).",
+  "W1": {
+    "description": "Bulk stock EOD backfill: one year for ten liquid symbols, one request per symbol.",
+    "method": "stock_history_eod",
+    "requests": [
+      {"symbol": "AAPL", "start_date": "2024-01-02", "end_date": "2024-12-31"},
+      {"symbol": "MSFT", "start_date": "2024-01-02", "end_date": "2024-12-31"},
+      {"symbol": "NVDA", "start_date": "2024-01-02", "end_date": "2024-12-31"},
+      {"symbol": "AMZN", "start_date": "2024-01-02", "end_date": "2024-12-31"},
+      {"symbol": "GOOGL", "start_date": "2024-01-02", "end_date": "2024-12-31"},
+      {"symbol": "META", "start_date": "2024-01-02", "end_date": "2024-12-31"},
+      {"symbol": "TSLA", "start_date": "2024-01-02", "end_date": "2024-12-31"},
+      {"symbol": "SPY", "start_date": "2024-01-02", "end_date": "2024-12-31"},
+      {"symbol": "QQQ", "start_date": "2024-01-02", "end_date": "2024-12-31"},
+      {"symbol": "JPM", "start_date": "2024-01-02", "end_date": "2024-12-31"}
+    ]
+  },
+  "W2": {
+    "description": "Option chain EOD for one day: every SPY contract (all expirations) on 2024-06-14. The expiration wildcard is unverified; W2b is the fallback.",
+    "method": "option_history_eod",
+    "requests": [
+      {"symbol": "SPY", "expiration": "*", "start_date": "2024-06-14", "end_date": "2024-06-14", "strike": "*", "right": "both"}
+    ]
+  },
+  "W2b": {
+    "description": "Option chain EOD for one day and one expiration: SPY 2024-06-21 on 2024-06-14 (fallback if the expiration wildcard is rejected).",
+    "method": "option_history_eod",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "start_date": "2024-06-14", "end_date": "2024-06-14", "strike": "*", "right": "both"}
+    ]
+  }
+}
