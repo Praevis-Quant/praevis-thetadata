@@ -239,10 +239,12 @@ impl ThetaClient {
         });
         request.set_timeout(deadline.saturating_duration_since(Instant::now()));
         let failure = framing::Failure::default();
+        let slot = framing::Slot::default();
         let mut stub = tonic::client::Grpc::new(framing::GuardedChannel {
             channel: self.channel.clone(),
             limit: pool.policy.decode.encoded_bytes + 1024,
             failure: failure.clone(),
+            slot: slot.clone(),
         })
         .max_decoding_message_size(pool.policy.decode.encoded_bytes + 1024);
         check_deadline(deadline)?;
@@ -254,7 +256,7 @@ impl ThetaClient {
                 tonic::codegen::http::uri::PathAndQuery::from_static(
                     "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryEod",
                 ),
-                envelope::EnvelopeCodec,
+                envelope::EnvelopeCodec(slot),
             )
             .await
             .map_err(|error| failure.classify(error))

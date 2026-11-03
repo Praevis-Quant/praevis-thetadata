@@ -10,9 +10,11 @@ use tonic::{
     codec::{Codec, DecodeBuf, Decoder, EncodeBuf, Encoder},
 };
 
-pub(crate) struct EnvelopeCodec;
+/// PROTOTYPE (option 2a): messages parked by the framing body for the codec.
+pub(crate) type Slot = std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<Vec<u8>>>>;
+pub(crate) struct EnvelopeCodec(pub Slot);
 pub(crate) struct RequestEncoder;
-pub(crate) struct FrameDecoder;
+pub(crate) struct FrameDecoder(Slot);
 impl Codec for EnvelopeCodec {
     type Encode = api::StockHistoryEodRequest;
     type Decode = Vec<u8>;
@@ -22,7 +24,7 @@ impl Codec for EnvelopeCodec {
         RequestEncoder
     }
     fn decoder(&mut self) -> FrameDecoder {
-        FrameDecoder
+        FrameDecoder(self.0.clone())
     }
 }
 impl Encoder for RequestEncoder {
@@ -40,9 +42,13 @@ impl Decoder for FrameDecoder {
         // Tonic checks the configured frame ceiling before calling this codec.
         // One exact-capacity owned frame; no outer prost tree or retained slice
         // of an unknown-capacity transport allocation escapes into the worker.
-        let mut bytes = vec![0; src.remaining()];
-        src.copy_to_slice(&mut bytes);
-        Ok(Some(bytes))
+        // PROTOTYPE (option 2a): the body parked the whole message; tonic only
+        // carried an empty frame. Move it out: no copy, nothing retained here.
+        src.advance(src.remaining());
+        let message = self.0.lock().unwrap().pop_front();
+        message
+            .map(Some)
+            .ok_or_else(|| Status::internal("missing parked frame"))
     }
 }
 fn field<'a>(bytes: &mut &'a [u8], ty: WireType) -> Result<&'a [u8], EodError> {

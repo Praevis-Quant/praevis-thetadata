@@ -17,6 +17,13 @@ use tonic::{
     transport::Channel,
 };
 
+/// PROTOTYPE (option 2a): hand-off slot between the body and the codec. The
+/// body assembles each complete gRPC message into one exact-capacity Vec and
+/// parks it here; tonic only sees an empty frame, so its decode buffer never
+/// grows and nothing message-sized stays with an idle stream.
+pub(crate) use crate::envelope::Slot;
+const EMPTY_FRAME: [u8; 5] = [0; 5];
+
 #[derive(Clone, Default)]
 pub(crate) struct Failure(Arc<AtomicU8>);
 impl Failure {
@@ -35,6 +42,7 @@ pub(crate) struct GuardedChannel {
     pub channel: Channel,
     pub limit: usize,
     pub failure: Failure,
+    pub slot: Slot,
 }
 impl Service<http::Request<Body>> for GuardedChannel {
     type Response = http::Response<GuardedBody>;
@@ -47,6 +55,7 @@ impl Service<http::Request<Body>> for GuardedChannel {
         let future = self.channel.call(request);
         let limit = self.limit;
         let failure = self.failure.clone();
+        let slot = self.slot.clone();
         Box::pin(async move {
             Ok(future.await?.map(|inner| GuardedBody {
                 inner,
@@ -57,6 +66,8 @@ impl Service<http::Request<Body>> for GuardedChannel {
                 header_len: 0,
                 remaining: 0,
                 ended: false,
+                slot,
+                message: None,
             }))
         })
     }
@@ -70,12 +81,21 @@ pub(crate) struct GuardedBody {
     header_len: usize,
     remaining: usize,
     ended: bool,
+    slot: Slot,
+    message: Option<Vec<u8>>,
 }
 impl GuardedBody {
+    /// Park the completed message and give tonic an empty frame in its place.
+    fn complete(&mut self) -> Poll<Option<Result<Frame<Bytes>, Status>>> {
+        let message = self.message.take().unwrap_or_default();
+        self.slot.lock().unwrap().push_back(message);
+        Poll::Ready(Some(Ok(Frame::data(Bytes::from_static(&EMPTY_FRAME)))))
+    }
     fn reject(&mut self, kind: u8) -> Poll<Option<Result<Frame<Bytes>, Status>>> {
         self.failure.0.store(kind, Ordering::Relaxed);
         self.ended = true;
         self.pending = Bytes::new();
+        self.message = None;
         Poll::Ready(Some(Err(Status::internal(
             "local response framing failure",
         ))))
@@ -96,7 +116,12 @@ impl http_body::Body for GuardedBody {
                 if self.remaining != 0 {
                     let n = self.remaining.min(self.pending.len());
                     self.remaining -= n;
-                    return Poll::Ready(Some(Ok(Frame::data(self.pending.split_to(n)))));
+                    let chunk = self.pending.split_to(n);
+                    self.message.as_mut().unwrap().extend_from_slice(&chunk);
+                    if self.remaining == 0 {
+                        return self.complete();
+                    }
+                    continue;
                 }
                 // Forward partial headers without allocation, but never forward
                 // the final header bytes until the complete length is checked.
@@ -119,8 +144,14 @@ impl http_body::Body for GuardedBody {
                     }
                     self.remaining = length;
                     self.header_len = 0;
+                    // One exact allocation per message, after the limit check.
+                    self.message = Some(Vec::with_capacity(length));
+                    if length == 0 {
+                        return self.complete();
+                    }
                 }
-                return Poll::Ready(Some(Ok(Frame::data(bytes))));
+                let _ = bytes;
+                continue;
             }
             match ready!(Pin::new(&mut self.inner).poll_frame(cx)) {
                 Some(Ok(frame)) => match frame.into_data() {
@@ -176,6 +207,8 @@ mod tests {
             header_len: 0,
             remaining: 0,
             ended: false,
+            slot: Slot::default(),
+            message: None,
         }
     }
     #[tokio::test]
@@ -193,7 +226,12 @@ mod tests {
             while let Some(frame) = poll_fn(|cx| Pin::new(&mut body).poll_frame(cx)).await {
                 result.extend_from_slice(&frame.unwrap().into_data().unwrap());
             }
-            assert_eq!(result, data);
+            // PROTOTYPE contract: tonic sees one empty frame per message and
+            // the exact messages are parked in order.
+            assert_eq!(result, [0u8; 15]);
+            let parked: Vec<Vec<u8>> = body.slot.lock().unwrap().drain(..).collect();
+            assert_eq!(parked, vec![vec![1, 2, 3], vec![], vec![42]]);
+            assert!(parked.iter().all(|m| m.capacity() == m.len()));
             assert_eq!(body.failure.0.load(Ordering::Relaxed), 0);
         }
     }
@@ -226,8 +264,8 @@ mod tests {
                     }
                 }
             }
-            assert_eq!(&result[..6], &data[..6]);
-            assert!(result.len() < data.len());
+            assert_eq!(result, [0u8; 5]);
+            assert_eq!(body.slot.lock().unwrap().pop_front(), Some(vec![42]));
             assert!(
                 poll_fn(|cx| Pin::new(&mut body).poll_frame(cx))
                     .await
