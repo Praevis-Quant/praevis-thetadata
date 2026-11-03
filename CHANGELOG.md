@@ -35,6 +35,9 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- The maintainer desktop's benchmark tolerances are now 1.05/0.95, the same
+  as the runners, after a three-round A/A showed no every-round shift above
+  0.3% (deferred item 6, [record](docs/performance/eod-desktop-aa-results.md)).
 - `tools/check_repository.py` also verifies every local Markdown `#anchor`
   link (#39).
 
