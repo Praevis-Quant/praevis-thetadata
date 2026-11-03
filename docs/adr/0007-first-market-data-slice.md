@@ -1,6 +1,11 @@
 # ADR-0007: stock end-of-day history as the first market-data slice
 
-Status: Proposed. Date: 2026-10-04. Owner: Praevis-Quant maintainers.
+Status: **Superseded on 2026-11-03** by the approved
+[performance architecture plan](../architecture/performance-plan.md), which
+replaces slice-by-slice delivery with generated endpoints over a common
+columnar path, measured against the vendor Python package. The stock EOD work
+built under this ADR stays as the reference implementation and test model.
+Originally: Proposed, 2026-10-04. Owner: Praevis-Quant maintainers.
 Requirements: [EOD-L1-001 through EOD-L1-006](../requirements/L1-stock-eod.md),
 [EOD-L2-001](../requirements/L2-stock-eod.md),
 [EOD-L3-001](../requirements/L3-stock-eod.md). Implementation/acceptance planned;

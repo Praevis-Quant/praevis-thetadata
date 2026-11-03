@@ -1,8 +1,7 @@
 # Performance architecture plan
 
-Status: **proposed, 2026-11-03.** Docs only; nothing here is implemented, and
-no production code changes with this plan. Written after the user's direction
-reset of 2026-11-03.
+Status: **approved by the user on 2026-11-03** (decisions below). Docs only;
+implementation proceeds phase by phase (section E), one PR per piece.
 
 The project drifted:
 - the first typed slice was stock EOD (about 270-byte messages, the least
@@ -24,6 +23,18 @@ Notation: **[doc]** is current vendor documentation (fetched 2026-11-03, links
 below). **[artifact]** is the pinned Python 1.0.17 package. **[observed]** is
 our own authorized PROD runs. **[estimate]** is a project estimate to verify.
 **[unknown]** is not established.
+
+## Decisions (2026-11-03)
+
+| # | Decision |
+| --- | --- |
+| 1 | **Python baseline exception approved**: a separate harness outside the workspace, a hash-pinned isolated venv, never in CI, run by the Coordinator on the user's machine with their key (C.1; CLAUDE.md) |
+| 2 | **Targets approved** as proposed (B) |
+| 3 | **Dependencies `arrow-rs`, `parquet` and `pyo3` approved as a set for P1**; Arrow Flight later |
+| 4 | **Real-time uses the official Terminal path only**, within ThetaData's terms. No undocumented direct FPSS. Plus a review of ThetaDataDx (section H) |
+| 5 | **Python is a thin pass-through over Rust-built columns** (aero1553 pattern; D.3). Vendor-compatible names are zero-cost aliases; enhanced functions are the primary API. A benchmark proves the compatibility path adds no overhead and no per-row Python objects |
+| 6 | **Lighter process approved**; ADR-0007 and the slice-by-slice roadmap are superseded (F) |
+| 7 | The user asks ThetaData the open vendor questions (G.8) directly |
 
 ---
 
@@ -162,10 +173,10 @@ baseline on the same host and account):
 
 ## C. Baseline method
 
-### C.1 Vendor Python baseline: proposed scoped exception
+### C.1 Vendor Python baseline: the approved scoped exception
 
-CLAUDE.md says: never import or execute the vendor package. **Proposed
-exception**, to be added to CLAUDE.md verbatim if approved:
+CLAUDE.md says: never import or execute the vendor package. **The exception
+approved on 2026-11-03** (now in CLAUDE.md):
 
 > The vendor package may be executed **only** by the Python baseline harness
 > in `bench/python-baseline/`. That directory sits outside the Cargo
@@ -229,7 +240,7 @@ dominated: network/server, our CPU or the consumer.
 flowchart LR
   subgraph Clients
     R["Rust API"]
-    P["PyO3 / Python drop-in"]
+    P["PyO3 thin pass-through<br/>Arrow C Stream, vendor-name aliases"]
     S["Local service: Arrow Flight or gRPC"]
   end
   Clients --> Q["Request planner and scheduler<br/>split, tier-aware concurrency,<br/>retry/backoff, cancellation"]
@@ -249,9 +260,9 @@ flowchart LR
 | **Columnar decoder** | Decodes `DataTable` rows straight into Arrow builders: exact `Decimal128(38,10)` for `Price` (every wire scale 0..19 maps exactly; no per-batch scale negotiation), `Timestamp(ns)` with time-zone metadata (honoring `nanos`/`precision` once their meaning is verified; out-of-range values rejected), dictionary-encoded strings | Builders pre-sized from the existing preflight counts, one pass, no per-cell allocation, ZSTD streaming, buffer reuse across batches | Decode is a small share when the network dominates; it matters for CPU per row, memory and Python |
 | **Zero-copy hand-off** | Arrow buffers move to the consumer; IPC/C Data Interface to Python (Polars, PyArrow, pandas via Arrow) | No copies after decode | — |
 | **Sinks** | Parquet writer (row groups per batch), Arrow IPC, callbacks | Streamed: memory ≈ one in-flight batch per worker | — |
-| **PyO3 bindings** | A drop-in Python surface mirroring the vendor method names, signatures and defaults (from the catalogue), returning Polars/pandas/Arrow; plus a lower-level batch iterator | Release the GIL during I/O and decode; one tokio runtime per process | Python object creation (pandas) stays the consumer's cost |
-| **Real-time** | `RealtimeSource` trait: the Terminal WebSocket adapter first (documented); a direct FPSS adapter **only if** its protocol and terms are verified | One reader thread, bounded SPSC ring per consumer, preallocated messages, a parse straight into fixed structs (no `serde_json::Value`), drop/backpressure policy explicit, heartbeat and gap detection, metrics | End-to-end latency includes the vendor's Java relay; we can only minimize our part |
-| **Local service (optional)** | Arrow Flight (or gRPC) server: one authenticated process, shared scheduler and cache, many consumers | Respects the account-wide concurrency for all consumers | A new dependency set; opt-in binary |
+| **PyO3 bindings** | A thin pass-through: Rust does all the work and returns Arrow data through the C Stream interface; see D.3 | No per-row Python objects; GIL released for I/O and decode | Building a pandas object frame (if the user asks for one) is the consumer's cost |
+| **Real-time** | `RealtimeSource` trait over the **official Terminal WebSocket only** (decision 4). No undocumented direct FPSS | One reader thread, bounded SPSC ring per consumer, preallocated messages, a parse straight into fixed structs (no `serde_json::Value`), drop/backpressure policy explicit, heartbeat and gap detection, metrics | End-to-end latency includes the vendor's Java relay; we can only minimize our part |
+| **Local service (optional)** | Arrow Flight (or gRPC) server: one authenticated process, shared scheduler and cache, many consumers **of the same licensee** | Respects the account-wide concurrency for all consumers | A new dependency set; opt-in binary. It **binds to localhost by default and never serves other people**: the terms limit data to the licensee's internal personal use and forbid redistribution and credential sharing (H.2) |
 
 ### D.1 Keep and rework
 
@@ -268,7 +279,63 @@ flowchart LR
 | Benchmarks, memory profile, live capture/replay tooling | **Keep**; extend to W1-W10 |
 | CLI | **Keep** auth; add `fetch`/`export` commands later, built on the planner |
 
-### D.2 Option 2a in this design
+### D.2 Python interface: a thin pass-through (decision 5)
+
+The pattern follows [aero1553](https://github.com/joey-huckabee/aero1553)
+(`python/native/src/table.rs`, `python/src/aero1553/table.py`): Rust builds one
+typed buffer per column with the GIL released, and Python never creates an
+object per row. Our version goes one step further and avoids even the single
+copy into Python `bytes`, by sharing Arrow memory.
+
+**Layers**
+
+1. **Native (Rust, `pyo3`):** every query runs in Rust (scheduler, transport,
+   decode into Arrow builders) inside `py.detach(...)`. The GIL is released
+   for the whole I/O and decode.
+2. **Hand-off:** results are Arrow record batches exported through the
+   **Arrow C Stream interface**, using the `__arrow_c_stream__` PyCapsule
+   protocol. pyarrow (`pa.table(obj)` / `pa.RecordBatchReader.from_stream`),
+   Polars (`pl.from_arrow`) and pandas (via pyarrow, or the PyCapsule
+   interface in pandas ≥ 2.2) import the buffers **without copying**. NumPy
+   views come from the Arrow buffers of numeric columns. Exact prices stay
+   `Decimal128(38,10)`; timestamps are `timestamp[ns, tz]`.
+3. **Python package:** pure pass-through wrappers (argument checking, keyword
+   forwarding, docs), with no data handling.
+
+**API**
+
+- **Primary (enhanced) API:**
+  - `client.history(...)` / `client.<endpoint>(...)` returns an Arrow-backed
+    result object with `__arrow_c_stream__`, `.to_polars()`, `.to_pandas()`
+    and `.to_arrow()` (each conversion zero-copy where the target allows);
+  - `client.<endpoint>_batches(...)` returns a **streaming batch iterator** for
+    large jobs, with bounded memory;
+  - `client.<endpoint>_to_parquet(path, ...)` writes Parquet from Rust;
+  - arguments for concurrency, sharding, deadlines and cancellation.
+- **Compatibility layer:** every vendor name (`stock_history_eod`,
+  `option_history_quote`, …) is a **thin alias** that forwards to the same
+  native call:
+  - vendor signatures and defaults, generated from the 1.0.17 catalogue;
+  - `dataframe_type='polars'|'pandas'` maps to the same zero-copy conversion;
+  - vendor names may gain the enhanced optional keyword arguments;
+  - **no extra work on the hot path.** Vendor behaviors that would cost
+    performance (synchronous whole-result materialization) are available only
+    as what they are: the same native call plus a final conversion.
+
+**Benchmark gates** (part of P1 exit):
+
+- **Compatibility overhead:** the vendor-named alias against the native call,
+  on identical replayed responses (W1/W2 captures plus large synthetic
+  tables). The difference must be within the measurement noise (D-B
+  rule-style min/max over ≥ 3 rounds), and no more than a fixed per-call
+  constant (target ≤ 5 µs per call, independent of row count).
+- **No per-row Python objects:** count Python allocations, using
+  `tracemalloc` and `sys.getallocatedblocks()` deltas, while producing 1M
+  rows, as Arrow and as Polars. Target: allocations per million rows ≈ 0,
+  meaning a constant independent of the row count, verified at 1M and 10M
+  rows.
+
+### D.3 Option 2a in this design
 
 Not moot. In the target design, our framing layer assembles each gRPC message
 (option 2a) and hands it to the columnar decoder; tonic's decode buffer
@@ -284,8 +351,8 @@ now (it stays on hold, as instructed).
 
 | Phase | Tier needed | Build | Measure (workloads) | Exit criteria |
 | --- | --- | --- | --- | --- |
-| **P0: measure first** | **FREE** (now) | Python baseline harness (C.1, after the exception is approved); Rust breakdown instrumentation (C.2); probe and record FREE concurrency, per-minute limit, 429/gRPC behavior and batch sizes | W1, W2 | Breakdown published for both clients: share of network, server, decode and frame build; FREE limits measured |
-| **P1: breadth and columnar on FREE** | **FREE** | Generated typed requests for all RPCs; columnar Arrow decoder; Parquet sink; PyO3 drop-in for FREE-entitled endpoints; scheduler with tier profiles | W1, W2 (plus synthetic large fixtures for W4/W5 shapes) | (a) every FREE-entitled endpoint returns correct exact data on live checks; (b) W1 time to complete ≤ Python's (both capped by the limit); (c) CPU per million rows ≥ 10× better than Python with Polars on replayed captures; (d) peak memory ≤ 0.5× Python |
+| **P0: measure first** | **FREE** (now) | Python baseline harness (C.1); Rust breakdown instrumentation (C.2); bounded probes of FREE concurrency, per-minute limit, over-limit behavior and batch sizes (stop at the first 429-like or `RESOURCE_EXHAUSTED`); ThetaDataDx review (H) | W1, W2 | Breakdown published for both clients: share of network, server, decode and frame build; FREE limits measured; review recorded |
+| **P1: breadth and columnar on FREE** | **FREE** | Generated typed requests for all RPCs; columnar Arrow decoder; Parquet sink; PyO3 pass-through (D.2) for FREE-entitled endpoints; scheduler with tier profiles | W1, W2 (plus synthetic large fixtures for W4/W5 shapes) | (a) every FREE-entitled endpoint returns correct exact data on live checks; (b) W1 time to complete ≤ Python's (both capped by the limit); (c) CPU per million rows ≥ 10× better than Python with Polars on replayed captures; (d) peak memory ≤ 0.5× Python; (e) compatibility alias overhead within noise and no per-row Python objects (D.2 gates) |
 | ⬆ **Upgrade 1: options VALUE ($40/month)** | VALUE | Scheduler at 2 concurrent; 1-minute intraday | W3, W4 (1-min), W6 (IV, 1st order) | W3/W4 time to complete ≥ 1.8× the synchronous Python package and ≥ 1.0× threaded Python; CPU and memory targets hold at volume |
 | ⬆ **Upgrade 2: options STANDARD ($80/month)** | STANDARD | Tick-level option history at volume; real-time Terminal adapter; local service mode (optional) | W5, W6 (all), W10 | W5 ≥ 3.5× synchronous Python and ≥ 1.0× threaded; peak memory bounded by configuration under W5; W10 added p99 ≤ 50 µs, no drops below the documented contract limits |
 | ⬆ **Upgrade 3: PRO ($160/month options; stock PRO price [unknown])** | PRO | 8-way scheduler; flat files to Parquet; full trade stream; stock tick (W7) | W5 at 8×, W7, W9, W10 full stream | W5 ≥ 7× synchronous Python; W9 ingest bounded by network/disk with bounded memory; W10 sustained full-stream load without drops |
@@ -330,6 +397,11 @@ now (it stays on hold, as instructed).
 
 ## G. Decisions for the user
 
+All decided on 2026-11-03; see [Decisions](#decisions-2026-11-03). Vendor
+questions (8 below) are with the user. The original questions are kept for the
+record:
+
+
 1. **Python baseline exception (C.1):** may the Coordinator run the vendor
    package, isolated and hash-pinned, only for benchmarking, on your machine
    with your key? Without it there is no honest "faster than Python" claim.
@@ -353,3 +425,47 @@ now (it stays on hold, as instructed).
 8. **Ask the vendor:** stock and index tier prices, direct-gRPC behavior over
    the concurrency limit (queue or 429-equivalent), whether direct streaming
    is allowed, and the meaning of `nanos`/`precision`.
+
+---
+
+## H. Related project review: ThetaDataDx
+
+Reviewed 2026-11-03 at `f42350f` of [userFRM/ThetaDataDx][dx] (Apache-2.0,
+the same license as this project). The review covered reading only; no code
+was copied, built or run. The detailed P0 review goes to
+`docs/research/thetadatadx-review.md`.
+
+### H.1 What they do and how
+
+| Area | ThetaDataDx | What we learn or do better |
+| --- | --- | --- |
+| Scope | One Rust engine with Python, TypeScript and C++ bindings; 81 typed endpoints; history, streaming and flat files | Confirms demand for full coverage. We generate all 100 RPCs from the descriptor and catalogue rather than hand-maintaining macros |
+| Concurrency | Reads the subscription tier from the Nexus auth response and sizes a request semaphore as **2^tier** (1/2/4/8); the server enforces the real limit | Use our auth response's subscription fields for the default scheduler size, as they do. P0 probes verify it on FREE |
+| Sharding | Splits a large pull into equal-span date/time bands dispatched concurrently. Claims the server caps a single stream's send rate below the account budget, so fan-out multiplies throughput | A useful hypothesis: P0 measures single-stream throughput against fan-out before we rely on it |
+| Values | Prices decoded to **`f64`** (`(@type price) => { f64 }`); strike `f64` | We keep **exact** `Decimal128(38,10)`; no float rounding |
+| Columnar path | Decodes into Rust **row structs** (`Vec<Tick>`), then copies rows into Arrow columns on `to_arrow()` before a zero-copy C Data hand-off | We decode straight into Arrow builders: no row structs, no transposition copy |
+| Python | `pyclass` row lists with `to_list()` (one Python object per row) and `to_arrow/polars/pandas()` | Our default path never creates per-row objects (D.2), with a benchmark gate proving it |
+| Streaming | A **direct FPSS** client (`nj-a.thetadata.us:20100` and others), with reconnect, backoff and failover; one live session per account | **Not adopted** (decision 4; H.2). We use the official Terminal WebSocket |
+| Identity on the wire | Sends `client_type = "rust-thetadatadx"` and its crate version in `QueryInfo` | We already send `client=rust` in query parameters; keep identifying ourselves honestly |
+| Benchmarks | Decode-allocation and streaming-throughput benches; no published comparison against the vendor Python package found | Our C.1 baseline is a gap they do not fill |
+
+### H.2 License and vendor terms
+
+- **License:** Apache-2.0, compatible with ours. Reuse would need file-level
+  attribution and NOTICE handling. **No code is copied**; any future reuse
+  needs a recorded review.
+- **ThetaData's [subscriber agreement][tos]:**
+  - **Section 1(b)** forbids attempts to "reverse engineer, disassemble,
+    decompile, decode … or otherwise attempt to derive". A client for the
+    undocumented FPSS protocol is exactly what decision 4 avoids.
+  - **Section 1(a) and Exhibit A** permit "internal personal use" only. No
+    redistribution of data or derived works (Section 8(e)), no credential
+    sharing, and no simultaneous use of multiple accounts.
+  - For us this means: no vendor rows in the repo or in benchmarks we publish
+    (already policy), and a local service limited to the licensee. Our direct
+    gRPC path uses the protocol descriptor shipped in the vendor's own Python
+    package (the documented "connects directly via gRPC" route), not a
+    reverse-engineered one. The user's questions to ThetaData (G.8) should
+    still confirm that third-party clients of this route are acceptable.
+
+[tos]: https://www.thetadata.net/subscriber-agreement

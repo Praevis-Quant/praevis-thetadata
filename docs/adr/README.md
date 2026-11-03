@@ -10,7 +10,7 @@ Records identify their own date and status. “Accepted” records the implement
 | [0004](0004-explicit-session-lifecycle.md) | Accepted | Rust enhancement | Separate local persistence from remote session validity |
 | [0005](0005-verification-and-provenance.md) | Accepted | Mixed | Use reproducible provenance, synthetic CI, and measured performance |
 | [0006](0006-cli-runtime-lifecycle.md) | Accepted | Rust enhancement | Initialize a current-thread CLI runtime only for HTTP authentication |
-| [0007](0007-first-market-data-slice.md) | Proposed | Mixed | Start with one stock EOD history query through the reusable library |
+| [0007](0007-first-market-data-slice.md) | Superseded (2026-11-03, [performance plan](../architecture/performance-plan.md)) | Mixed | Start with one stock EOD history query through the reusable library |
 | [0008](0008-typed-requests-and-presence.md) | Proposed | Mixed | Separate typed validation/defaults from wire representation and preserve explicit presence |
 | [0009](0009-market-data-values-and-schema.md) | Proposed | Mixed | Preserve exact values, batch schemas, and explicit empty/partial-result semantics |
 | [0010](0010-stream-lifecycle-and-resource-bounds.md) | Proposed | Mixed | Define backpressure, terminal errors, timeouts, cancellation, and measured resource limits |
