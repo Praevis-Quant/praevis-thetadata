@@ -6,16 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versioned releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROADMAP.md).
 
-`0.1.0-alpha.1` is the first published prerelease (crates.io, tag
-`v0.1.0-alpha.1`, 2026-11-02 UTC). Entries before it describe the work that
-release contains. The Python compatibility baseline is separately
+`0.1.0-alpha.1` was the first published prerelease (crates.io, tag
+`v0.1.0-alpha.1`, 2026-11-02 UTC), followed by `0.1.0-alpha.2` (tag
+`v0.1.0-alpha.2`, 2026-11-03 UTC). Each release heading covers the entries
+below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
 
-> Release note: these entries ship as `0.1.0-alpha.2`. The workspace version is
-> already bumped. After publishing, the Coordinator retitles this section
-> `## [0.1.0-alpha.2] - <UTC publication date>` in the publication-record PR.
+### Added
+
+- Publication record for `0.1.0-alpha.2`: registry checksums, the tag, the
+  offline replay on the release commit, and Windows/Linux crates.io installs
+  and consumers ([record](docs/crates-io-release-plan.md#publication-record-010-alpha2)).
+
+## [0.1.0-alpha.2] - 2026-11-03
 
 ### Changed
 
