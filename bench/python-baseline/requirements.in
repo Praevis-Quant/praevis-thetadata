@@ -1,0 +1,12 @@
+# Vendor Python baseline (performance plan C.1). Run ONLY by the Coordinator on
+# the user's machine; never in CI. Regenerate requirements.txt with:
+#   uv pip compile --universal --generate-hashes --python-version 3.12 requirements.in -o requirements.txt
+thetadata==1.0.17
+# thetadata 1.0.17 imports python-dotenv but does not declare it in Requires-Dist.
+python-dotenv
+# Stay within the major versions thetadata 1.0.17 declares as minimums
+# (pandas>=2.3.2, polars>=1.33.1, protobuf>=6.32.1). Its generated protobuf code
+# checks the runtime version, and its converter predates pandas 3 / Polars 2.
+pandas>=2.3.2,<3
+polars>=1.33.1,<2
+protobuf>=6.32.1,<7

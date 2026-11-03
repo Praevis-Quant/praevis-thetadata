@@ -9,3 +9,7 @@ creds.txt
 *.credentials
 __pycache__/
 /artifacts/
+
+# Vendor Python baseline harness (performance plan C.1): local venv only.
+/bench/python-baseline/.venv/
+/bench/python-baseline/__pycache__/
