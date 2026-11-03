@@ -13,6 +13,10 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+> Release note: these entries ship as `0.1.0-alpha.2`. The workspace version is
+> already bumped. After publishing, the Coordinator retitles this section
+> `## [0.1.0-alpha.2] - <UTC publication date>` in the publication-record PR.
+
 ### Changed
 
 - **Client endpoint URLs with credentials, a query or a fragment are now

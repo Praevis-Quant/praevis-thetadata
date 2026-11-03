@@ -14,7 +14,7 @@ client crates are foundations, not a claim of complete Python compatibility or
 verified live market-data access.
 
 The workspace uses Rust edition 2024, currently declares version
-`0.1.0-alpha.1`, and sets `publish = ["crates-io"]`. Publication is manual
+`0.1.0-alpha.2`, and sets `publish = ["crates-io"]`. Publication is manual
 and owner-approved; never add `cargo publish` to a workflow. The Rust crate version and the tracked Python version
 are different concepts. The canonical upstream compatibility version is
 `source_version` in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).

@@ -1,4 +1,4 @@
-"""Rehearse alpha.1 publication against an isolated local staging registry.
+"""Rehearse publication of the workspace version against an isolated local staging registry.
 
 Nothing is uploaded and no registry token is read. Steps:
 

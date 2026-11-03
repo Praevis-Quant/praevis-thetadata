@@ -16,7 +16,7 @@ Version targets are gate-based, not promises of dates or full Python parity.
 ([record](crates-io-release-plan.md#publication-record-010-alpha1)). **All
 `0.1.0-alpha.2` exit gates were met on 2026-11-02**
 ([readiness record](releases.md#alpha2-readiness-record-2026-11-02)). Its
-release awaits a separate maintainer approval of the listed procedure. After
+release was approved on 2026-11-02 and follows the listed procedure. After
 alpha.2, the proposed `0.1.0-alpha.3` hardens the
 [deferred items](releases.md#deferred-from-alpha2), then `beta.1` freezes the API.
 
