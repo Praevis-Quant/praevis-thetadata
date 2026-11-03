@@ -148,10 +148,17 @@ impl Pool {
     pub(crate) fn connection_window(&self) -> u32 {
         // Each idle stream can withhold its entire HTTP/2 receive window. Keep
         // one extra window available so admitted streams can always progress.
-        (self.policy.concurrent_streams as u32 + 1) * STREAM_WINDOW
+        (self.policy.concurrent_streams as u32 + 1) * stream_window()
     }
 }
-pub(crate) const STREAM_WINDOW: u32 = 2 << 20;
+/// EXPERIMENT ONLY (exp/transport-windows, never merged): the HTTP/2 stream
+/// window, overridable through PRAEVIS_EXP_STREAM_WINDOW (bytes).
+pub(crate) fn stream_window() -> u32 {
+    std::env::var("PRAEVIS_EXP_STREAM_WINDOW")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(2 << 20)
+}
 fn budgets(config: &ClientConfig) -> Result<(), EodError> {
     for duration in [
         config.connect_timeout,

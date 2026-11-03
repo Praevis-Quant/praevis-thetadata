@@ -170,7 +170,7 @@ impl ThetaClient {
         }
         let typed_endpoint = endpoint
             .clone()
-            .initial_stream_window_size(eod::STREAM_WINDOW)
+            .initial_stream_window_size(eod::stream_window())
             .initial_connection_window_size(eod_pool.connection_window())
             .http2_adaptive_window(false);
         // Isolate raw traffic from typed admission/flow-control guarantees.
