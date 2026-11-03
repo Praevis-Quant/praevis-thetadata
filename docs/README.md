@@ -28,6 +28,7 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Deep source inventory](research/python-1.0.12-inventory.json) | Regenerable source hashes, AST evidence, descriptors, metadata, and examples |
 | [Feature dispositions](research/python-1.0.12-dispositions.json) | Supported/planned/excluded/unresolved behavior and explicit downstream evidence/gaps |
 | [Upstream source identity](research/upstream-source.md) | Attested publishing repository/commit, source hashes, and access limitations |
+| [ThetaDataDx review](research/thetadatadx-review.md) | 2026-11-03 read-only review: architecture, license, vendor terms, lessons and improvements (plan H) |
 | [Related project watchlist](research/related-projects.md) | Pinned ThetaDataDx review and release-planning comparison areas |
 | [Project naming decision](project-naming.md) | Selected Praevis ThetaData identity, package/binary mapping and compatibility |
 | [Recover research artifacts](research/upstream-source.md#recovering-the-removed-local-artifacts) | Exact wheel URL/hash and optional regeneration after local source cleanup |

@@ -29,6 +29,11 @@ No code was copied, dependency added, remote project executed or performance
 comparison run. Any future reuse needs file-level license/NOTICE review and
 attribution. Keep this watchlist separate from the scheduled PyPI version gate.
 
+**2026-11-03:** reviewed again at `f42350f` for the performance plan; see
+[the detailed review](thetadatadx-review.md). It covers license and vendor
+terms, the direct FPSS client (not adopted), f64 prices, row-then-Arrow
+decoding, tier-based concurrency and the sharding claim to measure.
+
 At each release-planning review, check repository activity/releases and relevant
 changes since the recorded revision; append a dated revision and material findings.
 Before selecting event, binding or dataframe work, review the corresponding area
