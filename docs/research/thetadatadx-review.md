@@ -71,8 +71,25 @@ ThetaData's [subscriber agreement](https://www.thetadata.net/subscriber-agreemen
 | Benchmarks | Fill their gap: an apples-to-apples comparison against the vendor Python package (`bench/python-baseline/`) | P0 |
 | Identity | Keep identifying ourselves honestly in query metadata (`client=rust`) | — |
 
-## Re-review
+## Monitoring and re-review
 
-Revisit at each phase exit and before the real-time and flat-file phases.
-Record the new revision and any material change here. Keep the related-project
-watchlist's no-copy rule.
+This file is the **monitoring record** for ThetaDataDx. Re-review it **at each
+phase exit** (P1, each tier upgrade) and before the real-time and flat-file
+phases. Record the new revision, the date and any material change below. Keep
+the related-project no-copy rule.
+
+### Watch items
+
+| Item | What to look for | Why it matters |
+| --- | --- | --- |
+| Direct-FPSS legality | Any ThetaData statement permitting or forbidding third-party direct FPSS clients; any change in their FPSS client or disclaimer | Our Terminal-only decision rests on subscriber agreement §1(b); new vendor guidance could change it |
+| `f64` prices | Whether they move to exact decimals | Our exactness advantage, and the correctness risk their users carry |
+| Per-row Python objects | Whether `to_list()` stays the default path, or they publish allocation numbers | Our D.2 gate claim: no per-row Python objects |
+| Sharding throughput claim | Any measurement of single-stream caps or fan-out speedups | P0 found one request slow on the server's side; we measure fan-out on paid tiers before relying on it |
+| Vendor-Python comparison | Any benchmark against the official `thetadata` package | Our baseline (`bench/python-baseline/`) is currently unique; if they add one, compare methods |
+
+### Review log
+
+| Date | Revision | Notes |
+| --- | --- | --- |
+| 2026-11-03 | `f42350f` | Initial detailed review (this record) |

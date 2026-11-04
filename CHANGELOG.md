@@ -16,6 +16,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- The P1 design, **approved 2026-11-04** with every recommendation ([docs/architecture/p1-design.md](docs/architecture/p1-design.md)):
+  - generated typed requests for all RPCs;
+  - an exact Arrow columnar decoder (Decimal128(38,10), millisecond
+    timestamps proposed);
+  - message coalescing and inline decoding;
+  - a planner and scheduler;
+  - a Parquet sink;
+  - the Python pass-through package;
+  - a PR sequence and decisions. Docs only.
+- ThetaDataDx monitoring: a watch-item list, re-reviewed at each phase exit.
 - P0 measurement results
   ([docs/performance/p0-results.md](docs/performance/p0-results.md)):
   - one row per gRPC message;

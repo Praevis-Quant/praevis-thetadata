@@ -28,6 +28,7 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Deep source inventory](research/python-1.0.12-inventory.json) | Regenerable source hashes, AST evidence, descriptors, metadata, and examples |
 | [Feature dispositions](research/python-1.0.12-dispositions.json) | Supported/planned/excluded/unresolved behavior and explicit downstream evidence/gaps |
 | [Upstream source identity](research/upstream-source.md) | Attested publishing repository/commit, source hashes, and access limitations |
+| [P1 design](architecture/p1-design.md) | Approved 2026-11-04: generated endpoints, Arrow columnar decoder, coalescing, scheduler, Parquet, Python pass-through, PR sequence and decisions |
 | [P0 results](performance/p0-results.md) | 2026-11-03: vendor Python vs Praevis breakdown, CPU per row, time to first row, FREE limits observed, P1 design adjustments |
 | [ThetaDataDx review](research/thetadatadx-review.md) | 2026-11-03 read-only review: architecture, license, vendor terms, lessons and improvements (plan H) |
 | [Related project watchlist](research/related-projects.md) | Pinned ThetaDataDx review and release-planning comparison areas |
