@@ -9,8 +9,11 @@
 //!   --rows 20000 --samples 7 --output artifacts/columnar-cpu.json
 //! ```
 //!
-//! The P1 exit criterion (c) is measured separately, by replaying the private
-//! P0 captures on the maintainer's machine.
+//! `--replay <dir>` times the same decoders on private captures instead: the
+//! vendor Python baseline's `--save-captures` files (`<workload>-<n>.bin`, each
+//! one request's responses as 4-byte big-endian length-prefixed
+//! `ResponseData`). It prints timings, counts and ZSTD frame header shapes
+//! only, never values. This replay is P1 exit criterion (c)'s measurement.
 //!
 //! Timings use the system allocator directly; allocation counts come from a
 //! separate counted run. `--inputs prebuilt --timing-allocator counting`
@@ -129,8 +132,23 @@ struct Cli {
     inputs: Inputs,
     #[arg(long, value_enum, default_value_t = TimingAllocator::System)]
     timing_allocator: TimingAllocator,
+    /// ZSTD frames of the synthetic workloads.
+    #[arg(long, value_enum, default_value_t = Frames::Sized)]
+    frames: Frames,
+    /// Replay private captures from this directory instead of synthetic data.
+    #[arg(long)]
+    replay: Option<PathBuf>,
     #[arg(long)]
     output: Option<PathBuf>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, clap::ValueEnum, Serialize)]
+#[serde(rename_all = "kebab-case")]
+enum Frames {
+    /// Content size declared: the window is the message size.
+    Sized,
+    /// No content size: the decoder must provide the level's 2 MiB window.
+    Streaming,
 }
 
 #[derive(Serialize)]
@@ -141,6 +159,7 @@ struct Report {
     arch: &'static str,
     rows: usize,
     samples: usize,
+    frames: Option<Frames>,
     inputs: Inputs,
     timing_allocator: TimingAllocator,
     results: Vec<Result_>,
@@ -148,7 +167,7 @@ struct Report {
 
 #[derive(Serialize)]
 struct Result_ {
-    workload: &'static str,
+    workload: String,
     engine: &'static str,
     us_per_row_median: f64,
     us_per_row_min: f64,
@@ -156,6 +175,52 @@ struct Result_ {
     /// Rust heap allocation calls per message over one full run. Owned
     /// engines include one copy of each input message.
     allocations_per_message: f64,
+    /// Replay only: messages, rows and the frame header shapes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    replay: Option<ReplayShape>,
+    /// Replay only: the engine's first decode error, if it failed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+}
+
+#[derive(Serialize, Clone, Default)]
+struct ReplayShape {
+    files: usize,
+    messages: usize,
+    rows: usize,
+    zstd_frames: usize,
+    /// Frames declaring their content size (the window can be that small).
+    sized_frames: usize,
+    single_segment_frames: usize,
+    /// Largest window declared by a frame without a single segment.
+    max_declared_window: u64,
+}
+
+/// ZSTD frame header shape (RFC 8878 §3.1.1.1): content size and window.
+fn frame_shape(shape: &mut ReplayShape, message: &ResponseData) {
+    let algo = message
+        .compression_description
+        .as_ref()
+        .map_or(0, |d| d.algo);
+    let frame = &message.compressed_data;
+    if algo != 1 || frame.len() < 6 || frame[..4] != [0x28, 0xb5, 0x2f, 0xfd] {
+        return;
+    }
+    shape.zstd_frames += 1;
+    let descriptor = frame[4];
+    let single = descriptor & 0x20 != 0;
+    if single {
+        shape.single_segment_frames += 1;
+    }
+    if single || descriptor >> 6 != 0 {
+        shape.sized_frames += 1;
+    }
+    if !single {
+        let window = frame[5];
+        let base = 1u64 << (10 + (window >> 3));
+        let size = base + (base / 8) * u64::from(window & 7);
+        shape.max_declared_window = shape.max_declared_window.max(size);
+    }
 }
 
 fn ts(epoch_ms: u64) -> Option<DataType> {
@@ -174,7 +239,7 @@ fn number(value: i64) -> Option<DataType> {
 
 /// One row per message. W1: 2 timestamps, 6 prices and 8 integers (16 columns).
 /// W2 adds an option contract's symbol, expiration, strike and right (20).
-fn workload(columns: usize, rows: usize) -> Vec<ResponseData> {
+fn workload(columns: usize, rows: usize, frames: Frames) -> Vec<ResponseData> {
     let headers: Vec<String> = (0..columns).map(|c| format!("c{c}")).collect();
     (0..rows)
         .map(|row| {
@@ -215,7 +280,10 @@ fn workload(columns: usize, rows: usize) -> Vec<ResponseData> {
             let bytes = table.encode_to_vec();
             ResponseData {
                 original_size: bytes.len() as i32,
-                compressed_data: zstd::stream::encode_all(bytes.as_slice(), 3).unwrap(),
+                compressed_data: match frames {
+                    Frames::Sized => zstd::bulk::compress(&bytes, 3).unwrap(),
+                    Frames::Streaming => zstd::stream::encode_all(bytes.as_slice(), 3).unwrap(),
+                },
                 compression_description: Some(CompressionDescription { algo: 1, level: 3 }),
                 flat_file_manifest: None,
             }
@@ -246,6 +314,54 @@ fn columnar(messages: &[ResponseData]) -> usize {
         }
     }
     rows + decoder.flush().map_or(0, |b| black_box(b).num_rows())
+}
+
+fn try_columnar(messages: &[ResponseData]) -> Result<usize, String> {
+    let mut decoder = ColumnarDecoder::new(Limits::default()).map_err(|e| format!("{e:?}"))?;
+    let mut rows = 0;
+    for message in messages {
+        decoder.push(message).map_err(|e| format!("{e:?}"))?;
+        if decoder.buffered_rows() >= BATCH_ROWS {
+            rows += decoder.flush().map_or(0, |b| b.num_rows());
+        }
+    }
+    Ok(rows + decoder.flush().map_or(0, |b| b.num_rows()))
+}
+
+/// Each `<workload>-<n>.bin` file is one request: 4-byte big-endian
+/// length-prefixed `ResponseData` messages. Files are grouped by workload.
+fn load_captures(directory: &std::path::Path) -> Vec<(String, Vec<Vec<ResponseData>>)> {
+    let mut files: Vec<_> = std::fs::read_dir(directory)
+        .expect("readable capture directory")
+        .map(|entry| entry.expect("directory entry").path())
+        .filter(|path| path.extension().is_some_and(|e| e == "bin"))
+        .collect();
+    files.sort();
+    let mut groups: Vec<(String, Vec<Vec<ResponseData>>)> = Vec::new();
+    for path in files {
+        let stem = path.file_stem().unwrap().to_string_lossy().into_owned();
+        let workload = stem.split('-').next().unwrap().to_owned();
+        let bytes = std::fs::read(&path).expect("readable capture");
+        let mut cursor = bytes.as_slice();
+        let mut messages = Vec::new();
+        while !cursor.is_empty() {
+            let (length, rest) = cursor.split_at(4);
+            let length = u32::from_be_bytes(length.try_into().unwrap()) as usize;
+            let (message, rest) = rest.split_at(length);
+            messages.push(ResponseData::decode(message).expect("a ResponseData message"));
+            cursor = rest;
+        }
+        match groups.iter_mut().find(|(name, _)| *name == workload) {
+            Some((_, requests)) => requests.push(messages),
+            None => groups.push((workload, vec![messages])),
+        }
+    }
+    assert!(
+        !groups.is_empty(),
+        "no .bin captures in {}",
+        directory.display()
+    );
+    groups
 }
 
 /// Time `run` on inputs taken from `inputs` before each sample's clock starts.
@@ -279,70 +395,122 @@ fn main() -> Result<(), Error> {
         "rows and samples must be positive"
     );
     let mut results = Vec::new();
-    for (name, columns) in [("W1-shaped", 16), ("W2-shaped", 20)] {
-        let messages = workload(columns, cli.rows);
-        // Warm-up, and a check that every engine returns every row.
-        assert_eq!(columnar(&messages), cli.rows);
+    let workloads: Vec<(String, Vec<Vec<ResponseData>>)> = match &cli.replay {
+        Some(directory) => load_captures(directory),
+        None => [("W1-shaped", 16), ("W2-shaped", 20)]
+            .into_iter()
+            .map(|(name, columns)| {
+                (
+                    name.to_owned(),
+                    vec![workload(columns, cli.rows, cli.frames)],
+                )
+            })
+            .collect(),
+    };
+    for (name, requests) in workloads {
+        let messages: Vec<ResponseData> = requests.iter().flatten().cloned().collect();
+        let mut shape = ReplayShape {
+            files: requests.len(),
+            messages: messages.len(),
+            ..Default::default()
+        };
+        messages.iter().for_each(|m| frame_shape(&mut shape, m));
+        // Every engine must decode every message once before it is timed; a
+        // failing engine is reported with its error class, not timed.
+        let checks = [
+            messages.iter().try_fold(0, |rows, m| {
+                decode::decode(m.clone(), LIMIT)
+                    .map(|t| rows + t.rows.len())
+                    .map_err(|e| format!("{e:?}"))
+            }),
+            messages.iter().try_fold(0, |rows, m| {
+                bounded::decode(m.clone(), &bounded::DecodeLimits::default(), None, false)
+                    .map(|b| rows + b.row_count())
+                    .map_err(|e| format!("{e:?}"))
+            }),
+            requests
+                .iter()
+                .try_fold(0, |rows, r| try_columnar(r).map(|n| rows + n)),
+        ];
+        let Some(rows) = checks.iter().find_map(|c| c.as_ref().ok().copied()) else {
+            eprintln!("{name}: no engine decoded the workload; skipped");
+            continue;
+        };
+        shape.rows = rows;
         // Owned engines consume their inputs, as the transport hands them over.
         let mut prebuilt: Vec<Vec<ResponseData>> = match cli.inputs {
             Inputs::Prebuilt => (0..2 * cli.samples).map(|_| messages.clone()).collect(),
             Inputs::Fresh => Vec::new(),
         };
         let mut owned = || prebuilt.pop().unwrap_or_else(|| messages.clone());
+        let ok = |i: usize| checks[i].is_ok();
         COUNTING.store(cli.timing_allocator == TimingAllocator::Counting, Relaxed);
         let timings = [
-            time(cli.samples, cli.rows, &mut owned, |m| legacy(m.unwrap())),
-            time(cli.samples, cli.rows, &mut owned, |m| {
-                bounded_numeric(m.unwrap())
+            ok(0).then(|| time(cli.samples, rows, &mut owned, |m| legacy(m.unwrap()))),
+            ok(1).then(|| {
+                time(cli.samples, rows, &mut owned, |m| {
+                    bounded_numeric(m.unwrap())
+                })
             }),
-            time(cli.samples, cli.rows, &mut || Vec::new(), |_| {
-                columnar(&messages)
+            ok(2).then(|| {
+                time(cli.samples, rows, &mut Vec::new, |_| {
+                    requests.iter().map(|r| columnar(r)).sum()
+                })
             }),
         ];
         COUNTING.store(false, Relaxed);
         drop(prebuilt);
-        let [legacy_time, bounded_time, columnar_time] = timings;
-        let engines: [(&'static str, (f64, f64, f64), f64); 3] = [
-            (
-                "legacy-table",
-                legacy_time,
-                count(|| legacy(messages.clone())) as f64,
-            ),
-            (
-                "bounded-numeric",
-                bounded_time,
-                count(|| bounded_numeric(messages.clone())) as f64,
-            ),
-            (
-                "columnar-arrow",
-                columnar_time,
-                count(|| columnar(&messages)) as f64,
-            ),
+        let allocations = [
+            ok(0).then(|| count(|| legacy(messages.clone()))),
+            ok(1).then(|| count(|| bounded_numeric(messages.clone()))),
+            ok(2).then(|| count(|| requests.iter().map(|r| columnar(r)).sum())),
         ];
-        for (engine, (median, min, max), allocations) in engines {
-            println!(
-                "{name} {engine:<16} {median:7.3} µs/row (min {min:.3}, max {max:.3}), \
-                 {:.2} allocations/message",
-                allocations / cli.rows as f64
-            );
+        let engines = ["legacy-table", "bounded-numeric", "columnar-arrow"];
+        for (index, engine) in engines.into_iter().enumerate() {
+            let (median, min, max) = timings[index].unwrap_or((f64::NAN, f64::NAN, f64::NAN));
+            let per_message =
+                allocations[index].map_or(f64::NAN, |n| n as f64 / shape.messages as f64);
+            match &checks[index] {
+                Ok(_) => println!(
+                    "{name} {engine:<16} {median:7.3} µs/row (min {min:.3}, max {max:.3}), \
+                     {per_message:.2} allocations/message"
+                ),
+                Err(error) => println!("{name} {engine:<16} failed: {error}"),
+            }
             results.push(Result_ {
-                workload: name,
+                workload: name.clone(),
                 engine,
                 us_per_row_median: median,
                 us_per_row_min: min,
                 us_per_row_max: max,
-                allocations_per_message: allocations / cli.rows as f64,
+                allocations_per_message: per_message,
+                replay: cli.replay.is_some().then(|| shape.clone()),
+                error: checks[index].as_ref().err().cloned(),
             });
+        }
+        if cli.replay.is_some() {
+            println!(
+                "{name}: {} files, {} messages, {} rows; ZSTD frames {}: {} declare their size \
+                 ({} single-segment), largest declared window {} bytes",
+                shape.files,
+                shape.messages,
+                shape.rows,
+                shape.zstd_frames,
+                shape.sized_frames,
+                shape.single_segment_frames,
+                shape.max_declared_window
+            );
         }
     }
     if let Some(path) = cli.output {
         let report = Report {
-            format: "praevis-columnar-cpu-v1",
-            synthetic: true,
+            format: "praevis-columnar-cpu-v2",
+            synthetic: cli.replay.is_none(),
             os: std::env::consts::OS,
             arch: std::env::consts::ARCH,
             rows: cli.rows,
             samples: cli.samples,
+            frames: cli.replay.is_none().then_some(cli.frames),
             inputs: cli.inputs,
             timing_allocator: cli.timing_allocator,
             results,
@@ -362,8 +530,8 @@ mod tests {
 
     #[test]
     fn every_engine_decodes_every_row_of_both_workloads() {
-        for columns in [16, 20] {
-            let messages = workload(columns, 50);
+        for (columns, frames) in [(16, Frames::Sized), (20, Frames::Streaming)] {
+            let messages = workload(columns, 50, frames);
             assert_eq!(legacy(messages.clone()), 50);
             assert_eq!(bounded_numeric(messages.clone()), 50);
             assert_eq!(columnar(&messages), 50);
@@ -375,5 +543,60 @@ mod tests {
             assert_eq!(batch.num_columns(), columns);
             assert!(batch.columns().iter().all(|c| c.null_count() == 0));
         }
+    }
+
+    #[test]
+    fn captures_load_in_the_python_baseline_format_and_frame_shapes_are_read() {
+        let directory = std::env::temp_dir().join(format!("praevis-replay-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let write = |name: &str, messages: &[ResponseData]| {
+            let mut bytes = Vec::new();
+            for message in messages {
+                let encoded = message.encode_to_vec();
+                bytes.extend_from_slice(&(encoded.len() as u32).to_be_bytes());
+                bytes.extend_from_slice(&encoded);
+            }
+            std::fs::write(directory.join(name), bytes).unwrap();
+        };
+        write("W1-0.bin", &workload(16, 3, Frames::Sized));
+        write("W1-1.bin", &workload(16, 2, Frames::Sized));
+        write("W2-0.bin", &workload(20, 4, Frames::Streaming));
+        std::fs::write(directory.join("report.json"), b"{}").unwrap();
+        let groups = load_captures(&directory);
+        std::fs::remove_dir_all(&directory).unwrap();
+        let summary: Vec<_> = groups
+            .iter()
+            .map(|(name, requests)| {
+                (
+                    name.as_str(),
+                    requests.iter().map(Vec::len).collect::<Vec<_>>(),
+                )
+            })
+            .collect();
+        assert_eq!(summary, [("W1", vec![3, 2]), ("W2", vec![4])]);
+        let mut sized = ReplayShape::default();
+        groups[0]
+            .1
+            .iter()
+            .flatten()
+            .for_each(|m| frame_shape(&mut sized, m));
+        assert_eq!(
+            (
+                sized.zstd_frames,
+                sized.sized_frames,
+                sized.single_segment_frames
+            ),
+            (5, 5, 5)
+        );
+        assert_eq!(sized.max_declared_window, 0);
+        let mut streaming = ReplayShape::default();
+        groups[1]
+            .1
+            .iter()
+            .flatten()
+            .for_each(|m| frame_shape(&mut streaming, m));
+        assert_eq!((streaming.zstd_frames, streaming.sized_frames), (4, 0));
+        assert_eq!(streaming.max_declared_window, 2 << 20);
+        assert_eq!(try_columnar(&groups[1].1[0]), Ok(4));
     }
 }
