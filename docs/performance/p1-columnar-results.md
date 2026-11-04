@@ -1,68 +1,113 @@
-# P1 PR 3: columnar decoder CPU per row (2026-11-04)
+# P1 columnar decoder: CPU per row (2026-11-04)
 
 The [`praevis-thetadata-arrow`](../../crates/praevis-thetadata-arrow/README.md)
-decoder ([P1 design §4](../architecture/p1-design.md#4-columnar-decoder))
-compared with the legacy and bounded decoders on the same messages. These are
-**synthetic, vendor-shaped workloads**, not P1 exit evidence. Exit criterion c
-is measured by replaying the private P0 captures on the maintainer's machine.
+decoder ([P1 design §4](../architecture/p1-design.md#4-columnar-decoder)),
+compared with the legacy and bounded decoders on the same messages.
+
+**Headline:** replaying the real P0 captures on the maintainer's Ryzen, the
+Arrow decoder uses **3.46 µs/row (W1) and 6.07 µs/row (W2)**. That is **15.9×
+and 10.4× less CPU than the vendor Python package with Polars**, so P1 exit
+criterion c (≥ 10×) is **met for decoding**. It is re-measured through the
+query engine (PR 4a) for the P1 exit record.
 
 ## Method
 
 - **Harness:** the `columnar_benchmark` example, release build, single thread,
-  offline.
-- **Workloads:** one row per message, each an independent ZSTD frame (level 3),
-  as observed in [P0](p0-results.md#1-the-response-format-one-row-per-grpc-message).
-  - W1-shaped: 16 columns (2 timestamps, 6 prices, 8 integers);
-  - W2-shaped: 20 columns (W1 plus symbol, expiration, strike and right).
-  - Values are synthetic. 20,000 messages, 7 samples; the median is reported,
-    with the range.
+  offline, 7 samples; the median is reported.
 - **Engines:**
   - `legacy-table`: `decode.rs`, prost then formatted `Table`;
   - `bounded-numeric`: `bounded.rs`, the hand reader into a `DataBatch`;
-  - `columnar-arrow`: `ColumnarDecoder`, coalescing into 65,536-row batches.
+  - `columnar-arrow`: `ColumnarDecoder`, one per request, coalescing into
+    65,536-row batches.
+- **Replay** (`--replay <dir>`): the private captures of the
+  [vendor Python baseline](../../bench/python-baseline/README.md) run
+  `py-20261103T164301Z`, one file per request. The tool prints timings, counts
+  and ZSTD frame header shapes only, never values.
+- **Synthetic workloads:** one row per message, each an independent ZSTD frame
+  (level 3), with P0's column kinds and counts (W1-shaped: 16 columns; W2-shaped:
+  20) and synthetic values, 20,000 messages.
+  - `--frames sized` is the default and declares the content size, as the
+    vendor's frames do.
+  - `--frames streaming` declares no size and a 2 MiB window. It is kept as a
+    stress case.
 - **Timing and counting are separate.** Timed runs use the system allocator
   directly, with one sample's inputs cloned just before its clock starts, as
   P0's replay did. Allocations are counted in a separate run.
-  `--inputs prebuilt --timing-allocator counting` reproduces this record's
-  first method, which held every sample's input copies at once and counted
-  while timing. On Linux, all four combinations agree within 1%.
-- **Allocations:** Rust heap allocation calls per message over one full run.
-  The owned engines' figure includes one copy of each input message. ZSTD's C
-  allocator is not counted.
+- **Allocations:** Rust heap allocation calls per message. The owned engines'
+  figure includes one copy of each input message. ZSTD's C allocator is not
+  counted.
 
-## Results (aarch64 sandbox, Neoverse-V2)
+## Replay of the real captures (Ryzen 7 2700, Windows, authoritative)
 
-| Workload | Engine | µs/row (median) | Range | Allocations/message |
-| --- | --- | ---: | --- | ---: |
-| W1-shaped | legacy-table | 5.58 | 5.57-5.59 | 35 |
-| W1-shaped | bounded-numeric | 4.76 | 4.75-4.76 | 22 |
-| W1-shaped | **columnar-arrow** | **3.08** | 3.07-3.08 | **0.02** |
-| W2-shaped | legacy-table | 6.58 | 6.53-6.59 | 44 |
-| W2-shaped | bounded-numeric | 5.47 | 5.47-5.47 | 28 |
-| W2-shaped | **columnar-arrow** | **3.45** | 3.44-3.46 | **0.02** |
+Branch `p1/capture-replay` at 7627dd0. Every frame declares its size (single
+segment), no frame declares a window, and no decoder failed.
 
-- The columnar decoder uses **35-37% less CPU per row** than the bounded
-  numeric decoder, and 45-48% less than the legacy one.
-- Once warm, it makes **no allocation per message**. The remaining 0.02 per
-  message are the builders' geometric growth and the batch flushes.
-- P0 put libzstd's per-frame floor at about 2.5 µs/row on this machine, and
-  the outlook at about 3 µs/row with our per-message overhead removed. The
-  measured 3.1-3.5 µs/row is at that outlook. Most of what remains is libzstd.
+| Workload | Messages = rows | Legacy table | Bounded numeric | **Arrow** | Allocations/message (legacy / bounded / Arrow) |
+| --- | ---: | ---: | ---: | ---: | --- |
+| W1 (10 requests) | 2,520 | 8.72 µs | 7.40 µs | **3.46 µs** | 36 / 22 / 0.63 |
+| W2 (1 request) | 9,164 | 11.99 µs | 10.66 µs | **6.07 µs** | 45 / 29 / 0.04 |
+
+Against the vendor Python package's conversion
+([P0](p0-results.md#3-cpu-per-row-same-responses-decoded-offline)), with the
+same responses on the same machine:
+
+| Workload | Python with Polars | Python with pandas | Arrow | Less CPU than Polars / pandas |
+| --- | ---: | ---: | ---: | --- |
+| W1 | 54.5 µs | 74.4 µs | 3.46 µs | **15.9× / 21.5×** |
+| W2 | 63.0 µs | 81.5 µs | 6.07 µs | **10.4× / 13.4×** |
+
+W1's 0.63 allocations per message come from per-request setup over 10 small
+requests: a new decoder, ZSTD context, schema and batch for each of 252
+messages. W2 is a single request at 0.04.
+
+## Why the synthetic Windows figures were about 50 µs/row
+
+The first Ryzen run of the synthetic workloads put the legacy and bounded
+decoders at about 50 µs/row, against 9-13 in P0. The cause was the synthetic
+frames, not the decoders or the harness:
+
+- **The frames were the cause.** They came from a streaming encoder that
+  declares no content size and a 2 MiB window. The legacy and bounded decoders
+  create a ZSTD context per message, so each message needed a fresh window
+  buffer from the C allocator. On Windows, that costs about 40 µs. On Linux,
+  glibc reuses the block (about 3%).
+- **The Arrow decoder is unaffected** because it reuses one context.
+- **The harness was ruled out.** With P0's method (fresh inputs, system
+  allocator) the figures stayed at about 50; counting allocations while timing
+  added about 15% on Windows; holding all inputs at once made the spread wider.
+- **The A/B on the Ryzen:**
+
+  | Frames | W1 legacy / bounded / Arrow | W2 legacy / bounded / Arrow |
+  | --- | --- | --- |
+  | streaming (no size, 2 MiB window) | 59.1 / 55.7 / 4.93 µs | 47.2 / 43.5 / 5.64 µs |
+  | sized (as the vendor sends) | 9.49 / 8.41 / 4.86 µs | 10.99 / 9.65 / 5.58 µs |
+
+The vendor's frames all declare their size, so this does not affect real
+traffic. It does show that a per-message ZSTD context is fragile on Windows,
+and the Arrow decoder avoids it.
+
+## Synthetic workloads on the aarch64 sandbox (Neoverse-V2)
+
+Sized frames, 20,000 messages:
+
+| Workload | Legacy table | Bounded numeric | **Arrow** | Allocations/message (legacy / bounded / Arrow) |
+| --- | ---: | ---: | ---: | --- |
+| W1-shaped | 5.41 µs | 4.56 µs | **2.96 µs** | 35 / 22 / 0.02 |
+| W2-shaped | 6.27 µs | 5.40 µs | **3.37 µs** | 44 / 28 / 0.02 |
+
+With streaming frames, every engine here is within 3-4% of these figures.
 
 ## Not measured here
 
-- **The Ryzen and the vendor Python package.** P0 measured about 2× the
-  sandbox figures on the Ryzen, and Python with Polars at 54.5-63.0 µs/row. The
-  ≥ 10× target (criterion c) is checked by replaying the identical P0 captures
-  there, after the query engine (PR 4) exists.
-- **Before/after regression gating** of an existing data path (the
-  [benchmark policy](benchmark-policy.md)): this PR adds a decoder and changes
-  no existing path. PR 4, which routes streams through it, follows that
-  protocol.
+- **The full query path.** These figures are decoding only. PR 4a routes
+  streams through the decoder and re-measures, with
+  [before/after gating](benchmark-policy.md) where it changes an existing path.
 
 Reproduce:
 
 ```text
 cargo run --release --locked -p praevis-thetadata-client --example columnar_benchmark -- \
-  --rows 20000 --samples 7 --output artifacts/columnar-cpu.json
+  --replay artifacts/python-baseline/py-20261103T164301Z --samples 7
+cargo run --release --locked -p praevis-thetadata-client --example columnar_benchmark -- \
+  --rows 20000 --samples 7 [--frames streaming]
 ```

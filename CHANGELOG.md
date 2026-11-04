@@ -16,6 +16,18 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **P1 criterion c met for decoding.** Replaying the real P0 captures on the
+  maintainer's Ryzen, the Arrow decoder uses 3.46 µs/row (W1) and 6.07 µs/row
+  (W2): 15.9× and 10.4× less CPU than the vendor Python package with Polars
+  ([results](docs/performance/p1-columnar-results.md)).
+  - `columnar_benchmark --replay <dir>` times the decoders on private captures,
+    printing no values.
+  - Synthetic frames now declare their content size, as the vendor's do.
+    `--frames streaming` keeps the 2 MiB-window case. That case had inflated
+    the older decoders on Windows to about 50 µs/row, because they create a
+    ZSTD context per message.
+  - Timing no longer counts allocations or holds every sample's inputs at
+    once.
 - **Columnar Arrow decoder** (P1 PR 3), in the new `praevis-thetadata-arrow`
   crate. It is not published yet and has no client API yet.
   - `ColumnarDecoder` turns `ResponseData` messages into exact, coalesced
