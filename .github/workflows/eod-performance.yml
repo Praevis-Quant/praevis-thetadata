@@ -23,6 +23,11 @@ on:
         description: "Extra eod_benchmark run arguments for both sides, e.g. --streams 16 or --extremes --samples 4 --warmups 1"
         required: false
         default: ""
+      dependency_change:
+        description: "Dependency A/B: compare across a changed Cargo.lock only (benchmark-policy.md, Dependency A/B)"
+        required: false
+        type: boolean
+        default: false
       memory:
         description: "Run only the process-memory profile (eod_memory) instead of timing jobs"
         required: false
@@ -108,9 +113,11 @@ jobs:
           ROUNDS: ${{ inputs.rounds }}
           ENGINES: ${{ inputs.engines }}
           RUN_ARGS: ${{ inputs.run_args }}
+          DEPENDENCY_CHANGE: ${{ inputs.dependency_change }}
         run: |
           set -euo pipefail
           ext=""; [ "$RUNNER_OS" = Windows ] && ext=".exe"
+          compare_args=""; [ "$DEPENDENCY_CHANGE" = true ] && compare_args="--dependency-change"
           out="$GITHUB_WORKSPACE/artifacts"; mkdir -p "$out"
           for round in $(seq 1 "$ROUNDS"); do
             for engine in $ENGINES; do
@@ -123,7 +130,7 @@ jobs:
               "../bench-candidate/target/release/examples/eod_benchmark$ext" compare \
                 --baseline "$out/eod-$engine-baseline-r$round.json" \
                 --candidate "$out/eod-$engine-candidate-r$round.json" \
-                --output "$out/eod-$engine-compare-r$round.json"
+                --output "$out/eod-$engine-compare-r$round.json" $compare_args
             done
           done
           python tools/eod_compare_summary.py "$out"/eod-*-compare-r*.json | tee "$out/eod-summary.md" >> "$GITHUB_STEP_SUMMARY"

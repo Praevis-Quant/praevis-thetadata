@@ -16,6 +16,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Dependency A/B benchmark mode.** `eod_benchmark compare
+  --dependency-change`, and the `dependency_change` input of
+  `eod-performance.yml`, compare two revisions whose only difference is
+  `Cargo.lock`.
+  - Every other provenance field must still match, and the flag with
+    identical lockfiles is refused.
+  - Reports and the summary are labelled "dependency A/B" with both lock
+    hashes.
+  - The 1.05/0.95 decode-p50 gate and the decision rules are unchanged
+    (`benchmark-policy.md`, "Dependency A/B").
 - **ThetaDataDx P1 phase-exit re-review**
   ([record](docs/research/thetadatadx-review.md)).
   - No changes since the reviewed revision, and every watch item is
@@ -25,7 +35,6 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     observation, so the one-session explanation in the P1 exit record is
     marked unconfirmed.
   - Each improvement now has its P1 status.
-
 - **P1 exit results** ([record](docs/performance/p1-exit-results.md)).
   - **a, met:** all 10 FREE-entitled endpoints, with values equal to the
     legacy decoder.
