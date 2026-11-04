@@ -1,0 +1,7 @@
+# Build and test dependencies of the Python package in CI (P1 PR 6a): never
+# the vendor package. Regenerate requirements-test.txt with:
+#   uv pip compile --universal --generate-hashes --python-version 3.12 requirements-test.in -o requirements-test.txt
+maturin>=1.9,<2
+pyarrow>=14
+polars>=1.0
+pandas>=2.2

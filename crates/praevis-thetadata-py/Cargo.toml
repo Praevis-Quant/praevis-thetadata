@@ -1,0 +1,39 @@
+[package]
+name = "praevis-thetadata-py"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+# Distributed as a Python wheel (PyPI name `praevis-thetadata`, decision D3),
+# never as a crate.
+publish = false
+description = "Python bindings for the independent praevis-thetadata client: a thin pass-through over Arrow"
+readme = "README.md"
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+# An extension module leaves Python's symbols to the interpreter, so it has
+# no standalone test binary; it is tested from Python.
+test = false
+doctest = false
+
+[features]
+default = ["extension-module"]
+extension-module = ["pyo3/extension-module"]
+
+[dependencies]
+# pyo3 is approved with arrow-rs and parquet (plan decision 3). abi3 wheels for
+# CPython >= 3.10 (D4); the import library is generated for Windows linking.
+pyo3 = { version = "0.30", features = ["abi3-py310", "chrono", "generate-import-lib"] }
+arrow-array = { version = "60.1", default-features = false, features = ["ffi"] }
+arrow-schema = { version = "60.1", default-features = false, features = ["ffi"] }
+chrono.workspace = true
+praevis-thetadata-arrow = { workspace = true, features = ["parquet"] }
+praevis-thetadata-auth.workspace = true
+praevis-thetadata-client.workspace = true
+praevis-thetadata-proto.workspace = true
+prost.workspace = true
+tokio.workspace = true
+zstd.workspace = true

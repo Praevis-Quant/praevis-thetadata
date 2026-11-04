@@ -203,6 +203,10 @@ decides which generated endpoints get live checks in the later PRs.
    over `query()`.
 5. The Parquet sink.
 6. The Python package, compatibility aliases and the D.2 gates (CI wheels).
+   **Split on 2026-11-04,** like PR 4: 6a is the native core (all endpoints by
+   name, the Arrow PyCapsule hand-off, streaming, Parquet, the gates and CI
+   wheels); 6b is the generated vendor-named aliases with vendor signatures
+   and `dataframe_type`, plus the full ADR-0020 credential order.
 7. Live checks of the FREE-entitled endpoints (from PR 2's map), and the P1
    exit measurement: replay plus live runs, and a results record.
 

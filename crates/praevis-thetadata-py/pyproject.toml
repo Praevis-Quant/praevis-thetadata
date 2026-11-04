@@ -1,0 +1,23 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+# PyPI name decided as D3; not published (releases are user-approved only).
+name = "praevis-thetadata"
+description = "Independent, unofficial Python client for ThetaData's direct gRPC API: exact Arrow results, zero-copy into pyarrow, Polars and pandas"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+dynamic = ["version"]
+dependencies = []
+
+[project.optional-dependencies]
+arrow = ["pyarrow>=14"]
+polars = ["polars>=1.0", "pyarrow>=14"]
+pandas = ["pandas>=2.2", "pyarrow>=14"]
+
+[tool.maturin]
+python-source = "python"
+module-name = "praevis_thetadata._native"
+bindings = "pyo3"

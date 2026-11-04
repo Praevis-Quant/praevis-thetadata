@@ -16,6 +16,28 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Python package, native core** (P1 PR 6a). `crates/praevis-thetadata-py` is
+  a pyo3 abi3 extension (CPython ≥ 3.10, D4), built with maturin as the
+  `praevis-thetadata` wheel (D3). It is not published.
+  - `Client(api_key)` / `Client.from_env()` runs every query in Rust (the
+    scheduler, transport and Arrow decoding) with the GIL released.
+  - `query(endpoint, **vendor_params)` reaches all 100 endpoints by vendor or
+    RPC name, through generated, typed keyword-argument mapping. An explicit
+    `None` clears an optional field, as in the vendor wrappers. Unknown or
+    missing arguments are `TypeError`.
+  - Results implement `__arrow_c_stream__`, and batches implement
+    `__arrow_c_array__`, so pyarrow, Polars and pandas import them without
+    copying. pandas columns stay Arrow-backed by default, keeping exact
+    decimals without per-value objects.
+  - `batches(...)` streams batches as they arrive; `to_parquet(...)` writes
+    from Rust; `describe(...)` shows the wire query without sending it.
+  - The D.2 gates are tests. Python allocations do not grow with rows: Arrow
+    stays at 4 blocks from 1M to 10M rows, and Polars grows only per batch
+    (449 to 887). The Python layer adds about 0.3 µs per call.
+  - CI builds the wheel on Linux and Windows and runs its offline tests with
+    hash-pinned pyarrow, Polars and pandas. Nothing is uploaded.
+  - New dependency: `pyo3` 0.30 (approved with arrow-rs and parquet), with
+    arrow-rs's `ffi` feature.
 - **Parquet output** (P1 PR 5).
   - `QueryStream::to_parquet` and `JobStream::to_parquet` (client feature
     `parquet`, on by default) stream batches into one file, through

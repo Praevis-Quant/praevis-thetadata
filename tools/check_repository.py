@@ -61,7 +61,7 @@ def audit_origins(registry, requirements, adr_paths, tracked_paths):
 
 
 PACKAGE_DIRS = ["crates/praevis-thetadata-auth", "crates/praevis-thetadata-core", "crates/praevis-thetadata-arrow", "crates/praevis-thetadata-proto",
-                "crates/praevis-thetadata-client", "apps/praevis-thetadata-cli"]
+                "crates/praevis-thetadata-client", "crates/praevis-thetadata-py", "apps/praevis-thetadata-cli"]
 
 
 def audit_package_files(read, tracked):

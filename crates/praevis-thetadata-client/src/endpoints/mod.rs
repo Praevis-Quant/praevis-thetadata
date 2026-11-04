@@ -73,7 +73,7 @@ pub trait Endpoint {
     /// (unverified service claims).
     const VENDOR_DESCRIPTION: &'static str;
     /// The wire query message.
-    type Query: Clone + Send + 'static;
+    type Query: Clone + Send + std::fmt::Debug + 'static;
     /// The wire request message: query info plus the query.
     type Request: prost::Message + Send + 'static;
     /// Wrap a query in its request message.
