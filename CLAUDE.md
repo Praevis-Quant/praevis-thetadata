@@ -44,6 +44,7 @@ cargo test --workspace --locked
 python -m pip install -r tools/requirements.txt
 python tools/check_repository.py
 python tools/research_python.py --check
+python tools/generate_endpoints.py --check   # typed endpoint requests up to date (regenerate without --check)
 python -m unittest discover -s tools -p 'test_*.py'
 
 # Windows native-store integration test, using a unique synthetic profile

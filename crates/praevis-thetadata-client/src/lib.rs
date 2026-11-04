@@ -5,6 +5,7 @@ mod bounded;
 #[cfg(test)]
 mod corpus;
 mod decode;
+pub mod endpoints;
 mod envelope;
 mod eod;
 mod framing;
