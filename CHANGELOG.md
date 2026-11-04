@@ -16,6 +16,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **ThetaDataDx P1 phase-exit re-review**
+  ([record](docs/research/thetadatadx-review.md)).
+  - No changes since the reviewed revision, and every watch item is
+    unchanged.
+  - New watch item, market-data sessions: their README says separately
+    logged-in market-data clients coexist. That conflicts with our P1
+    observation, so the one-session explanation in the P1 exit record is
+    marked unconfirmed.
+  - Each improvement now has its P1 status.
+
 - **P1 exit results** ([record](docs/performance/p1-exit-results.md)).
   - **a, met:** all 10 FREE-entitled endpoints, with values equal to the
     legacy decoder.
