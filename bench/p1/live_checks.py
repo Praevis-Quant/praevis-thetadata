@@ -48,9 +48,11 @@ def main() -> int:
             table = getattr(client, method)(**params)
         except pt.QueryFailed as error:
             kind = error.args[0] if error.args else "unknown"
-            results.append({"method": method, "status": kind, "ns": time.perf_counter_ns() - start})
+            code = error.args[2] if len(error.args) > 2 else None
+            results.append({"method": method, "status": kind, "grpc_code": code,
+                            "ns": time.perf_counter_ns() - start})
             print(f"{method:<28} {kind}", flush=True)
-            if kind == "remote" and any(s in str(error) for s in ("ResourceExhausted", "Unavailable")):
+            if code in ("ResourceExhausted", "Unavailable"):
                 break
             continue
         elapsed = time.perf_counter_ns() - start

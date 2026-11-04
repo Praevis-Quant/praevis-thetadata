@@ -32,16 +32,25 @@ class Pacer:
 def peak_rss_bytes() -> int | None:
     """Peak resident memory of this process so far (indicative)."""
     if sys.platform == "win32":
+        from ctypes import wintypes
+
         class Counters(ctypes.Structure):
             _fields_ = [("cb", ctypes.c_ulong), ("PageFaultCount", ctypes.c_ulong),
                         ("PeakWorkingSetSize", ctypes.c_size_t), ("WorkingSetSize", ctypes.c_size_t),
                         ("QuotaPeakPagedPoolUsage", ctypes.c_size_t), ("QuotaPagedPoolUsage", ctypes.c_size_t),
                         ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t), ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
                         ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t)]
+        # Declared types matter: the pseudo-handle from GetCurrentProcess is a
+        # 64-bit HANDLE (-1); passed as a default 32-bit int it is invalid.
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        psapi = ctypes.WinDLL("psapi", use_last_error=True)
+        kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+        kernel32.GetCurrentProcess.argtypes = []
+        psapi.GetProcessMemoryInfo.restype = wintypes.BOOL
+        psapi.GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(Counters), wintypes.DWORD]
         counters = Counters()
         counters.cb = ctypes.sizeof(Counters)
-        process = ctypes.windll.kernel32.GetCurrentProcess()
-        if ctypes.windll.psapi.GetProcessMemoryInfo(process, ctypes.byref(counters), counters.cb):
+        if psapi.GetProcessMemoryInfo(kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb):
             return int(counters.PeakWorkingSetSize)
         return None
     import resource

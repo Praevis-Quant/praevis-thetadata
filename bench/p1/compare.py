@@ -35,6 +35,7 @@ def e2e(clients: dict, method: str, request: dict, pacer: Pacer) -> dict:
             frame = getattr(client, method)(**request)
         except pt.QueryFailed as error:
             out[kind] = {"status": error.args[0] if error.args else "unknown",
+                         "grpc_code": error.args[2] if len(error.args) > 2 else None,
                          "ns": time.perf_counter_ns() - start}
             continue
         out[kind] = {"status": "OK", "ns": time.perf_counter_ns() - start,
@@ -82,8 +83,11 @@ def main() -> int:
               "settings": {k: str(v) for k, v in vars(args).items()},
               "results": [], "convert": [], "stopped": None}
     if not args.skip_network:
-        clients = {"polars": pt.Client.from_env(dataframe_type="polars"),
-                   "pandas": pt.Client.from_env(dataframe_type="pandas")}
+        # One login for both, like the baseline's existing_authorized_client:
+        # a second login would end the first client's session.
+        polars_client = pt.Client.from_env(dataframe_type="polars")
+        clients = {"polars": polars_client,
+                   "pandas": pt.Client(existing_authorized_client=polars_client, dataframe_type="pandas")}
         pacer = Pacer(args.min_interval)
         for round_no in range(args.rounds):
             for workload in selected:

@@ -16,6 +16,19 @@ per minute).
 | `compare.py` | W1/W2 through the Python package, like the [vendor baseline](../python-baseline/README.md): end to end (Polars, pandas) and conversion only from the baseline's captures | b, c (Python), d |
 | `columnar_benchmark --replay <captures> --loopback` | The captures through the full Rust path: gRPC on localhost, `query()` and Parquet | c |
 
+**One session per account.** Each login ends the account's earlier session,
+so the runners log in once. `compare.py` shares one session between its Polars
+and pandas clients (`existing_authorized_client`), as the baseline does.
+Failures record the gRPC code (`grpc_code`).
+
+**Loopback figures are not client cost.** `--loopback` includes the
+in-process server and the gRPC transport, which dominate on Windows. The
+`transport-drain` engine sends the same messages and receives them without
+decoding. Each engine's `client_us_per_row`, its median minus the drain, is
+the wall time the client adds on top of the transport. Decoding overlaps
+with receiving, so this is not CPU time; CPU per row is the decoder-only
+replay (`--replay` without `--loopback`).
+
 `../python-baseline/baseline.py` now also records `peak_rss_bytes`. For
 criterion d, run each workload in its own process for both clients.
 

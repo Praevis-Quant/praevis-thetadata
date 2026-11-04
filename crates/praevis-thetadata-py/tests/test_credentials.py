@@ -75,6 +75,16 @@ class CredentialOrder(unittest.TestCase):
         with self.assertRaises(pt.ThetaDataError):
             pt.Client(email="a@example.invalid")  # a half pair is an error
 
+    def test_an_existing_client_shares_its_session_without_logging_in(self):
+        first = pt.Client(api_key="k")
+        second = pt.Client(existing_authorized_client=first, dataframe_type="pandas")
+        self.assertIs(second._native, first._native)
+        self.assertEqual(second.dataframe_type, "pandas")
+        with self.assertRaises(ValueError):
+            pt.Client(existing_authorized_client=first, api_key="k")
+        with self.assertRaises(ValueError):
+            pt.Client(existing_authorized_client=first, concurrency=3)
+
     def test_options_reach_the_native_client(self):
         self.assertEqual(
             self.chosen(api_key="k", concurrency=3, per_minute=40),

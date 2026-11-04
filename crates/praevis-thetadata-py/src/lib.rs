@@ -37,7 +37,7 @@ create_exception!(
     _native,
     QueryFailed,
     ThetaDataError,
-    "A query failed; args: (kind, detail)."
+    "A query failed; args: (kind, detail, grpc_code or None)."
 );
 create_exception!(
     _native,
@@ -75,8 +75,14 @@ fn kind(error: QueryError) -> &'static str {
         QueryError::Resource(_) => "resource",
     }
 }
+/// `QueryFailed(kind, detail, grpc_code)`: the gRPC code name (for example
+/// `"Unauthenticated"`) for remote statuses, otherwise `None`.
 fn query_error(error: QueryError) -> PyErr {
-    QueryFailed::new_err((kind(error), error.to_string()))
+    let code = match error {
+        QueryError::Remote(code) => Some(format!("{code:?}")),
+        _ => None,
+    };
+    QueryFailed::new_err((kind(error), error.to_string(), code))
 }
 fn output_error(error: ParquetOutputError) -> PyErr {
     match error {

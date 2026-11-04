@@ -189,6 +189,11 @@ struct Result_ {
     /// Loopback only: median time from the request to the first batch.
     #[serde(skip_serializing_if = "Option::is_none")]
     first_batch_ms: Option<f64>,
+    /// Loopback only: this engine's median minus the transport drain's, the
+    /// client's own cost per row once the loopback server and gRPC transport
+    /// on this machine are taken out.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    client_us_per_row: Option<f64>,
     /// Replay only: the engine's first decode error, if it failed.
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
@@ -373,16 +378,28 @@ fn loopback(name: &str, messages: Vec<ResponseData>, samples: usize) -> Vec<Resu
         .unwrap();
         let day = chrono_day();
         let mut results = Vec::new();
+        let mut drain: Option<f64> = None;
         let out =
             std::env::temp_dir().join(format!("praevis-bench-{}.parquet", std::process::id()));
-        for engine in ["stock-eod-numeric", "query-arrow", "query-parquet"] {
+        for engine in ["transport-drain", "stock-eod-numeric", "query-arrow", "query-parquet"] {
             let mut per_row = Vec::new();
             let mut first = Vec::new();
             for _ in 0..samples + 1 {
                 let started = Instant::now();
                 let mut first_at = None;
                 let mut rows = 0;
-                if engine == "query-parquet" {
+                if engine == "transport-drain" {
+                    // The same request and transport, no decoding: what the
+                    // loopback server and gRPC cost on this machine. Engines'
+                    // client-side cost is their figure minus this one.
+                    let request = endpoints::StockHistoryEod::new("SYNTHETIC", day, day);
+                    let mut stream = client.stream_raw(&request).await.unwrap();
+                    while let Some(message) = stream.message().await.unwrap() {
+                        first_at.get_or_insert_with(|| started.elapsed());
+                        black_box(message);
+                        rows += 1;
+                    }
+                } else if engine == "query-parquet" {
                     // Request to closed file: decoding plus ZSTD level-1 Parquet.
                     let request = endpoints::StockHistoryEod::new("SYNTHETIC", day, day);
                     let options = praevis_thetadata_client::ParquetOptions {
@@ -426,8 +443,13 @@ fn loopback(name: &str, messages: Vec<ResponseData>, samples: usize) -> Vec<Resu
             let first_text = first_ms.map_or("to a closed file".into(), |ms| {
                 format!("first batch {ms:.2} ms")
             });
+            if engine == "transport-drain" {
+                drain = Some(median);
+            }
+            let client = drain.filter(|_| engine != "transport-drain").map(|d| median - d);
+            let client_text = client.map_or(String::new(), |c| format!(", client {c:.3} µs/row"));
             println!(
-                "{name} {engine:<18} {median:7.3} µs/row (min {min:.3}, max {max:.3}), {first_text}"
+                "{name} {engine:<18} {median:7.3} µs/row (min {min:.3}, max {max:.3}), {first_text}{client_text}"
             );
             results.push(Result_ {
                 workload: name.to_owned(),
@@ -438,6 +460,7 @@ fn loopback(name: &str, messages: Vec<ResponseData>, samples: usize) -> Vec<Resu
                 allocations_per_message: f64::NAN,
                 replay: None,
                 first_batch_ms: first_ms,
+                client_us_per_row: client,
                 error: None,
             });
         }
@@ -613,6 +636,7 @@ fn main() -> Result<(), Error> {
                 allocations_per_message: per_message,
                 replay: cli.replay.is_some().then(|| shape.clone()),
                 first_batch_ms: None,
+                client_us_per_row: None,
                 error: checks[index].as_ref().err().cloned(),
             });
         }

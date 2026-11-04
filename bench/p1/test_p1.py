@@ -46,7 +46,8 @@ class Runners(unittest.TestCase):
             rows = {c["file"]: (c["polars"]["rows"], c["pandas"]["rows"], c["decode"]["rows"]) for c in report["convert"]}
             self.assertEqual(rows, {"W1-0.bin": (252, 252, 252), "W2-0.bin": (40, 40, 40)})
             self.assertEqual(report["results"], [])
-            self.assertTrue(report["peak_rss_bytes"] is None or report["peak_rss_bytes"] > 0)
+            # Measured on every supported platform (Windows CI checks the ctypes path).
+            self.assertGreater(report["peak_rss_bytes"], 1 << 20)
             # Run ids are never overwritten.
             with mock.patch.object(sys, "argv", argv):
                 self.assertEqual(compare.main(), 2)

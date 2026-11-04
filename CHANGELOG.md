@@ -26,6 +26,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     baseline: end to end with Polars and pandas, plus conversion only from the
     baseline's captures, through the new native `_decode_frames`.
   - Peak memory is recorded by both `compare.py` and, now, `baseline.py`.
+    The Windows reading uses declared handle types.
+  - The loopback benchmark gains a `transport-drain` engine and a per-engine
+    `client_us_per_row` (wall time added on top of the transport).
+  - **One session per account.** A second login ends the first session, so
+    the Python `Client` gains the vendor's `existing_authorized_client` to
+    share one. `QueryFailed` now carries the gRPC code name.
   - CI runs the runners' offline tests.
 - **Python vendor-named methods and credentials** (P1 PR 6b).
   - All 81 vendor `ThetaClient` methods are generated with the vendor 1.0.17
