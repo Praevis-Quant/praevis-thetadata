@@ -113,6 +113,10 @@ The server's encoding and sending cost is in both.
 | W1-shaped | 17.23 µs/row | **5.90 µs/row** | 1.17 / 1.10 ms |
 | W2-shaped | 18.12 µs/row | **6.14 µs/row** | 1.33 / 1.25 ms |
 
+With Parquet output (PR 5, `to_parquet`, ZSTD level 1, rows to a closed
+file), the same run measured 6.08 µs/row (W1) and 6.53 µs/row (W2), against
+5.73 / 5.98 µs/row for `query()` alone. Writing adds about 0.4-0.6 µs/row.
+
 `query()` takes about a third of the time per row, and its first batch is not
 later. The existing stock EOD stream is unchanged by PR 4a, so the
 [benchmark policy](benchmark-policy.md)'s before/after gating of an existing
@@ -127,5 +131,5 @@ cargo run --release --locked -p praevis-thetadata-client --example columnar_benc
 cargo run --release --locked -p praevis-thetadata-client --example columnar_benchmark -- \
   --rows 20000 --samples 7 [--frames streaming]
 cargo run --release --locked -p praevis-thetadata-client --example columnar_benchmark -- \
-  --loopback --rows 20000 --samples 5
+  --loopback --rows 20000 --samples 5    # also times Parquet output
 ```

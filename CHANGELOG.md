@@ -16,6 +16,23 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Parquet output** (P1 PR 5).
+  - `QueryStream::to_parquet` and `JobStream::to_parquet` (client feature
+    `parquet`, on by default) stream batches into one file, through
+    `praevis_thetadata_arrow::ParquetSink`.
+  - The file is written as `<name>.partial` and renamed into place only when
+    the whole stream is written. A failed or dropped query leaves nothing at
+    the target, and an existing file is not replaced unless `overwrite` is set.
+  - ZSTD level 1 by default (or uncompressed), in row groups of up to 131,072
+    rows. The exact types round-trip: `Decimal128(38, 10)`, millisecond
+    timestamps with their zone, `Utf8`, `Int64` and `Boolean`.
+  - Columns still `Null` are held back until typed, up to 64 MiB, so the file
+    gets the final types. A column written as `Null` that is typed later is a
+    `Schema` error.
+  - Writing runs on the blocking pool. It adds about 0.4-0.6 µs/row on the
+    loopback benchmark (aarch64).
+  - New dependency: `parquet` 60.1, with only its `arrow` and `zstd` features
+    (arrow-rs, approved with arrow and pyo3). It adds 8 crates.
 - **Planner and scheduler** (P1 PR 4b).
   - `SchedulerPolicy`, set with `ThetaClient::with_scheduler` and shared by
     clones of the client, admits every `query()` request.
