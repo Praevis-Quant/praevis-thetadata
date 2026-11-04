@@ -20,7 +20,11 @@
 //!   endpoint family through the generated typed requests, strictly sequential
 //!   and paced, reading at most a few messages before dropping the stream.
 //!   Per-endpoint refusals are recorded and the run continues; it stops at the
-//!   first `RESOURCE_EXHAUSTED` or `UNAVAILABLE`. No concurrency.
+//!   first `RESOURCE_EXHAUSTED` or `UNAVAILABLE`. No concurrency. A one-time,
+//!   user-approved exception to "never sweep endpoints" (CLAUDE.md); re-running
+//!   it needs approval again. The private report keeps truncated vendor status
+//!   text for a person to classify locally; the code never interprets it, and
+//!   only classifications and gRPC codes are committed.
 //!
 //! Output is timings, counts, sizes and status codes only in
 //! `artifacts/p0/<run-id>.json`: no row values, account email, subscription
@@ -641,6 +645,7 @@ struct Probe {
     /// `OK`, a gRPC code name, or `ClientTimeout`.
     status: String,
     /// The server's status text, printable ASCII, at most 160 characters.
+    /// Private report only: classified by a person, never committed or sent.
     status_text: Option<String>,
     headers_ns: Option<u128>,
     first_message_ns: Option<u128>,

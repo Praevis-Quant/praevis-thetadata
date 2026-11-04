@@ -60,6 +60,10 @@ Preserve numeric gRPC/HTTP codes and safe local categories; do not parse vendor
 error text to identify a tier or choose a retry/upgrade action. Collect private
 response envelopes when present. For denied calls, capture only safe status,
 phase, query and provenance, with no account payload, error text or request token.
+The one-time FREE entitlement map is the single approved exception (see
+`CLAUDE.md`): its private, ignored report keeps truncated error text for a
+person to classify locally, and only the classification and gRPC code are
+committed.
 Use the existing independent mock error matrix for repeatable all-code coverage.
 
 ## Execution and release policy

@@ -69,7 +69,31 @@ class OutputTests(unittest.TestCase):
     def test_status_entries_must_name_real_rpcs(self):
         with tempfile.TemporaryDirectory() as directory:
             status = Path(directory) / "status.json"
-            status.write_text(json.dumps({"GetNoSuchRpc": {"live": "x"}}))
+            status.write_text(json.dumps({"GetNoSuchRpc": {"decoder": "x"}}))
+            with self.assertRaises(gen.GenerationError):
+                gen.generate(status_path=status)
+
+    def test_free_results_are_codes_and_classifications_only(self):
+        ok = {"class": "tier-denied", "code": "PermissionDenied", "tier": "VALUE", "run": "p1-ent-001"}
+        with tempfile.TemporaryDirectory() as directory:
+            status = Path(directory) / "status.json"
+            status.write_text(json.dumps({"GetStockHistoryTrade": {"free": ok}}))
+            _, doc = gen.generate(status_path=status)
+            self.assertIn("| tier-denied: VALUE (`PermissionDenied`, p1-ent-001) |", doc)
+            bad = [
+                {**ok, "text": "vendor message"},             # extra field
+                {**ok, "class": "requires a VALUE plan"},      # free text as class
+                {**ok, "code": "permission denied"},           # not a gRPC code name
+                {**ok, "tier": "Value subscription"},          # not a tier name
+                {**ok, "class": "entitled", "code": "OK"},     # tier only on tier-denied
+                {"class": "entitled", "code": "OK"},           # missing run
+                {**ok, "run": "../x y"},                       # invalid run id
+            ]
+            for entry in bad:
+                status.write_text(json.dumps({"GetStockHistoryTrade": {"free": entry}}))
+                with self.subTest(entry=entry), self.assertRaises(gen.GenerationError):
+                    gen.generate(status_path=status)
+            status.write_text(json.dumps({"GetStockHistoryTrade": {"live": "vendor text"}}))
             with self.assertRaises(gen.GenerationError):
                 gen.generate(status_path=status)
 

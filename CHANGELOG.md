@@ -23,6 +23,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   counts and bytes, never row values. Per-endpoint refusals are recorded and
   the run continues; `RESOURCE_EXHAUSTED` or `UNAVAILABLE` ends it. CI now runs
   the live runner's offline loopback tests.
+  - It is a one-time, user-approved exception to "never sweep endpoints"
+    (`CLAUDE.md`). Re-running it, for example after a tier upgrade, needs
+    approval again.
+  - Vendor error text stays in the private, ignored report. Committed results
+    in `docs/endpoints/status.json` are a classification (entitled,
+    tier-denied, invalid-argument, no-data, other) plus the gRPC code. The
+    generator rejects any other field or value.
 - **Typed requests for all 100 RPCs**, generated from the pinned vendor 1.0.17
   inventory by `tools/generate_endpoints.py` (P1 PR 1). Module
   `praevis_thetadata_client::endpoints`:
