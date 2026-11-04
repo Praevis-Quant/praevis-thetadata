@@ -15,3 +15,5 @@ __pycache__/
 /bench/python-baseline/__pycache__/
 /crates/praevis-thetadata-py/python/praevis_thetadata/*.so
 /crates/praevis-thetadata-py/python/praevis_thetadata/*.pyd
+/.venv-p1/
+/dist/

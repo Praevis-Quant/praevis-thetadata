@@ -16,6 +16,33 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **P1 exit results** ([record](docs/performance/p1-exit-results.md)).
+  - **a, met:** all 10 FREE-entitled endpoints, with values equal to the
+    legacy decoder.
+  - **b, met on medians, within the service's noise.**
+  - **c, met for the Rust decoder** (15.9× / 10.4× less CPU than Python with
+    Polars). Through the Python package into Polars it is 9.0× / 9.2×.
+  - **d, not met:** peak memory is 0.97× / 0.79× the vendor's, with an
+    incremental metric proposed for a separate decision.
+  - **e, met.**
+  - **Finding:** one active session per account.
+- **P1 exit runners** (P1 PR 7, manual only; `bench/p1/`).
+  - `live_p0 checks` runs the 10 FREE-entitled endpoints through `query()`.
+    Each is compared value by value with the legacy decoder on a second
+    request; the report holds statuses, counts and schemas, never values.
+  - `live_checks.py` runs the same endpoints through the Python package's
+    vendor-named methods.
+  - `compare.py` measures W1 and W2 through the Python package like the vendor
+    baseline: end to end with Polars and pandas, plus conversion only from the
+    baseline's captures, through the new native `_decode_frames`.
+  - Peak memory is recorded by both `compare.py` and, now, `baseline.py`.
+    The Windows reading uses declared handle types.
+  - The loopback benchmark gains a `transport-drain` engine and a per-engine
+    `client_us_per_row` (wall time added on top of the transport).
+  - **One session per account.** A second login ends the first session, so
+    the Python `Client` gains the vendor's `existing_authorized_client` to
+    share one. `QueryFailed` now carries the gRPC code name.
+  - CI runs the runners' offline tests.
 - **Python vendor-named methods and credentials** (P1 PR 6b).
   - All 81 vendor `ThetaClient` methods are generated with the vendor 1.0.17
     signatures (names, order and defaults), plus a keyword-only `plan`. Each

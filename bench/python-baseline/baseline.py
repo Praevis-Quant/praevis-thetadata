@@ -33,6 +33,10 @@ from pathlib import Path
 
 import log_guard
 
+# Peak resident memory, read the same way as the P1 runners (criterion d).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "p1"))
+from common import peak_rss_bytes  # noqa: E402
+
 # Before anything can import thetadata: its auth logging includes the session
 # token (research: "Logging hazard"). See log_guard.py.
 log_guard.install()
@@ -251,6 +255,8 @@ def main() -> int:
     stub = endpoints_pb2_grpc.BetaThetaTerminalStub(
         grpc.secure_channel(args.target, grpc.ssl_channel_credentials()))
     pacer = Pacer(args.min_interval)
+    # After imports and login, before any request (see bench/p1/compare.py).
+    import_peak_rss = peak_rss_bytes()
 
     report = {
         "run_id": run_id,
@@ -289,6 +295,8 @@ def main() -> int:
         report["stopped"] = str(stop)
         print(f"Stopped on {stop}: the vendor signalled a limit or an error. Results so far are saved.",
               file=sys.stderr)
+    report["peak_rss_bytes"] = peak_rss_bytes()
+    report["import_peak_rss_bytes"] = import_peak_rss
     text = json.dumps(report, indent=2)
     # The report holds timings and counts only. Refuse to write it if the
     # account email or the session token appear anywhere in it.

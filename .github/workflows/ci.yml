@@ -107,6 +107,8 @@ jobs:
         run: python -m pip install --no-index --find-links dist praevis-thetadata
       - name: Offline tests and D.2 gates
         run: python -m unittest discover -s crates/praevis-thetadata-py/tests -v
+      - name: P1 exit runners, offline
+        run: python -m unittest discover -s bench/p1 -p 'test_*.py' -v
 
   packaging-rehearsal:
     # Builds the five archives at the workspace version, stages them in a local file:// registry (wave 1:

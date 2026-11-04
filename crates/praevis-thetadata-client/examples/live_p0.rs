@@ -75,6 +75,21 @@ enum Command {
     Limits(LimitsArgs),
     /// The FREE entitlement map: one paced request per endpoint family.
     Entitlements(EntitlementsArgs),
+    /// P1 exit criterion a: the FREE-entitled endpoints through query(),
+    /// compared value by value with the legacy decoder on a second request.
+    Checks(ChecksArgs),
+}
+
+#[derive(Args)]
+struct ChecksArgs {
+    #[command(flatten)]
+    common: Common,
+    /// Historical trading day inside the FREE window.
+    #[arg(long, default_value = "2024-06-14")]
+    date: String,
+    /// An option expiration listed on `--date`.
+    #[arg(long, default_value = "2024-06-21")]
+    expiration: String,
 }
 
 #[derive(Args)]
@@ -882,6 +897,215 @@ async fn entitlements(
     Ok(())
 }
 
+/// A comparable value: prices as Decimal128(38, 10) unscaled, timestamps as
+/// the legacy RFC 3339 text. Only equality is reported, never a value.
+#[derive(Debug, PartialEq)]
+enum Exact {
+    Null,
+    Text(String),
+    Integer(i64),
+    Price(i128),
+    Boolean(bool),
+    Timestamp(String),
+}
+
+fn legacy_rows(table: &praevis_thetadata_core::Table) -> Vec<Vec<Exact>> {
+    use praevis_thetadata_core::Value;
+    table
+        .rows
+        .iter()
+        .map(|row| {
+            row.iter()
+                .map(|value| match value {
+                    Value::Null => Exact::Null,
+                    Value::Text(v) => Exact::Text(v.clone()),
+                    Value::Integer(v) => Exact::Integer(*v),
+                    Value::Boolean(v) => Exact::Boolean(*v),
+                    Value::Price(p) => {
+                        Exact::Price(i128::from(p.mantissa) * 10i128.pow((p.exponent + 10) as u32))
+                    }
+                    Value::Timestamp(v) => Exact::Timestamp(v.clone()),
+                })
+                .collect()
+        })
+        .collect()
+}
+
+fn arrow_rows(batches: &[praevis_thetadata_client::arrow_array::RecordBatch]) -> Vec<Vec<Exact>> {
+    use praevis_thetadata_client::arrow_array::Array;
+    use praevis_thetadata_client::arrow_array::cast::AsArray;
+    use praevis_thetadata_client::arrow_array::types::{
+        Decimal128Type, Int64Type, TimestampMillisecondType,
+    };
+    use praevis_thetadata_client::arrow_schema::DataType;
+    let mut out = Vec::new();
+    for batch in batches {
+        for row in 0..batch.num_rows() {
+            out.push(
+                batch
+                    .columns()
+                    .iter()
+                    .map(|column| {
+                        if column.data_type() == &DataType::Null || column.is_null(row) {
+                            return Exact::Null;
+                        }
+                        match column.data_type() {
+                            DataType::Utf8 => {
+                                Exact::Text(column.as_string::<i32>().value(row).into())
+                            }
+                            DataType::Int64 => {
+                                Exact::Integer(column.as_primitive::<Int64Type>().value(row))
+                            }
+                            DataType::Boolean => Exact::Boolean(column.as_boolean().value(row)),
+                            DataType::Decimal128(_, _) => {
+                                Exact::Price(column.as_primitive::<Decimal128Type>().value(row))
+                            }
+                            DataType::Timestamp(_, tz) => {
+                                let ms =
+                                    column.as_primitive::<TimestampMillisecondType>().value(row);
+                                let zone = i32::from(tz.as_deref() == Some("UTC"));
+                                Exact::Timestamp(
+                                    praevis_thetadata_core::timestamp(ms as u64, zone)
+                                        .unwrap_or_default(),
+                                )
+                            }
+                            other => Exact::Text(format!("unexpected type {other:?}")),
+                        }
+                    })
+                    .collect(),
+            );
+        }
+    }
+    out
+}
+
+/// One endpoint: query() (collected), then the raw stream through the legacy
+/// decoder, compared exactly. Statuses, counts, column names and Arrow types
+/// only; never a value.
+async fn check<E>(client: &ThetaClient, request: E, pacer: &mut Pacer) -> serde_json::Value
+where
+    E: Endpoint + Clone + Send + Sync + 'static,
+{
+    pacer.wait().await;
+    let started = Instant::now();
+    let mut first_batch_ns = None;
+    let collected = async {
+        let mut stream = client.query(&request).await?;
+        let mut batches = Vec::new();
+        while let Some(batch) = stream.next_batch().await? {
+            first_batch_ns.get_or_insert(started.elapsed().as_nanos());
+            batches.push(batch);
+        }
+        Ok::<_, praevis_thetadata_client::QueryError>(praevis_thetadata_client::unify(batches))
+    }
+    .await;
+    let total_ns = started.elapsed().as_nanos();
+    pacer.wait().await;
+    let legacy = async {
+        let mut stream = client.stream_raw(&request).await?;
+        let mut tables = Vec::new();
+        while let Some(message) = stream.message().await? {
+            tables.push(
+                decode::decode(message, LIMIT)
+                    .map_err(|_| tonic::Status::data_loss("legacy decode"))?,
+            );
+        }
+        Ok::<_, tonic::Status>(tables)
+    }
+    .await;
+    let mut out = serde_json::json!({
+        "rpc": E::RPC,
+        "python_name": E::PYTHON_NAME,
+        "first_batch_ns": first_batch_ns,
+        "total_ns": total_ns,
+    });
+    match &collected {
+        Ok(batches) => {
+            let schema = batches.first().map(|b| b.schema());
+            out["query_status"] = "OK".into();
+            out["rows"] = batches.iter().map(|b| b.num_rows()).sum::<usize>().into();
+            out["columns"] = schema
+                .as_ref()
+                .map(|s| {
+                    s.fields()
+                        .iter()
+                        .map(|f| serde_json::json!([f.name(), format!("{}", f.data_type())]))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default()
+                .into();
+        }
+        Err(error) => out["query_status"] = format!("{error:?}").into(),
+    }
+    match (&collected, &legacy) {
+        (Ok(batches), Ok(tables)) => {
+            let ours = arrow_rows(batches);
+            let theirs: Vec<Vec<Exact>> = tables.iter().flat_map(legacy_rows).collect();
+            let differing = ours.iter().zip(&theirs).filter(|(a, b)| a != b).count();
+            out["legacy_status"] = "OK".into();
+            out["legacy_rows"] = theirs.len().into();
+            out["values_equal"] = (ours == theirs).into();
+            out["differing_rows"] = (differing + ours.len().abs_diff(theirs.len())).into();
+        }
+        (_, Err(status)) => out["legacy_status"] = status_name(status.code()).into(),
+        (Err(_), Ok(_)) => out["legacy_status"] = "OK".into(),
+    }
+    let label = E::PYTHON_NAME.unwrap_or(E::RPC);
+    eprintln!(
+        "{label:<32} query {:<12} legacy {:<10} rows {:<6} equal {}",
+        out["query_status"].as_str().unwrap_or("?"),
+        out["legacy_status"].as_str().unwrap_or("?"),
+        out["rows"],
+        out["values_equal"]
+    );
+    out
+}
+
+/// The 10 endpoints the FREE entitlement map found entitled (p1-entitlements-001).
+async fn checks(
+    options: &ChecksArgs,
+    client: &ThetaClient,
+    report: &mut Report,
+) -> Result<(), Stop> {
+    let day = date(&options.date);
+    let exp = date(&options.expiration);
+    let mut pacer = Pacer {
+        interval: Duration::from_secs_f64(options.common.min_interval),
+        last: None,
+    };
+    let p = &mut pacer;
+    // A limit or service-wide signal ends the run at once, like the other probes.
+    let stop = |result: &serde_json::Value| -> Result<(), Stop> {
+        for key in ["query_status", "legacy_status"] {
+            if let Some(status) = result[key].as_str()
+                && (status.contains("ResourceExhausted") || status.contains("Unavailable"))
+            {
+                return Err(Stop(status.to_owned()));
+            }
+        }
+        Ok(())
+    };
+    macro_rules! run {
+        ($request:expr) => {{
+            let result = check(client, $request, p).await;
+            let outcome = stop(&result);
+            report.results.push(result);
+            outcome?;
+        }};
+    }
+    run!(typed::StockHistoryEod::new("AAPL", day, day));
+    run!(typed::OptionHistoryEod::new(day, day, "SPY", exp));
+    run!(typed::StockListSymbols::new());
+    run!(typed::StockListDates::new("trade", "AAPL"));
+    run!(typed::OptionListSymbols::new());
+    run!(typed::OptionListExpirations::new("SPY"));
+    run!(typed::OptionListStrikes::new("SPY", exp));
+    run!(typed::IndexListSymbols::new());
+    run!(typed::IndexHistoryEod::new("SPX", day, day));
+    run!(typed::InterestRateHistoryEod::new("SOFR", day, day));
+    Ok(())
+}
+
 fn output_path(run_id: &str) -> Result<PathBuf, &'static str> {
     if run_id.is_empty()
         || !run_id
@@ -906,6 +1130,7 @@ async fn main() -> std::process::ExitCode {
         Command::Breakdown(options) => (&options.common, "breakdown"),
         Command::Limits(options) => (&options.common, "limits"),
         Command::Entitlements(options) => (&options.common, "entitlements"),
+        Command::Checks(options) => (&options.common, "checks"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -961,6 +1186,7 @@ async fn main() -> std::process::ExitCode {
         Command::Breakdown(options) => breakdown(options, &client, &mut report).await,
         Command::Limits(options) => limits(options, &client, &mut report).await,
         Command::Entitlements(options) => entitlements(options, &client, &mut report).await,
+        Command::Checks(options) => checks(options, &client, &mut report).await,
     };
     if let Err(Stop(reason)) = &result {
         report.stopped = Some(reason.clone());
@@ -1192,6 +1418,49 @@ mod tests {
         }
         assert_eq!(report.results.len(), 1);
         assert_eq!(report.results[0]["status_text"], "synthetic");
+    }
+
+    #[tokio::test]
+    async fn checks_compare_query_with_the_legacy_decoder() {
+        let (wire_table, _) = fixture::table(fixture::Shape::Prices, 3);
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![
+                Ok(fixture::response(&wire_table, true)),
+                Ok(fixture::response(&wire_table, false)),
+            ],
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let mut report = Report::default();
+        let options = ChecksArgs {
+            common: entitlement_args(&[], 5).common,
+            date: "2024-06-14".into(),
+            expiration: "2024-06-21".into(),
+        };
+        checks(&options, &client, &mut report).await.unwrap();
+        assert_eq!(report.results.len(), 10);
+        // The fixture serves stock EOD only: equal exact values, 6 rows.
+        let first = &report.results[0];
+        assert_eq!(first["rpc"], "GetStockHistoryEod");
+        assert_eq!(
+            (
+                first["query_status"].as_str(),
+                first["legacy_status"].as_str()
+            ),
+            (Some("OK"), Some("OK"))
+        );
+        assert_eq!(
+            (first["rows"].as_u64(), first["legacy_rows"].as_u64()),
+            (Some(6), Some(6))
+        );
+        assert_eq!(first["values_equal"], true);
+        assert_eq!(first["columns"][0][1], "Decimal128(38, 10)");
+        // Everything else is refused by the fixture and recorded, not fatal.
+        assert!(
+            report.results[1..]
+                .iter()
+                .all(|r| r["legacy_status"] == "Unimplemented")
+        );
     }
 
     #[test]

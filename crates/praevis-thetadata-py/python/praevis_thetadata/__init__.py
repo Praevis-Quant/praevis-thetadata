@@ -143,6 +143,13 @@ class Client(VendorMethods):
     ``dataframe_type`` (``"polars"``, the vendor default, ``"pandas"`` or
     ``"arrow"``) is what the vendor-named methods return. The scheduler
     defaults to FREE's documented limits (1 concurrent request, 20 per minute).
+
+    **One session per account.** Each login starts a new session, and the
+    service ends the account's earlier session: a second ``Client`` that logs
+    in (or a CLI or vendor-package login) makes the first one's requests fail.
+    Log in once and share it: ``Client(existing_authorized_client=client,
+    dataframe_type="pandas")`` reuses ``client``'s session, connection and
+    scheduler, as in the vendor package.
     """
 
     __slots__ = ("_native", "_dataframe_type")
@@ -154,13 +161,20 @@ class Client(VendorMethods):
         email: str | None = None,
         password: str | None = None,
         creds_file: str | os.PathLike[str] | None = None,
+        existing_authorized_client: "Client | None" = None,
         dataframe_type: str = "polars",
         **options: Any,
     ) -> None:
         if dataframe_type not in _DATAFRAME_TYPES:
             raise ValueError(f"dataframe_type: one of {', '.join(_DATAFRAME_TYPES)}")
-        credentials = _credentials(creds_file, api_key, email, password)
-        self._native = _native.Client(**credentials, **options)
+        if existing_authorized_client is not None:
+            if any(v is not None for v in (api_key, email, password, creds_file)) or options:
+                raise ValueError("existing_authorized_client shares a session: give no credentials or options")
+            # Same session, connection and scheduler; no second login.
+            self._native = existing_authorized_client._native
+        else:
+            credentials = _credentials(creds_file, api_key, email, password)
+            self._native = _native.Client(**credentials, **options)
         self._dataframe_type = dataframe_type
 
     @classmethod
