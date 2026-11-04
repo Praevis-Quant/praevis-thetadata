@@ -16,6 +16,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Typed requests for all 100 RPCs**, generated from the pinned vendor 1.0.17
+  inventory by `tools/generate_endpoints.py` (P1 PR 1). Module
+  `praevis_thetadata_client::endpoints`:
+  - 81 requests mirror the vendor wrappers exactly: their defaults, date and
+    time formatting, contract specs, and truthiness guards. An explicit
+    `false`, `0` or `""` is not sent, as in Python.
+  - The 19 descriptor-only RPCs (futures, corporate actions) are generated
+    from their request messages and marked unstable.
+  - `ThetaClient::stream_raw` dispatches any of them and returns the raw
+    response stream.
+
+  A generated coverage table (`docs/endpoints/coverage.md`) replaces
+  per-clause matrices; CI fails if the generated files are stale.
 - The P1 design, **approved 2026-11-04** with every recommendation ([docs/architecture/p1-design.md](docs/architecture/p1-design.md)):
   - generated typed requests for all RPCs;
   - an exact Arrow columnar decoder (Decimal128(38,10), millisecond
