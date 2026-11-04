@@ -11,6 +11,11 @@
 //!
 //! The P1 exit criterion (c) is measured separately, by replaying the private
 //! P0 captures on the maintainer's machine.
+//!
+//! Timings use the system allocator directly; allocation counts come from a
+//! separate counted run. `--inputs prebuilt --timing-allocator counting`
+//! reproduces the first PR 3 method, which held every sample's input copies
+//! at once and counted allocations while timing, for comparison.
 use clap::Parser;
 use praevis_thetadata_arrow::{ColumnarDecoder, Limits};
 use praevis_thetadata_proto::beta_endpoints as api;
@@ -20,7 +25,13 @@ use praevis_thetadata_proto::endpoints::{
 };
 use prost::Message;
 use serde::Serialize;
-use std::{hint::black_box, path::PathBuf, time::Instant};
+use std::{
+    alloc::{GlobalAlloc, Layout, System},
+    hint::black_box,
+    path::PathBuf,
+    sync::atomic::{AtomicBool, Ordering::Relaxed},
+    time::Instant,
+};
 
 #[path = "benchmark_support/allocation.rs"]
 mod allocation;
@@ -38,8 +49,69 @@ mod eod {
 }
 use praevis_thetadata_client::Error;
 
+/// Routes to the counting allocator only while `COUNTING` is set, so timed
+/// runs use the system allocator with no accounting. Both paths allocate
+/// from `System`, so memory may be freed on either.
+static COUNTING: AtomicBool = AtomicBool::new(false);
+struct Switch;
+// SAFETY: every call is forwarded unchanged to `System`, directly or through
+// the counting allocator, which itself forwards to `System`.
+unsafe impl GlobalAlloc for Switch {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        if COUNTING.load(Relaxed) {
+            unsafe { allocation::Allocator.alloc(layout) }
+        } else {
+            unsafe { System.alloc(layout) }
+        }
+    }
+    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
+        if COUNTING.load(Relaxed) {
+            unsafe { allocation::Allocator.alloc_zeroed(layout) }
+        } else {
+            unsafe { System.alloc_zeroed(layout) }
+        }
+    }
+    unsafe fn dealloc(&self, pointer: *mut u8, layout: Layout) {
+        if COUNTING.load(Relaxed) {
+            unsafe { allocation::Allocator.dealloc(pointer, layout) }
+        } else {
+            unsafe { System.dealloc(pointer, layout) }
+        }
+    }
+    unsafe fn realloc(&self, pointer: *mut u8, layout: Layout, new: usize) -> *mut u8 {
+        if COUNTING.load(Relaxed) {
+            unsafe { allocation::Allocator.realloc(pointer, layout, new) }
+        } else {
+            unsafe { System.realloc(pointer, layout, new) }
+        }
+    }
+}
 #[global_allocator]
-static ALLOCATOR: allocation::Allocator = allocation::Allocator;
+static ALLOCATOR: Switch = Switch;
+
+/// Allocation calls of one run, counted in isolation.
+fn count(run: impl FnOnce() -> usize) -> u64 {
+    COUNTING.store(true, Relaxed);
+    let (_, counts) = allocation::probe(run);
+    COUNTING.store(false, Relaxed);
+    counts.allocation_calls
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, clap::ValueEnum, Serialize)]
+#[serde(rename_all = "kebab-case")]
+enum Inputs {
+    /// Clone one sample's inputs just before timing it (as P0's replay did).
+    Fresh,
+    /// Clone every sample's inputs up front and hold them all.
+    Prebuilt,
+}
+#[derive(Clone, Copy, PartialEq, Eq, clap::ValueEnum, Serialize)]
+#[serde(rename_all = "kebab-case")]
+enum TimingAllocator {
+    System,
+    /// The counting wrapper stays active during timing.
+    Counting,
+}
 const LIMIT: usize = 64 * 1024 * 1024;
 /// Rows per Arrow batch (the P1 design's default `batch_rows`).
 const BATCH_ROWS: usize = 65_536;
@@ -53,6 +125,10 @@ struct Cli {
     /// Timed samples per engine and workload (median, min and max reported).
     #[arg(long, default_value_t = 7)]
     samples: usize,
+    #[arg(long, value_enum, default_value_t = Inputs::Fresh)]
+    inputs: Inputs,
+    #[arg(long, value_enum, default_value_t = TimingAllocator::System)]
+    timing_allocator: TimingAllocator,
     #[arg(long)]
     output: Option<PathBuf>,
 }
@@ -65,6 +141,8 @@ struct Report {
     arch: &'static str,
     rows: usize,
     samples: usize,
+    inputs: Inputs,
+    timing_allocator: TimingAllocator,
     results: Vec<Result_>,
 }
 
@@ -170,11 +248,19 @@ fn columnar(messages: &[ResponseData]) -> usize {
     rows + decoder.flush().map_or(0, |b| black_box(b).num_rows())
 }
 
-fn time(samples: usize, rows: usize, mut run: impl FnMut() -> usize) -> (f64, f64, f64) {
+/// Time `run` on inputs taken from `inputs` before each sample's clock starts.
+fn time(
+    samples: usize,
+    rows: usize,
+    inputs: &mut dyn FnMut() -> Vec<ResponseData>,
+    mut run: impl FnMut(Option<Vec<ResponseData>>) -> usize,
+) -> (f64, f64, f64) {
     let mut per_row: Vec<f64> = (0..samples)
         .map(|_| {
+            let input = inputs();
+            let input = (!input.is_empty()).then_some(input);
             let started = Instant::now();
-            assert_eq!(run(), rows);
+            assert_eq!(run(input), rows);
             started.elapsed().as_secs_f64() * 1e6 / rows as f64
         })
         .collect();
@@ -197,34 +283,40 @@ fn main() -> Result<(), Error> {
         let messages = workload(columns, cli.rows);
         // Warm-up, and a check that every engine returns every row.
         assert_eq!(columnar(&messages), cli.rows);
-        let (owned_legacy, owned_bounded): (Vec<_>, Vec<_>) = (0..cli.samples)
-            .map(|_| (messages.clone(), messages.clone()))
-            .unzip();
-        let mut owned_legacy = owned_legacy.into_iter();
-        let mut owned_bounded = owned_bounded.into_iter();
+        // Owned engines consume their inputs, as the transport hands them over.
+        let mut prebuilt: Vec<Vec<ResponseData>> = match cli.inputs {
+            Inputs::Prebuilt => (0..2 * cli.samples).map(|_| messages.clone()).collect(),
+            Inputs::Fresh => Vec::new(),
+        };
+        let mut owned = || prebuilt.pop().unwrap_or_else(|| messages.clone());
+        COUNTING.store(cli.timing_allocator == TimingAllocator::Counting, Relaxed);
+        let timings = [
+            time(cli.samples, cli.rows, &mut owned, |m| legacy(m.unwrap())),
+            time(cli.samples, cli.rows, &mut owned, |m| {
+                bounded_numeric(m.unwrap())
+            }),
+            time(cli.samples, cli.rows, &mut || Vec::new(), |_| {
+                columnar(&messages)
+            }),
+        ];
+        COUNTING.store(false, Relaxed);
+        drop(prebuilt);
+        let [legacy_time, bounded_time, columnar_time] = timings;
         let engines: [(&'static str, (f64, f64, f64), f64); 3] = [
             (
                 "legacy-table",
-                time(cli.samples, cli.rows, || {
-                    legacy(owned_legacy.next().unwrap())
-                }),
-                allocation::probe(|| legacy(messages.clone()))
-                    .1
-                    .allocation_calls as f64,
+                legacy_time,
+                count(|| legacy(messages.clone())) as f64,
             ),
             (
                 "bounded-numeric",
-                time(cli.samples, cli.rows, || {
-                    bounded_numeric(owned_bounded.next().unwrap())
-                }),
-                allocation::probe(|| bounded_numeric(messages.clone()))
-                    .1
-                    .allocation_calls as f64,
+                bounded_time,
+                count(|| bounded_numeric(messages.clone())) as f64,
             ),
             (
                 "columnar-arrow",
-                time(cli.samples, cli.rows, || columnar(&messages)),
-                allocation::probe(|| columnar(&messages)).1.allocation_calls as f64,
+                columnar_time,
+                count(|| columnar(&messages)) as f64,
             ),
         ];
         for (engine, (median, min, max), allocations) in engines {
@@ -251,6 +343,8 @@ fn main() -> Result<(), Error> {
             arch: std::env::consts::ARCH,
             rows: cli.rows,
             samples: cli.samples,
+            inputs: cli.inputs,
+            timing_allocator: cli.timing_allocator,
             results,
         };
         if let Some(parent) = path.parent() {

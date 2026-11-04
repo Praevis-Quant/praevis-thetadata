@@ -20,6 +20,12 @@ is measured by replaying the private P0 captures on the maintainer's machine.
   - `legacy-table`: `decode.rs`, prost then formatted `Table`;
   - `bounded-numeric`: `bounded.rs`, the hand reader into a `DataBatch`;
   - `columnar-arrow`: `ColumnarDecoder`, coalescing into 65,536-row batches.
+- **Timing and counting are separate.** Timed runs use the system allocator
+  directly, with one sample's inputs cloned just before its clock starts, as
+  P0's replay did. Allocations are counted in a separate run.
+  `--inputs prebuilt --timing-allocator counting` reproduces this record's
+  first method, which held every sample's input copies at once and counted
+  while timing. On Linux, all four combinations agree within 1%.
 - **Allocations:** Rust heap allocation calls per message over one full run.
   The owned engines' figure includes one copy of each input message. ZSTD's C
   allocator is not counted.
