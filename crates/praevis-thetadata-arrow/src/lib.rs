@@ -300,36 +300,51 @@ impl ColumnarDecoder {
         if response.flat_file_manifest.is_some() {
             return Err(DecodeError::Unsupported);
         }
-        bound(
-            response.compressed_data.len(),
-            self.limits.encoded_bytes,
-            "encoded bytes",
-        )?;
-        if response.original_size > 0 {
-            bound(
-                response.original_size as usize,
-                self.limits.decompressed_bytes,
-                "declared bytes",
-            )?;
-        }
         let algo = response
             .compression_description
             .as_ref()
             .map_or(0, |d| d.algo);
+        self.push_payload(&response.compressed_data, algo, response.original_size)
+    }
+
+    /// Append one message from its encoded `ResponseData` bytes, as the gRPC
+    /// framing delivers them, reading the envelope in place: no `ResponseData`
+    /// or payload copy. Envelope rules match the client's bounded envelope
+    /// parser: at most `encoded_bytes + 1024` bytes, at most 1024 bytes
+    /// besides the payload, the last payload wins, and a flat-file manifest
+    /// is unsupported.
+    pub fn push_encoded(&mut self, envelope: &[u8]) -> Result<usize, DecodeError> {
+        if self.failed_at.is_some() {
+            return Err(DecodeError::Poisoned);
+        }
+        let (payload, algo, original_size) = parse_envelope(envelope, &self.limits)?;
+        self.push_payload(payload, algo, original_size)
+    }
+
+    fn push_payload(
+        &mut self,
+        payload: &[u8],
+        algo: i32,
+        original_size: i32,
+    ) -> Result<usize, DecodeError> {
+        bound(payload.len(), self.limits.encoded_bytes, "encoded bytes")?;
+        if original_size > 0 {
+            bound(
+                original_size as usize,
+                self.limits.decompressed_bytes,
+                "declared bytes",
+            )?;
+        }
         let mut scratch = std::mem::take(&mut self.scratch);
         let result = match algo {
             0 => bound(
-                response.compressed_data.len(),
+                payload.len(),
                 self.limits.decompressed_bytes,
                 "decompressed bytes",
             )
-            .and_then(|()| self.append(&response.compressed_data)),
+            .and_then(|()| self.append(payload)),
             1 => self
-                .decompress(
-                    &response.compressed_data,
-                    response.original_size,
-                    &mut scratch,
-                )
+                .decompress(payload, original_size, &mut scratch)
                 .and_then(|()| self.append(&scratch)),
             _ => Err(DecodeError::Unsupported),
         };
@@ -549,6 +564,49 @@ impl ColumnarDecoder {
         let schema: SchemaRef = Arc::new(Schema::new(fields));
         Some(RecordBatch::try_new(schema, arrays).expect("columns match the schema"))
     }
+}
+
+/// `ResponseData` fields 1 (payload), 2 (compression), 3 (original size) and
+/// 4 (flat-file manifest), with prost's merge semantics for what is kept.
+fn parse_envelope<'a>(
+    bytes: &'a [u8],
+    limits: &Limits,
+) -> Result<(&'a [u8], i32, i32), DecodeError> {
+    if bytes.len() > limits.encoded_bytes.saturating_add(1024) {
+        return Err(DecodeError::Resource("envelope bytes"));
+    }
+    let mut cursor = bytes;
+    let (mut payload, mut algo, mut original_size) = (&[][..], 0, 0);
+    while !cursor.is_empty() {
+        let (tag, ty) = key(&mut cursor)?;
+        match tag {
+            1 => {
+                payload = message(&mut cursor, ty)?;
+                bound(payload.len(), limits.encoded_bytes, "encoded bytes")?;
+            }
+            2 => {
+                // A repeated description merges; an absent field keeps its value.
+                let mut description = message(&mut cursor, ty)?;
+                while !description.is_empty() {
+                    let (tag, ty) = key(&mut description)?;
+                    match tag {
+                        1 => algo = varint(&mut description, ty)? as i32,
+                        _ => skip(&mut description, tag, ty)?,
+                    }
+                }
+            }
+            3 => original_size = varint(&mut cursor, ty)? as i32,
+            4 => {
+                message(&mut cursor, ty)?;
+                return Err(DecodeError::Unsupported);
+            }
+            _ => skip(&mut cursor, tag, ty)?,
+        }
+    }
+    if bytes.len() - payload.len() > 1024 {
+        return Err(DecodeError::Resource("envelope overhead"));
+    }
+    Ok((payload, algo, original_size))
 }
 
 /// The Arrow type of a timestamp column in wire zone `zone`.

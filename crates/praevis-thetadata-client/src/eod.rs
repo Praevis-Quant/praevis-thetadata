@@ -11,33 +11,36 @@ use tokio::{
 };
 
 /// Safe categories: never retain a remote message, payload, identity or URL.
+/// Shared by the stock EOD streams and the generic query streams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-pub enum EodError {
-    #[error("invalid stock EOD input")]
+pub enum QueryError {
+    #[error("invalid query input")]
     Input,
-    #[error("invalid stock EOD configuration")]
+    #[error("invalid query configuration")]
     Configuration,
-    #[error("stock EOD connection failed")]
+    #[error("query connection failed")]
     Connection,
-    #[error("stock EOD query deadline exceeded")]
+    #[error("query deadline exceeded")]
     Deadline,
-    #[error("stock EOD response idle timeout")]
+    #[error("query response idle timeout")]
     Idle,
-    #[error("stock EOD cancelled")]
+    #[error("query cancelled")]
     Cancelled,
-    #[error("no stock EOD data found")]
+    #[error("no data found")]
     NoData,
-    #[error("stock EOD remote status: {0}")]
+    #[error("query remote status: {0}")]
     Remote(tonic::Code),
-    #[error("invalid stock EOD data")]
+    #[error("invalid response data")]
     Decode,
-    #[error("invalid stock EOD schema")]
+    #[error("invalid response schema")]
     Schema,
-    #[error("unsupported stock EOD response")]
+    #[error("unsupported response")]
     Unsupported,
-    #[error("stock EOD resource limit: {0}")]
+    #[error("query resource limit: {0}")]
     Resource(&'static str),
 }
+/// The stock EOD name of [`QueryError`], kept during the alpha.
+pub type EodError = QueryError;
 
 #[derive(Debug, Clone)]
 pub struct StockEodRequest {
@@ -100,10 +103,10 @@ impl Default for EodPolicy {
     }
 }
 pub(crate) struct Pool {
-    policy: EodPolicy,
-    jobs: Arc<Semaphore>,
+    pub(crate) policy: EodPolicy,
+    pub(crate) jobs: Arc<Semaphore>,
     schemas: Arc<Semaphore>,
-    streams: Arc<Semaphore>,
+    pub(crate) streams: Arc<Semaphore>,
     #[cfg(test)]
     gate: std::sync::Mutex<Option<Arc<tests::Gate>>>,
 }
@@ -152,7 +155,7 @@ impl Pool {
     }
 }
 pub(crate) const STREAM_WINDOW: u32 = 2 << 20;
-fn budgets(config: &ClientConfig) -> Result<(), EodError> {
+pub(crate) fn budgets(config: &ClientConfig) -> Result<(), EodError> {
     for duration in [
         config.connect_timeout,
         config.request_timeout,
@@ -254,7 +257,7 @@ impl ThetaClient {
                 tonic::codegen::http::uri::PathAndQuery::from_static(
                     "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryEod",
                 ),
-                envelope::EnvelopeCodec,
+                envelope::EnvelopeCodec::<api::StockHistoryEodRequest>::default(),
             )
             .await
             .map_err(|error| failure.classify(error))
@@ -294,7 +297,7 @@ impl Input {
         }
     }
 }
-fn check_deadline(deadline: Instant) -> Result<(), EodError> {
+pub(crate) fn check_deadline(deadline: Instant) -> Result<(), EodError> {
     if Instant::now() >= deadline {
         Err(EodError::Deadline)
     } else {

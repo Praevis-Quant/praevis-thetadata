@@ -378,14 +378,19 @@ def emit_endpoint_impl(struct, rpc, python, stability, description, request, que
     method = snake(rpc)
     out = [f"impl Endpoint for {struct} {{",
            f'    const RPC: &\'static str = "{rpc}";',
+           f'    const PATH: &\'static str = "/BetaEndpoints.BetaThetaTerminal/{rpc}";',
            f"    const PYTHON_NAME: Option<&'static str> = {python};",
            f"    const STABILITY: Stability = {stability};",
            f"    const VENDOR_DESCRIPTION: &'static str = {rust_string(description.strip())};",
            f"    type Query = api::{query};",
+           f"    type Request = api::{request};",
            "    fn to_query(&self) -> Self::Query {",
            f"        let {'mut ' if body else ''}query = api::{query}::default();"]
     out += [f"        {line}" for line in body]
     out += ["        query",
+            "    }",
+            "    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {",
+            f"        api::{request} {{ query_info: Some(query_info), params: Some(query) }}",
             "    }",
             "    fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {",
             "        Box::pin(async move {",
@@ -498,7 +503,7 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS) -> tuple[s
     for rpc, python, struct, stability in rows:
         status = statuses.get(rpc, {})
         doc.append(f"| `{rpc}` | {'`' + python + '`' if python else '—'} | `endpoints::{struct}` | {stability} "
-                   f"| {status.get('decoder', 'pending (P1 PR 3)')} | {live_cell(rpc, status['free']) if 'free' in status else 'not probed'} |")
+                   f"| {status.get('decoder', 'generic (`query`)')} | {live_cell(rpc, status['free']) if 'free' in status else 'not probed'} |")
     return rust, "\n".join(doc) + "\n"
 
 

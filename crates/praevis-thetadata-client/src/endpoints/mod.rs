@@ -54,6 +54,9 @@ pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 pub trait Endpoint {
     /// RPC name in the descriptor, for example `GetStockHistoryEod`.
     const RPC: &'static str;
+    /// gRPC method path, for example
+    /// `/BetaEndpoints.BetaThetaTerminal/GetStockHistoryEod`.
+    const PATH: &'static str;
     /// The vendor Python wrapper name, if one exists.
     const PYTHON_NAME: Option<&'static str>;
     const STABILITY: Stability;
@@ -62,6 +65,10 @@ pub trait Endpoint {
     const VENDOR_DESCRIPTION: &'static str;
     /// The wire query message.
     type Query: Clone + Send + 'static;
+    /// The wire request message: query info plus the query.
+    type Request: prost::Message + Send + 'static;
+    /// Wrap a query in its request message.
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request;
     /// Build the wire query exactly as the vendor wrapper does.
     fn to_query(&self) -> Self::Query;
     /// Send `query` on the raw stub and return the server stream.

@@ -22,6 +22,15 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   transport buffering adds roughly one full encoded message per concurrently
   open stream. For large responses, lower `EodPolicy::concurrent_streams`. This is **experimental**: synthetic acceptance is extensive, but
   live service semantics are only partly verified.
+- **Query streams** (`ThetaClient::query`, `endpoints::*`, unreleased P1
+  work): any of the 100 generated typed requests, streamed as exact Arrow
+  `RecordBatch`es through the `praevis-thetadata-arrow` decoder. Rows from many
+  messages are coalesced, and the first rows are emitted as soon as they
+  arrive. A column's Arrow type is fixed by its first value; a column with no
+  value yet is `Null`, and `collect()` gives it its final type. The stock EOD
+  stream's deadlines, idle timeout, admission, cancellation and partial-result
+  rules apply. Only the FREE-entitled endpoints have been seen working live
+  (`docs/endpoints/coverage.md`).
 - **Raw helpers** call every descriptor RPC with wire query types. They are
   unsupported foundations: no typed validation, and no claim that any endpoint
   or entitlement works.

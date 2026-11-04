@@ -16,6 +16,29 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Generic query streams** (P1 PR 4a): `ThetaClient::query(&request)` streams
+  any of the 100 generated typed requests as exact Arrow `RecordBatch`es.
+  - Batching (`BatchPolicy`): the first rows are emitted as soon as they arrive.
+    After that, a batch closes at 65,536 rows, 8 MiB, or 50 ms after its
+    oldest row.
+  - Frames are decoded in place from the bytes the framing assembled, with no
+    `ResponseData` or payload copy (option 2a, absorbed). Frames up to 64 KiB
+    are decoded inline; larger ones go to the blocking pool.
+  - The stock EOD stream's deadline, idle timeout, admission, cancellation and
+    partial-result rules apply. Rows decoded before an error are delivered
+    first, and the error is returned once.
+  - A column's Arrow type is fixed by its first value; text stays `Utf8`. The
+    only schema change between batches is a `Null` column becoming typed.
+    `collect()` / `unify` gives earlier batches the final type.
+  - Loopback end to end (aarch64): 5.9 / 6.1 µs/row against 17.2 / 18.1 for
+    the typed stock EOD stream, with the first batch no later
+    ([results](docs/performance/p1-columnar-results.md)).
+  - `EodError` is now `QueryError`, with `EodError` kept as an alias. Its
+    messages no longer say "stock EOD".
+  - Generated endpoints gain `PATH`, `Request` and `request()`.
+  - The client now depends on `praevis-thetadata-arrow`. The packaging
+    rehearsal stages it in its own wave, and it stays `publish = false` until
+    the next approved release.
 - **P1 criterion c met for decoding.** Replaying the real P0 captures on the
   maintainer's Ryzen, the Arrow decoder uses 3.46 µs/row (W1) and 6.07 µs/row
   (W2): 15.9× and 10.4× less CPU than the vendor Python package with Polars
