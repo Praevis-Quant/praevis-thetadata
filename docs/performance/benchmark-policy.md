@@ -82,6 +82,32 @@ Decision rules:
    toolchain and the A/A reference it is read against. Regressions are
    reported, never omitted.
 
+## Dependency A/B
+
+Use this mode when a change touches only dependencies, so `Cargo.lock` differs
+and the harness, fixtures and descriptor do not. An example is unifying the
+`zstd` wrapper. The comparator normally refuses a lockfile difference (see
+re-baselining), which would leave a dependency change touching the decode
+path with no before/after.
+
+- **How:** dispatch `eod-performance.yml` with the `dependency_change` input,
+  which runs `eod_benchmark compare --dependency-change`.
+- **What it accepts:** a different `lock_sha256` and nothing else. Every
+  other provenance field (host, CPU, toolchain, harness, fixtures,
+  descriptor) and every sampling setting must still match. The flag with
+  identical lockfiles is refused, so the label is never wrong.
+- **What it records:** each comparison report has `comparison_kind:
+  "dependency A/B"` and both lock hashes. The summary starts with a
+  "Dependency A/B" line naming them, and refuses to mix kinds.
+- **The gate is unchanged:** the same 1.05/0.95 decode-p50 tolerances and the
+  same decision rules apply, including three more rounds after a single-round
+  excursion.
+- **Not for code changes:** a change to the harness, fixtures or decoder
+  source is an ordinary A/B, or needs re-baselining.
+
+Adding this mode changed the harness hash, so an A/A at the commit that
+introduced it is the reference for later A/Bs (see below).
+
 ## Re-baselining
 
 Changes to the harness, fixtures or lockfile change the provenance hashes, and

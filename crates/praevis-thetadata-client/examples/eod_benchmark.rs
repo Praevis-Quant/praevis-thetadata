@@ -163,6 +163,10 @@ enum Mode {
         candidate: PathBuf,
         #[arg(long)]
         output: PathBuf,
+        /// A dependency A/B: accept a different lockfile (only), when every
+        /// other provenance field matches. See benchmark-policy.md.
+        #[arg(long)]
+        dependency_change: bool,
     },
 }
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -663,7 +667,13 @@ fn write_json(path: &Path, value: &impl Serialize) -> Result<(), Failure> {
     Ok(())
 }
 
-fn compatible(a: &Report, b: &Report) -> Result<(), Failure> {
+/// `dependency_change` permits a different `lock_sha256` and nothing else;
+/// it also requires the lockfiles to differ, so the label is never wrong.
+fn compatible(a: &Report, b: &Report, dependency_change: bool) -> Result<(), Failure> {
+    let lock_differs = a.provenance.lock_sha256 != b.provenance.lock_sha256;
+    if dependency_change && !lock_differs {
+        return Err("--dependency-change needs different lockfiles; use a plain comparison".into());
+    }
     for report in [a, b] {
         if !(2..=10000).contains(&report.samples)
             || !(1..=100).contains(&report.warmups)
@@ -686,7 +696,7 @@ fn compatible(a: &Report, b: &Report) -> Result<(), Failure> {
         || a.provenance.harness_sha256 != b.provenance.harness_sha256
         || a.provenance.fixture_sha256 != b.provenance.fixture_sha256
         || a.provenance.descriptor_sha256 != b.provenance.descriptor_sha256
-        || a.provenance.lock_sha256 != b.provenance.lock_sha256
+        || (lock_differs && !dependency_change)
         || a.samples != b.samples
         || a.warmups != b.warmups
         || a.rows != b.rows
@@ -728,10 +738,15 @@ fn compatible(a: &Report, b: &Report) -> Result<(), Failure> {
     }
     Ok(())
 }
-fn compare(baseline: &Path, candidate: &Path, output: &Path) -> Result<(), Failure> {
+fn compare(
+    baseline: &Path,
+    candidate: &Path,
+    output: &Path,
+    dependency_change: bool,
+) -> Result<(), Failure> {
     let a: Report = serde_json::from_slice(&fs::read(baseline)?)?;
     let b: Report = serde_json::from_slice(&fs::read(candidate)?)?;
-    compatible(&a, &b)?;
+    compatible(&a, &b, dependency_change)?;
     let mut comparisons = Vec::new();
     for (a, b) in a.cases.iter().zip(&b.cases) {
         let baseline_ns = percentile(&a.decode_ns, 0.5) as f64;
@@ -745,7 +760,10 @@ fn compare(baseline: &Path, candidate: &Path, output: &Path) -> Result<(), Failu
     }
     write_json(
         output,
-        &serde_json::json!({"format": "thetadata-eod-comparison-v3", "baseline_engine": a.engine, "candidate_engine": b.engine, "baseline_report_sha256": hash(&fs::read(baseline)?), "candidate_report_sha256": hash(&fs::read(candidate)?), "baseline": a.provenance, "candidate": b.provenance, "interpretation": "descriptive comparison, not a calibrated regression gate; numeric output bypasses formatting, table output preserves it; repeat in AB/BA order", "cases": comparisons}),
+        &serde_json::json!({"format": "thetadata-eod-comparison-v3",
+            "comparison_kind": if dependency_change { "dependency A/B" } else { "A/B" },
+            "baseline_lock_sha256": a.provenance.lock_sha256, "candidate_lock_sha256": b.provenance.lock_sha256,
+            "baseline_engine": a.engine, "candidate_engine": b.engine, "baseline_report_sha256": hash(&fs::read(baseline)?), "candidate_report_sha256": hash(&fs::read(candidate)?), "baseline": a.provenance, "candidate": b.provenance, "interpretation": "descriptive comparison, not a calibrated regression gate; numeric output bypasses formatting, table output preserves it; repeat in AB/BA order", "cases": comparisons}),
     )
 }
 fn main() -> Result<(), Failure> {
@@ -773,7 +791,8 @@ fn main() -> Result<(), Failure> {
             baseline,
             candidate,
             output,
-        } => compare(&baseline, &candidate, &output),
+            dependency_change,
+        } => compare(&baseline, &candidate, &output, dependency_change),
     }
 }
 
@@ -816,7 +835,7 @@ mod tests {
     #[test]
     fn comparison_rejects_incomparable_or_incomplete_evidence() {
         let baseline = report();
-        assert!(compatible(&baseline, &baseline).is_ok());
+        assert!(compatible(&baseline, &baseline, false).is_ok());
         let mutations: [fn(&mut Report); 9] = [
             |r| r.consumer_delay_ms = 1,
             |r| r.provenance.host = "another-host".into(),
@@ -833,12 +852,28 @@ mod tests {
         for mutate in mutations {
             let mut candidate = report();
             mutate(&mut candidate);
-            assert!(compatible(&baseline, &candidate).is_err());
+            assert!(compatible(&baseline, &candidate, false).is_err());
+            // A dependency A/B never relaxes anything but the lockfile.
+            candidate.provenance.lock_sha256 = "updated-lock".into();
+            assert!(compatible(&baseline, &candidate, true).is_err());
         }
         let mut changed_code = report();
         changed_code.provenance.decoder_sha256 = "optimized-code".into();
         changed_code.cases[0].executor_lateness_ns[0] = 0;
-        assert!(compatible(&baseline, &changed_code).is_ok());
+        assert!(compatible(&baseline, &changed_code, false).is_ok());
+    }
+
+    #[test]
+    fn a_dependency_ab_accepts_a_different_lockfile_only() {
+        let baseline = report();
+        let mut updated = report();
+        updated.provenance.lock_sha256 = "updated-lock".into();
+        updated.provenance.decoder_sha256 = "rebuilt".into();
+        // Refused as a plain A/B; accepted, and only then, with the flag.
+        assert!(compatible(&baseline, &updated, false).is_err());
+        assert!(compatible(&baseline, &updated, true).is_ok());
+        // The flag with identical lockfiles would mislabel an ordinary A/B.
+        assert!(compatible(&baseline, &baseline, true).is_err());
     }
 
     #[test]

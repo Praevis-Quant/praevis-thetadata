@@ -30,6 +30,26 @@ def ratios(paths):
     return result
 
 
+def kind(paths):
+    """The comparison kind shared by all reports, with a header line: a
+    dependency A/B (lockfiles differ by design) is labelled with both lock
+    hashes; plain A/B reports (and reports predating the field) get none."""
+    kinds, locks = set(), set()
+    for path in paths:
+        report = json.loads(Path(path).read_text(encoding="utf-8"))
+        kinds.add(report.get("comparison_kind", "A/B"))
+        if report.get("comparison_kind") == "dependency A/B":
+            locks.add((report["baseline_lock_sha256"], report["candidate_lock_sha256"]))
+    if len(kinds) != 1 or len(locks) > 1:
+        raise ValueError("reports mix comparison kinds or lockfiles; summarize them separately")
+    label = kinds.pop()
+    if label != "dependency A/B":
+        return label, ""
+    baseline, candidate = locks.pop()
+    return label, (f"**Dependency A/B**: only the lockfile differs "
+                   f"(`{baseline[:12]}` -> `{candidate[:12]}`); same gate as any A/B.\n\n")
+
+
 def markdown(data):
     lines = ["| Engine | Case | Rounds | Decode p50 ratio (min-max) | Delivery p50 ratio (min-max) | First batch p50 ratio (min-max) |",
              "| --- | --- | ---: | --- | --- | --- |"]
@@ -42,7 +62,9 @@ def markdown(data):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("reports", nargs="+", type=Path)
-    print(markdown(ratios(parser.parse_args().reports)), end="")
+    reports = parser.parse_args().reports
+    _, header = kind(reports)
+    print(header + markdown(ratios(reports)), end="")
 
 
 if __name__ == "__main__":
