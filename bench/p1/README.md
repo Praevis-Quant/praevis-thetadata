@@ -29,7 +29,10 @@ the wall time the client adds on top of the transport. Decoding overlaps
 with receiving, so this is not CPU time; CPU per row is the decoder-only
 replay (`--replay` without `--loopback`).
 
-`../python-baseline/baseline.py` now also records `peak_rss_bytes`. For
+`../python-baseline/baseline.py` now also records `peak_rss_bytes`. Both
+runners also record `import_peak_rss_bytes`, read after imports and login and
+before the first request. It is for a proposed incremental-memory metric, not
+for criterion d. For
 criterion d, run each workload in its own process for both clients.
 
 ## Setup (once, PowerShell, repository root)

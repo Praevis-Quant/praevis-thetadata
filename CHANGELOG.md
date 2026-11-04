@@ -16,6 +16,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **P1 exit results** ([record](docs/performance/p1-exit-results.md)).
+  - **a, met:** all 10 FREE-entitled endpoints, with values equal to the
+    legacy decoder.
+  - **b, met on medians, within the service's noise.**
+  - **c, met for the Rust decoder** (15.9× / 10.4× less CPU than Python with
+    Polars). Through the Python package into Polars it is 9.0× / 9.2×.
+  - **d, not met:** peak memory is 0.97× / 0.79× the vendor's, with an
+    incremental metric proposed for a separate decision.
+  - **e, met.**
+  - **Finding:** one active session per account.
 - **P1 exit runners** (P1 PR 7, manual only; `bench/p1/`).
   - `live_p0 checks` runs the 10 FREE-entitled endpoints through `query()`.
     Each is compared value by value with the legacy decoder on a second

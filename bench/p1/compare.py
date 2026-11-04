@@ -88,6 +88,9 @@ def main() -> int:
         polars_client = pt.Client.from_env(dataframe_type="polars")
         clients = {"polars": polars_client,
                    "pandas": pt.Client(existing_authorized_client=polars_client, dataframe_type="pandas")}
+        # After imports and login, before any request: the idle baseline for a
+        # possible incremental-memory metric (a proposal, not criterion d).
+        report["import_peak_rss_bytes"] = peak_rss_bytes()
         pacer = Pacer(args.min_interval)
         for round_no in range(args.rounds):
             for workload in selected:
