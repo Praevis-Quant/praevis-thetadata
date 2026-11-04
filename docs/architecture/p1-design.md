@@ -1,7 +1,8 @@
 # P1 design: breadth and columnar on FREE
 
-Status: **proposed, 2026-11-03. Awaiting user approval; no implementation
-before approval.** This implements phase P1 of the approved
+Status: **approved by the user on 2026-11-04, with every recommendation**
+(decisions in §10). Implementation follows the PR sequence in §9, one PR at a
+time under rule 3. This implements phase P1 of the approved
 [performance plan](performance-plan.md#e-phased-roadmap-tied-to-tiers), with the
 design adjustments measured in [P0](../performance/p0-results.md#6-p1-design-adjustments-from-this-evidence).
 
@@ -192,7 +193,19 @@ This is **not** concurrency probing; concurrency stays at ≤ 3, as instructed.
 6. The FREE entitlement map and live checks (after approval of §8).
 7. The P1 exit measurement: replay plus live runs, and a results record.
 
-## 10. Decisions for the user
+## 10. Decisions (approved 2026-11-04)
+
+| # | Decision |
+| --- | --- |
+| D1 | **Timestamps in milliseconds** (`Timestamp(Millisecond, tz)`) now; nanoseconds once a nanosecond feed is verified |
+| D2 | **A separate `praevis-thetadata-arrow` crate** |
+| D3 | **PyPI name `praevis-thetadata`.** The Coordinator found it unregistered on 2026-11-04; checking does not reserve it |
+| D4 | **Minimum Python 3.10, `abi3` wheels** |
+| D5 | **FREE scheduler defaults to the documented limits:** 1 concurrent request, 20 per minute. The observed 3 and 40/min are available only as an explicit opt-in |
+| D6 | **FREE entitlement map approved** (§8): about 35 single requests, 3.5 s apart. The concurrency probe above 3 is **deferred** to a later user decision; it is not run |
+
+The proposed options, as recorded:
+
 
 - **D1, timestamp unit:** `Timestamp(Millisecond)` now (exact for all observed
   data; no year-2262 limit; no conversion cost), or the plan's
