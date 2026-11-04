@@ -14,6 +14,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Changed
+
+- **One zstd wrapper:** the workspace now uses `zstd` 0.14 (`zstd-safe` 8),
+  the version `parquet` already brought in, over the same `zstd-sys` 2.1.2
+  (libzstd 1.5.7). The lockfile drops `zstd` 0.13 and `zstd-safe` 7. No code
+  changed. All tests and the adversarial corpus pass with their pinned ZSTD
+  classifications. Before and after (aarch64, 3 alternating rounds): the
+  Arrow and legacy decoders are unchanged, and the bounded decoder is 1.7-2.4%
+  faster. The D-B before/after workflow is the gate.
+
 ### Added
 
 - **Dependency A/B benchmark mode.** `eod_benchmark compare
