@@ -7,7 +7,8 @@
 //! the envelope parser, the bounded decoder (numeric and Table) and the legacy
 //! raw decoder. Every input must be accepted within the limits or rejected
 //! with a classified error, never a panic. Differential oracles compare the
-//! envelope parser with prost and the bounded decoder with the legacy decoder.
+//! envelope parser with prost, the bounded decoder with the legacy decoder,
+//! and the columnar Arrow decoder with both (P1 PR 3).
 //!
 //! The short run is part of `cargo test`. The long run is manual:
 //!
@@ -17,14 +18,109 @@
 //! ```
 //!
 //! Coverage-guided fuzzing is a separate roadmap item for after 0.1.0.
-use crate::{bounded, decode, envelope, wire};
+use crate::{bounded, decode, envelope, eod::EodError, wire};
 use bounded::DecodeLimits;
+use praevis_thetadata_arrow as columnar;
+use praevis_thetadata_core::{Table, Value};
 use praevis_thetadata_proto::endpoints::{
     CompressionDescription, DataTable, DataValue, DataValueList, Price, ZonedDateTime,
     data_value::DataType,
 };
 use prost::Message;
 use std::collections::BTreeMap;
+
+fn columnar_limits(limits: &DecodeLimits) -> columnar::Limits {
+    columnar::Limits {
+        encoded_bytes: limits.encoded_bytes,
+        decompressed_bytes: limits.decompressed_bytes,
+        headers: limits.headers,
+        header_bytes: limits.header_bytes,
+        text_bytes: limits.text_bytes,
+        rows_per_message: limits.rows,
+        buffered_bytes: limits.allocated_bytes,
+        zstd_window_log: limits.zstd_window_log,
+    }
+}
+
+/// A comparable cell: prices as Decimal128(38, 10) unscaled values (the legacy
+/// `Price` keeps its wire scale, so equal numbers may differ in representation)
+/// and timestamps as the legacy RFC 3339 text.
+#[derive(Debug, PartialEq)]
+enum Exact {
+    Null,
+    Text(String),
+    Integer(i64),
+    Price(i128),
+    Boolean(bool),
+    Timestamp(String),
+}
+
+fn legacy_exact(table: &Table) -> (Vec<String>, Vec<Vec<Exact>>) {
+    let rows = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.iter()
+                .map(|value| match value {
+                    Value::Null => Exact::Null,
+                    Value::Text(v) => Exact::Text(v.clone()),
+                    Value::Integer(v) => Exact::Integer(*v),
+                    Value::Boolean(v) => Exact::Boolean(*v),
+                    Value::Price(p) => {
+                        Exact::Price(i128::from(p.mantissa) * 10i128.pow((p.exponent + 10) as u32))
+                    }
+                    Value::Timestamp(v) => Exact::Timestamp(v.clone()),
+                })
+                .collect()
+        })
+        .collect();
+    (table.headers.clone(), rows)
+}
+
+fn arrow_exact(batch: &columnar::arrow_array::RecordBatch) -> (Vec<String>, Vec<Vec<Exact>>) {
+    use columnar::arrow_array::Array;
+    use columnar::arrow_array::cast::AsArray;
+    use columnar::arrow_array::types::{Decimal128Type, Int64Type, TimestampMillisecondType};
+    use columnar::arrow_schema::DataType;
+    let headers = batch
+        .schema()
+        .fields()
+        .iter()
+        .map(|f| f.name().clone())
+        .collect();
+    let rows = (0..batch.num_rows())
+        .map(|row| {
+            batch
+                .columns()
+                .iter()
+                .map(|column| {
+                    if column.is_null(row) || column.data_type() == &DataType::Null {
+                        return Exact::Null;
+                    }
+                    match column.data_type() {
+                        DataType::Utf8 => Exact::Text(column.as_string::<i32>().value(row).into()),
+                        DataType::Int64 => {
+                            Exact::Integer(column.as_primitive::<Int64Type>().value(row))
+                        }
+                        DataType::Boolean => Exact::Boolean(column.as_boolean().value(row)),
+                        DataType::Decimal128(38, 10) => {
+                            Exact::Price(column.as_primitive::<Decimal128Type>().value(row))
+                        }
+                        DataType::Timestamp(_, Some(tz)) => {
+                            let ms = column.as_primitive::<TimestampMillisecondType>().value(row);
+                            let zone = if tz.as_ref() == columnar::UTC { 1 } else { 0 };
+                            Exact::Timestamp(
+                                praevis_thetadata_core::timestamp(ms as u64, zone).unwrap(),
+                            )
+                        }
+                        other => panic!("unexpected Arrow type {other:?}"),
+                    }
+                })
+                .collect()
+        })
+        .collect();
+    (headers, rows)
+}
 
 fn limits() -> DecodeLimits {
     DecodeLimits {
@@ -163,7 +259,30 @@ fn check(bytes: &[u8], limits: &DecodeLimits, stats: &mut Stats) -> String {
         results[1].as_ref().map(|b| b.cells().len()).map_err(|e| *e),
         "{bytes:?}"
     );
+    let mut arrow = columnar::ColumnarDecoder::new(columnar_limits(limits)).unwrap();
+    let arrow = arrow.push(&response).map(|_| arrow.flush());
     let legacy = decode::decode(response, limits.decompressed_bytes);
+    // Oracle 5: the columnar decoder accepts only what the bounded decoder
+    // accepts (apart from the bounded decoder's cell and allocation budgets,
+    // which it does not have) and rejects with the same class. Its one extra
+    // class is mixing kinds or zones in a column, which Arrow cannot
+    // represent; it stops there, before any later value the bounded decoder
+    // may reject.
+    match (&arrow, &results[0]) {
+        (Ok(_), Ok(_)) => stats.columnar_agree += 1,
+        (_, Err(EodError::Resource("cells" | "allocation bytes"))) => {}
+        // A corrupt ZSTD frame that also expands past the limit: which of the
+        // two is reported first depends on the output buffer size.
+        (Err(columnar::DecodeError::Resource("decompressed bytes")), Err(EodError::Decode))
+        | (Err(columnar::DecodeError::Decode), Err(EodError::Resource("decompressed bytes"))) => {
+            stats.columnar_zstd_order += 1
+        }
+        (Err(columnar::DecodeError::ColumnType { .. }), _) => stats.columnar_type_only += 1,
+        (Err(ours), Err(theirs)) => {
+            assert_eq!(classify_columnar(ours), format!("{theirs:?}"), "{bytes:?}")
+        }
+        (ours, theirs) => panic!("columnar {ours:?} vs bounded {theirs:?}: {bytes:?}"),
+    }
     match (&results[0], legacy) {
         (Ok(batch), legacy) => {
             // Oracle 3: accepted output stays within every count limit.
@@ -174,6 +293,15 @@ fn check(bytes: &[u8], limits: &DecodeLimits, stats: &mut Stats) -> String {
             // decoders produce the same exact values.
             match legacy {
                 Ok(table) => {
+                    if let Ok(arrow) = &arrow {
+                        let expected = legacy_exact(&table);
+                        let actual = arrow.as_ref().map(arrow_exact);
+                        // A message with headers and no rows yields no batch.
+                        match actual {
+                            Some(actual) => assert_eq!(actual, expected, "{bytes:?}"),
+                            None => assert!(table.rows.is_empty(), "{bytes:?}"),
+                        }
+                    }
                     let ours = results[0].clone().unwrap().into_table();
                     assert_eq!(ours, table, "{bytes:?}");
                     stats.agree += 1;
@@ -191,10 +319,25 @@ fn check(bytes: &[u8], limits: &DecodeLimits, stats: &mut Stats) -> String {
     }
 }
 
+/// The bounded decoder's error name for a columnar error of the same class.
+fn classify_columnar(error: &columnar::DecodeError) -> String {
+    use columnar::DecodeError as E;
+    match error {
+        E::Decode => "Decode".into(),
+        E::Unsupported => "Unsupported".into(),
+        E::Schema => "Schema".into(),
+        E::Resource(name) => format!("Resource({name:?})"),
+        other => format!("{other:?}"),
+    }
+}
+
 #[derive(Default)]
 struct Stats {
     outcomes: BTreeMap<String, u64>,
     agree: u64,
+    columnar_agree: u64,
+    columnar_type_only: u64,
+    columnar_zstd_order: u64,
     legacy_only_rejects: BTreeMap<String, u64>,
 }
 impl Stats {
@@ -655,8 +798,15 @@ fn run(random_cases: u64, seed: u64) -> Stats {
     random_mutations(&mut stats, &limits, random_cases, seed);
     eprintln!(
         "corpus: {edits} exhaustive edits + {random_cases} random; outcomes {:?}; \
-         decoders agreed on {} accepted inputs; legacy-only rejections {:?}",
-        stats.outcomes, stats.agree, stats.legacy_only_rejects
+         decoders agreed on {} accepted inputs; legacy-only rejections {:?}; \
+         columnar: {} accepted with the bounded decoder, {} column-type rejections, \
+         {} ZSTD error-order pairs",
+        stats.outcomes,
+        stats.agree,
+        stats.legacy_only_rejects,
+        stats.columnar_agree,
+        stats.columnar_type_only,
+        stats.columnar_zstd_order
     );
     stats
 }
@@ -693,6 +843,8 @@ fn adversarial_corpus_short() {
             >= 5
     );
     assert!(stats.agree > 1000, "{}", stats.agree);
+    assert!(stats.columnar_agree > 1000, "{}", stats.columnar_agree);
+    assert!(stats.columnar_type_only > 0, "{}", stats.columnar_type_only);
 }
 
 /// Manual long run; see the module documentation.

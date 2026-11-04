@@ -60,7 +60,7 @@ def audit_origins(registry, requirements, adr_paths, tracked_paths):
     return errors
 
 
-PACKAGE_DIRS = ["crates/praevis-thetadata-auth", "crates/praevis-thetadata-core", "crates/praevis-thetadata-proto",
+PACKAGE_DIRS = ["crates/praevis-thetadata-auth", "crates/praevis-thetadata-core", "crates/praevis-thetadata-arrow", "crates/praevis-thetadata-proto",
                 "crates/praevis-thetadata-client", "apps/praevis-thetadata-cli"]
 
 

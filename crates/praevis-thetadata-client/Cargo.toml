@@ -54,6 +54,9 @@ prost-types.workspace = true
 heck = "0.5"
 
 [dev-dependencies]
+# The columnar decoder's differential oracle runs in this crate's adversarial
+# corpus (P1 PR 3), next to the decoders it is compared with.
+praevis-thetadata-arrow.workspace = true
 tokio-stream = { version = "0.1", features = ["net"] }
 clap.workspace = true
 serde.workspace = true
