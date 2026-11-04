@@ -16,6 +16,28 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Planner and scheduler** (P1 PR 4b).
+  - `SchedulerPolicy`, set with `ThetaClient::with_scheduler` and shared by
+    clones of the client, admits every `query()` request.
+    - The default is FREE's documented limits: 1 concurrent request and 20
+      per minute (D5). `SchedulerPolicy::free_observed()` (3 concurrent,
+      40/min) is an explicit opt-in.
+    - A request holds its slot until its stream ends, fails or is cancelled.
+    - Only `RESOURCE_EXHAUSTED` and `UNAVAILABLE` are retried, at open,
+      before any row is delivered. Retries use jittered exponential backoff,
+      and each one counts against the per-minute limit.
+  - `ThetaClient::job(&request)` plans a request by date: EOD and at-time
+    requests split at 366 days, intraday history per day. A request that sets
+    `date` is not split.
+    - Each part is a scheduled `query()`, with at most the concurrency limit
+      in flight, merged in date order into one Arrow stream.
+    - Parts with no data are skipped; an all-empty job is `NoData`. Other
+      errors end the job after the rows before them.
+    - Dropping or cancelling a job cancels its queued and running requests.
+    - Columns keep the earlier part's type when a later part has no value.
+  - Generated endpoints declare their `Split` rule and date-range accessors.
+  - The typed stock EOD stream is not scheduled yet; it keeps its own stream
+    admission until it becomes a wrapper over `query()`.
 - **Generic query streams** (P1 PR 4a): `ThetaClient::query(&request)` streams
   any of the 100 generated typed requests as exact Arrow `RecordBatch`es.
   - Batching (`BatchPolicy`): the first rows are emitted as soon as they arrive.

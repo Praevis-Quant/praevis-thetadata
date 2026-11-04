@@ -364,6 +364,12 @@ fn loopback(name: &str, messages: Vec<ResponseData>, samples: usize) -> Vec<Resu
             support::session().await,
         )
         .await
+        .unwrap()
+        // Measure transport and decoding, not the per-minute request limit.
+        .with_scheduler(praevis_thetadata_client::SchedulerPolicy {
+            per_minute: None,
+            ..Default::default()
+        })
         .unwrap();
         let day = chrono_day();
         let mut out = Vec::new();

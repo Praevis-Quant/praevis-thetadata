@@ -9,6 +9,7 @@
 //! blocking pool above it.
 use crate::endpoints::Endpoint;
 use crate::eod::{QueryError, budgets, check_deadline};
+use crate::scheduler::retryable;
 use crate::{ThetaClient, envelope, framing};
 use praevis_thetadata_arrow::arrow_array::{ArrayRef, RecordBatch, new_null_array};
 use praevis_thetadata_arrow::arrow_schema::{DataType, Field, Schema};
@@ -110,6 +111,59 @@ impl ThetaClient {
             zstd_window_log: decode.zstd_window_log,
         })
         .map_err(map_decode)?;
+        // Admission and retry (P1 PR 4b): a scheduler slot is held from open
+        // to the end of the stream. Only RESOURCE_EXHAUSTED and UNAVAILABLE
+        // at open are retried; nothing has been delivered yet, so a retry
+        // cannot duplicate rows.
+        let scheduler = self.scheduler.clone();
+        let mut attempt = 0;
+        let (inner, failure, stream_lease, slot) = loop {
+            let slot = scheduler.admit(deadline).await?;
+            match self.open(request, deadline, &pool).await {
+                Ok((inner, failure, lease)) => break (inner, failure, lease, slot),
+                Err(error) if retryable(error) && attempt < scheduler.policy.retries => {
+                    drop(slot);
+                    attempt += 1;
+                    let resume = Instant::now() + scheduler.backoff(attempt);
+                    if resume >= deadline {
+                        return Err(error);
+                    }
+                    tokio::time::sleep_until(resume).await;
+                }
+                Err(error) => return Err(error),
+            }
+        };
+        Ok(QueryStream {
+            inner: Some(inner),
+            decoder: Some(Box::new(decoder)),
+            pool,
+            deadline,
+            idle: self.config.idle_timeout,
+            batch,
+            failure,
+            leases: Some((stream_lease, slot)),
+            emitted: false,
+            first_buffered: None,
+            pending: None,
+            terminal: false,
+        })
+    }
+
+    /// Open one request: the stream admission lease, then the gRPC call.
+    async fn open<E: Endpoint>(
+        &self,
+        request: &E,
+        deadline: Instant,
+        pool: &crate::eod::Pool,
+    ) -> Result<
+        (
+            tonic::Streaming<Vec<u8>>,
+            framing::Failure,
+            OwnedSemaphorePermit,
+        ),
+        QueryError,
+    > {
+        let decode = &pool.policy.decode;
         let stream_lease = timeout_at(deadline, pool.streams.clone().acquire_owned())
             .await
             .map_err(|_| QueryError::Deadline)?
@@ -140,20 +194,7 @@ impl ThetaClient {
         .await
         .map_err(|_| QueryError::Deadline)?;
         check_deadline(deadline)?;
-        Ok(QueryStream {
-            inner: Some(response?.into_inner()),
-            decoder: Some(Box::new(decoder)),
-            pool,
-            deadline,
-            idle: self.config.idle_timeout,
-            batch,
-            failure,
-            stream_lease: Some(stream_lease),
-            emitted: false,
-            first_buffered: None,
-            pending: None,
-            terminal: false,
-        })
+        Ok((response?.into_inner(), failure, stream_lease))
     }
 }
 
@@ -171,7 +212,8 @@ pub struct QueryStream {
     idle: Duration,
     batch: BatchPolicy,
     failure: framing::Failure,
-    stream_lease: Option<OwnedSemaphorePermit>,
+    /// The stream admission lease and the scheduler slot, released together.
+    leases: Option<(OwnedSemaphorePermit, OwnedSemaphorePermit)>,
     /// A batch has been returned, so later rows coalesce.
     emitted: bool,
     /// When the oldest buffered row arrived.
@@ -193,7 +235,7 @@ impl QueryStream {
     pub fn cancel(&mut self) {
         self.inner = None;
         self.decoder = None;
-        self.stream_lease = None;
+        self.leases = None;
         self.terminal = true;
     }
 
@@ -219,14 +261,14 @@ impl QueryStream {
             return Err(QueryError::Cancelled);
         };
         // Fields drop in order if this call is dropped: transport first.
-        let mut state = (inner, Some(decoder), self.stream_lease.take());
+        let mut state = (inner, Some(decoder), self.leases.take());
         let result = self.next_inner(&mut state.0, &mut state.1).await;
         let result = check_deadline(self.deadline).and(result);
         match (result, state.1) {
             (Ok(Some(batch)), Some(decoder)) => {
                 self.inner = Some(state.0);
                 self.decoder = Some(decoder);
-                self.stream_lease = state.2;
+                self.leases = state.2;
                 Ok(Some(batch))
             }
             (Ok(_), _) => {
