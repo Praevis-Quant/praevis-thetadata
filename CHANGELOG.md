@@ -16,6 +16,27 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Columnar Arrow decoder** (P1 PR 3), in the new `praevis-thetadata-arrow`
+  crate. It is not published yet and has no client API yet.
+  - `ColumnarDecoder` turns `ResponseData` messages into exact, coalesced
+    Arrow batches:
+    - prices as `Decimal128(38, 10)`;
+    - timestamps as `Timestamp(Millisecond, America/New_York | UTC)`;
+    - `Utf8`, `Int64` and `Boolean`.
+  - A column's type is fixed by its first value. Mixed kinds or zones in one
+    column are an error, never a coercion.
+  - Headers are compared in place, and the ZSTD context and buffer are
+    reused, so a warm decoder makes no allocation per message.
+  - Per-message limits match the bounded decoder's. A failed message keeps
+    the rows before it.
+  - The client's adversarial corpus adds a fifth oracle. Arrow values equal
+    the legacy decoder's on every input both accept (11,902 in the short run).
+    Rejections match the bounded decoder's class.
+  - New `columnar_benchmark` on synthetic vendor-shaped workloads (aarch64
+    sandbox): 3.08 / 3.45 µs/row against 4.76 / 5.47 for the bounded decoder
+    ([results](docs/performance/p1-columnar-results.md)).
+  - New dependencies: `arrow-array` and `arrow-schema` 60.1 (arrow-rs,
+    approved with parquet and pyo3).
 - **FREE entitlement map results** (run `p1-entitlements-001`, PROD, 2026-11-04,
   36 requests, no stop), in `docs/endpoints/status.json` and the coverage table:
   - **10 entitled:** stock, option and index EOD; stock, option and index

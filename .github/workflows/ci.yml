@@ -57,6 +57,10 @@ jobs:
           cargo tree --locked -p praevis-thetadata-auth -e normal --target all --features native-store | grep -q keyring
       - name: Native EOD benchmark checks
         run: cargo test --locked -p praevis-thetadata-client --example eod_benchmark
+      - name: Columnar decoder CPU benchmark (checks and a small smoke run)
+        run: |
+          cargo test --locked -p praevis-thetadata-client --example columnar_benchmark
+          cargo run --release --locked -p praevis-thetadata-client --example columnar_benchmark -- --rows 2000 --samples 3 --output artifacts/columnar-smoke.json
       - name: Credential-free EOD benchmark smoke test
         run: |
           cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- run --engine legacy --rows 64 --samples 2 --warmups 1 --streams 2 --output artifacts/eod-smoke-legacy.json

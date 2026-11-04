@@ -115,6 +115,7 @@ for example after a tier upgrade, needs the user's approval again.
 | `apps/praevis-thetadata-cli` | Argument parsing, credential discovery, auth/status/logout, output and exit codes | Depends on auth, not the market-data client |
 | `crates/praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for 100 RPCs | Generated at build time from the checked-in descriptor |
 | `crates/praevis-thetadata-core` | Prices, timestamps, values, tables | Transport-independent data types |
+| `crates/praevis-thetadata-arrow` | Exact columnar decoding of `ResponseData` into coalesced Arrow batches | Core, proto and arrow-rs (`arrow-array`, `arrow-schema`) only; keeps Arrow out of auth, core and proto. Not published yet |
 | `crates/praevis-thetadata-client` | gRPC requests, ZSTD decoding, batch streaming | Composes auth, core, and proto; still a foundation |
 
 Keep credential discovery in the CLI. The auth library accepts explicit
