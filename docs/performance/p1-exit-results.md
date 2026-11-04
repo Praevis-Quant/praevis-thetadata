@@ -130,7 +130,11 @@ consistent with the service keeping one active session per account, with a
 new login ending the previous one.
 
 The rerun shared one session (`existing_authorized_client`, the vendor's
-mechanism) and had no failures. **The gRPC code the service returns to an
+mechanism) and had no failures. ThetaDataDx's README states the opposite for
+market data: separately logged-in instances work together, and only the
+real-time feed is limited to one session per account
+([review](../research/thetadatadx-review.md#watch-items)). So the eviction
+explanation is **unconfirmed**. **The gRPC code the service returns to an
 ended session is still unknown:** the first run predates recording the code,
 and the rerun did not trigger it. The Python `Client` documents the rule.
 Mapping the code to a clear error waits until a run records it.

@@ -71,6 +71,20 @@ ThetaData's [subscriber agreement](https://www.thetadata.net/subscriber-agreemen
 | Benchmarks | Fill their gap: an apples-to-apples comparison against the vendor Python package (`bench/python-baseline/`) | P0 |
 | Identity | Keep identifying ourselves honestly in query metadata (`client=rust`) | — |
 
+## P1 exit status of the improvements (2026-11-04)
+
+The improvements above that P1 owned, as measured in the
+[P1 exit record](../performance/p1-exit-results.md):
+
+| Improvement | P1 status |
+| --- | --- |
+| Exact values | **Delivered:** prices are `Decimal128(38, 10)`, kept exact through Arrow, Parquet, Polars and pandas (Arrow-backed). Timestamps are millisecond with their zone, per decision D1; nanoseconds wait for a verified feed |
+| Decode shape | **Delivered:** messages decode straight into Arrow builders, with no row structs, at 3.46 / 6.07 µs/row on the real P0 captures |
+| Python boundary | **Delivered:** no per-row Python objects (CI gate), and vendor-named aliases add about 0.6 µs per call |
+| Benchmarks against the vendor package | **Delivered:** the [baseline](../../bench/python-baseline/README.md) and the P1 exit comparison |
+| Tier detection | **Partly:** the scheduler defaults to FREE's documented limits (decision D5), and other tiers are set explicitly. Sizing from the auth response's subscription fields is not done |
+| Fan-out and connections | **Open:** to be measured on a paid tier before relying on it |
+
 ## Monitoring and re-review
 
 This file is the **monitoring record** for ThetaDataDx. Re-review it **at each
@@ -87,9 +101,11 @@ the related-project no-copy rule.
 | Per-row Python objects | Whether `to_list()` stays the default path, or they publish allocation numbers | Our D.2 gate claim: no per-row Python objects |
 | Sharding throughput claim | Any measurement of single-stream caps or fan-out speedups | P0 found one request slow on the server's side; we measure fan-out on paid tiers before relying on it |
 | Vendor-Python comparison | Any benchmark against the official `thetadata` package | Our baseline (`bench/python-baseline/`) is currently unique; if they add one, compare methods |
+| Market-data sessions | Their README says the real-time feed is one live session per account, but market data "runs alongside streaming and across as many `MarketDataClient` instances as you like". Each instance logs in separately (`mdds/client.rs`, `connect` calls Nexus `authenticate_at`) | Our P1 exit run saw the first of two separately logged-in clients fail its first request about 118 ms in, each time, consistent with a new login ending the earlier session. That conflicts with their claim, and neither side has the gRPC code. Until a recorded run settles it, our clients share one session (`existing_authorized_client`) and treat the rule as unconfirmed |
 
 ### Review log
 
 | Date | Revision | Notes |
 | --- | --- | --- |
 | 2026-11-03 | `f42350f` | Initial detailed review (this record) |
+| 2026-11-04 | `f42350f` | **P1 phase-exit re-review.** No commits since `f42350f` (latest push 2026-11-03), and no release since v0.8.2 (2026-11-02). Every watch item is unchanged: direct FPSS, `f64` prices, `to_list()` per-row objects, the unmeasured sharding claim, and no vendor-Python comparison. **New watch item:** market-data sessions (above), where their README conflicts with our P1 observation. The P1 status of each improvement is added above. Read-only again: nothing copied, built or run |
