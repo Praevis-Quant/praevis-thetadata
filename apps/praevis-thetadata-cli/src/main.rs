@@ -302,15 +302,18 @@ mod tests {
     struct Files(PathBuf);
     impl Files {
         fn new() -> Self {
+            // Tests run in parallel threads of one process. A clock reading
+            // alone can repeat between threads and let two tests share a
+            // directory (and each other's creds.txt); the counter cannot.
+            static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
             let dir = std::env::temp_dir().join(format!(
                 "praevis-cli-creds-{}-{}",
                 std::process::id(),
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_nanos()
+                NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
             ));
-            std::fs::create_dir_all(&dir).unwrap();
+            // A directory left by an earlier, killed run with the same id.
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir(&dir).unwrap();
             Self(dir)
         }
         fn file(&self, name: &str, email: &str) -> PathBuf {
