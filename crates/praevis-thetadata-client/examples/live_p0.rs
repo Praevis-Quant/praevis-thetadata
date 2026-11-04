@@ -16,10 +16,21 @@
 //!   day). Every probe stops at the first `RESOURCE_EXHAUSTED` or any status
 //!   other than `NOT_FOUND`.
 //!
+//! * `entitlements`: the FREE entitlement map (P1 PR 2): one small request per
+//!   endpoint family through the generated typed requests, strictly sequential
+//!   and paced, reading at most a few messages before dropping the stream.
+//!   Per-endpoint refusals are recorded and the run continues; it stops at the
+//!   first `RESOURCE_EXHAUSTED` or `UNAVAILABLE`. No concurrency. A one-time,
+//!   user-approved exception to "never sweep endpoints" (CLAUDE.md); re-running
+//!   it needs approval again. The private report keeps truncated vendor status
+//!   text for a person to classify locally; the code never interprets it, and
+//!   only classifications and gRPC codes are committed.
+//!
 //! Output is timings, counts, sizes and status codes only in
 //! `artifacts/p0/<run-id>.json`: no row values, account email, subscription
 //! fields or session token (the report is refused if it would contain them).
 use clap::{Args, Parser, Subcommand};
+use praevis_thetadata_client::endpoints::{self as typed, Endpoint};
 use praevis_thetadata_client::{
     AuthClient, AuthConfig, ClientConfig, Credentials, Environment, EodError, EodPolicy, Error,
     NaiveDate, Session, StockEodRequest, ThetaClient,
@@ -62,6 +73,26 @@ enum Command {
     Breakdown(Breakdown),
     /// Bounded probes of the FREE limits.
     Limits(LimitsArgs),
+    /// The FREE entitlement map: one paced request per endpoint family.
+    Entitlements(EntitlementsArgs),
+}
+
+#[derive(Args)]
+struct EntitlementsArgs {
+    #[command(flatten)]
+    common: Common,
+    /// Historical trading day inside the FREE window.
+    #[arg(long, default_value = "2024-06-14")]
+    date: String,
+    /// An option expiration listed on `--date`.
+    #[arg(long, default_value = "2024-06-21")]
+    expiration: String,
+    /// Messages read per request before the stream is dropped.
+    #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u32).range(1..=20))]
+    max_messages: u32,
+    /// Only these RPCs, comma-separated (for example after a stopped run).
+    #[arg(long, value_delimiter = ',')]
+    only: Vec<String>,
 }
 
 #[derive(Args)]
@@ -605,6 +636,252 @@ async fn futures_join(
     out
 }
 
+/// One entitlement probe: status and transport shape only, never row values.
+#[derive(Serialize, Debug)]
+struct Probe {
+    rpc: &'static str,
+    python_name: Option<&'static str>,
+    stability: &'static str,
+    /// `OK`, a gRPC code name, or `ClientTimeout`.
+    status: String,
+    /// The server's status text, printable ASCII, at most 160 characters.
+    /// Private report only: classified by a person, never committed or sent.
+    status_text: Option<String>,
+    headers_ns: Option<u128>,
+    first_message_ns: Option<u128>,
+    total_ns: u128,
+    messages: u32,
+    bytes: usize,
+    /// The stream ended within `max_messages`.
+    complete: bool,
+}
+
+/// Service-wide signals: anything else is a per-endpoint answer to record.
+fn ends_entitlement_run(status: &str) -> bool {
+    matches!(status, "ResourceExhausted" | "Unavailable")
+}
+
+fn status_text(status: &tonic::Status) -> Option<String> {
+    let text: String = status
+        .message()
+        .chars()
+        .filter(|c| c.is_ascii_graphic() || *c == ' ')
+        .take(160)
+        .collect();
+    (!text.is_empty()).then_some(text)
+}
+
+async fn probe<E: Endpoint>(client: &ThetaClient, request: &E, max_messages: u32) -> Probe {
+    let mut out = Probe {
+        rpc: E::RPC,
+        python_name: E::PYTHON_NAME,
+        stability: match E::STABILITY {
+            typed::Stability::VendorWrapper => "vendor_wrapper",
+            typed::Stability::Unstable => "unstable",
+        },
+        status: String::new(),
+        status_text: None,
+        headers_ns: None,
+        first_message_ns: None,
+        total_ns: 0,
+        messages: 0,
+        bytes: 0,
+        complete: false,
+    };
+    let start = Instant::now();
+    let body = async {
+        let mut stream = client.stream_raw(request).await?;
+        out.headers_ns = Some(start.elapsed().as_nanos());
+        while out.messages < max_messages {
+            match stream.message().await? {
+                Some(message) => {
+                    if out.messages == 0 {
+                        out.first_message_ns = Some(start.elapsed().as_nanos());
+                    }
+                    out.messages += 1;
+                    out.bytes += message.encoded_len();
+                }
+                None => {
+                    out.complete = true;
+                    break;
+                }
+            }
+        }
+        Ok::<(), tonic::Status>(())
+        // Dropping the stream here cancels the rest of the response.
+    };
+    match tokio::time::timeout(Duration::from_secs(30), body).await {
+        Ok(Ok(())) => out.status = "OK".into(),
+        Ok(Err(status)) => {
+            out.status = status_name(status.code());
+            out.status_text = status_text(&status);
+        }
+        Err(_) => out.status = "ClientTimeout".into(),
+    }
+    out.total_ns = start.elapsed().as_nanos();
+    out
+}
+
+struct EntitlementRun<'a> {
+    client: &'a ThetaClient,
+    report: &'a mut Report,
+    pacer: Pacer,
+    only: &'a [String],
+    max_messages: u32,
+}
+impl EntitlementRun<'_> {
+    async fn run<E: Endpoint>(&mut self, request: E) -> Result<(), Stop> {
+        if !self.only.is_empty() && !self.only.iter().any(|rpc| rpc == E::RPC) {
+            return Ok(());
+        }
+        self.pacer.wait().await;
+        let result = probe(self.client, &request, self.max_messages).await;
+        eprintln!(
+            "{:<45} {:<18} messages {}",
+            result.rpc, result.status, result.messages
+        );
+        let stop = ends_entitlement_run(&result.status).then(|| Stop(result.status.clone()));
+        self.report
+            .results
+            .push(serde_json::to_value(&result).expect("probe serializes"));
+        stop.map_or(Ok(()), Err)
+    }
+}
+
+/// The FREE entitlement map (P1 PR 2): about 35 single requests, one per
+/// endpoint family, each with one symbol and one day, wildcards bounded by
+/// `max_messages`. Index and future symbols are the vendor's examples.
+async fn entitlements(
+    options: &EntitlementsArgs,
+    client: &ThetaClient,
+    report: &mut Report,
+) -> Result<(), Stop> {
+    let day = date(&options.date);
+    let exp = date(&options.expiration);
+    let mut r = EntitlementRun {
+        client,
+        report,
+        pacer: Pacer {
+            interval: Duration::from_secs_f64(options.common.min_interval),
+            last: None,
+        },
+        only: &options.only,
+        max_messages: options.max_messages,
+    };
+    // Controls first: both returned rows on FREE in P0.
+    r.run(typed::StockHistoryEod::new("AAPL", day, day)).await?;
+    r.run(typed::OptionHistoryEod::new(day, day, "SPY", exp))
+        .await?;
+    // Stock.
+    r.run(typed::StockListSymbols::new()).await?;
+    r.run(typed::StockListDates::new("trade", "AAPL")).await?;
+    r.run(typed::StockSnapshotOhlc::new("AAPL")).await?;
+    r.run(typed::StockSnapshotTrade::new("AAPL")).await?;
+    r.run(typed::StockSnapshotQuote::new("AAPL")).await?;
+    r.run(
+        typed::StockHistoryOhlc::new("AAPL")
+            .date(day)
+            .interval("1m"),
+    )
+    .await?;
+    r.run(typed::StockHistoryTrade::new("AAPL").date(day))
+        .await?;
+    r.run(
+        typed::StockHistoryQuote::new("AAPL")
+            .date(day)
+            .interval("1m"),
+    )
+    .await?;
+    r.run(typed::StockAtTimeQuote::new("AAPL", day, day, "10:00:00"))
+        .await?;
+    r.run(typed::StockFlatFileEod::new(day)).await?;
+    // Option.
+    r.run(typed::OptionListSymbols::new()).await?;
+    r.run(typed::OptionListExpirations::new("SPY")).await?;
+    r.run(typed::OptionListStrikes::new("SPY", exp)).await?;
+    r.run(typed::OptionListContracts::new("trade", day).symbol("SPY"))
+        .await?;
+    r.run(typed::OptionSnapshotQuote::new("SPY", "*").right("call"))
+        .await?;
+    r.run(typed::OptionSnapshotOpenInterest::new("SPY", "*").right("call"))
+        .await?;
+    r.run(typed::OptionSnapshotGreeksFirstOrder::new("SPY", "*").right("call"))
+        .await?;
+    r.run(
+        typed::OptionHistoryOhlc::new("SPY", exp)
+            .date(day)
+            .interval("1m")
+            .right("call"),
+    )
+    .await?;
+    r.run(
+        typed::OptionHistoryTrade::new("SPY", exp)
+            .date(day)
+            .right("call"),
+    )
+    .await?;
+    r.run(
+        typed::OptionHistoryQuote::new("SPY", exp)
+            .date(day)
+            .interval("1m")
+            .right("call"),
+    )
+    .await?;
+    r.run(
+        typed::OptionHistoryOpenInterest::new("SPY", exp)
+            .date(day)
+            .right("call"),
+    )
+    .await?;
+    r.run(typed::OptionHistoryGreeksEod::new("SPY", exp, day, day).right("call"))
+        .await?;
+    r.run(
+        typed::OptionHistoryGreeksFirstOrder::new("SPY", exp)
+            .date(day)
+            .interval("1m")
+            .right("call"),
+    )
+    .await?;
+    r.run(
+        typed::OptionHistoryTradeGreeksFirstOrder::new("SPY", exp)
+            .date(day)
+            .right("call"),
+    )
+    .await?;
+    r.run(
+        typed::OptionHistoryGreeksImpliedVolatility::new("SPY", exp)
+            .date(day)
+            .interval("1m")
+            .right("call"),
+    )
+    .await?;
+    r.run(typed::OptionAtTimeQuote::new("SPY", day, day, "10:00:00", exp).right("call"))
+        .await?;
+    // Index.
+    r.run(typed::IndexListSymbols::new()).await?;
+    r.run(typed::IndexSnapshotPrice::new("SPX")).await?;
+    r.run(typed::IndexHistoryEod::new("SPX", day, day)).await?;
+    r.run(
+        typed::IndexHistoryPrice::new("SPX")
+            .date(day)
+            .interval("1m"),
+    )
+    .await?;
+    // Calendar and rates.
+    r.run(typed::CalendarOnDate::new(day)).await?;
+    r.run(typed::InterestRateHistoryEod::new("SOFR", day, day))
+        .await?;
+    // Unstable: in the descriptor, with no vendor wrapper.
+    r.run(typed::FutureListSymbols::default()).await?;
+    r.run(typed::CorporateActionSplit {
+        symbol: "AAPL".into(),
+        start_date: "2024-01-01".into(),
+        end_date: "2024-12-31".into(),
+    })
+    .await?;
+    Ok(())
+}
+
 fn output_path(run_id: &str) -> Result<PathBuf, &'static str> {
     if run_id.is_empty()
         || !run_id
@@ -628,6 +905,7 @@ async fn main() -> std::process::ExitCode {
     let (common, name) = match &cli.command {
         Command::Breakdown(options) => (&options.common, "breakdown"),
         Command::Limits(options) => (&options.common, "limits"),
+        Command::Entitlements(options) => (&options.common, "entitlements"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -682,6 +960,7 @@ async fn main() -> std::process::ExitCode {
     let result = match &cli.command {
         Command::Breakdown(options) => breakdown(options, &client, &mut report).await,
         Command::Limits(options) => limits(options, &client, &mut report).await,
+        Command::Entitlements(options) => entitlements(options, &client, &mut report).await,
     };
     if let Err(Stop(reason)) = &result {
         report.stopped = Some(reason.clone());
@@ -805,6 +1084,114 @@ mod tests {
             Err(Stop(name)) => assert_eq!(name, "InvalidArgument"),
             Ok(_) => panic!("expected a stop"),
         }
+    }
+
+    async fn fixture_client(server: &fixture::Fixture) -> ThetaClient {
+        ThetaClient::with_eod_policy(
+            ClientConfig {
+                endpoint: Some(server.endpoint.clone()),
+                allow_insecure: true,
+                ..Default::default()
+            },
+            fixture::session().await,
+            EodPolicy::default(),
+        )
+        .await
+        .unwrap()
+    }
+
+    fn entitlement_args(only: &[&str], max_messages: u32) -> EntitlementsArgs {
+        EntitlementsArgs {
+            common: Common {
+                confirm_live: true,
+                api_key_env: true,
+                run_id: "test".into(),
+                min_interval: 0.0,
+            },
+            date: "2024-06-14".into(),
+            expiration: "2024-06-21".into(),
+            max_messages,
+            only: only.iter().map(|rpc| (*rpc).to_owned()).collect(),
+        }
+    }
+
+    #[tokio::test]
+    async fn entitlement_map_records_refusals_and_continues() {
+        let (wire_table, _) = fixture::table(fixture::Shape::Mixed, 3);
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![
+                Ok(fixture::response(&wire_table, true)),
+                Ok(fixture::response(&wire_table, false)),
+            ],
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let mut report = Report::default();
+        entitlements(&entitlement_args(&[], 5), &client, &mut report)
+            .await
+            .unwrap();
+        // About 35 single requests, each RPC once (the approved budget).
+        let rpcs: std::collections::BTreeSet<_> = report
+            .results
+            .iter()
+            .map(|r| r["rpc"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!((report.results.len(), rpcs.len()), (36, 36));
+        assert!(
+            rpcs.iter()
+                .all(|rpc| typed::ALL.iter().any(|e| e.rpc == rpc))
+        );
+        // The fixture serves stock EOD only; every other RPC is refused there.
+        let first = &report.results[0];
+        assert_eq!(first["rpc"], "GetStockHistoryEod");
+        assert_eq!(
+            (first["status"].as_str(), first["messages"].as_u64()),
+            (Some("OK"), Some(2))
+        );
+        assert_eq!(first["complete"], true);
+        assert!(
+            report.results[1..]
+                .iter()
+                .all(|r| r["status"] == "Unimplemented")
+        );
+        assert_eq!(server.requests.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn entitlement_map_reads_a_bounded_prefix() {
+        let (wire_table, _) = fixture::table(fixture::Shape::Mixed, 3);
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire_table, true)); 10],
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let mut report = Report::default();
+        entitlements(
+            &entitlement_args(&["GetStockHistoryEod"], 3),
+            &client,
+            &mut report,
+        )
+        .await
+        .unwrap();
+        assert_eq!(report.results.len(), 1);
+        assert_eq!(report.results[0]["messages"], 3);
+        assert_eq!(report.results[0]["complete"], false);
+    }
+
+    #[tokio::test]
+    async fn entitlement_map_stops_on_resource_exhausted() {
+        let server = fixture::Fixture::start(fixture::Script {
+            initial_error: Some(tonic::Status::resource_exhausted("synthetic")),
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let mut report = Report::default();
+        match entitlements(&entitlement_args(&[], 5), &client, &mut report).await {
+            Err(Stop(name)) => assert_eq!(name, "ResourceExhausted"),
+            Ok(()) => panic!("expected a stop"),
+        }
+        assert_eq!(report.results.len(), 1);
+        assert_eq!(report.results[0]["status_text"], "synthetic");
     }
 
     #[test]
