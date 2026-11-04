@@ -16,6 +16,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **FREE entitlement map probe** (P1 PR 2): `live_p0 entitlements` sends 36
+  single requests through the generated typed requests, one per endpoint
+  family, strictly sequential and 3.5 s apart. It reads at most 5 messages and
+  then drops the stream. It records status, status text, timings, message
+  counts and bytes, never row values. Per-endpoint refusals are recorded and
+  the run continues; `RESOURCE_EXHAUSTED` or `UNAVAILABLE` ends it. CI now runs
+  the live runner's offline loopback tests.
 - **Typed requests for all 100 RPCs**, generated from the pinned vendor 1.0.17
   inventory by `tools/generate_endpoints.py` (P1 PR 1). Module
   `praevis_thetadata_client::endpoints`:

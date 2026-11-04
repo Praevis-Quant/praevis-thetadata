@@ -40,6 +40,8 @@ jobs:
         run: cargo clippy --locked -p praevis-thetadata-client --features live-tests --example live_eod --example live_p0 -- -D warnings
       - name: Tests
         run: cargo test --workspace --locked
+      - name: Live runner offline tests (loopback fixture only; never contacts the service)
+        run: cargo test --locked -p praevis-thetadata-client --features live-tests --example live_p0
       - name: Auth feature boundary (default in-memory, optional native store)
         shell: bash
         run: |

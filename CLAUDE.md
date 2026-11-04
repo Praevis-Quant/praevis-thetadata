@@ -81,7 +81,9 @@ PROD is selected for
 initial integration; STAGE is an independent vendor connection, not an assumed
 sandbox. Captures stay private under ignored `artifacts/live`; no automatic
 fixture promotion or uploads. Test the runner locally with
-`cargo test --locked -p praevis-thetadata-client --features live-tests --example live_eod`.
+`cargo test --locked -p praevis-thetadata-client --features live-tests --example live_eod`
+and the P0/P1 measurement runner (`live_p0`: breakdown, limits, entitlement
+map) with `--example live_p0`; CI runs the latter's loopback tests.
 Follow the [release milestones](docs/releases.md) when proposing supported scope;
 successful mocks or a single live query do not grant full EOD acceptance.
 
