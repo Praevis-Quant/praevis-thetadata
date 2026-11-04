@@ -13,3 +13,5 @@ __pycache__/
 # Vendor Python baseline harness (performance plan C.1): local venv only.
 /bench/python-baseline/.venv/
 /bench/python-baseline/__pycache__/
+/crates/praevis-thetadata-py/python/praevis_thetadata/*.so
+/crates/praevis-thetadata-py/python/praevis_thetadata/*.pyd

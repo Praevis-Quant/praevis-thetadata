@@ -123,6 +123,17 @@ later. The existing stock EOD stream is unchanged by PR 4a, so the
 data path does not apply. The Ryzen figures, and replay of the P0 captures
 through `query()` for the P1 exit record, follow with PR 7.
 
+## Python D.2 gates (PR 6a, aarch64 sandbox)
+
+These are offline tests (`crates/praevis-thetadata-py/tests/test_gates.py`),
+on synthetic rows decoded by the Rust decoder:
+
+| Gate | Result |
+| --- | --- |
+| No per-row Python objects, as Arrow | 4 allocated blocks at 1M and at 10M rows; tracemalloc peak 284 bytes |
+| No per-row Python objects, as Polars | 449 blocks at 1M rows, 887 at 10M: per batch (65,536 rows), not per row |
+| Python layer overhead per call | 0.3 µs (2.12 against 1.84 µs for the native call); the gate is ≤ 5 µs |
+
 Reproduce:
 
 ```text

@@ -65,6 +65,10 @@ class OutputTests(unittest.TestCase):
         self.assertEqual(gen.RUST_OUT.read_text(encoding="utf-8"), rust)
         self.assertEqual(gen.DOC_OUT.read_text(encoding="utf-8"), doc)
         self.assertEqual(rust.count("impl Endpoint for"), 100)
+        dispatch = gen.generate_python_dispatch()
+        self.assertEqual(gen.PY_OUT.read_text(encoding="utf-8"), dispatch)
+        # Every RPC is dispatched once, by RPC name and (when wrapped) vendor name.
+        self.assertEqual(dispatch.count("runner.run(r)"), 100)
 
     def test_status_entries_must_name_real_rpcs(self):
         with tempfile.TemporaryDirectory() as directory:

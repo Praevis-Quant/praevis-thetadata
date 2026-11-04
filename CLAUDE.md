@@ -38,6 +38,11 @@ cargo build --locked -p praevis-thetadata-cli
 # Rust checks used by CI
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
+
+# Python package (inside a virtual environment with
+# crates/praevis-thetadata-py/requirements-test.txt installed)
+maturin build --release --locked -m crates/praevis-thetadata-py/Cargo.toml -o dist
+python -m unittest discover -s crates/praevis-thetadata-py/tests
 cargo test --workspace --locked
 
 # Existing repository/tooling checks (Python is development tooling only)
@@ -115,6 +120,7 @@ for example after a tier upgrade, needs the user's approval again.
 | `apps/praevis-thetadata-cli` | Argument parsing, credential discovery, auth/status/logout, output and exit codes | Depends on auth, not the market-data client |
 | `crates/praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for 100 RPCs | Generated at build time from the checked-in descriptor |
 | `crates/praevis-thetadata-core` | Prices, timestamps, values, tables | Transport-independent data types |
+| `crates/praevis-thetadata-py` | Python bindings (pyo3 abi3, maturin wheel `praevis-thetadata`): a thin pass-through over Arrow | Depends on the client and arrow crates; never published as a crate. Builds without a Python interpreter (abi3); its tests are Python tests |
 | `crates/praevis-thetadata-arrow` | Exact columnar decoding of `ResponseData` into coalesced Arrow batches; optional streaming Parquet sink | Core, proto and arrow-rs (`arrow-array`, `arrow-schema`; `parquet` with only `arrow` and `zstd` behind the `parquet` feature) only; keeps Arrow out of auth, core and proto. Not published yet |
 | `crates/praevis-thetadata-client` | gRPC requests, ZSTD decoding, batch streaming | Composes auth, core, and proto; still a foundation |
 
