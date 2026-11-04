@@ -1,1 +1,278 @@
-{}
+{
+  "GetStockHistoryEod": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetOptionHistoryEod": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetStockListSymbols": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetStockListDates": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetStockSnapshotOhlc": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetStockSnapshotTrade": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetStockSnapshotQuote": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetStockHistoryOhlc": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetStockHistoryTrade": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetStockHistoryQuote": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetStockAtTimeQuote": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetStockFlatFileEod": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetOptionListSymbols": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetOptionListExpirations": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetOptionListStrikes": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetOptionListContracts": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetOptionSnapshotQuote": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetOptionSnapshotOpenInterest": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetOptionSnapshotGreeksFirstOrder": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetOptionHistoryOhlc": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetOptionHistoryTrade": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetOptionHistoryQuote": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetOptionHistoryOpenInterest": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetOptionHistoryGreeksEod": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetOptionHistoryGreeksFirstOrder": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetOptionHistoryTradeGreeksFirstOrder": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetOptionHistoryGreeksImpliedVolatility": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetOptionAtTimeQuote": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetIndexListSymbols": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetIndexSnapshotPrice": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetIndexHistoryEod": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetIndexHistoryPrice": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetCalendarOnDate": {
+    "free": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetInterestRateHistoryEod": {
+    "free": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "p1-entitlements-001"
+    }
+  },
+  "GetFutureListSymbols": {
+    "free": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "p1-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetCorporateActionSplit": {
+    "free": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "p1-entitlements-001",
+      "uncertain": true
+    }
+  }
+}

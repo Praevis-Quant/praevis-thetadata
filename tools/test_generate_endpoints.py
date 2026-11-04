@@ -79,7 +79,11 @@ class OutputTests(unittest.TestCase):
             status = Path(directory) / "status.json"
             status.write_text(json.dumps({"GetStockHistoryTrade": {"free": ok}}))
             _, doc = gen.generate(status_path=status)
-            self.assertIn("| tier-denied: VALUE (`PermissionDenied`, p1-ent-001) |", doc)
+            self.assertIn("| tier-denied: VALUE required (`PermissionDenied`, p1-ent-001) |", doc)
+            unsure = {"class": "no-data", "code": "NotFound", "run": "r1", "uncertain": True}
+            status.write_text(json.dumps({"GetStockHistoryTrade": {"free": unsure}}))
+            _, doc = gen.generate(status_path=status)
+            self.assertIn("| no-data (uncertain) (`NotFound`, r1) |", doc)
             bad = [
                 {**ok, "text": "vendor message"},             # extra field
                 {**ok, "class": "requires a VALUE plan"},      # free text as class
@@ -88,6 +92,8 @@ class OutputTests(unittest.TestCase):
                 {**ok, "class": "entitled", "code": "OK"},     # tier only on tier-denied
                 {"class": "entitled", "code": "OK"},           # missing run
                 {**ok, "run": "../x y"},                       # invalid run id
+                {**ok, "uncertain": "maybe not served"},       # free text as a flag
+                {**ok, "uncertain": False},                    # absent or true only
             ]
             for entry in bad:
                 status.write_text(json.dumps({"GetStockHistoryTrade": {"free": entry}}))

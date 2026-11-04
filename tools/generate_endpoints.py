@@ -426,9 +426,11 @@ def live_cell(rpc: str, entry: object) -> str:
     """Render a FREE entitlement-map result. Committed results hold a
     classification and a gRPC code only, never vendor error text, so every
     field is checked against a closed vocabulary."""
-    if not isinstance(entry, dict) or set(entry) - {"class", "code", "tier", "run"} \
+    if not isinstance(entry, dict) or set(entry) - {"class", "code", "tier", "run", "uncertain"} \
             or not {"class", "code", "run"} <= set(entry):
-        raise GenerationError(f"{rpc}: free needs class, code and run (tier optional), nothing else")
+        raise GenerationError(f"{rpc}: free needs class, code and run (tier, uncertain optional), nothing else")
+    if entry.get("uncertain", True) is not True:
+        raise GenerationError(f"{rpc}: uncertain is either absent or true")
     if entry["class"] not in LIVE_CLASSES or entry["code"] not in GRPC_CODES:
         raise GenerationError(f"{rpc}: unknown classification or gRPC code")
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", str(entry["run"])):
@@ -436,7 +438,9 @@ def live_cell(rpc: str, entry: object) -> str:
     tier = entry.get("tier")
     if tier is not None and (entry["class"] != "tier-denied" or tier not in TIERS):
         raise GenerationError(f"{rpc}: tier is only a named tier on tier-denied")
-    label = f"{entry['class']}: {tier}" if tier else entry["class"]
+    label = f"{entry['class']}: {tier} required" if tier else entry["class"]
+    if entry.get("uncertain"):
+        label += " (uncertain)"
     return f"{label} (`{entry['code']}`, {entry['run']})"
 
 
@@ -480,6 +484,12 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS) -> tuple[s
            "per-clause requirement matrices for generated endpoints",
            "([lighter process](../architecture/performance-plan.md#f-process-simplification)).",
            "",
+           "The FREE column is the one-time entitlement map: one request per endpoint family,",
+           "classified by a person from the private report. Only the classification and gRPC",
+           "code are committed. A named tier is the tier the service said is required.",
+           "*Uncertain* marks a classification the evidence does not settle. Endpoints that",
+           "were not probed are not inferred from their family.",
+           "",
            f"{len(rows)} RPCs: {sum(1 for r in rows if r[1])} with a vendor wrapper, "
            f"{sum(1 for r in rows if not r[1])} descriptor-only (unstable).",
            "",
@@ -488,7 +498,7 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS) -> tuple[s
     for rpc, python, struct, stability in rows:
         status = statuses.get(rpc, {})
         doc.append(f"| `{rpc}` | {'`' + python + '`' if python else '—'} | `endpoints::{struct}` | {stability} "
-                   f"| {status.get('decoder', 'pending (P1 PR 3)')} | {live_cell(rpc, status['free']) if 'free' in status else 'pending (entitlement map)'} |")
+                   f"| {status.get('decoder', 'pending (P1 PR 3)')} | {live_cell(rpc, status['free']) if 'free' in status else 'not probed'} |")
     return rust, "\n".join(doc) + "\n"
 
 

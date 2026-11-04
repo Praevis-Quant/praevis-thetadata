@@ -16,6 +16,20 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **FREE entitlement map results** (run `p1-entitlements-001`, PROD, 2026-11-04,
+  36 requests, no stop), in `docs/endpoints/status.json` and the coverage table:
+  - **10 entitled:** stock, option and index EOD; stock, option and index
+    symbol lists; stock dates; option expirations and strikes; interest-rate
+    EOD.
+  - **24 tier-denied** (`PERMISSION_DENIED`): VALUE required for 14, STANDARD
+    for 8, and no tier named for 2 (stock flat-file EOD, option trade Greeks
+    first order).
+  - **2 `NOT_FOUND`** (futures symbol list, corporate-action splits), recorded
+    as no-data and marked uncertain: they may mean "not served" or "not
+    entitled".
+  - The 64 RPCs that were not probed are shown as "not probed", never inferred
+    from their family. Committed results hold classifications and gRPC codes
+    only.
 - **FREE entitlement map probe** (P1 PR 2): `live_p0 entitlements` sends 36
   single requests through the generated typed requests, one per endpoint
   family, strictly sequential and 3.5 s apart. It reads at most 5 messages and
