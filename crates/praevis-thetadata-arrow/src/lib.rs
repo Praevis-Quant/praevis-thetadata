@@ -9,6 +9,11 @@
 pub use arrow_array;
 pub use arrow_schema;
 
+#[cfg(feature = "parquet")]
+mod parquet_sink;
+#[cfg(feature = "parquet")]
+pub use parquet_sink::{ParquetOptions, ParquetSink, ParquetSummary, SinkError};
+
 use arrow_array::builder::{
     BooleanBuilder, Decimal128Builder, Int64Builder, StringBuilder, TimestampMillisecondBuilder,
 };

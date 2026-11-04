@@ -13,11 +13,18 @@ readme = "README.md"
 keywords = ["thetadata", "arrow", "market-data", "finance"]
 categories = ["finance", "encoding"]
 
+[features]
+# Streaming Parquet output (P1 PR 5).
+parquet = ["dep:parquet"]
+
 [dependencies]
 # arrow-rs (approved as a set with parquet and pyo3, plan decision 3). Only the
 # array and schema crates: the decoder needs builders and types, not compute.
 arrow-array = { version = "60.1", default-features = false }
 arrow-schema = { version = "60.1", default-features = false }
+# arrow-rs Parquet, approved with arrow and pyo3. Only Arrow support and ZSTD
+# compression: no snappy, brotli, lz4 or zlib codecs.
+parquet = { version = "60.1", default-features = false, features = ["arrow", "zstd"], optional = true }
 praevis-thetadata-core.workspace = true
 praevis-thetadata-proto.workspace = true
 prost.workspace = true

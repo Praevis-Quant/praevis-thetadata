@@ -31,6 +31,8 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   stream's deadlines, idle timeout, admission, cancellation and partial-result
   rules apply. Only the FREE-entitled endpoints have been seen working live
   (`docs/endpoints/coverage.md`).
+- **Parquet output** (feature `parquet`, on by default): `to_parquet` on query
+  and job streams. The file appears only once the whole stream is written.
 - **Jobs and scheduling** (`ThetaClient::job`, `SchedulerPolicy`, unreleased P1
   work): a request is split by date within the vendor's limits (EOD at 366
   days, intraday history per day), and the parts are merged in order. Every

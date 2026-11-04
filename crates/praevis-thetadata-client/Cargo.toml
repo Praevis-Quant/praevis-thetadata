@@ -16,6 +16,9 @@ categories = ["api-bindings", "finance", "network-programming"]
 exclude = ["examples/"]
 
 [features]
+default = ["parquet"]
+# Parquet output for query and job streams (P1 PR 5).
+parquet = ["praevis-thetadata-arrow/parquet"]
 # Manual verification only. Ordinary workspace/CI commands omit this target.
 live-tests = []
 
@@ -33,6 +36,11 @@ required-features = ["live-tests"]
 [[example]]
 name = "eod_partial"
 test = true
+
+# The CPU benchmark's loopback mode also times Parquet output.
+[[example]]
+name = "columnar_benchmark"
+required-features = ["parquet"]
 
 [dependencies]
 chrono.workspace = true

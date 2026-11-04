@@ -10,6 +10,8 @@ mod envelope;
 mod eod;
 mod framing;
 mod job;
+#[cfg(feature = "parquet")]
+mod output;
 mod query;
 mod scheduler;
 #[cfg(test)]
@@ -23,6 +25,10 @@ pub use eod::{
     StockEodRequest,
 };
 pub use job::{JobStream, plan};
+#[cfg(feature = "parquet")]
+pub use output::ParquetOutputError;
+#[cfg(feature = "parquet")]
+pub use praevis_thetadata_arrow::{ParquetOptions, ParquetSummary, SinkError};
 /// The arrow-rs crates whose types the query streams return.
 pub use praevis_thetadata_arrow::{arrow_array, arrow_schema};
 pub use praevis_thetadata_core::{BatchValue, DataBatch, TimeZone, Timestamp};

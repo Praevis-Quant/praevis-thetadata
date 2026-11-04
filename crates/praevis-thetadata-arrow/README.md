@@ -51,4 +51,17 @@ The client's `query()` streams settle what this decoder leaves open:
 - **Schema rule:** the only change between batches is a `Null` column becoming
   typed. `collect()` and `unify` give earlier batches the final type.
 
+## Parquet (feature `parquet`)
+
+`ParquetSink` streams batches into one Parquet file:
+- The file is written as `<name>.partial` and renamed into place by `finish`.
+  An unfinished sink removes its partial file, and an existing target is kept
+  unless `overwrite` is set.
+- Compression is ZSTD (level 1 by default) or none, in row groups of up to
+  131,072 rows. The Arrow schema, including decimal precision and time zones,
+  is stored in the file, so readers get the exact types back.
+- Columns that are still `Null` are held back until typed, up to 64 MiB, so
+  the file gets the final types. A column written as `Null` that is typed
+  later is a `SinkError::Schema`.
+
 Results: [CPU per row](../../docs/performance/p1-columnar-results.md).

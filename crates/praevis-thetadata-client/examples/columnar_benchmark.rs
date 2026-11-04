@@ -372,15 +372,27 @@ fn loopback(name: &str, messages: Vec<ResponseData>, samples: usize) -> Vec<Resu
         })
         .unwrap();
         let day = chrono_day();
-        let mut out = Vec::new();
-        for engine in ["stock-eod-numeric", "query-arrow"] {
+        let mut results = Vec::new();
+        let out =
+            std::env::temp_dir().join(format!("praevis-bench-{}.parquet", std::process::id()));
+        for engine in ["stock-eod-numeric", "query-arrow", "query-parquet"] {
             let mut per_row = Vec::new();
             let mut first = Vec::new();
             for _ in 0..samples + 1 {
                 let started = Instant::now();
                 let mut first_at = None;
                 let mut rows = 0;
-                if engine == "query-arrow" {
+                if engine == "query-parquet" {
+                    // Request to closed file: decoding plus ZSTD level-1 Parquet.
+                    let request = endpoints::StockHistoryEod::new("SYNTHETIC", day, day);
+                    let options = praevis_thetadata_client::ParquetOptions {
+                        overwrite: true,
+                        ..Default::default()
+                    };
+                    let stream = client.query(&request).await.unwrap();
+                    rows = stream.to_parquet(&out, options).await.unwrap().rows;
+                    first_at = Some(started.elapsed());
+                } else if engine == "query-arrow" {
                     let request = endpoints::StockHistoryEod::new("SYNTHETIC", day, day);
                     let mut stream = client.query(&request).await.unwrap();
                     while let Some(batch) = stream.next_batch().await.unwrap() {
@@ -409,12 +421,15 @@ fn loopback(name: &str, messages: Vec<ResponseData>, samples: usize) -> Vec<Resu
                 per_row[0],
                 per_row[per_row.len() - 1],
             );
-            let first_ms = first[first.len() / 2];
+            // A file is only usable once closed: no first-batch time for it.
+            let first_ms = (engine != "query-parquet").then(|| first[first.len() / 2]);
+            let first_text = first_ms.map_or("to a closed file".into(), |ms| {
+                format!("first batch {ms:.2} ms")
+            });
             println!(
-                "{name} {engine:<18} {median:7.3} µs/row (min {min:.3}, max {max:.3}), \
-                 first batch {first_ms:.2} ms"
+                "{name} {engine:<18} {median:7.3} µs/row (min {min:.3}, max {max:.3}), {first_text}"
             );
-            out.push(Result_ {
+            results.push(Result_ {
                 workload: name.to_owned(),
                 engine,
                 us_per_row_median: median,
@@ -422,11 +437,12 @@ fn loopback(name: &str, messages: Vec<ResponseData>, samples: usize) -> Vec<Resu
                 us_per_row_max: max,
                 allocations_per_message: f64::NAN,
                 replay: None,
-                first_batch_ms: Some(first_ms),
+                first_batch_ms: first_ms,
                 error: None,
             });
         }
-        out
+        let _ = std::fs::remove_file(&out);
+        results
     })
 }
 fn chrono_day() -> praevis_thetadata_client::NaiveDate {
