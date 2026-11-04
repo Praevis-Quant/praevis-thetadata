@@ -16,6 +16,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **P1 exit runners** (P1 PR 7, manual only; `bench/p1/`).
+  - `live_p0 checks` runs the 10 FREE-entitled endpoints through `query()`.
+    Each is compared value by value with the legacy decoder on a second
+    request; the report holds statuses, counts and schemas, never values.
+  - `live_checks.py` runs the same endpoints through the Python package's
+    vendor-named methods.
+  - `compare.py` measures W1 and W2 through the Python package like the vendor
+    baseline: end to end with Polars and pandas, plus conversion only from the
+    baseline's captures, through the new native `_decode_frames`.
+  - Peak memory is recorded by both `compare.py` and, now, `baseline.py`.
+  - CI runs the runners' offline tests.
 - **Python vendor-named methods and credentials** (P1 PR 6b).
   - All 81 vendor `ThetaClient` methods are generated with the vendor 1.0.17
     signatures (names, order and defaults), plus a keyword-only `plan`. Each

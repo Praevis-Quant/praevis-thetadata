@@ -543,6 +543,94 @@ impl BatchIterator {
     }
 }
 
+/// Decode encoded `ResponseData` messages (one request's responses, as the
+/// vendor baseline captures them) into a whole result, with the GIL released.
+/// The offline counterpart of the vendor package's `_convert_response_stream`,
+/// for conversion-only comparisons; no network.
+#[pyfunction]
+fn _decode_frames(py: Python<'_>, frames: Vec<Vec<u8>>) -> PyResult<Table> {
+    let batches = py
+        .detach(move || {
+            let mut decoder = ColumnarDecoder::new(Limits::default())?;
+            let mut out = Vec::new();
+            for frame in &frames {
+                decoder.push_encoded(frame)?;
+                if decoder.buffered_rows() >= 65_536 {
+                    out.extend(decoder.flush());
+                }
+            }
+            out.extend(decoder.flush());
+            Ok::<_, praevis_thetadata_arrow::DecodeError>(praevis_thetadata_client::unify(out))
+        })
+        .map_err(|e| PyValueError::new_err(format!("decode: {e:?}")))?;
+    Ok(Table::new(batches))
+}
+
+/// Encoded synthetic `ResponseData` messages, one row each as the vendor
+/// sends them (2 timestamps, 6 prices, `columns - 8` integers), for offline
+/// tests of the capture tooling.
+#[pyfunction]
+#[pyo3(signature = (rows, *, columns = 16))]
+fn _synthetic_frames(
+    py: Python<'_>,
+    rows: usize,
+    columns: usize,
+) -> PyResult<Vec<Py<pyo3::types::PyBytes>>> {
+    use praevis_thetadata_proto::endpoints::{
+        CompressionDescription, DataTable, DataValue, DataValueList, Price, ResponseData,
+        ZonedDateTime, data_value::DataType,
+    };
+    use prost::Message;
+    if columns < 8 {
+        return Err(PyValueError::new_err("columns >= 8"));
+    }
+    let headers: Vec<String> = (0..columns).map(|c| format!("c{c}")).collect();
+    let frames: Vec<Vec<u8>> = (0..rows as i64)
+        .map(|r| {
+            let mut values = vec![
+                Some(DataType::Timestamp(ZonedDateTime {
+                    epoch_ms: 1_718_380_800_000 + r as u64,
+                    zone: 0,
+                    ..Default::default()
+                })),
+                Some(DataType::Timestamp(ZonedDateTime {
+                    epoch_ms: 1_718_402_400_000 + r as u64,
+                    zone: 0,
+                    ..Default::default()
+                })),
+            ];
+            values.extend((0..6).map(|k| {
+                Some(DataType::Price(Price {
+                    value: 18_900 + (r % 97) as i32 + k,
+                    r#type: 8,
+                }))
+            }));
+            values.extend((8..columns).map(|k| Some(DataType::Number(r * 7 + k as i64))));
+            let table = DataTable {
+                headers: headers.clone(),
+                data_table: vec![DataValueList {
+                    values: values
+                        .into_iter()
+                        .map(|data_type| DataValue { data_type })
+                        .collect(),
+                }],
+            };
+            let bytes = table.encode_to_vec();
+            ResponseData {
+                original_size: bytes.len() as i32,
+                compressed_data: zstd::bulk::compress(&bytes, 3).expect("zstd"),
+                compression_description: Some(CompressionDescription { algo: 1, level: 3 }),
+                flat_file_manifest: None,
+            }
+            .encode_to_vec()
+        })
+        .collect();
+    Ok(frames
+        .iter()
+        .map(|f| pyo3::types::PyBytes::new(py, f).unbind())
+        .collect())
+}
+
 /// Synthetic vendor-shaped rows through the real decoder, for tests and the
 /// D.2 gates: `rows` rows of 2 timestamps, 6 prices and `columns - 8`
 /// integers, `per_message` rows per message.
@@ -631,5 +719,7 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(describe, m)?)?;
     m.add_function(wrap_pyfunction!(endpoints, m)?)?;
     m.add_function(wrap_pyfunction!(_synthetic, m)?)?;
+    m.add_function(wrap_pyfunction!(_decode_frames, m)?)?;
+    m.add_function(wrap_pyfunction!(_synthetic_frames, m)?)?;
     Ok(())
 }
