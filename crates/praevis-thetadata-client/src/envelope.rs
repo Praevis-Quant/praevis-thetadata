@@ -1,5 +1,5 @@
 //! Keep the outer protobuf response bounded before constructing vendor types.
-use crate::{api, bounded::DecodeLimits, eod::EodError, wire};
+use crate::{bounded::DecodeLimits, eod::EodError, wire};
 use prost::{
     Message,
     bytes::Buf,
@@ -10,23 +10,30 @@ use tonic::{
     codec::{Codec, DecodeBuf, Decoder, EncodeBuf, Encoder},
 };
 
-pub(crate) struct EnvelopeCodec;
-pub(crate) struct RequestEncoder;
+/// Encodes any request message with prost and hands each response frame over
+/// as owned bytes, so no prost response tree is built by the transport.
+pub(crate) struct EnvelopeCodec<T>(std::marker::PhantomData<fn(T)>);
+impl<T> Default for EnvelopeCodec<T> {
+    fn default() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+pub(crate) struct RequestEncoder<T>(std::marker::PhantomData<fn(T)>);
 pub(crate) struct FrameDecoder;
-impl Codec for EnvelopeCodec {
-    type Encode = api::StockHistoryEodRequest;
+impl<T: Message + Send + 'static> Codec for EnvelopeCodec<T> {
+    type Encode = T;
     type Decode = Vec<u8>;
-    type Encoder = RequestEncoder;
+    type Encoder = RequestEncoder<T>;
     type Decoder = FrameDecoder;
-    fn encoder(&mut self) -> RequestEncoder {
-        RequestEncoder
+    fn encoder(&mut self) -> RequestEncoder<T> {
+        RequestEncoder(std::marker::PhantomData)
     }
     fn decoder(&mut self) -> FrameDecoder {
         FrameDecoder
     }
 }
-impl Encoder for RequestEncoder {
-    type Item = api::StockHistoryEodRequest;
+impl<T: Message> Encoder for RequestEncoder<T> {
+    type Item = T;
     type Error = Status;
     fn encode(&mut self, item: Self::Item, dst: &mut EncodeBuf<'_>) -> Result<(), Status> {
         item.encode(dst)

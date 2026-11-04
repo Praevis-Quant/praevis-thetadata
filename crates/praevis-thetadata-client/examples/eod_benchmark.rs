@@ -6,7 +6,7 @@ use praevis_thetadata_client::{
 };
 use praevis_thetadata_client::{ClientConfig, Error, ThetaClient};
 use praevis_thetadata_core::Table;
-use praevis_thetadata_proto::{beta_endpoints as api, endpoints as wire};
+use praevis_thetadata_proto::endpoints as wire;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

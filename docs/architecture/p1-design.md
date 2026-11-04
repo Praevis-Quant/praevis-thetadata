@@ -73,12 +73,12 @@ message. A changed header list is a schema error, as today.
 
 | Wire `DataValue` | Arrow type | Rule |
 | --- | --- | --- |
-| text | `Utf8` (dictionary-encoded for low-cardinality columns, decided per batch) | |
+| text | `Utf8` | Per-batch dictionary encoding was dropped on 2026-11-04 (agreed): it would change a column's type between batches. A fixed, opt-in choice per query may come later |
 | number (int64) | `Int64` | |
 | price (`value`, `scale`) | **`Decimal128(38, 10)`** | unscaled = `value × 10^scale` (exponent = scale − 10). Every wire scale 1-19 maps exactly: at most 2.1×10^28 < 10^38. Scale 0 is null, as today |
 | timestamp | **`Timestamp(Millisecond, tz)`** (see decision D1) | tz = `America/New_York` for zone 0, `UTC` for zone 1. A column mixing zones is a schema error. ADR-0019 still rejects non-millisecond precision |
 | boolean | `Boolean` | |
-| null / unset | null in the column's type | A column that is null until its first value is backfilled with nulls; an all-null column is `Null` |
+| null / unset | null in the column's type | A column that is null until its first value is backfilled with nulls; an all-null column is `Null`. Between batches, the only schema change is `Null` becoming typed; `collect()` gives earlier batches the final type (agreed 2026-11-04) |
 
 A value of a different kind than its column's type is a schema error, never a
 silent coercion.
@@ -195,6 +195,9 @@ decides which generated endpoints get live checks in the later PRs.
    tests and the CPU benchmark (no API yet).
 4. The query engine: coalescing streams, planner, scheduler and the
    `QueryError` generalization, with a before/after benchmark (D-B).
+   **Split on 2026-11-04 (agreed):** 4a is the generic `query()` stream with
+   coalescing, inline decoding from the assembled frame (option 2a) and
+   `QueryError`; 4b is the planner and scheduler.
 5. The Parquet sink.
 6. The Python package, compatibility aliases and the D.2 gates (CI wheels).
 7. Live checks of the FREE-entitled endpoints (from PR 2's map), and the P1

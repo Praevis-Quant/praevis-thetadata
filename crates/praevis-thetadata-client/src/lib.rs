@@ -9,6 +9,7 @@ pub mod endpoints;
 mod envelope;
 mod eod;
 mod framing;
+mod query;
 #[cfg(test)]
 extern crate self as praevis_thetadata_client;
 #[cfg(test)]
@@ -16,9 +17,13 @@ extern crate self as praevis_thetadata_client;
 #[path = "../tests/support/mod.rs"]
 mod test_fixture;
 pub use eod::{
-    DecodeLimits, EodBatchStream, EodError, EodPolicy, EodTableStream, NaiveDate, StockEodRequest,
+    DecodeLimits, EodBatchStream, EodError, EodPolicy, EodTableStream, NaiveDate, QueryError,
+    StockEodRequest,
 };
+/// The arrow-rs crates whose types the query streams return.
+pub use praevis_thetadata_arrow::{arrow_array, arrow_schema};
 pub use praevis_thetadata_core::{BatchValue, DataBatch, TimeZone, Timestamp};
+pub use query::{BatchPolicy, QueryStream, unify};
 
 pub use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, Session};
 pub use praevis_thetadata_core::{Table, Value};

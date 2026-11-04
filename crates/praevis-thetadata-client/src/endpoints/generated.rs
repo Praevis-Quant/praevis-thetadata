@@ -18,13 +18,18 @@ impl StockListSymbols {
 }
 impl Endpoint for StockListSymbols {
     const RPC: &'static str = "GetStockListSymbols";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockListSymbols";
     const PYTHON_NAME: Option<&'static str> = Some("stock_list_symbols");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "A symbol can be defined as a unique identifier for a stock / underlying asset. Common terms also include: root, ticker, and underlying. This endpoint returns all traded symbols for stocks. This endpoint is updated overnight.";
     type Query = api::StockListSymbolsRequestQuery;
+    type Request = api::StockListSymbolsRequest;
     fn to_query(&self) -> Self::Query {
         let query = api::StockListSymbolsRequestQuery::default();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockListSymbolsRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -58,15 +63,20 @@ impl StockListDates {
 }
 impl Endpoint for StockListDates {
     const RPC: &'static str = "GetStockListDates";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockListDates";
     const PYTHON_NAME: Option<&'static str> = Some("stock_list_dates");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Lists all dates of data that are available for a stock with a given request type and symbol. This endpoint is updated overnight.";
     type Query = api::StockListDatesRequestQuery;
+    type Request = api::StockListDatesRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockListDatesRequestQuery::default();
         query.request_type = self.request_type.clone();
         query.symbol.extend(self.symbol.0.iter().cloned());
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockListDatesRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -118,10 +128,12 @@ impl StockSnapshotOhlc {
 }
 impl Endpoint for StockSnapshotOhlc {
     const RPC: &'static str = "GetStockSnapshotOhlc";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockSnapshotOhlc";
     const PYTHON_NAME: Option<&'static str> = Some("stock_snapshot_ohlc");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Provides a real-time Open, High, Low, Close for the current day.\n* Returns a real-time session OHLC from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n* Returns a 15-minute delayed session OHLC from the [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs) if the account has the stocks value subscription.\n* Returns the latest message for each symbol from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Symbols with no messages in the past 7 calendar days are not returned. Use `current_day_only=true` to return only today's data.";
     type Query = api::StockSnapshotOhlcRequestQuery;
+    type Request = api::StockSnapshotOhlcRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockSnapshotOhlcRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
@@ -141,6 +153,9 @@ impl Endpoint for StockSnapshotOhlc {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockSnapshotOhlcRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -192,10 +207,12 @@ impl StockSnapshotTrade {
 }
 impl Endpoint for StockSnapshotTrade {
     const RPC: &'static str = "GetStockSnapshotTrade";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockSnapshotTrade";
     const PYTHON_NAME: Option<&'static str> = Some("stock_snapshot_trade");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Returns a real-time last trade from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n\n- Returns the latest message for each symbol from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Symbols with no messages in the past 7 calendar days are not returned. Use `current_day_only=true` to return only today's data.";
     type Query = api::StockSnapshotTradeRequestQuery;
+    type Request = api::StockSnapshotTradeRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockSnapshotTradeRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
@@ -215,6 +232,9 @@ impl Endpoint for StockSnapshotTrade {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockSnapshotTradeRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -266,10 +286,12 @@ impl StockSnapshotQuote {
 }
 impl Endpoint for StockSnapshotQuote {
     const RPC: &'static str = "GetStockSnapshotQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockSnapshotQuote";
     const PYTHON_NAME: Option<&'static str> = Some("stock_snapshot_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "* Returns a real-time last BBO quote from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n* Returns a 15-minute delayed NBBO quote from the [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs) account has the [stocks value subscription](https://www.thetadata.net/subscribe.html#stocks) subscription.\n- Returns the latest message for each symbol from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Symbols with no messages in the past 7 calendar days are not returned. Use `current_day_only=true` to return only today's data.";
     type Query = api::StockSnapshotQuoteRequestQuery;
+    type Request = api::StockSnapshotQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockSnapshotQuoteRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
@@ -289,6 +311,9 @@ impl Endpoint for StockSnapshotQuote {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockSnapshotQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -340,10 +365,12 @@ impl StockSnapshotMarketValue {
 }
 impl Endpoint for StockSnapshotMarketValue {
     const RPC: &'static str = "GetStockSnapshotMarketValue";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockSnapshotMarketValue";
     const PYTHON_NAME: Option<&'static str> = Some("stock_snapshot_market_value");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "* Returns a real-time market value derived from the last BBO quote from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n* Returns a 15-minute delayed market value derived from an NBBO quote from the [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs) if the account has the [stocks value subscription](https://www.thetadata.net/subscribe.html#stocks) subscription.\n- Returns the latest message for each symbol from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Symbols with no messages in the past 7 calendar days are not returned. Use `current_day_only=true` to return only today's data.";
     type Query = api::StockSnapshotMarketValueRequestQuery;
+    type Request = api::StockSnapshotMarketValueRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockSnapshotMarketValueRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
@@ -363,6 +390,9 @@ impl Endpoint for StockSnapshotMarketValue {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockSnapshotMarketValueRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -399,16 +429,21 @@ impl StockHistoryEod {
 }
 impl Endpoint for StockHistoryEod {
     const RPC: &'static str = "GetStockHistoryEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryEod";
     const PYTHON_NAME: Option<&'static str> = Some("stock_history_eod");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Since [the equity SIPs](/Articles/Data-And-Requests/The-SIPs.html) only generate a partial EOD report, Theta Data generates a national EOD report at 17:15 ET each day. ``created`` represents the datetime the report was generated and ``last_trade`` represents the datetime of the last trade. The quote in the response represents the last NBBO reported by [CTA or UTP](/Articles/Data-And-Requests/The-SIPs.html) at the time of report generation. You can read more about EOD & OHLC data [here](/Articles/Data-And-Requests/OHLC-EOD.html). Theta Data plans to avail SIP EOD reports in the near future.";
     type Query = api::StockHistoryEodRequestQuery;
+    type Request = api::StockHistoryEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryEodRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.start_date = date_wire(self.start_date);
         query.end_date = date_wire(self.end_date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockHistoryEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -488,10 +523,12 @@ impl StockHistoryOhlc {
 }
 impl Endpoint for StockHistoryOhlc {
     const RPC: &'static str = "GetStockHistoryOhlc";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryOhlc";
     const PYTHON_NAME: Option<&'static str> = Some("stock_history_ohlc");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Aggregated OHLC bars that use [SIP rules](/Articles/Data-And-Requests/OHLC-EOD.html) for each bar. Time timestamp of the bar represents the opening time of the bar. For a trade to be part of the bar:  ``bar time`` <= ``trade time`` < ``bar timestamp + ivl``, where ivl is the specified interval size in milliseconds. \n- Set the ``venue`` parameter to ``nqb`` to access current-day real-time historic data from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::StockHistoryOhlcRequestQuery;
+    type Request = api::StockHistoryOhlcRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryOhlcRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -529,6 +566,9 @@ impl Endpoint for StockHistoryOhlc {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockHistoryOhlcRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -601,10 +641,12 @@ impl StockHistoryTrade {
 }
 impl Endpoint for StockHistoryTrade {
     const RPC: &'static str = "GetStockHistoryTrade";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryTrade";
     const PYTHON_NAME: Option<&'static str> = Some("stock_history_trade");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Returns every trade reported by [UTP & CTA](/Articles/Data-And-Requests/The-SIPs). Set the ``venue`` parameter to ``nqb`` to access current-day real-time historic data from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::StockHistoryTradeRequestQuery;
+    type Request = api::StockHistoryTradeRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryTradeRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -639,6 +681,9 @@ impl Endpoint for StockHistoryTrade {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockHistoryTradeRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -718,10 +763,12 @@ impl StockHistoryQuote {
 }
 impl Endpoint for StockHistoryQuote {
     const RPC: &'static str = "GetStockHistoryQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryQuote";
     const PYTHON_NAME: Option<&'static str> = Some("stock_history_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns every NBBO quote reported by [UTP and CTA](/Articles/Data-And-Requests/The-SIPs). \n- If the ``interval`` parameter is specified, the quote for each interval represents the last quote prior to the interval's timestamp. \n- Set the ``venue`` parameter to ``nqb`` to access current-day real-time historic data from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::StockHistoryQuoteRequestQuery;
+    type Request = api::StockHistoryQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryQuoteRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -759,6 +806,9 @@ impl Endpoint for StockHistoryQuote {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockHistoryQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -845,10 +895,12 @@ impl StockHistoryTradeQuote {
 }
 impl Endpoint for StockHistoryTradeQuote {
     const RPC: &'static str = "GetStockHistoryTradeQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryTradeQuote";
     const PYTHON_NAME: Option<&'static str> = Some("stock_history_trade_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Returns every trade reported by [UTP & CTA](/Articles/Data-And-Requests/The-SIPs) paired with the last BBO quote reported by [UTP or CTA](/Articles/Data-And-Requests/The-SIPs) at the time of trade. A quote is matched with a trade if its timestamp ``<=`` the trade timestamp. If you prefer to match quotes with timestamps that are ``<`` the trade timestamp, specify the ``exclusive`` parameter to ``true``. Set the ``venue`` parameter to ``nqb`` to access current-day real-time historic data from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Multi-day requests are limited to 1 month of data.\n- For current-day data requests, trades are matched with the last quote reported before the trade (unless use_time_based_trade_quote is given).\n- For deeper historical data, trades are matched with quotes based on millisecond timestamps. A quote is matched with a trade if its timestamp ``<=`` the trade timestamp. \n- To match trades with quotes timestamps that are ``<`` the trade timestamp, specify the ``exclusive``parameter to ``true``. After thorough testing, we have determined that using ``exclusive=true`` might yield better results for various applications.";
     type Query = api::StockHistoryTradeQuoteRequestQuery;
+    type Request = api::StockHistoryTradeQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryTradeQuoteRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -893,6 +945,9 @@ impl Endpoint for StockHistoryTradeQuote {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockHistoryTradeQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -939,10 +994,12 @@ impl StockAtTimeTrade {
 }
 impl Endpoint for StockAtTimeTrade {
     const RPC: &'static str = "GetStockAtTimeTrade";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockAtTimeTrade";
     const PYTHON_NAME: Option<&'static str> = Some("stock_at_time_trade");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "#### Real-time request:\n- Returns a real-time session from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs.html#nasdaq-basic) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Returns a 15-minute delayed session from the [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs.html#equities-cta-utp) account has the [stocks value subscription](https://www.thetadata.net/subscribe.html#stocks) subscription.\n\n#### Historical request:\nReturns the last trade reported by [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs.html#equities-cta-utp) at a specified millisecond of the day.\nTrade condition mappings can be found [here](/Articles/Errors-Exchanges-Conditions/Trade-Conditions.html).";
     type Query = api::StockAtTimeTradeRequestQuery;
+    type Request = api::StockAtTimeTradeRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockAtTimeTradeRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -955,6 +1012,9 @@ impl Endpoint for StockAtTimeTrade {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockAtTimeTradeRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1001,10 +1061,12 @@ impl StockAtTimeQuote {
 }
 impl Endpoint for StockAtTimeQuote {
     const RPC: &'static str = "GetStockAtTimeQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockAtTimeQuote";
     const PYTHON_NAME: Option<&'static str> = Some("stock_at_time_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "#### Real-time request:\n  - Subscription tier standard or higher will default to NQB.\n  - Real-time last BBO quote at-time_of_day-time from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs.html#nasdaq-basic) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n  - 15-minute delayed NBBO quote at-time_of_day-time from the [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs.html#equities-cta-utp) account has the [stocks value subscription](https://www.thetadata.net/subscribe.html#stocks) subscription.\n\n#### Historical request:\n  Returns the last NBBO quote reported by [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs.html#equities-cta-utp) at a specified millisecond of the day.";
     type Query = api::StockAtTimeQuoteRequestQuery;
+    type Request = api::StockAtTimeQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockAtTimeQuoteRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -1017,6 +1079,9 @@ impl Endpoint for StockAtTimeQuote {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockAtTimeQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1044,13 +1109,18 @@ impl OptionListSymbols {
 }
 impl Endpoint for OptionListSymbols {
     const RPC: &'static str = "GetOptionListSymbols";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListSymbols";
     const PYTHON_NAME: Option<&'static str> = Some("option_list_symbols");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "A symbol can be defined as a unique identifier for a stock / underlying asset. Common terms also include: root, ticker, and underlying. This endpoint returns all traded symbols for options. This endpoint is updated overnight.";
     type Query = api::OptionListSymbolsRequestQuery;
+    type Request = api::OptionListSymbolsRequest;
     fn to_query(&self) -> Self::Query {
         let query = api::OptionListSymbolsRequestQuery::default();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionListSymbolsRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1101,10 +1171,12 @@ impl OptionListDates {
 }
 impl Endpoint for OptionListDates {
     const RPC: &'static str = "GetOptionListDates";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListDates";
     const PYTHON_NAME: Option<&'static str> = Some("option_list_dates");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Lists all dates of data that are available for an option with a given symbol, request type, and expiration.\nThis endpoint is updated overnight.";
     type Query = api::OptionListDatesRequestQuery;
+    type Request = api::OptionListDatesRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionListDatesRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -1115,6 +1187,9 @@ impl Endpoint for OptionListDates {
         });
         query.request_type = self.request_type.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionListDatesRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1145,14 +1220,19 @@ impl OptionListExpirations {
 }
 impl Endpoint for OptionListExpirations {
     const RPC: &'static str = "GetOptionListExpirations";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListExpirations";
     const PYTHON_NAME: Option<&'static str> = Some("option_list_expirations");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Lists all dates of expirations that are available for an option with a given symbol.\nThis endpoint is updated overnight.";
     type Query = api::OptionListExpirationsRequestQuery;
+    type Request = api::OptionListExpirationsRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionListExpirationsRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionListExpirationsRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1186,15 +1266,20 @@ impl OptionListStrikes {
 }
 impl Endpoint for OptionListStrikes {
     const RPC: &'static str = "GetOptionListStrikes";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListStrikes";
     const PYTHON_NAME: Option<&'static str> = Some("option_list_strikes");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Lists all strikes that are available for an option with a given symbol and expiration date.\nThis endpoint is updated overnight.";
     type Query = api::OptionListStrikesRequestQuery;
+    type Request = api::OptionListStrikesRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionListStrikesRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
         query.expiration = date_wire(self.expiration);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionListStrikesRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1242,10 +1327,12 @@ impl OptionListContracts {
 }
 impl Endpoint for OptionListContracts {
     const RPC: &'static str = "GetOptionListContracts";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListContracts";
     const PYTHON_NAME: Option<&'static str> = Some("option_list_contracts");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Lists all contracts that were traded or quoted on a particular date.\n\nIf the ``symbol`` parameter is specified, the returned contracts will be filtered to match the symbol.\nMultiple symbols can be specified by separating them with commas such as ``symbol=AAPL,SPY,AMD``\nThis endpoint is updated real-time.";
     type Query = api::OptionListContractsRequestQuery;
+    type Request = api::OptionListContractsRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionListContractsRequestQuery::default();
         query.request_type = self.request_type.clone();
@@ -1261,6 +1348,9 @@ impl Endpoint for OptionListContracts {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionListContractsRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1336,10 +1426,12 @@ impl OptionSnapshotOhlc {
 }
 impl Endpoint for OptionSnapshotOhlc {
     const RPC: &'static str = "GetOptionSnapshotOhlc";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotOhlc";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_ohlc");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last ohlc of an option contract for the trading day.\n- You might need to change the default expiration date to a different date if it is past the current date.\n- Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotOhlcRequestQuery;
+    type Request = api::OptionSnapshotOhlcRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotOhlcRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -1369,6 +1461,9 @@ impl Endpoint for OptionSnapshotOhlc {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotOhlcRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1437,10 +1532,12 @@ impl OptionSnapshotTrade {
 }
 impl Endpoint for OptionSnapshotTrade {
     const RPC: &'static str = "GetOptionSnapshotTrade";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotTrade";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_trade");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve the real-time last trade of an option contract.\n- You might need to change the default expiration date to a different date if it is past the current date.\n- Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotTradeRequestQuery;
+    type Request = api::OptionSnapshotTradeRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotTradeRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -1465,6 +1562,9 @@ impl Endpoint for OptionSnapshotTrade {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotTradeRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1540,10 +1640,12 @@ impl OptionSnapshotQuote {
 }
 impl Endpoint for OptionSnapshotQuote {
     const RPC: &'static str = "GetOptionSnapshotQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotQuote";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last NBBO quote of an option contract.\n- You might need to change the default expiration date to a different date if it is past the current date.\n- Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotQuoteRequestQuery;
+    type Request = api::OptionSnapshotQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotQuoteRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -1573,6 +1675,9 @@ impl Endpoint for OptionSnapshotQuote {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1648,10 +1753,12 @@ impl OptionSnapshotOpenInterest {
 }
 impl Endpoint for OptionSnapshotOpenInterest {
     const RPC: &'static str = "GetOptionSnapshotOpenInterest";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotOpenInterest";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_open_interest");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve the last open interest message of an option contract.\n- Open interest is reported around 06:30 ET every morning by OPRA and reflects the open interest at the of the previous trading day. \n- You might need to change the default expiration date to a different date if it is past the current date.\n- Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotOpenInterestRequestQuery;
+    type Request = api::OptionSnapshotOpenInterestRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotOpenInterestRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -1681,6 +1788,9 @@ impl Endpoint for OptionSnapshotOpenInterest {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotOpenInterestRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1756,10 +1866,12 @@ impl OptionSnapshotMarketValue {
 }
 impl Endpoint for OptionSnapshotMarketValue {
     const RPC: &'static str = "GetOptionSnapshotMarketValue";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotMarketValue";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_market_value");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "* Returns a real-time market value derived from the last NBBO quote of an option contract.\n* Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotMarketValueRequestQuery;
+    type Request = api::OptionSnapshotMarketValueRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotMarketValueRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -1789,6 +1901,9 @@ impl Endpoint for OptionSnapshotMarketValue {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotMarketValueRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -1913,10 +2028,12 @@ impl OptionSnapshotGreeksImpliedVolatility {
 }
 impl Endpoint for OptionSnapshotGreeksImpliedVolatility {
     const RPC: &'static str = "GetOptionSnapshotGreeksImpliedVolatility";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksImpliedVolatility";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_greeks_implied_volatility");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Returns implied volatilies calculated using the national best bid, mid, and ask price\nof the option respectively. The underlying price represents whatever the last underlying price was at the\n``underlying_timestamp`` field. You can read more about how Theta Data calculates greeks \n[here](/Articles/Data-And-Requests/Option-Greeks.html).\n\n- Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotGreeksImpliedVolatilityRequestQuery;
+    type Request = api::OptionSnapshotGreeksImpliedVolatilityRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotGreeksImpliedVolatilityRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -1981,6 +2098,9 @@ impl Endpoint for OptionSnapshotGreeksImpliedVolatility {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotGreeksImpliedVolatilityRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -2105,10 +2225,12 @@ impl OptionSnapshotGreeksAll {
 }
 impl Endpoint for OptionSnapshotGreeksAll {
     const RPC: &'static str = "GetOptionSnapshotGreeksAll";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksAll";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_greeks_all");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last greeks calculation for all option contracts that lie on a provided expiration.\n- You might need to change the default expiration date to a different date if it is past the current date. Some quotes are omitted in the example to reduce the space of the sample output.\n- Make `expiration` * if you want to get the snapshot for every expiration chain for the underlying.\n> Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotGreeksAllRequestQuery;
+    type Request = api::OptionSnapshotGreeksAllRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -2173,6 +2295,9 @@ impl Endpoint for OptionSnapshotGreeksAll {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotGreeksAllRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -2318,10 +2443,12 @@ impl OptionSnapshotBinomialGreeksAll {
 }
 impl Endpoint for OptionSnapshotBinomialGreeksAll {
     const RPC: &'static str = "GetOptionSnapshotBinomialGreeksAll";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotBinomialGreeksAll";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_binomial_greeks_all");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last greeks calculation for all option contracts that lie on a provided expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- You might need to change the default expiration date to a different date if it is past the current date. Some quotes are omitted in the example to reduce the space of the sample output.\n- Make `expiration` * if you want to get the snapshot for every expiration chain for the underlying.\n> Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotBinomialGreeksAllRequestQuery;
+    type Request = api::OptionSnapshotBinomialGreeksAllRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotBinomialGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -2401,6 +2528,9 @@ impl Endpoint for OptionSnapshotBinomialGreeksAll {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotBinomialGreeksAllRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -2525,10 +2655,12 @@ impl OptionSnapshotGreeksFirstOrder {
 }
 impl Endpoint for OptionSnapshotGreeksFirstOrder {
     const RPC: &'static str = "GetOptionSnapshotGreeksFirstOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksFirstOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_greeks_first_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last greeks calculation for all option contracts that lie on a provided expiration.\n- You might need to change the default expiration date to a different date if it is past the current date. Some quotes are omitted in the example to reduce the space of the sample output.\n- Make `expiration` * if you want to get the snapshot for every expiration chain for the underlying.\n> Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotGreeksFirstOrderRequestQuery;
+    type Request = api::OptionSnapshotGreeksFirstOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -2593,6 +2725,9 @@ impl Endpoint for OptionSnapshotGreeksFirstOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotGreeksFirstOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -2738,10 +2873,12 @@ impl OptionSnapshotBinomialGreeksFirstOrder {
 }
 impl Endpoint for OptionSnapshotBinomialGreeksFirstOrder {
     const RPC: &'static str = "GetOptionSnapshotBinomialGreeksFirstOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotBinomialGreeksFirstOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_binomial_greeks_first_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last greeks calculation for all option contracts that lie on a provided expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- You might need to change the default expiration date to a different date if it is past the current date. Some quotes are omitted in the example to reduce the space of the sample output.\n- Make `expiration` * if you want to get the snapshot for every expiration chain for the underlying.\n> Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotBinomialGreeksFirstOrderRequestQuery;
+    type Request = api::OptionSnapshotBinomialGreeksFirstOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotBinomialGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -2821,6 +2958,9 @@ impl Endpoint for OptionSnapshotBinomialGreeksFirstOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotBinomialGreeksFirstOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -2945,10 +3085,12 @@ impl OptionSnapshotGreeksSecondOrder {
 }
 impl Endpoint for OptionSnapshotGreeksSecondOrder {
     const RPC: &'static str = "GetOptionSnapshotGreeksSecondOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksSecondOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_greeks_second_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last second order greeks calculation for all option contracts that lie on a provided expiration.\n- You might need to change the default expiration date to a different date if it is past the current date. Some quotes are omitted in the example to reduce the space of the sample output.\n- Make `expiration` * if you want to get the snapshot for every expiration chain for the underlying.\n> Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotGreeksSecondOrderRequestQuery;
+    type Request = api::OptionSnapshotGreeksSecondOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -3013,6 +3155,9 @@ impl Endpoint for OptionSnapshotGreeksSecondOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotGreeksSecondOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -3158,10 +3303,12 @@ impl OptionSnapshotBinomialGreeksSecondOrder {
 }
 impl Endpoint for OptionSnapshotBinomialGreeksSecondOrder {
     const RPC: &'static str = "GetOptionSnapshotBinomialGreeksSecondOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotBinomialGreeksSecondOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_binomial_greeks_second_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last second order binomial greeks calculation for all option contracts that lie on a provided expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- You might need to change the default expiration date to a different date if it is past the current date. Some quotes are omitted in the example to reduce the space of the sample output.\n- Make `expiration` * if you want to get the snapshot for every expiration chain for the underlying.\n> Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotBinomialGreeksSecondOrderRequestQuery;
+    type Request = api::OptionSnapshotBinomialGreeksSecondOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotBinomialGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -3241,6 +3388,9 @@ impl Endpoint for OptionSnapshotBinomialGreeksSecondOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotBinomialGreeksSecondOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -3365,10 +3515,12 @@ impl OptionSnapshotGreeksThirdOrder {
 }
 impl Endpoint for OptionSnapshotGreeksThirdOrder {
     const RPC: &'static str = "GetOptionSnapshotGreeksThirdOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksThirdOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_greeks_third_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last third order greeks calculation for all option contracts that lie on a provided expiration.\n- You might need to change the default expiration date to a different date if it is past the current date. Some quotes are omitted in the example to reduce the space of the sample output.\n- Make `expiration` * if you want to get the snapshot for every expiration chain for the underlying.\n> Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotGreeksThirdOrderRequestQuery;
+    type Request = api::OptionSnapshotGreeksThirdOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -3433,6 +3585,9 @@ impl Endpoint for OptionSnapshotGreeksThirdOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotGreeksThirdOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -3578,10 +3733,12 @@ impl OptionSnapshotBinomialGreeksThirdOrder {
 }
 impl Endpoint for OptionSnapshotBinomialGreeksThirdOrder {
     const RPC: &'static str = "GetOptionSnapshotBinomialGreeksThirdOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotBinomialGreeksThirdOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_snapshot_binomial_greeks_third_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieve a real-time last third order binomial greeks calculation for all option contracts that lie on a provided expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- You might need to change the default expiration date to a different date if it is past the current date. Some quotes are omitted in the example to reduce the space of the sample output.\n- Make `expiration` * if you want to get the snapshot for every expiration chain for the underlying.\n> Returns the latest message for each contract from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Contracts with no messages in the past 7 calendar days are not returned. Contracts are removed after their expiration date's trading session. Use `current_day_only=true` to return only today's data.";
     type Query = api::OptionSnapshotBinomialGreeksThirdOrderRequestQuery;
+    type Request = api::OptionSnapshotBinomialGreeksThirdOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionSnapshotBinomialGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -3662,6 +3819,9 @@ impl Endpoint for OptionSnapshotBinomialGreeksThirdOrder {
         }
         query
     }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionSnapshotBinomialGreeksThirdOrderRequest { query_info: Some(query_info), params: Some(query) }
+    }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
             let request = client.raw_request(api::OptionSnapshotBinomialGreeksThirdOrderRequest {
@@ -3728,10 +3888,12 @@ impl OptionHistoryEod {
 }
 impl Endpoint for OptionHistoryEod {
     const RPC: &'static str = "GetOptionHistoryEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryEod";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_eod");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Since [OPRA](/Articles/Data-And-Requests/The-SIPs.html) does not provide a national EOD report for options, Theta Data generates a national EOD report at 17:15 ET each day.\n- ``created`` represents the datetime the report was generated and ``last_trade`` represents the datetime of the last trade. \n- The quote in the response represents the last NBBO reported by OPRA at the time of report generation. \n- You can read more about EOD & OHLC data [here](/Articles/Data-And-Requests/OHLC-EOD.html).";
     type Query = api::OptionHistoryEodRequestQuery;
+    type Request = api::OptionHistoryEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryEodRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -3753,6 +3915,9 @@ impl Endpoint for OptionHistoryEod {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -3849,10 +4014,12 @@ impl OptionHistoryOhlc {
 }
 impl Endpoint for OptionHistoryOhlc {
     const RPC: &'static str = "GetOptionHistoryOhlc";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryOhlc";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_ohlc");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Aggregated OHLC bars that use [SIP rules](/Articles/Data-And-Requests/OHLC-EOD.html) for each bar. \n- Time timestamp of the bar represents the opening time of the bar. For a trade to be part of the bar:  ``bar timestamp`` <= ``trade time`` < ``bar timestamp + interval``.\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryOhlcRequestQuery;
+    type Request = api::OptionHistoryOhlcRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryOhlcRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -3895,6 +4062,9 @@ impl Endpoint for OptionHistoryOhlc {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryOhlcRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -3991,10 +4161,12 @@ impl OptionHistoryTrade {
 }
 impl Endpoint for OptionHistoryTrade {
     const RPC: &'static str = "GetOptionHistoryTrade";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTrade";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_trade");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html). \n- Trade condition mappings can be found [here](/Articles/Errors-Exchanges-Conditions/Trade-Conditions.html).\n- Extended trade conditions are not reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) for options, so they can be ignored.\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeRequestQuery;
+    type Request = api::OptionHistoryTradeRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4039,6 +4211,9 @@ impl Endpoint for OptionHistoryTrade {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryTradeRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -4142,10 +4317,12 @@ impl OptionHistoryQuote {
 }
 impl Endpoint for OptionHistoryQuote {
     const RPC: &'static str = "GetOptionHistoryQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryQuote";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns every NBBO quote reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html). \n- If the ``interval`` parameter is specified, the quote for each interval represents the last quote at the interval's timestamp.\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryQuoteRequestQuery;
+    type Request = api::OptionHistoryQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryQuoteRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4193,6 +4370,9 @@ impl Endpoint for OptionHistoryQuote {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -4303,10 +4483,12 @@ impl OptionHistoryTradeQuote {
 }
 impl Endpoint for OptionHistoryTradeQuote {
     const RPC: &'static str = "GetOptionHistoryTradeQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeQuote";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_trade_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns every [trade](/operations/option_history_trade.html) reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) paired with the last NBBO quote reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) at the time of trade.\n- For current-day data requests, trades are matched with the last quote reported before the trade (unless use_time_based_trade_quote is given).\n- For deeper historical data, trades are matched with quotes based on millisecond timestamps. A quote is matched with a trade if its timestamp ``<=`` the trade timestamp. \n- To match trades with quotes timestamps that are ``<`` the trade timestamp, specify the ``exclusive``parameter to ``true``. After thorough testing, we have determined that using ``exclusive=true`` might yield better results for various applications.\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeQuoteRequestQuery;
+    type Request = api::OptionHistoryTradeQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeQuoteRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4361,6 +4543,9 @@ impl Endpoint for OptionHistoryTradeQuote {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryTradeQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -4443,10 +4628,12 @@ impl OptionHistoryOpenInterest {
 }
 impl Endpoint for OptionHistoryOpenInterest {
     const RPC: &'static str = "GetOptionHistoryOpenInterest";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryOpenInterest";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_open_interest");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Open Interest is normally reported once per day by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) at approximately 06:30 ET.\n- A new open interest message might not be sent by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) if there is no open interest for the option contract.\n- The reported open interest represents the open interest at the end of the previous trading day.";
     type Query = api::OptionHistoryOpenInterestRequestQuery;
+    type Request = api::OptionHistoryOpenInterestRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryOpenInterestRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4481,6 +4668,9 @@ impl Endpoint for OptionHistoryOpenInterest {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryOpenInterestRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -4597,10 +4787,12 @@ impl OptionHistoryGreeksEod {
 }
 impl Endpoint for OptionHistoryGreeksEod {
     const RPC: &'static str = "GetOptionHistoryGreeksEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksEod";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_greeks_eod");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Uses Theta Data's EOD reports that get generated at 17:15 ET each day. By default, the greeks are calculated from the midpoint of the option's closing NBBO and the underlying's closing price. Use `option_use_nbbo` and `underlyer_use_nbbo` to switch the price source.\n- **Set `expiration` to ``*`` if you want to retrieve data for every option that shares the same ``symbol``. (note: Any ``expiration=*`` must be requested day by day)**";
     type Query = api::OptionHistoryGreeksEodRequestQuery;
+    type Request = api::OptionHistoryGreeksEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksEodRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4657,6 +4849,9 @@ impl Endpoint for OptionHistoryGreeksEod {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryGreeksEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -4794,10 +4989,12 @@ impl OptionHistoryBinomialGreeksEod {
 }
 impl Endpoint for OptionHistoryBinomialGreeksEod {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksEod";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_binomial_greeks_eod");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Uses Theta Data's EOD reports that get generated at 17:15 ET each day. By default, the greeks are calculated from the midpoint of the option's closing NBBO and the underlying's closing price. Use `option_use_nbbo` and `underlyer_use_nbbo` to switch the price source.\n- **Set `expiration` to ``*`` if you want to retrieve data for every option that shares the same ``symbol``. (note: Any ``expiration=*`` must be requested day by day)**";
     type Query = api::OptionHistoryBinomialGreeksEodRequestQuery;
+    type Request = api::OptionHistoryBinomialGreeksEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksEodRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4869,6 +5066,9 @@ impl Endpoint for OptionHistoryBinomialGreeksEod {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryBinomialGreeksEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -5000,10 +5200,12 @@ impl OptionHistoryGreeksAll {
 }
 impl Endpoint for OptionHistoryGreeksAll {
     const RPC: &'static str = "GetOptionHistoryGreeksAll";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksAll";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_greeks_all");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksAllRequestQuery;
+    type Request = api::OptionHistoryGreeksAllRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -5071,6 +5273,9 @@ impl Endpoint for OptionHistoryGreeksAll {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryGreeksAllRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -5223,10 +5428,12 @@ impl OptionHistoryBinomialGreeksAll {
 }
 impl Endpoint for OptionHistoryBinomialGreeksAll {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksAll";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksAll";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_binomial_greeks_all");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryBinomialGreeksAllRequestQuery;
+    type Request = api::OptionHistoryBinomialGreeksAllRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -5309,6 +5516,9 @@ impl Endpoint for OptionHistoryBinomialGreeksAll {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryBinomialGreeksAllRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -5447,10 +5657,12 @@ impl OptionHistoryTradeGreeksAll {
 }
 impl Endpoint for OptionHistoryTradeGreeksAll {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksAll";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksAll";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_trade_greeks_all");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksAllRequestQuery;
+    type Request = api::OptionHistoryTradeGreeksAllRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -5525,6 +5737,9 @@ impl Endpoint for OptionHistoryTradeGreeksAll {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryTradeGreeksAllRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -5677,10 +5892,12 @@ impl OptionHistoryBinomialTradeGreeksAll {
 }
 impl Endpoint for OptionHistoryBinomialTradeGreeksAll {
     const RPC: &'static str = "GetOptionHistoryBinomialTradeGreeksAll";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialTradeGreeksAll";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_binomial_trade_greeks_all");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryBinomialTradeGreeksAllRequestQuery;
+    type Request = api::OptionHistoryBinomialTradeGreeksAllRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialTradeGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -5765,6 +5982,9 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksAll {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryBinomialTradeGreeksAllRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -5896,10 +6116,12 @@ impl OptionHistoryGreeksFirstOrder {
 }
 impl Endpoint for OptionHistoryGreeksFirstOrder {
     const RPC: &'static str = "GetOptionHistoryGreeksFirstOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksFirstOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_greeks_first_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksFirstOrderRequestQuery;
+    type Request = api::OptionHistoryGreeksFirstOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -5967,6 +6189,9 @@ impl Endpoint for OptionHistoryGreeksFirstOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryGreeksFirstOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -6119,10 +6344,12 @@ impl OptionHistoryBinomialGreeksFirstOrder {
 }
 impl Endpoint for OptionHistoryBinomialGreeksFirstOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksFirstOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksFirstOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_binomial_greeks_first_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryBinomialGreeksFirstOrderRequestQuery;
+    type Request = api::OptionHistoryBinomialGreeksFirstOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -6205,6 +6432,9 @@ impl Endpoint for OptionHistoryBinomialGreeksFirstOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryBinomialGreeksFirstOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -6343,10 +6573,12 @@ impl OptionHistoryTradeGreeksFirstOrder {
 }
 impl Endpoint for OptionHistoryTradeGreeksFirstOrder {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksFirstOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksFirstOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_trade_greeks_first_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksFirstOrderRequestQuery;
+    type Request = api::OptionHistoryTradeGreeksFirstOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -6421,6 +6653,9 @@ impl Endpoint for OptionHistoryTradeGreeksFirstOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryTradeGreeksFirstOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -6573,10 +6808,12 @@ impl OptionHistoryBinomialTradeGreeksFirstOrder {
 }
 impl Endpoint for OptionHistoryBinomialTradeGreeksFirstOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialTradeGreeksFirstOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialTradeGreeksFirstOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_binomial_trade_greeks_first_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryBinomialTradeGreeksFirstOrderRequestQuery;
+    type Request = api::OptionHistoryBinomialTradeGreeksFirstOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialTradeGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -6661,6 +6898,9 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksFirstOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryBinomialTradeGreeksFirstOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -6792,10 +7032,12 @@ impl OptionHistoryGreeksSecondOrder {
 }
 impl Endpoint for OptionHistoryGreeksSecondOrder {
     const RPC: &'static str = "GetOptionHistoryGreeksSecondOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksSecondOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_greeks_second_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksSecondOrderRequestQuery;
+    type Request = api::OptionHistoryGreeksSecondOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -6863,6 +7105,9 @@ impl Endpoint for OptionHistoryGreeksSecondOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryGreeksSecondOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -7015,10 +7260,12 @@ impl OptionHistoryBinomialGreeksSecondOrder {
 }
 impl Endpoint for OptionHistoryBinomialGreeksSecondOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksSecondOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksSecondOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_binomial_greeks_second_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryBinomialGreeksSecondOrderRequestQuery;
+    type Request = api::OptionHistoryBinomialGreeksSecondOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7101,6 +7348,9 @@ impl Endpoint for OptionHistoryBinomialGreeksSecondOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryBinomialGreeksSecondOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -7239,10 +7489,12 @@ impl OptionHistoryTradeGreeksSecondOrder {
 }
 impl Endpoint for OptionHistoryTradeGreeksSecondOrder {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksSecondOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksSecondOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_trade_greeks_second_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksSecondOrderRequestQuery;
+    type Request = api::OptionHistoryTradeGreeksSecondOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7317,6 +7569,9 @@ impl Endpoint for OptionHistoryTradeGreeksSecondOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryTradeGreeksSecondOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -7469,10 +7724,12 @@ impl OptionHistoryBinomialTradeGreeksSecondOrder {
 }
 impl Endpoint for OptionHistoryBinomialTradeGreeksSecondOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialTradeGreeksSecondOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialTradeGreeksSecondOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_binomial_trade_greeks_second_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryBinomialTradeGreeksSecondOrderRequestQuery;
+    type Request = api::OptionHistoryBinomialTradeGreeksSecondOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialTradeGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7557,6 +7814,9 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksSecondOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryBinomialTradeGreeksSecondOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -7688,10 +7948,12 @@ impl OptionHistoryGreeksThirdOrder {
 }
 impl Endpoint for OptionHistoryGreeksThirdOrder {
     const RPC: &'static str = "GetOptionHistoryGreeksThirdOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksThirdOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_greeks_third_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksThirdOrderRequestQuery;
+    type Request = api::OptionHistoryGreeksThirdOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7759,6 +8021,9 @@ impl Endpoint for OptionHistoryGreeksThirdOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryGreeksThirdOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -7911,10 +8176,12 @@ impl OptionHistoryBinomialGreeksThirdOrder {
 }
 impl Endpoint for OptionHistoryBinomialGreeksThirdOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksThirdOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksThirdOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_binomial_greeks_third_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryBinomialGreeksThirdOrderRequestQuery;
+    type Request = api::OptionHistoryBinomialGreeksThirdOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7997,6 +8264,9 @@ impl Endpoint for OptionHistoryBinomialGreeksThirdOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryBinomialGreeksThirdOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -8135,10 +8405,12 @@ impl OptionHistoryTradeGreeksThirdOrder {
 }
 impl Endpoint for OptionHistoryTradeGreeksThirdOrder {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksThirdOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksThirdOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_trade_greeks_third_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksThirdOrderRequestQuery;
+    type Request = api::OptionHistoryTradeGreeksThirdOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -8213,6 +8485,9 @@ impl Endpoint for OptionHistoryTradeGreeksThirdOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryTradeGreeksThirdOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -8365,10 +8640,12 @@ impl OptionHistoryBinomialTradeGreeksThirdOrder {
 }
 impl Endpoint for OptionHistoryBinomialTradeGreeksThirdOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialTradeGreeksThirdOrder";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialTradeGreeksThirdOrder";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_binomial_trade_greeks_third_order");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryBinomialTradeGreeksThirdOrderRequestQuery;
+    type Request = api::OptionHistoryBinomialTradeGreeksThirdOrderRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialTradeGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -8453,6 +8730,9 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksThirdOrder {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryBinomialTradeGreeksThirdOrderRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -8584,10 +8864,12 @@ impl OptionHistoryGreeksImpliedVolatility {
 }
 impl Endpoint for OptionHistoryGreeksImpliedVolatility {
     const RPC: &'static str = "GetOptionHistoryGreeksImpliedVolatility";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksImpliedVolatility";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_greeks_implied_volatility");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns implied volatilies calculated using the national best bid, mid, and ask price of the option respectively. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksImpliedVolatilityRequestQuery;
+    type Request = api::OptionHistoryGreeksImpliedVolatilityRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksImpliedVolatilityRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -8655,6 +8937,9 @@ impl Endpoint for OptionHistoryGreeksImpliedVolatility {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryGreeksImpliedVolatilityRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -8793,10 +9078,12 @@ impl OptionHistoryTradeGreeksImpliedVolatility {
 }
 impl Endpoint for OptionHistoryTradeGreeksImpliedVolatility {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksImpliedVolatility";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksImpliedVolatility";
     const PYTHON_NAME: Option<&'static str> = Some("option_history_trade_greeks_implied_volatility");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns implied volatilies calculated using the trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html). \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksImpliedVolatilityRequestQuery;
+    type Request = api::OptionHistoryTradeGreeksImpliedVolatilityRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksImpliedVolatilityRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -8872,6 +9159,9 @@ impl Endpoint for OptionHistoryTradeGreeksImpliedVolatility {
         }
         query
     }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionHistoryTradeGreeksImpliedVolatilityRequest { query_info: Some(query_info), params: Some(query) }
+    }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
             let request = client.raw_request(api::OptionHistoryTradeGreeksImpliedVolatilityRequest {
@@ -8941,10 +9231,12 @@ impl OptionAtTimeTrade {
 }
 impl Endpoint for OptionAtTimeTrade {
     const RPC: &'static str = "GetOptionAtTimeTrade";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionAtTimeTrade";
     const PYTHON_NAME: Option<&'static str> = Some("option_at_time_trade");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the last trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) at a specified millisecond of the day.\n- Trade condition mappings can be found [here](/Articles/Errors-Exchanges-Conditions/Trade-Conditions.html).\n- Extended trade conditions are not reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) for options, so they can be ignored.\n- The ``time_of_day``parameter represents the 00:00:00.000 ET that the trade should be provided for.";
     type Query = api::OptionAtTimeTradeRequestQuery;
+    type Request = api::OptionAtTimeTradeRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionAtTimeTradeRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -8967,6 +9259,9 @@ impl Endpoint for OptionAtTimeTrade {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionAtTimeTradeRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9037,10 +9332,12 @@ impl OptionAtTimeQuote {
 }
 impl Endpoint for OptionAtTimeQuote {
     const RPC: &'static str = "GetOptionAtTimeQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionAtTimeQuote";
     const PYTHON_NAME: Option<&'static str> = Some("option_at_time_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the last NBBO quote reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) at a specified millisecond of the day.\n- The ``time_of_day``parameter represents the 00:00:00.000 ET that the quote should be provided for.\n- Using a sub-minute ``time_of_day`` (e.g. ``09:30:10.000``) will significantly slow the request and may cause it to hang, particularly when using ``expiration=*``. Use a minute-boundary time (e.g. ``09:30:00.000``) instead.";
     type Query = api::OptionAtTimeQuoteRequestQuery;
+    type Request = api::OptionAtTimeQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionAtTimeQuoteRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -9063,6 +9360,9 @@ impl Endpoint for OptionAtTimeQuote {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionAtTimeQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9090,13 +9390,18 @@ impl IndexListSymbols {
 }
 impl Endpoint for IndexListSymbols {
     const RPC: &'static str = "GetIndexListSymbols";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexListSymbols";
     const PYTHON_NAME: Option<&'static str> = Some("index_list_symbols");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "A symbol can be defined as a unique identifier for a stock / underlying asset. Common terms also include: root, ticker, and underlying. This endpoint returns all traded symbols for options. This endpoint is updated overnight.";
     type Query = api::IndexListSymbolsRequestQuery;
+    type Request = api::IndexListSymbolsRequest;
     fn to_query(&self) -> Self::Query {
         let query = api::IndexListSymbolsRequestQuery::default();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexListSymbolsRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9127,14 +9432,19 @@ impl IndexListDates {
 }
 impl Endpoint for IndexListDates {
     const RPC: &'static str = "GetIndexListDates";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexListDates";
     const PYTHON_NAME: Option<&'static str> = Some("index_list_dates");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Lists all dates of data that are available for a index with a given request type and symbol. This endpoint is updated overnight.";
     type Query = api::IndexListDatesRequestQuery;
+    type Request = api::IndexListDatesRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexListDatesRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexListDatesRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9179,10 +9489,12 @@ impl IndexSnapshotOhlc {
 }
 impl Endpoint for IndexSnapshotOhlc {
     const RPC: &'static str = "GetIndexSnapshotOhlc";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexSnapshotOhlc";
     const PYTHON_NAME: Option<&'static str> = Some("index_snapshot_ohlc");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves the real-time current day OHLC.\n- [Exchanges](/Articles/Data-And-Requests/The-SIPs.html) typically generate a price report every second for popular indices like SPX.\n- Returns the latest message for each symbol from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Symbols with no messages in the past 7 calendar days are not returned. Use `current_day_only=true` to return only today's data.";
     type Query = api::IndexSnapshotOhlcRequestQuery;
+    type Request = api::IndexSnapshotOhlcRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexSnapshotOhlcRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
@@ -9197,6 +9509,9 @@ impl Endpoint for IndexSnapshotOhlc {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexSnapshotOhlcRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9241,10 +9556,12 @@ impl IndexSnapshotPrice {
 }
 impl Endpoint for IndexSnapshotPrice {
     const RPC: &'static str = "GetIndexSnapshotPrice";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexSnapshotPrice";
     const PYTHON_NAME: Option<&'static str> = Some("index_snapshot_price");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves a real-time last index price.\n- [Exchanges](/Articles/Data-And-Requests/The-SIPs.html) typically generate a price report every second for popular indices like SPX.\n- Returns the latest message for each symbol from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Symbols with no messages in the past 7 calendar days are not returned. Use `current_day_only=true` to return only today's data.";
     type Query = api::IndexSnapshotPriceRequestQuery;
+    type Request = api::IndexSnapshotPriceRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexSnapshotPriceRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
@@ -9259,6 +9576,9 @@ impl Endpoint for IndexSnapshotPrice {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexSnapshotPriceRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9303,10 +9623,12 @@ impl IndexSnapshotMarketValue {
 }
 impl Endpoint for IndexSnapshotMarketValue {
     const RPC: &'static str = "GetIndexSnapshotMarketValue";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexSnapshotMarketValue";
     const PYTHON_NAME: Option<&'static str> = Some("index_snapshot_market_value");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves a real-time last index market value.\n- [Exchanges](/Articles/Data-And-Requests/The-SIPs.html) typically generate a price report every second for popular indices like SPX.\n- Returns the latest message for each symbol from the past 7 days (for example, on a Friday back to the previous Friday). Outside market hours it returns values from the most recent trading session. Symbols with no messages in the past 7 calendar days are not returned. Use `current_day_only=true` to return only today's data.";
     type Query = api::IndexSnapshotMarketValueRequestQuery;
+    type Request = api::IndexSnapshotMarketValueRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexSnapshotMarketValueRequestQuery::default();
         query.symbol.extend(self.symbol.0.iter().cloned());
@@ -9321,6 +9643,9 @@ impl Endpoint for IndexSnapshotMarketValue {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexSnapshotMarketValueRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9357,16 +9682,21 @@ impl IndexHistoryEod {
 }
 impl Endpoint for IndexHistoryEod {
     const RPC: &'static str = "GetIndexHistoryEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexHistoryEod";
     const PYTHON_NAME: Option<&'static str> = Some("index_history_eod");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Since [the indices feeds](/Articles/Data-And-Requests/The-SIPs.html) do not provide a national EOD report, Theta Data generates a national EOD report at 17:15 each day.";
     type Query = api::IndexHistoryEodRequestQuery;
+    type Request = api::IndexHistoryEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexHistoryEodRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.start_date = date_wire(self.start_date);
         query.end_date = date_wire(self.end_date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexHistoryEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9424,10 +9754,12 @@ impl IndexHistoryOhlc {
 }
 impl Endpoint for IndexHistoryOhlc {
     const RPC: &'static str = "GetIndexHistoryOhlc";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexHistoryOhlc";
     const PYTHON_NAME: Option<&'static str> = Some("index_history_ohlc");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Aggregated OHLC bars that use [SIP rules](/Articles/Data-And-Requests/OHLC-EOD.html) for each bar.\n- Time timestamp of the bar represents the opening time of the bar. For a trade to be part of the bar:  ``bar timestamp`` <= ``trade time`` < ``bar timestamp + interval``.\n- [Exchanges](/Articles/Data-And-Requests/The-SIPs.html) typically generate a price report every second for popular indices like SPX.";
     type Query = api::IndexHistoryOhlcRequestQuery;
+    type Request = api::IndexHistoryOhlcRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexHistoryOhlcRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -9447,6 +9779,9 @@ impl Endpoint for IndexHistoryOhlc {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexHistoryOhlcRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9519,10 +9854,12 @@ impl IndexHistoryPrice {
 }
 impl Endpoint for IndexHistoryPrice {
     const RPC: &'static str = "GetIndexHistoryPrice";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexHistoryPrice";
     const PYTHON_NAME: Option<&'static str> = Some("index_history_price");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves historical indices price reports. [Exchanges](/Articles/Data-And-Requests/The-SIPs.html) typically generate a price report every second for popular indices like SPX.\n- When the ``interval`` parameter is specified, the returned data represents the price at the exact time of each timestamp. If the timestamp in the response is 10:30:00, the price field represents the price at that exact time of the day.\n- A price update from the exchange is omitted if the price remained the same from the previous update.\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::IndexHistoryPriceRequestQuery;
+    type Request = api::IndexHistoryPriceRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexHistoryPriceRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -9555,6 +9892,9 @@ impl Endpoint for IndexHistoryPrice {
             }
         }
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexHistoryPriceRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9594,10 +9934,12 @@ impl IndexAtTimePrice {
 }
 impl Endpoint for IndexAtTimePrice {
     const RPC: &'static str = "GetIndexAtTimePrice";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexAtTimePrice";
     const PYTHON_NAME: Option<&'static str> = Some("index_at_time_price");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves historical indices price reports. [Exchanges](/Articles/Data-And-Requests/The-SIPs.html) typically generate a price report every second for popular indices like SPX.\n- The ``time_of_day`` parameter represents the 00:00:00.000 ET that the price should be provided for.";
     type Query = api::IndexAtTimePriceRequestQuery;
+    type Request = api::IndexAtTimePriceRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexAtTimePriceRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -9605,6 +9947,9 @@ impl Endpoint for IndexAtTimePrice {
         query.end_date = date_wire(self.end_date);
         query.time_of_day = self.time_of_day.wire();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexAtTimePriceRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9632,13 +9977,18 @@ impl CalendarOpenToday {
 }
 impl Endpoint for CalendarOpenToday {
     const RPC: &'static str = "GetCalendarOpenToday";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCalendarOpenToday";
     const PYTHON_NAME: Option<&'static str> = Some("calendar_open_today");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves current day equity market schedule\n- *On days when the market closes early at 1:00 PM ET; eligible options will trade until 1:15 PM.\n- **Some NYSE exchanges will continue late trading until 5:00 PM ET on early close days.";
     type Query = api::CalendarOpenTodayRequestQuery;
+    type Request = api::CalendarOpenTodayRequest;
     fn to_query(&self) -> Self::Query {
         let query = api::CalendarOpenTodayRequestQuery::default();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::CalendarOpenTodayRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9669,14 +10019,19 @@ impl CalendarOnDate {
 }
 impl Endpoint for CalendarOnDate {
     const RPC: &'static str = "GetCalendarOnDate";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCalendarOnDate";
     const PYTHON_NAME: Option<&'static str> = Some("calendar_on_date");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves equity market schedule for a given date\n- Note: Holiday data is available 01/01/2012 through the end of the calendar year that immediately follows the current year\n- *On days when the market closes early at 1:00 PM ET; eligible options will trade until 1:15 PM.\n- **Some NYSE exchanges will continue late trading until 5:00 PM ET on early close days.";
     type Query = api::CalendarOnDateRequestQuery;
+    type Request = api::CalendarOnDateRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::CalendarOnDateRequestQuery::default();
         query.date = date_wire(self.date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::CalendarOnDateRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9707,14 +10062,19 @@ impl CalendarYear {
 }
 impl Endpoint for CalendarYear {
     const RPC: &'static str = "GetCalendarYear";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCalendarYear";
     const PYTHON_NAME: Option<&'static str> = Some("calendar_year");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves equity market holidays for a given year\n- Note: Holiday data is available 01/01/2012 through the end of the calendar year that immediately follows the current year\n- *On days when the market closes early at 1:00 PM ET; eligible options will trade until 1:15 PM.\n- **Some NYSE exchanges will continue late trading until 5:00 PM ET on early close days.";
     type Query = api::CalendarYearRequestQuery;
+    type Request = api::CalendarYearRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::CalendarYearRequestQuery::default();
         query.year = self.year.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::CalendarYearRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9751,16 +10111,21 @@ impl InterestRateHistoryEod {
 }
 impl Endpoint for InterestRateHistoryEod {
     const RPC: &'static str = "GetInterestRateHistoryEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetInterestRateHistoryEod";
     const PYTHON_NAME: Option<&'static str> = Some("interest_rate_history_eod");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "- Returns the interest rate reported. Depending on the rate, reports can occur in the morning or the afternoon.";
     type Query = api::InterestRateHistoryEodRequestQuery;
+    type Request = api::InterestRateHistoryEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::InterestRateHistoryEodRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.start_date = date_wire(self.start_date);
         query.end_date = date_wire(self.end_date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::InterestRateHistoryEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9783,16 +10148,21 @@ pub struct CorporateActionDividend {
 }
 impl Endpoint for CorporateActionDividend {
     const RPC: &'static str = "GetCorporateActionDividend";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCorporateActionDividend";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::CorporateActionDividendRequestQuery;
+    type Request = api::CorporateActionDividendRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::CorporateActionDividendRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.start_date = self.start_date.clone();
         query.end_date = self.end_date.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::CorporateActionDividendRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9815,16 +10185,21 @@ pub struct CorporateActionSplit {
 }
 impl Endpoint for CorporateActionSplit {
     const RPC: &'static str = "GetCorporateActionSplit";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCorporateActionSplit";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::CorporateActionSplitRequestQuery;
+    type Request = api::CorporateActionSplitRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::CorporateActionSplitRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.start_date = self.start_date.clone();
         query.end_date = self.end_date.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::CorporateActionSplitRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9855,14 +10230,19 @@ impl OptionFlatFileTradeQuote {
 }
 impl Endpoint for OptionFlatFileTradeQuote {
     const RPC: &'static str = "GetOptionFlatFileTradeQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionFlatFileTradeQuote";
     const PYTHON_NAME: Option<&'static str> = Some("option_flat_file_trade_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Bulk download all option trade/quote ticks for a given date as a CSV stream. Returns one row per tick, grouped by contract. Requires a Professional options subscription.\n\nExpected response time: ~3 minutes. Expected file size: ~1.2 GB.\n\nOnly the 7 most recent calendar days are available; data for the previous day is typically ready by 12:30-1am ET. See [Flat Files Getting Started](/Flat-Files/Getting-Started) for details, or [contact sales](mailto:sales@thetadata.net) for more history.";
     type Query = api::OptionFlatFileTradeQuoteRequestQuery;
+    type Request = api::OptionFlatFileTradeQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionFlatFileTradeQuoteRequestQuery::default();
         query.date = date_wire(self.date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionFlatFileTradeQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9893,14 +10273,19 @@ impl OptionFlatFileEod {
 }
 impl Endpoint for OptionFlatFileEod {
     const RPC: &'static str = "GetOptionFlatFileEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionFlatFileEod";
     const PYTHON_NAME: Option<&'static str> = Some("option_flat_file_eod");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Bulk download all option end-of-day ticks for a given date as a CSV stream. Returns one row per tick, grouped by contract. Requires a Professional options subscription.\n\nExpected response time: ~1 minute. Expected file size: ~150 MB.\n\nOnly the 7 most recent calendar days are available; data for the previous day is typically ready by 12:30-1am ET. See [Flat Files Getting Started](/Flat-Files/Getting-Started) for details, or [contact sales](mailto:sales@thetadata.net) for more history.";
     type Query = api::OptionFlatFileEodRequestQuery;
+    type Request = api::OptionFlatFileEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionFlatFileEodRequestQuery::default();
         query.date = date_wire(self.date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionFlatFileEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9931,14 +10316,19 @@ impl OptionFlatFileOpenInterest {
 }
 impl Endpoint for OptionFlatFileOpenInterest {
     const RPC: &'static str = "GetOptionFlatFileOpenInterest";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionFlatFileOpenInterest";
     const PYTHON_NAME: Option<&'static str> = Some("option_flat_file_open_interest");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Bulk download all option open interest ticks for a given date as a CSV stream. Returns one row per tick, grouped by contract. Requires a Professional options subscription.\n\nExpected response time: ~1 minute. Expected file size: ~50 MB.\n\nOnly the 7 most recent calendar days are available; data for the previous day is typically ready by 12:30-1am ET. See [Flat Files Getting Started](/Flat-Files/Getting-Started) for details, or [contact sales](mailto:sales@thetadata.net) for more history.";
     type Query = api::OptionFlatFileOpenInterestRequestQuery;
+    type Request = api::OptionFlatFileOpenInterestRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionFlatFileOpenInterestRequestQuery::default();
         query.date = date_wire(self.date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionFlatFileOpenInterestRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -9969,14 +10359,19 @@ impl OptionFlatFileQuote {
 }
 impl Endpoint for OptionFlatFileQuote {
     const RPC: &'static str = "GetOptionFlatFileQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionFlatFileQuote";
     const PYTHON_NAME: Option<&'static str> = Some("option_flat_file_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Bulk download all option 1-minute quote intervals for a given date as a CSV stream. Returns one row per minute in which a new quote was reported, grouped by contract. Requires a Professional options subscription.\n\nOnly the 1-minute interval is currently available.\n\nEach row carries two timestamps. `interval_ms_of_day` is the minute boundary the row sits on. `quote_ms_of_day` is the time of the quote itself, which is the last quote at or before that boundary and so usually precedes it.\n\nA minute in which no new quote arrived is not sent. To reconstruct the full minute grid, forward-fill each row from its own `interval_ms_of_day` up to the next one for that contract. Minutes before a contract's first quote of the day are not sent either, and carry no quote to fill from.\n\nOnly the 7 most recent calendar days are available; data for the previous day is typically ready by 12:30-1am ET. See [Flat Files Getting Started](/Flat-Files/Getting-Started) for details, or [contact sales](mailto:sales@thetadata.net) for more history.";
     type Query = api::OptionFlatFileQuoteRequestQuery;
+    type Request = api::OptionFlatFileQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionFlatFileQuoteRequestQuery::default();
         query.date = date_wire(self.date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::OptionFlatFileQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10007,14 +10402,19 @@ impl StockFlatFileTradeQuote {
 }
 impl Endpoint for StockFlatFileTradeQuote {
     const RPC: &'static str = "GetStockFlatFileTradeQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockFlatFileTradeQuote";
     const PYTHON_NAME: Option<&'static str> = Some("stock_flat_file_trade_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Bulk download all stock trade/quote ticks for a given date as a CSV stream. Returns one row per tick, grouped by symbol. Requires a Professional stock subscription.\n\nExpected response time: ~30 minutes. Expected file size: ~14 GB. Make sure your client and connection can handle a long-running, multi-gigabyte download.\n\nOnly the 7 most recent calendar days are available; data for the previous day is typically ready by 12:30-1am ET. See [Flat Files Getting Started](/Flat-Files/Getting-Started) for details, or [contact sales](mailto:sales@thetadata.net) for more history.";
     type Query = api::StockFlatFileTradeQuoteRequestQuery;
+    type Request = api::StockFlatFileTradeQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockFlatFileTradeQuoteRequestQuery::default();
         query.date = date_wire(self.date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockFlatFileTradeQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10045,14 +10445,19 @@ impl StockFlatFileEod {
 }
 impl Endpoint for StockFlatFileEod {
     const RPC: &'static str = "GetStockFlatFileEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockFlatFileEod";
     const PYTHON_NAME: Option<&'static str> = Some("stock_flat_file_eod");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Bulk download all stock end-of-day ticks for a given date as a CSV stream. Returns one row per tick, grouped by symbol. Requires a Professional stock subscription.\n\nExpected response time: ~1 second. Expected file size: ~1.5 MB.\n\nOnly the 7 most recent calendar days are available; data for the previous day is typically ready by 12:30-1am ET. See [Flat Files Getting Started](/Flat-Files/Getting-Started) for details, or [contact sales](mailto:sales@thetadata.net) for more history.";
     type Query = api::StockFlatFileEodRequestQuery;
+    type Request = api::StockFlatFileEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockFlatFileEodRequestQuery::default();
         query.date = date_wire(self.date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockFlatFileEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10083,14 +10488,19 @@ impl StockFlatFileQuote {
 }
 impl Endpoint for StockFlatFileQuote {
     const RPC: &'static str = "GetStockFlatFileQuote";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockFlatFileQuote";
     const PYTHON_NAME: Option<&'static str> = Some("stock_flat_file_quote");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Bulk download all stock 1-minute quote intervals for a given date as a CSV stream. Returns one row per minute in which a new quote was reported, grouped by symbol. Quotes are the NBBO from [UTP & CTA](/Articles/Data-And-Requests/The-SIPs). Requires a Professional stock subscription.\n\nOnly the 1-minute interval is currently available.\n\nEach row carries two timestamps. `interval_ms_of_day` is the minute boundary the row sits on. `quote_ms_of_day` is the time of the quote itself, which is the last quote at or before that boundary and so usually precedes it.\n\nA minute in which no new quote arrived is not sent. To reconstruct the full minute grid, forward-fill each row from its own `interval_ms_of_day` up to the next one for that symbol. Minutes before a symbol's first quote of the day are not sent either, and carry no quote to fill from.\n\nOnly the 7 most recent calendar days are available; data for the previous day is typically ready by 12:30-1am ET. See [Flat Files Getting Started](/Flat-Files/Getting-Started) for details, or [contact sales](mailto:sales@thetadata.net) for more history.";
     type Query = api::StockFlatFileQuoteRequestQuery;
+    type Request = api::StockFlatFileQuoteRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockFlatFileQuoteRequestQuery::default();
         query.date = date_wire(self.date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::StockFlatFileQuoteRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10121,14 +10531,19 @@ impl IndexFlatFileEod {
 }
 impl Endpoint for IndexFlatFileEod {
     const RPC: &'static str = "GetIndexFlatFileEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexFlatFileEod";
     const PYTHON_NAME: Option<&'static str> = Some("index_flat_file_eod");
     const STABILITY: Stability = Stability::VendorWrapper;
     const VENDOR_DESCRIPTION: &'static str = "Bulk download all index end-of-day ticks for a given date as a CSV stream. Returns one row per tick, grouped by symbol. Requires a Professional indices subscription.\n\nExpected response time: ~1 second. Expected file size: ~1 MB.\n\nOnly the 7 most recent calendar days are available; data for the previous day is typically ready by 12:30-1am ET. See [Flat Files Getting Started](/Flat-Files/Getting-Started) for details, or [contact sales](mailto:sales@thetadata.net) for more history.";
     type Query = api::IndexFlatFileEodRequestQuery;
+    type Request = api::IndexFlatFileEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexFlatFileEodRequestQuery::default();
         query.date = date_wire(self.date);
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::IndexFlatFileEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10149,14 +10564,19 @@ pub struct FutureListSymbols {
 }
 impl Endpoint for FutureListSymbols {
     const RPC: &'static str = "GetFutureListSymbols";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureListSymbols";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureListSymbolsRequestQuery;
+    type Request = api::FutureListSymbolsRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureListSymbolsRequestQuery::default();
         query.r#type = self.r#type.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureListSymbolsRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10178,15 +10598,20 @@ pub struct FutureListDates {
 }
 impl Endpoint for FutureListDates {
     const RPC: &'static str = "GetFutureListDates";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureListDates";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureListDatesRequestQuery;
+    type Request = api::FutureListDatesRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureListDatesRequestQuery::default();
         query.request_type = self.request_type.clone();
         query.symbol = self.symbol.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureListDatesRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10213,10 +10638,12 @@ pub struct FutureHistoryTrade {
 }
 impl Endpoint for FutureHistoryTrade {
     const RPC: &'static str = "GetFutureHistoryTrade";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryTrade";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureHistoryTradeRequestQuery;
+    type Request = api::FutureHistoryTradeRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureHistoryTradeRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -10227,6 +10654,9 @@ impl Endpoint for FutureHistoryTrade {
         query.start_date = self.start_date.clone();
         query.end_date = self.end_date.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureHistoryTradeRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10254,10 +10684,12 @@ pub struct FutureHistoryBbo {
 }
 impl Endpoint for FutureHistoryBbo {
     const RPC: &'static str = "GetFutureHistoryBbo";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryBbo";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureHistoryBboRequestQuery;
+    type Request = api::FutureHistoryBboRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureHistoryBboRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -10269,6 +10701,9 @@ impl Endpoint for FutureHistoryBbo {
         query.end_date = self.end_date.clone();
         query.interval = self.interval.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureHistoryBboRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10296,10 +10731,12 @@ pub struct FutureHistoryTradeBbo {
 }
 impl Endpoint for FutureHistoryTradeBbo {
     const RPC: &'static str = "GetFutureHistoryTradeBbo";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryTradeBbo";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureHistoryTradeBboRequestQuery;
+    type Request = api::FutureHistoryTradeBboRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureHistoryTradeBboRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -10311,6 +10748,9 @@ impl Endpoint for FutureHistoryTradeBbo {
         query.end_date = self.end_date.clone();
         query.exclusive = self.exclusive.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureHistoryTradeBboRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10338,10 +10778,12 @@ pub struct FutureHistoryOhlc {
 }
 impl Endpoint for FutureHistoryOhlc {
     const RPC: &'static str = "GetFutureHistoryOhlc";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryOhlc";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureHistoryOhlcRequestQuery;
+    type Request = api::FutureHistoryOhlcRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureHistoryOhlcRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -10353,6 +10795,9 @@ impl Endpoint for FutureHistoryOhlc {
         query.end_date = self.end_date.clone();
         query.interval = self.interval.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureHistoryOhlcRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10375,16 +10820,21 @@ pub struct FutureHistoryEod {
 }
 impl Endpoint for FutureHistoryEod {
     const RPC: &'static str = "GetFutureHistoryEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryEod";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureHistoryEodRequestQuery;
+    type Request = api::FutureHistoryEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureHistoryEodRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.start_date = self.start_date.clone();
         query.end_date = self.end_date.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureHistoryEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10407,16 +10857,21 @@ pub struct FutureHistorySettlement {
 }
 impl Endpoint for FutureHistorySettlement {
     const RPC: &'static str = "GetFutureHistorySettlement";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistorySettlement";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureHistorySettlementRequestQuery;
+    type Request = api::FutureHistorySettlementRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureHistorySettlementRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.start_date = self.start_date.clone();
         query.end_date = self.end_date.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureHistorySettlementRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10440,10 +10895,12 @@ pub struct FutureAtTimeTrade {
 }
 impl Endpoint for FutureAtTimeTrade {
     const RPC: &'static str = "GetFutureAtTimeTrade";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureAtTimeTrade";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureAtTimeTradeRequestQuery;
+    type Request = api::FutureAtTimeTradeRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureAtTimeTradeRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -10451,6 +10908,9 @@ impl Endpoint for FutureAtTimeTrade {
         query.end_date = self.end_date.clone();
         query.time_of_day = self.time_of_day.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureAtTimeTradeRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10474,10 +10934,12 @@ pub struct FutureAtTimeBbo {
 }
 impl Endpoint for FutureAtTimeBbo {
     const RPC: &'static str = "GetFutureAtTimeBbo";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureAtTimeBbo";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureAtTimeBboRequestQuery;
+    type Request = api::FutureAtTimeBboRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureAtTimeBboRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -10485,6 +10947,9 @@ impl Endpoint for FutureAtTimeBbo {
         query.end_date = self.end_date.clone();
         query.time_of_day = self.time_of_day.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureAtTimeBboRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10506,15 +10971,20 @@ pub struct FutureSnapshotBbo {
 }
 impl Endpoint for FutureSnapshotBbo {
     const RPC: &'static str = "GetFutureSnapshotBbo";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureSnapshotBbo";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureSnapshotBboRequestQuery;
+    type Request = api::FutureSnapshotBboRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureSnapshotBboRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.min_time = self.min_time.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureSnapshotBboRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10536,15 +11006,20 @@ pub struct FutureSnapshotTrade {
 }
 impl Endpoint for FutureSnapshotTrade {
     const RPC: &'static str = "GetFutureSnapshotTrade";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureSnapshotTrade";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureSnapshotTradeRequestQuery;
+    type Request = api::FutureSnapshotTradeRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureSnapshotTradeRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.min_time = self.min_time.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureSnapshotTradeRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10566,15 +11041,20 @@ pub struct FutureSnapshotOhlc {
 }
 impl Endpoint for FutureSnapshotOhlc {
     const RPC: &'static str = "GetFutureSnapshotOhlc";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureSnapshotOhlc";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureSnapshotOhlcRequestQuery;
+    type Request = api::FutureSnapshotOhlcRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureSnapshotOhlcRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.min_time = self.min_time.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureSnapshotOhlcRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10596,15 +11076,20 @@ pub struct FutureSnapshotMarketValue {
 }
 impl Endpoint for FutureSnapshotMarketValue {
     const RPC: &'static str = "GetFutureSnapshotMarketValue";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureSnapshotMarketValue";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureSnapshotMarketValueRequestQuery;
+    type Request = api::FutureSnapshotMarketValueRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureSnapshotMarketValueRequestQuery::default();
         query.symbol = self.symbol.clone();
         query.min_time = self.min_time.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureSnapshotMarketValueRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10625,14 +11110,19 @@ pub struct FutureFlatFileTradeBbo {
 }
 impl Endpoint for FutureFlatFileTradeBbo {
     const RPC: &'static str = "GetFutureFlatFileTradeBbo";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureFlatFileTradeBbo";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureFlatFileTradeBboRequestQuery;
+    type Request = api::FutureFlatFileTradeBboRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureFlatFileTradeBboRequestQuery::default();
         query.date = self.date.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureFlatFileTradeBboRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10653,14 +11143,19 @@ pub struct FutureFlatFileEod {
 }
 impl Endpoint for FutureFlatFileEod {
     const RPC: &'static str = "GetFutureFlatFileEod";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureFlatFileEod";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureFlatFileEodRequestQuery;
+    type Request = api::FutureFlatFileEodRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureFlatFileEodRequestQuery::default();
         query.date = self.date.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureFlatFileEodRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {
@@ -10681,14 +11176,19 @@ pub struct FutureFlatFileBbo {
 }
 impl Endpoint for FutureFlatFileBbo {
     const RPC: &'static str = "GetFutureFlatFileBbo";
+    const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureFlatFileBbo";
     const PYTHON_NAME: Option<&'static str> = None;
     const STABILITY: Stability = Stability::Unstable;
     const VENDOR_DESCRIPTION: &'static str = "";
     type Query = api::FutureFlatFileBboRequestQuery;
+    type Request = api::FutureFlatFileBboRequest;
     fn to_query(&self) -> Self::Query {
         let mut query = api::FutureFlatFileBboRequestQuery::default();
         query.date = self.date.clone();
         query
+    }
+    fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request {
+        api::FutureFlatFileBboRequest { query_info: Some(query_info), params: Some(query) }
     }
     fn send(client: &ThetaClient, query: Self::Query) -> BoxFuture<'_, Result<RawStream, tonic::Status>> {
         Box::pin(async move {

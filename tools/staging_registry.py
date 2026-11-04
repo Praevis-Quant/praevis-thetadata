@@ -8,8 +8,9 @@ Nothing is uploaded and no registry token is read. Steps:
    file:// downloads. Dependencies on our packages stay in this registry, and
    third-party dependencies point to crates.io, exactly as a crates.io index
    entry would record them.
-3. Package wave 2 (client, cli), resolving the wave-1 packages from the staging
-   registry through `[patch.crates-io]`, then stage those archives too.
+3. Package wave 2 (arrow), then wave 3 (client, cli), resolving earlier waves'
+   packages from the staging registry through `[patch.crates-io]`, and stage
+   those archives too.
 4. Inspect every archive: file lists, SHA-256, required license files and
    forbidden inputs.
 5. Copy consumer crates (tools/release-consumers) to a temporary directory
@@ -38,7 +39,10 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["package"]["version"]
+# The arrow crate (publish = false until a release decision) depends on core and
+# proto, and the client depends on it, so it is staged in a wave between them.
 WAVES = [["praevis-thetadata-auth", "praevis-thetadata-core", "praevis-thetadata-proto"],
+         ["praevis-thetadata-arrow"],
          ["praevis-thetadata-client", "praevis-thetadata-cli"]]
 OURS = {name for wave in WAVES for name in wave}
 CRATES_IO_INDEX = "https://github.com/rust-lang/crates.io-index"

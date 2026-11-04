@@ -245,9 +245,20 @@ fn check(bytes: &[u8], limits: &DecodeLimits, stats: &mut Stats) -> String {
         (Ok(_), Err(_)) => panic!("envelope accepted what prost rejects: {bytes:?}"),
         (Err(_), _) => {}
     }
+    // Oracle 6: the columnar decoder's in-place envelope reader classifies
+    // like the bounded envelope parser, and otherwise equals pushing the
+    // parsed response.
+    let mut in_place = columnar::ColumnarDecoder::new(columnar_limits(limits)).unwrap();
+    let in_place = in_place.push_encoded(bytes).map(|_| in_place.flush());
     let response = match parsed {
         Ok(response) => response,
-        Err(error) => return format!("envelope {error:?}"),
+        Err(error) => {
+            match &in_place {
+                Err(ours) => assert_eq!(classify_columnar(ours), format!("{error:?}"), "{bytes:?}"),
+                Ok(_) => panic!("in-place envelope accepted what the parser rejects: {bytes:?}"),
+            }
+            return format!("envelope {error:?}");
+        }
     };
     let results: Vec<_> = [false, true]
         .into_iter()
@@ -261,6 +272,7 @@ fn check(bytes: &[u8], limits: &DecodeLimits, stats: &mut Stats) -> String {
     );
     let mut arrow = columnar::ColumnarDecoder::new(columnar_limits(limits)).unwrap();
     let arrow = arrow.push(&response).map(|_| arrow.flush());
+    assert_eq!(in_place, arrow, "{bytes:?}");
     let legacy = decode::decode(response, limits.decompressed_bytes);
     // Oracle 5: the columnar decoder accepts only what the bounded decoder
     // accepts (apart from the bounded decoder's cell and allocation budgets,

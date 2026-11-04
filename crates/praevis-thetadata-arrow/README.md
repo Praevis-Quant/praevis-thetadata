@@ -38,14 +38,17 @@ rows of the messages before it. A full buffer (`BufferFull`) appends nothing:
 flush, then push the same message again. Each decoder keeps one ZSTD context
 and one decompression buffer, sized to the largest message it has seen.
 
-## Not yet
+## Streaming rules (P1 PR 4a)
 
-These parts of the design arrive with the query engine (P1 PR 4), where batch
-schemas across a stream are settled:
-- the flush thresholds (rows, bytes, latency, first message) and inline versus
-  blocking-pool decoding;
-- per-batch dictionary encoding of low-cardinality text;
-- a column that is `Null` in early batches and typed later. Today its type
-  changes between batches.
+The client's `query()` streams settle what this decoder leaves open:
+- **Flush thresholds** (`BatchPolicy`): the first rows as soon as they arrive,
+  then at 65,536 rows, 8 MiB accounted, or 50 ms after the oldest buffered
+  row. Messages up to 64 KiB are decoded inline, larger ones on the blocking
+  pool.
+- **Text stays `Utf8`.** Per-batch dictionary encoding was dropped (decided
+  2026-11-04), because it would change a column's type between batches. A
+  fixed, opt-in choice per query may come later.
+- **Schema rule:** the only change between batches is a `Null` column becoming
+  typed. `collect()` and `unify` give earlier batches the final type.
 
 Results: [CPU per row](../../docs/performance/p1-columnar-results.md).

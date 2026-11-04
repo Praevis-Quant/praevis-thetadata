@@ -97,11 +97,27 @@ Sized frames, 20,000 messages:
 
 With streaming frames, every engine here is within 3-4% of these figures.
 
-## Not measured here
+## End to end through the client (PR 4a, loopback, aarch64 sandbox)
 
-- **The full query path.** These figures are decoding only. PR 4a routes
-  streams through the decoder and re-measures, with
-  [before/after gating](benchmark-policy.md) where it changes an existing path.
+`--loopback` starts the test fixture's gRPC server on localhost, which sends
+the same messages for every request, and times the public client, warm
+connection, 5 samples (median):
+- **Before:** the typed stock EOD stream (`stock_eod_batches`, bounded numeric,
+  default offload).
+- **After:** `query()` (Arrow, coalesced, inline below 64 KiB).
+
+The server's encoding and sending cost is in both.
+
+| Workload (20,000 messages, sized frames) | Stock EOD stream | **`query()`** | First batch (stock EOD / `query()`) |
+| --- | ---: | ---: | --- |
+| W1-shaped | 17.23 µs/row | **5.90 µs/row** | 1.17 / 1.10 ms |
+| W2-shaped | 18.12 µs/row | **6.14 µs/row** | 1.33 / 1.25 ms |
+
+`query()` takes about a third of the time per row, and its first batch is not
+later. The existing stock EOD stream is unchanged by PR 4a, so the
+[benchmark policy](benchmark-policy.md)'s before/after gating of an existing
+data path does not apply. The Ryzen figures, and replay of the P0 captures
+through `query()` for the P1 exit record, follow with PR 7.
 
 Reproduce:
 
@@ -110,4 +126,6 @@ cargo run --release --locked -p praevis-thetadata-client --example columnar_benc
   --replay artifacts/python-baseline/py-20261103T164301Z --samples 7
 cargo run --release --locked -p praevis-thetadata-client --example columnar_benchmark -- \
   --rows 20000 --samples 7 [--frames streaming]
+cargo run --release --locked -p praevis-thetadata-client --example columnar_benchmark -- \
+  --loopback --rows 20000 --samples 5
 ```
