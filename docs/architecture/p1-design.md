@@ -182,16 +182,23 @@ This is **not** concurrency probing; concurrency stays at ≤ 3, as instructed.
 
 ## 9. Sequence of PRs (each green under rule 3 before the next)
 
+Reordered on 2026-11-04 at the user's request: the FREE entitlement map moves
+up to directly after the generator, because which endpoints FREE allows
+decides which generated endpoints get live checks in the later PRs.
+
 1. The endpoint generator, generated typed requests and coverage table.
    Raw-stream access only; no decode change.
-2. The `praevis-thetadata-arrow` columnar decoder, with differential and corpus
+2. **The FREE entitlement map** (§8, approved): one tiny request per endpoint
+   family through the generated requests. Results go into
+   `docs/endpoints/status.json` and the coverage table.
+3. The `praevis-thetadata-arrow` columnar decoder, with differential and corpus
    tests and the CPU benchmark (no API yet).
-3. The query engine: coalescing streams, planner, scheduler and the
+4. The query engine: coalescing streams, planner, scheduler and the
    `QueryError` generalization, with a before/after benchmark (D-B).
-4. The Parquet sink.
-5. The Python package, compatibility aliases and the D.2 gates (CI wheels).
-6. The FREE entitlement map and live checks (after approval of §8).
-7. The P1 exit measurement: replay plus live runs, and a results record.
+5. The Parquet sink.
+6. The Python package, compatibility aliases and the D.2 gates (CI wheels).
+7. Live checks of the FREE-entitled endpoints (from PR 2's map), and the P1
+   exit measurement: replay plus live runs, and a results record.
 
 ## 10. Decisions (approved 2026-11-04)
 
