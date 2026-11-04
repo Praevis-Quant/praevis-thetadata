@@ -361,7 +361,7 @@ def emit_wrapper(w: Wrapper, request: str, query: str) -> str:
         out.append("    }")
     out.append("}")
     out += emit_endpoint_impl(w.struct, w.rpc, f'Some("{w.python}")', "Stability::VendorWrapper",
-                              w.description, request, query, emit_body(w, params))
+                              w.description, request, query, emit_body(w, params), emit_split(w, params))
     return "\n".join(out)
 
 
@@ -374,7 +374,35 @@ def emit_body(w: Wrapper, params: dict[str, Param]) -> list[str]:
     return body
 
 
-def emit_endpoint_impl(struct, rpc, python, stability, description, request, query, body) -> list[str]:
+def emit_split(w: Wrapper, params: dict[str, Param]) -> list[str]:
+    """Planner support (P1 PR 4b) for wrappers with a start_date..end_date range:
+    EOD and at-time requests split at 366 days (the server's observed EOD span
+    maximum is 366-730 days, P0 §5); intraday history splits per day (vendor
+    sizing guidance). A request that also sets `date` is not split."""
+    start, end = params.get("start_date"), params.get("end_date")
+    if not (start and end and start.kind == end.kind == "NaiveDate"):
+        return []
+    days = 366 if "Eod" in w.rpc or "AtTime" in w.rpc else 1
+    out = [f"    const SPLIT: Split = Split::Days({days});",
+           "    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {"]
+    if start.required and end.required:
+        out.append("        Some((self.start_date, self.end_date))")
+        setter = ["            start_date: start,", "            end_date: end,"]
+    else:
+        guard = "self.date.is_none()" if "date" in params else "true"
+        out += ["        match (self.start_date, self.end_date) {",
+                f"            (Some(start), Some(end)) if {guard} => Some((start, end)),",
+                "            _ => None,",
+                "        }"]
+        setter = ["            start_date: Some(start),", "            end_date: Some(end),"]
+    out += ["    }",
+            "    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {",
+            "        Some(Self {", *setter, "            ..self.clone()", "        })", "    }"]
+    return out
+
+
+def emit_endpoint_impl(struct, rpc, python, stability, description, request, query, body,
+                       split=()) -> list[str]:
     method = snake(rpc)
     out = [f"impl Endpoint for {struct} {{",
            f'    const RPC: &\'static str = "{rpc}";',
@@ -384,6 +412,7 @@ def emit_endpoint_impl(struct, rpc, python, stability, description, request, que
            f"    const VENDOR_DESCRIPTION: &'static str = {rust_string(description.strip())};",
            f"    type Query = api::{query};",
            f"    type Request = api::{request};",
+           *split,
            "    fn to_query(&self) -> Self::Query {",
            f"        let {'mut ' if body else ''}query = api::{query}::default();"]
     out += [f"        {line}" for line in body]

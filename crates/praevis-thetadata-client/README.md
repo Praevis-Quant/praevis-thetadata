@@ -31,6 +31,12 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   stream's deadlines, idle timeout, admission, cancellation and partial-result
   rules apply. Only the FREE-entitled endpoints have been seen working live
   (`docs/endpoints/coverage.md`).
+- **Jobs and scheduling** (`ThetaClient::job`, `SchedulerPolicy`, unreleased P1
+  work): a request is split by date within the vendor's limits (EOD at 366
+  days, intraday history per day), and the parts are merged in order. Every
+  `query()` is admitted by the client's scheduler. By default that is FREE's
+  documented 1 concurrent request and 20 per minute, with retry only on
+  `RESOURCE_EXHAUSTED` and `UNAVAILABLE` at open.
 - **Raw helpers** call every descriptor RPC with wire query types. They are
   unsupported foundations: no typed validation, and no claim that any endpoint
   or entitlement works.

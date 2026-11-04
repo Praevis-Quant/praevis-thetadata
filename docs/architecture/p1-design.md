@@ -197,7 +197,10 @@ decides which generated endpoints get live checks in the later PRs.
    `QueryError` generalization, with a before/after benchmark (D-B).
    **Split on 2026-11-04 (agreed):** 4a is the generic `query()` stream with
    coalescing, inline decoding from the assembled frame (option 2a) and
-   `QueryError`; 4b is the planner and scheduler.
+   `QueryError`; 4b is the planner and scheduler. In 4b, retry happens only
+   at open, before any row is delivered, so a retry cannot duplicate rows.
+   The typed stock EOD stream stays unscheduled until it becomes a wrapper
+   over `query()`.
 5. The Parquet sink.
 6. The Python package, compatibility aliases and the D.2 gates (CI wheels).
 7. Live checks of the FREE-entitled endpoints (from PR 2's map), and the P1

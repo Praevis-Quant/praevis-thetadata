@@ -204,6 +204,8 @@ pub struct Script {
     pub messages: Vec<Result<wire::ResponseData, tonic::Status>>,
     pub message_delay: Duration,
     pub initial_error: Option<tonic::Status>,
+    /// With `initial_error`: fail only the first this many requests (0: all).
+    pub fail_first: usize,
     pub header_delay: Duration,
     pub pause_before: Option<(usize, Duration)>,
 }
@@ -229,7 +231,10 @@ impl FixtureService {
         if !self.script.header_delay.is_zero() {
             tokio::time::sleep(self.script.header_delay).await;
         }
-        if let Some(error) = &self.script.initial_error {
+        let calls = self.requests.lock().unwrap().len();
+        if let Some(error) = &self.script.initial_error
+            && (self.script.fail_first == 0 || calls <= self.script.fail_first)
+        {
             return Err(error.clone());
         }
         let script = self.script.clone();

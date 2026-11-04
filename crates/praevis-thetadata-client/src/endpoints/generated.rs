@@ -435,6 +435,17 @@ impl Endpoint for StockHistoryEod {
     const VENDOR_DESCRIPTION: &'static str = "Since [the equity SIPs](/Articles/Data-And-Requests/The-SIPs.html) only generate a partial EOD report, Theta Data generates a national EOD report at 17:15 ET each day. ``created`` represents the datetime the report was generated and ``last_trade`` represents the datetime of the last trade. The quote in the response represents the last NBBO reported by [CTA or UTP](/Articles/Data-And-Requests/The-SIPs.html) at the time of report generation. You can read more about EOD & OHLC data [here](/Articles/Data-And-Requests/OHLC-EOD.html). Theta Data plans to avail SIP EOD reports in the near future.";
     type Query = api::StockHistoryEodRequestQuery;
     type Request = api::StockHistoryEodRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryEodRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -529,6 +540,20 @@ impl Endpoint for StockHistoryOhlc {
     const VENDOR_DESCRIPTION: &'static str = "- Aggregated OHLC bars that use [SIP rules](/Articles/Data-And-Requests/OHLC-EOD.html) for each bar. Time timestamp of the bar represents the opening time of the bar. For a trade to be part of the bar:  ``bar time`` <= ``trade time`` < ``bar timestamp + ivl``, where ivl is the specified interval size in milliseconds. \n- Set the ``venue`` parameter to ``nqb`` to access current-day real-time historic data from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::StockHistoryOhlcRequestQuery;
     type Request = api::StockHistoryOhlcRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryOhlcRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -647,6 +672,20 @@ impl Endpoint for StockHistoryTrade {
     const VENDOR_DESCRIPTION: &'static str = "Returns every trade reported by [UTP & CTA](/Articles/Data-And-Requests/The-SIPs). Set the ``venue`` parameter to ``nqb`` to access current-day real-time historic data from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::StockHistoryTradeRequestQuery;
     type Request = api::StockHistoryTradeRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryTradeRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -769,6 +808,20 @@ impl Endpoint for StockHistoryQuote {
     const VENDOR_DESCRIPTION: &'static str = "- Returns every NBBO quote reported by [UTP and CTA](/Articles/Data-And-Requests/The-SIPs). \n- If the ``interval`` parameter is specified, the quote for each interval represents the last quote prior to the interval's timestamp. \n- Set the ``venue`` parameter to ``nqb`` to access current-day real-time historic data from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::StockHistoryQuoteRequestQuery;
     type Request = api::StockHistoryQuoteRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryQuoteRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -901,6 +954,20 @@ impl Endpoint for StockHistoryTradeQuote {
     const VENDOR_DESCRIPTION: &'static str = "Returns every trade reported by [UTP & CTA](/Articles/Data-And-Requests/The-SIPs) paired with the last BBO quote reported by [UTP or CTA](/Articles/Data-And-Requests/The-SIPs) at the time of trade. A quote is matched with a trade if its timestamp ``<=`` the trade timestamp. If you prefer to match quotes with timestamps that are ``<`` the trade timestamp, specify the ``exclusive`` parameter to ``true``. Set the ``venue`` parameter to ``nqb`` to access current-day real-time historic data from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Multi-day requests are limited to 1 month of data.\n- For current-day data requests, trades are matched with the last quote reported before the trade (unless use_time_based_trade_quote is given).\n- For deeper historical data, trades are matched with quotes based on millisecond timestamps. A quote is matched with a trade if its timestamp ``<=`` the trade timestamp. \n- To match trades with quotes timestamps that are ``<`` the trade timestamp, specify the ``exclusive``parameter to ``true``. After thorough testing, we have determined that using ``exclusive=true`` might yield better results for various applications.";
     type Query = api::StockHistoryTradeQuoteRequestQuery;
     type Request = api::StockHistoryTradeQuoteRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockHistoryTradeQuoteRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -1000,6 +1067,17 @@ impl Endpoint for StockAtTimeTrade {
     const VENDOR_DESCRIPTION: &'static str = "#### Real-time request:\n- Returns a real-time session from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs.html#nasdaq-basic) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n- Returns a 15-minute delayed session from the [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs.html#equities-cta-utp) account has the [stocks value subscription](https://www.thetadata.net/subscribe.html#stocks) subscription.\n\n#### Historical request:\nReturns the last trade reported by [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs.html#equities-cta-utp) at a specified millisecond of the day.\nTrade condition mappings can be found [here](/Articles/Errors-Exchanges-Conditions/Trade-Conditions.html).";
     type Query = api::StockAtTimeTradeRequestQuery;
     type Request = api::StockAtTimeTradeRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockAtTimeTradeRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -1067,6 +1145,17 @@ impl Endpoint for StockAtTimeQuote {
     const VENDOR_DESCRIPTION: &'static str = "#### Real-time request:\n  - Subscription tier standard or higher will default to NQB.\n  - Real-time last BBO quote at-time_of_day-time from the [Nasdaq Basic feed](/Articles/Data-And-Requests/The-SIPs.html#nasdaq-basic) if the account has a [stocks standard or pro subscription](https://www.thetadata.net/subscribe.html#stocks).\n  - 15-minute delayed NBBO quote at-time_of_day-time from the [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs.html#equities-cta-utp) account has the [stocks value subscription](https://www.thetadata.net/subscribe.html#stocks) subscription.\n\n#### Historical request:\n  Returns the last NBBO quote reported by [UTP & CTA feeds](/Articles/Data-And-Requests/The-SIPs.html#equities-cta-utp) at a specified millisecond of the day.";
     type Query = api::StockAtTimeQuoteRequestQuery;
     type Request = api::StockAtTimeQuoteRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::StockAtTimeQuoteRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -3894,6 +3983,17 @@ impl Endpoint for OptionHistoryEod {
     const VENDOR_DESCRIPTION: &'static str = "- Since [OPRA](/Articles/Data-And-Requests/The-SIPs.html) does not provide a national EOD report for options, Theta Data generates a national EOD report at 17:15 ET each day.\n- ``created`` represents the datetime the report was generated and ``last_trade`` represents the datetime of the last trade. \n- The quote in the response represents the last NBBO reported by OPRA at the time of report generation. \n- You can read more about EOD & OHLC data [here](/Articles/Data-And-Requests/OHLC-EOD.html).";
     type Query = api::OptionHistoryEodRequestQuery;
     type Request = api::OptionHistoryEodRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryEodRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4020,6 +4120,20 @@ impl Endpoint for OptionHistoryOhlc {
     const VENDOR_DESCRIPTION: &'static str = "- Aggregated OHLC bars that use [SIP rules](/Articles/Data-And-Requests/OHLC-EOD.html) for each bar. \n- Time timestamp of the bar represents the opening time of the bar. For a trade to be part of the bar:  ``bar timestamp`` <= ``trade time`` < ``bar timestamp + interval``.\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryOhlcRequestQuery;
     type Request = api::OptionHistoryOhlcRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryOhlcRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4167,6 +4281,20 @@ impl Endpoint for OptionHistoryTrade {
     const VENDOR_DESCRIPTION: &'static str = "- Returns every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html). \n- Trade condition mappings can be found [here](/Articles/Errors-Exchanges-Conditions/Trade-Conditions.html).\n- Extended trade conditions are not reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) for options, so they can be ignored.\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeRequestQuery;
     type Request = api::OptionHistoryTradeRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4323,6 +4451,20 @@ impl Endpoint for OptionHistoryQuote {
     const VENDOR_DESCRIPTION: &'static str = "- Returns every NBBO quote reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html). \n- If the ``interval`` parameter is specified, the quote for each interval represents the last quote at the interval's timestamp.\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryQuoteRequestQuery;
     type Request = api::OptionHistoryQuoteRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryQuoteRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4489,6 +4631,20 @@ impl Endpoint for OptionHistoryTradeQuote {
     const VENDOR_DESCRIPTION: &'static str = "- Returns every [trade](/operations/option_history_trade.html) reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) paired with the last NBBO quote reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) at the time of trade.\n- For current-day data requests, trades are matched with the last quote reported before the trade (unless use_time_based_trade_quote is given).\n- For deeper historical data, trades are matched with quotes based on millisecond timestamps. A quote is matched with a trade if its timestamp ``<=`` the trade timestamp. \n- To match trades with quotes timestamps that are ``<`` the trade timestamp, specify the ``exclusive``parameter to ``true``. After thorough testing, we have determined that using ``exclusive=true`` might yield better results for various applications.\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeQuoteRequestQuery;
     type Request = api::OptionHistoryTradeQuoteRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeQuoteRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4634,6 +4790,20 @@ impl Endpoint for OptionHistoryOpenInterest {
     const VENDOR_DESCRIPTION: &'static str = "- Open Interest is normally reported once per day by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) at approximately 06:30 ET.\n- A new open interest message might not be sent by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) if there is no open interest for the option contract.\n- The reported open interest represents the open interest at the end of the previous trading day.";
     type Query = api::OptionHistoryOpenInterestRequestQuery;
     type Request = api::OptionHistoryOpenInterestRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryOpenInterestRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4793,6 +4963,17 @@ impl Endpoint for OptionHistoryGreeksEod {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Uses Theta Data's EOD reports that get generated at 17:15 ET each day. By default, the greeks are calculated from the midpoint of the option's closing NBBO and the underlying's closing price. Use `option_use_nbbo` and `underlyer_use_nbbo` to switch the price source.\n- **Set `expiration` to ``*`` if you want to retrieve data for every option that shares the same ``symbol``. (note: Any ``expiration=*`` must be requested day by day)**";
     type Query = api::OptionHistoryGreeksEodRequestQuery;
     type Request = api::OptionHistoryGreeksEodRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksEodRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -4995,6 +5176,17 @@ impl Endpoint for OptionHistoryBinomialGreeksEod {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Uses Theta Data's EOD reports that get generated at 17:15 ET each day. By default, the greeks are calculated from the midpoint of the option's closing NBBO and the underlying's closing price. Use `option_use_nbbo` and `underlyer_use_nbbo` to switch the price source.\n- **Set `expiration` to ``*`` if you want to retrieve data for every option that shares the same ``symbol``. (note: Any ``expiration=*`` must be requested day by day)**";
     type Query = api::OptionHistoryBinomialGreeksEodRequestQuery;
     type Request = api::OptionHistoryBinomialGreeksEodRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksEodRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -5206,6 +5398,20 @@ impl Endpoint for OptionHistoryGreeksAll {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksAllRequestQuery;
     type Request = api::OptionHistoryGreeksAllRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -5434,6 +5640,20 @@ impl Endpoint for OptionHistoryBinomialGreeksAll {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryBinomialGreeksAllRequestQuery;
     type Request = api::OptionHistoryBinomialGreeksAllRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -5663,6 +5883,20 @@ impl Endpoint for OptionHistoryTradeGreeksAll {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksAllRequestQuery;
     type Request = api::OptionHistoryTradeGreeksAllRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -5898,6 +6132,20 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksAll {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryBinomialTradeGreeksAllRequestQuery;
     type Request = api::OptionHistoryBinomialTradeGreeksAllRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialTradeGreeksAllRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -6122,6 +6370,20 @@ impl Endpoint for OptionHistoryGreeksFirstOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksFirstOrderRequestQuery;
     type Request = api::OptionHistoryGreeksFirstOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -6350,6 +6612,20 @@ impl Endpoint for OptionHistoryBinomialGreeksFirstOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryBinomialGreeksFirstOrderRequestQuery;
     type Request = api::OptionHistoryBinomialGreeksFirstOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -6579,6 +6855,20 @@ impl Endpoint for OptionHistoryTradeGreeksFirstOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksFirstOrderRequestQuery;
     type Request = api::OptionHistoryTradeGreeksFirstOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -6814,6 +7104,20 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksFirstOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryBinomialTradeGreeksFirstOrderRequestQuery;
     type Request = api::OptionHistoryBinomialTradeGreeksFirstOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialTradeGreeksFirstOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7038,6 +7342,20 @@ impl Endpoint for OptionHistoryGreeksSecondOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksSecondOrderRequestQuery;
     type Request = api::OptionHistoryGreeksSecondOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7266,6 +7584,20 @@ impl Endpoint for OptionHistoryBinomialGreeksSecondOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryBinomialGreeksSecondOrderRequestQuery;
     type Request = api::OptionHistoryBinomialGreeksSecondOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7495,6 +7827,20 @@ impl Endpoint for OptionHistoryTradeGreeksSecondOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksSecondOrderRequestQuery;
     type Request = api::OptionHistoryTradeGreeksSecondOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7730,6 +8076,20 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksSecondOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryBinomialTradeGreeksSecondOrderRequestQuery;
     type Request = api::OptionHistoryBinomialTradeGreeksSecondOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialTradeGreeksSecondOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -7954,6 +8314,20 @@ impl Endpoint for OptionHistoryGreeksThirdOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksThirdOrderRequestQuery;
     type Request = api::OptionHistoryGreeksThirdOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -8182,6 +8556,20 @@ impl Endpoint for OptionHistoryBinomialGreeksThirdOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration. \n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculated using the option and underlying midpoint price. If an interval size is specified (*highly recommended*), the option quote used in the calculation follows the same rules as the [quote](/operations/option_history_quote.html) endpoint. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryBinomialGreeksThirdOrderRequestQuery;
     type Request = api::OptionHistoryBinomialGreeksThirdOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -8411,6 +8799,20 @@ impl Endpoint for OptionHistoryTradeGreeksThirdOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksThirdOrderRequestQuery;
     type Request = api::OptionHistoryTradeGreeksThirdOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -8646,6 +9048,20 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksThirdOrder {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the data for all contracts that share the same provided symbol and expiration.\n- Greeks are calculated with a Leisen-Reimer binomial tree. European-style index options (such as SPX, SPXW, XSP, NDX, RUT and VIX) are priced as European and every other root as American, which allows early exercise at every node; set `exercise_style` to override. See [here](/Articles/Data-And-Requests/Option-Greeks.html) for more detail.\n- Calculates greeks for every trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html).\n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryBinomialTradeGreeksThirdOrderRequestQuery;
     type Request = api::OptionHistoryBinomialTradeGreeksThirdOrderRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialTradeGreeksThirdOrderRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -8870,6 +9286,20 @@ impl Endpoint for OptionHistoryGreeksImpliedVolatility {
     const VENDOR_DESCRIPTION: &'static str = "- Returns implied volatilies calculated using the national best bid, mid, and ask price of the option respectively. \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::OptionHistoryGreeksImpliedVolatilityRequestQuery;
     type Request = api::OptionHistoryGreeksImpliedVolatilityRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksImpliedVolatilityRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -9084,6 +9514,20 @@ impl Endpoint for OptionHistoryTradeGreeksImpliedVolatility {
     const VENDOR_DESCRIPTION: &'static str = "- Returns implied volatilies calculated using the trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html). \n- The underlying price represents whatever the last underlying price was at the ``timestamp`` field. You can read more about how Theta Data calculates greeks [here](/Articles/Data-And-Requests/Option-Greeks.html).\n- Multi-day requests are limited to 1 month of data, and must specify an expiration.";
     type Query = api::OptionHistoryTradeGreeksImpliedVolatilityRequestQuery;
     type Request = api::OptionHistoryTradeGreeksImpliedVolatilityRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryTradeGreeksImpliedVolatilityRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -9237,6 +9681,17 @@ impl Endpoint for OptionAtTimeTrade {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the last trade reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) at a specified millisecond of the day.\n- Trade condition mappings can be found [here](/Articles/Errors-Exchanges-Conditions/Trade-Conditions.html).\n- Extended trade conditions are not reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) for options, so they can be ignored.\n- The ``time_of_day``parameter represents the 00:00:00.000 ET that the trade should be provided for.";
     type Query = api::OptionAtTimeTradeRequestQuery;
     type Request = api::OptionAtTimeTradeRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionAtTimeTradeRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -9338,6 +9793,17 @@ impl Endpoint for OptionAtTimeQuote {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the last NBBO quote reported by [OPRA](/Articles/Data-And-Requests/The-SIPs.html) at a specified millisecond of the day.\n- The ``time_of_day``parameter represents the 00:00:00.000 ET that the quote should be provided for.\n- Using a sub-minute ``time_of_day`` (e.g. ``09:30:10.000``) will significantly slow the request and may cause it to hang, particularly when using ``expiration=*``. Use a minute-boundary time (e.g. ``09:30:00.000``) instead.";
     type Query = api::OptionAtTimeQuoteRequestQuery;
     type Request = api::OptionAtTimeQuoteRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionAtTimeQuoteRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {
@@ -9688,6 +10154,17 @@ impl Endpoint for IndexHistoryEod {
     const VENDOR_DESCRIPTION: &'static str = "- Since [the indices feeds](/Articles/Data-And-Requests/The-SIPs.html) do not provide a national EOD report, Theta Data generates a national EOD report at 17:15 each day.";
     type Query = api::IndexHistoryEodRequestQuery;
     type Request = api::IndexHistoryEodRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexHistoryEodRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -9760,6 +10237,17 @@ impl Endpoint for IndexHistoryOhlc {
     const VENDOR_DESCRIPTION: &'static str = "- Aggregated OHLC bars that use [SIP rules](/Articles/Data-And-Requests/OHLC-EOD.html) for each bar.\n- Time timestamp of the bar represents the opening time of the bar. For a trade to be part of the bar:  ``bar timestamp`` <= ``trade time`` < ``bar timestamp + interval``.\n- [Exchanges](/Articles/Data-And-Requests/The-SIPs.html) typically generate a price report every second for popular indices like SPX.";
     type Query = api::IndexHistoryOhlcRequestQuery;
     type Request = api::IndexHistoryOhlcRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexHistoryOhlcRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -9860,6 +10348,20 @@ impl Endpoint for IndexHistoryPrice {
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves historical indices price reports. [Exchanges](/Articles/Data-And-Requests/The-SIPs.html) typically generate a price report every second for popular indices like SPX.\n- When the ``interval`` parameter is specified, the returned data represents the price at the exact time of each timestamp. If the timestamp in the response is 10:30:00, the price field represents the price at that exact time of the day.\n- A price update from the exchange is omitted if the price remained the same from the previous update.\n- Multi-day requests are limited to 1 month of data.";
     type Query = api::IndexHistoryPriceRequestQuery;
     type Request = api::IndexHistoryPriceRequest;
+    const SPLIT: Split = Split::Days(1);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        match (self.start_date, self.end_date) {
+            (Some(start), Some(end)) if self.date.is_none() => Some((start, end)),
+            _ => None,
+        }
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: Some(start),
+            end_date: Some(end),
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexHistoryPriceRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -9940,6 +10442,17 @@ impl Endpoint for IndexAtTimePrice {
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves historical indices price reports. [Exchanges](/Articles/Data-And-Requests/The-SIPs.html) typically generate a price report every second for popular indices like SPX.\n- The ``time_of_day`` parameter represents the 00:00:00.000 ET that the price should be provided for.";
     type Query = api::IndexAtTimePriceRequestQuery;
     type Request = api::IndexAtTimePriceRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::IndexAtTimePriceRequestQuery::default();
         query.symbol = self.symbol.clone();
@@ -10117,6 +10630,17 @@ impl Endpoint for InterestRateHistoryEod {
     const VENDOR_DESCRIPTION: &'static str = "- Returns the interest rate reported. Depending on the rate, reports can occur in the morning or the afternoon.";
     type Query = api::InterestRateHistoryEodRequestQuery;
     type Request = api::InterestRateHistoryEodRequest;
+    const SPLIT: Split = Split::Days(366);
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        Some((self.start_date, self.end_date))
+    }
+    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {
+        Some(Self {
+            start_date: start,
+            end_date: end,
+            ..self.clone()
+        })
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::InterestRateHistoryEodRequestQuery::default();
         query.symbol = self.symbol.clone();

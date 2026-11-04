@@ -9,7 +9,9 @@ pub mod endpoints;
 mod envelope;
 mod eod;
 mod framing;
+mod job;
 mod query;
+mod scheduler;
 #[cfg(test)]
 extern crate self as praevis_thetadata_client;
 #[cfg(test)]
@@ -20,10 +22,12 @@ pub use eod::{
     DecodeLimits, EodBatchStream, EodError, EodPolicy, EodTableStream, NaiveDate, QueryError,
     StockEodRequest,
 };
+pub use job::{JobStream, plan};
 /// The arrow-rs crates whose types the query streams return.
 pub use praevis_thetadata_arrow::{arrow_array, arrow_schema};
 pub use praevis_thetadata_core::{BatchValue, DataBatch, TimeZone, Timestamp};
 pub use query::{BatchPolicy, QueryStream, unify};
+pub use scheduler::SchedulerPolicy;
 
 pub use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, Session};
 pub use praevis_thetadata_core::{Table, Value};
@@ -101,9 +105,16 @@ pub struct ThetaClient {
     session: Session,
     config: ClientConfig,
     eod_pool: std::sync::Arc<eod::Pool>,
+    scheduler: std::sync::Arc<scheduler::Scheduler>,
 }
 
 impl ThetaClient {
+    /// Replace the request scheduler used by `query()` and `job()` (the
+    /// default is FREE's documented limits). Clones made afterwards share it.
+    pub fn with_scheduler(mut self, policy: SchedulerPolicy) -> Result<Self, QueryError> {
+        self.scheduler = scheduler::Scheduler::new(policy)?;
+        Ok(self)
+    }
     /// Consume a session from the standalone auth crate without authenticating again.
     pub async fn with_session(config: ClientConfig, session: Session) -> Result<Self, Error> {
         Self::connect(
@@ -194,6 +205,8 @@ impl ThetaClient {
             session,
             config,
             eod_pool,
+            scheduler: scheduler::Scheduler::new(SchedulerPolicy::default())
+                .expect("valid default scheduler policy"),
         })
     }
     pub fn session(&self) -> Session {

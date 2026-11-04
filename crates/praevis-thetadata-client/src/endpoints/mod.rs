@@ -50,6 +50,15 @@ pub type RawStream = tonic::Streaming<wire::ResponseData>;
 /// A boxed future, so endpoints can be dispatched generically.
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
+/// How `job()` may split a request into smaller requests by date.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Split {
+    /// Sent as one request.
+    Whole,
+    /// At most this many calendar days per request, inclusive.
+    Days(u32),
+}
+
 /// A typed request for one RPC.
 pub trait Endpoint {
     /// RPC name in the descriptor, for example `GetStockHistoryEod`.
@@ -69,6 +78,19 @@ pub trait Endpoint {
     type Request: prost::Message + Send + 'static;
     /// Wrap a query in its request message.
     fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request;
+    /// How the planner may split this request (P1 PR 4b).
+    const SPLIT: Split = Split::Whole;
+    /// The inclusive date range a split applies to, if this request has one.
+    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
+        None
+    }
+    /// The same request over another date range.
+    fn with_date_range(&self, _start: NaiveDate, _end: NaiveDate) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        None
+    }
     /// Build the wire query exactly as the vendor wrapper does.
     fn to_query(&self) -> Self::Query;
     /// Send `query` on the raw stub and return the server stream.
