@@ -69,6 +69,9 @@ class OutputTests(unittest.TestCase):
         self.assertEqual(gen.PY_OUT.read_text(encoding="utf-8"), dispatch)
         # Every RPC is dispatched once, by RPC name and (when wrapped) vendor name.
         self.assertEqual(dispatch.count("runner.run(r)"), 100)
+        aliases = gen.generate_vendor_aliases()
+        self.assertEqual(gen.VENDOR_OUT.read_text(encoding="utf-8"), aliases)
+        self.assertEqual(aliases.count('        return self._vendor("'), 81)
 
     def test_status_entries_must_name_real_rpcs(self):
         with tempfile.TemporaryDirectory() as directory:

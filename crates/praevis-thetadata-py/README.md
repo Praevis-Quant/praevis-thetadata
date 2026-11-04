@@ -17,9 +17,16 @@ pass-through over Arrow.
   timestamps with their time zone.
 
 ```python
+import datetime
+
 import praevis_thetadata as pt
 
-client = pt.Client.from_env()  # reads THETADATA_API_KEY
+# Vendor-compatible: the same credential order and method names as the
+# vendor's ThetaClient, returning a Polars (default), pandas or Arrow frame.
+client = pt.Client(dataframe_type="polars")
+frame = client.stock_history_eod("AAPL", datetime.date(2024, 1, 2), datetime.date(2024, 12, 31))
+
+# Enhanced: Arrow results, streaming batches and Parquet from Rust.
 result = client.query("stock_history_eod", symbol="AAPL",
                       start_date="2024-01-02", end_date="2024-12-31")
 frame = result.to_polars()
@@ -34,6 +41,19 @@ client.to_parquet("stock_history_eod", "aapl.parquet", symbol="AAPL",
 
 Parameter names are the vendor package's. `pt.describe(...)` shows the wire
 query without sending it.
+
+**Vendor-named methods.** All 81 vendor `ThetaClient` methods exist with the
+vendor 1.0.17 signatures (names, order and defaults; checked against the pinned
+inventory), plus a keyword-only `plan`. Each forwards every argument to the
+same native query and returns the client's `dataframe_type`. Differences, by
+design: prices stay exact (`decimal128(38, 10)`, Arrow-backed in pandas), and
+timestamps keep their time zone.
+
+**Credentials** follow the vendor and CLI order (ADR-0020): explicit
+`creds_file`, `api_key`, or `email` and `password`; otherwise
+`THETADATA_API_KEY`, `THETADATA_EMAIL` and `THETADATA_PASSWORD`,
+`THETADATA_CREDENTIALS_FILE`, and finally `./creds.txt`. Blank values fall
+through; nothing is logged.
 
 Build locally with [maturin](https://www.maturin.rs/):
 `maturin develop --release` from this directory, inside a virtual environment.
