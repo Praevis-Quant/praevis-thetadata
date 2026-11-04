@@ -15,6 +15,7 @@ from typing import Any
 
 from . import _native
 from ._native import Batch, BatchIterator, OutputFailed, QueryFailed, ThetaDataError, __version__
+from ._vendor import VendorMethods
 
 __all__ = [
     "Batch",
@@ -24,6 +25,7 @@ __all__ = [
     "QueryFailed",
     "Result",
     "ThetaDataError",
+    "VendorMethods",
     "__version__",
     "describe",
     "endpoints",
@@ -81,25 +83,94 @@ class Result:
         return table.to_pandas()
 
 
-class Client:
-    """A client for the direct gRPC service.
+_DATAFRAME_TYPES = ("polars", "pandas", "arrow")
+_CREDENTIAL_SOURCES = (
+    "supply creds_file, api_key, or email and password; or set THETADATA_API_KEY, "
+    "or THETADATA_EMAIL and THETADATA_PASSWORD, or THETADATA_CREDENTIALS_FILE; "
+    "or create ./creds.txt"
+)
 
-    ``Client(api_key)`` authenticates with an explicit key; ``Client.from_env()``
-    reads ``THETADATA_API_KEY``. The key is never logged. The scheduler defaults
-    to FREE's documented limits (1 concurrent request, 20 per minute).
+
+def _credentials(
+    creds_file: str | os.PathLike[str] | None,
+    api_key: str | None,
+    email: str | None,
+    password: str | None,
+) -> dict[str, Any]:
+    """Choose one source in the ADR-0020 order, the CLI's and the vendor's:
+    explicit arguments (credentials file, API key, email and password), then
+    THETADATA_API_KEY, a complete THETADATA_EMAIL / THETADATA_PASSWORD pair,
+    THETADATA_CREDENTIALS_FILE and finally ./creds.txt. Blank values fall
+    through. Nothing here is logged or kept."""
+    if creds_file is not None:
+        return {"creds_file": os.fspath(creds_file)}
+    if api_key is not None and api_key.strip():
+        return {"api_key": api_key}
+    if email is not None or password is not None:
+        if not (email and email.strip() and password):
+            raise ThetaDataError("give both email and password")
+        return {"email": email, "password": password}
+    key = os.environ.get("THETADATA_API_KEY", "")
+    if key.strip():
+        return {"api_key": key}
+    env_email = os.environ.get("THETADATA_EMAIL", "")
+    env_password = os.environ.get("THETADATA_PASSWORD", "")
+    if env_email.strip() and env_password:
+        return {"email": env_email, "password": env_password}
+    selected = os.environ.get("THETADATA_CREDENTIALS_FILE", "")
+    if selected:
+        # A selected file is used even if missing, so its error is reported.
+        return {"creds_file": selected}
+    if os.path.exists("creds.txt"):
+        return {"creds_file": "creds.txt"}
+    if bool(env_email.strip()) != bool(env_password):
+        raise ThetaDataError(
+            "only one of THETADATA_EMAIL and THETADATA_PASSWORD is set, and no ./creds.txt was found"
+        )
+    raise ThetaDataError("no credentials: " + _CREDENTIAL_SOURCES)
+
+
+class Client(VendorMethods):
+    """A client for the direct gRPC service, with the vendor ``ThetaClient``
+    method names (see ``VendorMethods``) and the enhanced ``query``,
+    ``batches`` and ``to_parquet``.
+
+    Credentials follow the vendor and CLI order (ADR-0020): explicit
+    ``creds_file``, ``api_key``, or ``email`` and ``password``; otherwise
+    ``THETADATA_API_KEY``, ``THETADATA_EMAIL`` and ``THETADATA_PASSWORD``,
+    ``THETADATA_CREDENTIALS_FILE`` and ``./creds.txt``. They are never logged.
+
+    ``dataframe_type`` (``"polars"``, the vendor default, ``"pandas"`` or
+    ``"arrow"``) is what the vendor-named methods return. The scheduler
+    defaults to FREE's documented limits (1 concurrent request, 20 per minute).
     """
 
-    __slots__ = ("_native",)
+    __slots__ = ("_native", "_dataframe_type")
 
-    def __init__(self, api_key: str, **options: Any) -> None:
-        self._native = _native.Client(api_key, **options)
+    def __init__(
+        self,
+        api_key: str | None = None,
+        *,
+        email: str | None = None,
+        password: str | None = None,
+        creds_file: str | os.PathLike[str] | None = None,
+        dataframe_type: str = "polars",
+        **options: Any,
+    ) -> None:
+        if dataframe_type not in _DATAFRAME_TYPES:
+            raise ValueError(f"dataframe_type: one of {', '.join(_DATAFRAME_TYPES)}")
+        credentials = _credentials(creds_file, api_key, email, password)
+        self._native = _native.Client(**credentials, **options)
+        self._dataframe_type = dataframe_type
 
     @classmethod
-    def from_env(cls, variable: str = "THETADATA_API_KEY", **options: Any) -> "Client":
-        key = os.environ.get(variable, "").strip()
-        if not key:
-            raise ThetaDataError(f"{variable} is not set")
-        return cls(key, **options)
+    def from_env(cls, **options: Any) -> "Client":
+        """A client from the environment or ./creds.txt, in the ADR-0020 order."""
+        return cls(**options)
+
+    @property
+    def dataframe_type(self) -> str:
+        return self._dataframe_type
 
     def query(self, endpoint: str, /, *, plan: bool = True, **params: Any) -> Result:
         """Run ``endpoint`` (a vendor name such as ``"stock_history_eod"``, or
@@ -127,6 +198,14 @@ class Client:
         return self._native.to_parquet(
             endpoint, os.fspath(path), overwrite=overwrite, zstd_level=zstd_level, plan=plan, **params
         )
+
+    def _vendor(self, name: str, plan: bool, params: dict[str, Any]) -> Any:
+        result = Result(self._native.query(name, plan=plan, **params))
+        if self._dataframe_type == "polars":
+            return result.to_polars()
+        if self._dataframe_type == "pandas":
+            return result.to_pandas()
+        return result.to_arrow()
 
 
 def describe(endpoint: str, /, *, plan: bool = True, **params: Any) -> tuple[str, int]:

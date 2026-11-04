@@ -214,8 +214,8 @@ impl Runner for Describe {
     }
 }
 
-/// A client for the direct gRPC service. Construct it with an API key; the
-/// Python package's `Client.from_env()` reads `THETADATA_API_KEY` explicitly.
+/// A client for the direct gRPC service, from exactly one credential source.
+/// The Python package's `Client` chooses it in the ADR-0020 order.
 #[pyclass(module = "praevis_thetadata._native", frozen)]
 struct Client {
     inner: ThetaClient,
@@ -224,11 +224,14 @@ struct Client {
 #[pymethods]
 impl Client {
     #[new]
-    #[pyo3(signature = (api_key, *, environment = "prod", concurrency = 1, per_minute = Some(20), retries = 3, request_timeout = 300.0, idle_timeout = 60.0))]
+    #[pyo3(signature = (*, api_key = None, email = None, password = None, creds_file = None, environment = "prod", concurrency = 1, per_minute = Some(20), retries = 3, request_timeout = 300.0, idle_timeout = 60.0))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python<'_>,
-        api_key: String,
+        api_key: Option<String>,
+        email: Option<String>,
+        password: Option<String>,
+        creds_file: Option<std::path::PathBuf>,
         environment: &str,
         concurrency: usize,
         per_minute: Option<u32>,
@@ -236,6 +239,22 @@ impl Client {
         request_timeout: f64,
         idle_timeout: f64,
     ) -> PyResult<Self> {
+        // Exactly one source, already chosen by the Python layer in the
+        // ADR-0020 order. The file is parsed like the CLI parses it.
+        let credentials = match (creds_file, api_key, email, password) {
+            (Some(path), None, None, None) => Credentials::from_file(&path).map_err(|_| {
+                QueryFailed::new_err(("credentials", "could not read the credentials file"))
+            })?,
+            (None, Some(key), None, None) => Credentials::api_key(key.trim()),
+            (None, None, Some(email), Some(password)) => {
+                Credentials::email_password(email, password)
+            }
+            _ => {
+                return Err(PyValueError::new_err(
+                    "give exactly one of api_key, email and password, or creds_file",
+                ));
+            }
+        };
         let environment = match environment {
             "prod" => Environment::Prod,
             "stage" => Environment::Stage,
@@ -266,12 +285,9 @@ impl Client {
                 })
                 .map_err(|_| query_error(QueryError::Configuration))?;
                 // The key is never logged or echoed in errors.
-                let session = auth
-                    .authenticate(&Credentials::api_key(api_key.trim()))
-                    .await
-                    .map_err(|_| {
-                        QueryFailed::new_err(("authentication", "authentication failed"))
-                    })?;
+                let session = auth.authenticate(&credentials).await.map_err(|_| {
+                    QueryFailed::new_err(("authentication", "authentication failed"))
+                })?;
                 ThetaClient::with_session(config, session)
                     .await
                     .map_err(|_| query_error(QueryError::Connection))?

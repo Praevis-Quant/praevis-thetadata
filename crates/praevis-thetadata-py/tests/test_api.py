@@ -1,6 +1,5 @@
 """Endpoint names, keyword arguments and wire queries (no network)."""
 import datetime as dt
-import os
 import unittest
 
 import praevis_thetadata as pt
@@ -63,10 +62,6 @@ class EndpointTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             pt.describe("no_such_endpoint")
 
-    def test_from_env_requires_the_variable(self):
-        os.environ.pop("PRAEVIS_TEST_MISSING_KEY", None)
-        with self.assertRaises(pt.ThetaDataError):
-            pt.Client.from_env("PRAEVIS_TEST_MISSING_KEY")
 
 
 if __name__ == "__main__":

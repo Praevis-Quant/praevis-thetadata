@@ -16,6 +16,21 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Python vendor-named methods and credentials** (P1 PR 6b).
+  - All 81 vendor `ThetaClient` methods are generated with the vendor 1.0.17
+    signatures (names, order and defaults), plus a keyword-only `plan`. Each
+    forwards every argument to the same native query.
+  - The client's `dataframe_type` (`"polars"`, the vendor default, `"pandas"`
+    or `"arrow"`) picks the zero-copy conversion.
+  - Tests check every signature against the pinned inventory, and that
+    forwarding the vendor defaults builds the same wire query as omitting
+    them. An alias adds about 0.6 µs per call (gate ≤ 5 µs).
+  - `Client()` and `Client.from_env()` choose credentials in the ADR-0020
+    order: explicit `creds_file`, `api_key`, or `email` and `password`; then
+    `THETADATA_API_KEY`, the `THETADATA_EMAIL` / `THETADATA_PASSWORD` pair,
+    `THETADATA_CREDENTIALS_FILE` and `./creds.txt`.
+    - Credential files are parsed by the same Rust code as the CLI.
+    - Blank values fall through, and error messages never include values.
 - **Python package, native core** (P1 PR 6a). `crates/praevis-thetadata-py` is
   a pyo3 abi3 extension (CPython ≥ 3.10, D4), built with maturin as the
   `praevis-thetadata` wheel (D3). It is not published.

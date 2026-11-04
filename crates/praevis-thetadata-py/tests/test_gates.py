@@ -2,8 +2,8 @@
 
 1. No per-row Python objects: Python allocations while producing and
    converting rows do not grow with the row count.
-2. Pass-through overhead: the Python layer adds at most a fixed few
-   microseconds per call over the native call.
+2. Pass-through overhead: the Python layer, and a vendor-named alias, add at
+   most a fixed few microseconds per call over the native call.
 
 PRAEVIS_GATE_ROWS=1000000,10000000 runs the plan's full sizes manually; CI uses
 smaller ones.
@@ -80,6 +80,45 @@ class OverheadGate(unittest.TestCase):
         wrapped = per_call(pt.describe)
         print(f"\nnative {native:.2f} µs/call, Python layer {wrapped:.2f} µs/call", file=sys.stderr)
         self.assertLess(wrapped - native, 5.0)
+
+
+class AliasOverheadGate(unittest.TestCase):
+    def test_a_vendor_alias_adds_a_fixed_few_microseconds(self):
+        import pyarrow as pa
+
+        table = _native._synthetic(3)
+
+        class Native:
+            def query(self, name, *, plan, **params):
+                return table
+
+        native = Native()
+        client = object.__new__(pt.Client)
+        object.__setattr__(client, "_native", native)
+        object.__setattr__(client, "_dataframe_type", "arrow")
+        start, end = "2024-01-02", "2024-01-05"
+        calls = 2000
+
+        def direct():
+            return pa.table(pt.Result(native.query("stock_history_eod", plan=True, symbol="AAPL",
+                                                   start_date=start, end_date=end)))
+
+        def alias():
+            return client.stock_history_eod("AAPL", start, end)
+
+        def per_call(function) -> float:
+            samples = []
+            for _ in range(7):
+                begin = time.perf_counter()
+                for _ in range(calls):
+                    function()
+                samples.append((time.perf_counter() - begin) / calls * 1e6)
+            return statistics.median(samples)
+
+        per_call(direct)  # warm
+        base, wrapped = per_call(direct), per_call(alias)
+        print(f"\nnative call + conversion {base:.2f} µs, vendor alias {wrapped:.2f} µs", file=sys.stderr)
+        self.assertLess(wrapped - base, 5.0)
 
 
 if __name__ == "__main__":
