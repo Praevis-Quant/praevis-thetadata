@@ -22,6 +22,8 @@ Polars by three runners, synchronously and 8 at a time:
 
   Service speed that drifts over 25 minutes would favour or penalise one
   runner as a whole. Within a runner, rounds alternate the thread order.
+  **The interleaved repeat below gives the same ratios, so drift did not
+  explain them.**
 - **3 rounds; values are medians.** One host, one trade date (2024-06-14),
   one root (SPY).
 - **The two Python environments have different Polars versions:** 1.44.2
@@ -153,11 +155,43 @@ assessed.** These runners build each result as a Polars frame, so memory
 grows with the result. A bounded run would stream (`batches()` or
 `to_parquet`) with a configured limit, and is a separate measurement.
 
+## Interleaved repeat (2026-11-05, 01:12-01:38 local)
+
+Same host, account and workloads, with binaries from the 8b4edd5 era. Three
+cycles, each running all four runners once (`--rounds 1`) **in a fixed
+order: vendor, ours Python, Rust at 8, Rust at 1.** The vendor always ran
+first in a cycle; the order was not alternated. Within a run with
+`--rounds 1`, each workload runs 1 thread, then 8. Every run exited 0,
+nothing stopped, the rows were identical and the secret scan was clean.
+
+| Workload | Vendor, sync | Vendor, 8 | Ours Python, 1 | Ours Python, 8 | Rust, 1 | Rust, 8 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| W5c | 25.7 | 9.2 | 16.7 | 2.7 | 20.0 | 3.0 |
+| W4c | 64.8 | 37.9 | 33.3 | 7.0 | 36.4 | 6.3 |
+| W6c | 82.4 | 65.2 | 39.4 | 8.7 | 38.4 | 8.5 |
+
+The values are medians of the 3 cycles, in seconds. The ratios below come
+from the unrounded medians:
+
+| Workload | Python at 8 vs vendor sync / threaded | Rust at 8 vs vendor sync / threaded |
+| --- | --- | --- |
+| W5c | 9.4× / 3.4× | 8.4× / 3.0× |
+| W4c | 9.2× / 5.4× | 10.2× / 6.0× |
+| W6c | 9.4× / 7.5× | 9.7× / 7.7× |
+
+- **The ratios match the sequential run.** The targets are met again
+  (W5 ≥ 7× synchronous and ≥ 1.0× threaded).
+- **The worst case is close to the line:** W5c with our Python package at 8
+  was 2.6-3.5 s, against the vendor's synchronous 24.7-25.9 s. The worst
+  pair is 7.1×, just over 7×; Rust's worst pair is 8.0×.
+- **The vendor is steady, ours varies more** (Rust W6c at 8: 7.0, 8.5 and
+  12.5 s). That is consistent with the service's variation in the
+  sequential run.
+- **Peak RSS per process:** vendor 795.5-888.4 MiB, ours Python 372.4-451.3
+  MiB. The Rust runner does not record memory.
+
 ## Next
 
-- **An interleaved repeat** (cheap: about 25 minutes): each runner with
-  `--rounds 1`, three times, alternating vendor, ours Python, Rust 8 and
-  Rust 1. It removes the drift caveat.
-- **The all-strike quote shape:** `split-probe` (`opt-split-001`), then the
-  per-contract planner split if it holds.
+- **The all-strike quote shape:** measured by `split-probe` (`opt-split-001`)
+  and fixed by the per-strike planner split.
 - **A memory-bounded W5 run** through `batches()` or `to_parquet`.
