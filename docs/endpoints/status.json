@@ -16,6 +16,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetStockListSymbols": {
@@ -105,6 +110,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionListExpirations": {
@@ -117,6 +127,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionListStrikes": {
@@ -129,6 +144,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionListContracts": {
@@ -142,6 +162,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotQuote": {
@@ -152,10 +177,14 @@
       "tier": "VALUE"
     },
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotOpenInterest": {
@@ -166,10 +195,14 @@
       "tier": "VALUE"
     },
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotGreeksFirstOrder": {
@@ -180,10 +213,14 @@
       "tier": "STANDARD"
     },
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryOhlc": {
@@ -197,6 +234,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryTrade": {
@@ -210,6 +252,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryQuote": {
@@ -223,6 +270,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryOpenInterest": {
@@ -236,6 +288,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryGreeksEod": {
@@ -249,6 +306,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryGreeksFirstOrder": {
@@ -262,6 +324,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryTradeGreeksFirstOrder": {
@@ -274,6 +341,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryGreeksImpliedVolatility": {
@@ -287,6 +359,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionAtTimeQuote": {
@@ -300,6 +377,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetIndexListSymbols": {
@@ -368,94 +450,143 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotOhlc": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotTrade": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotMarketValue": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotGreeksImpliedVolatility": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotGreeksAll": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotBinomialGreeksAll": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotBinomialGreeksFirstOrder": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotGreeksSecondOrder": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotBinomialGreeksSecondOrder": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotGreeksThirdOrder": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionSnapshotBinomialGreeksThirdOrder": {
     "pro": {
-      "class": "no-data",
-      "code": "NotFound",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "rows-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryTradeQuote": {
@@ -463,6 +594,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryBinomialGreeksEod": {
@@ -470,6 +606,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryGreeksAll": {
@@ -477,6 +618,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryBinomialGreeksAll": {
@@ -484,6 +630,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryTradeGreeksAll": {
@@ -491,6 +642,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryBinomialTradeGreeksAll": {
@@ -498,6 +654,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryBinomialGreeksFirstOrder": {
@@ -505,6 +666,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryBinomialTradeGreeksFirstOrder": {
@@ -512,6 +678,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryGreeksSecondOrder": {
@@ -519,6 +690,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryBinomialGreeksSecondOrder": {
@@ -526,6 +702,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryTradeGreeksSecondOrder": {
@@ -533,6 +714,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryBinomialTradeGreeksSecondOrder": {
@@ -540,6 +726,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryGreeksThirdOrder": {
@@ -547,6 +738,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryBinomialGreeksThirdOrder": {
@@ -554,6 +750,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryTradeGreeksThirdOrder": {
@@ -561,6 +762,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryBinomialTradeGreeksThirdOrder": {
@@ -568,6 +774,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionHistoryTradeGreeksImpliedVolatility": {
@@ -575,6 +786,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionAtTimeTrade": {
@@ -582,30 +798,47 @@
       "class": "entitled",
       "code": "OK",
       "run": "opt-pro-entitlements-001"
+    },
+    "check": {
+      "result": "values-equal",
+      "python": "ok",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionFlatFileEod": {
     "pro": {
-      "class": "invalid-argument",
-      "code": "InvalidArgument",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "probe-data",
+      "python": "not-run",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionFlatFileOpenInterest": {
     "pro": {
-      "class": "invalid-argument",
-      "code": "InvalidArgument",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "probe-data",
+      "python": "not-run",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionFlatFileTradeQuote": {
     "pro": {
-      "class": "invalid-argument",
-      "code": "InvalidArgument",
-      "run": "opt-pro-entitlements-001",
-      "uncertain": true
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-checks-001"
+    },
+    "check": {
+      "result": "probe-data",
+      "python": "not-run",
+      "run": "opt-checks-001"
     }
   },
   "GetOptionFlatFileQuote": {
