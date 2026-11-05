@@ -49,11 +49,11 @@ Polars by three runners, synchronously and 8 at a time:
 
 **Spread across the 3 rounds (seconds, lowest to highest):**
 
-| Workload | Vendor, sync | Vendor, 8 | Ours Python, 1 | Ours Python, 8 |
-| --- | --- | --- | --- | --- |
-| W5c | 27.4-29.2 | 9.0-9.9 | 15.8-23.3 | 2.7-3.2 |
-| W4c | 68.1-72.0 | 37.6-38.7 | 36.1-37.9 | 5.8-8.9 |
-| W6c | 85.1-85.5 | 65.3-65.7 | 39.1-53.8 | 8.2-9.0 |
+| Workload | Vendor, sync | Vendor, 8 | Ours Python, 1 | Ours Python, 8 | Rust, 1 | Rust, 8 |
+| --- | --- | --- | --- | --- | --- | --- |
+| W5c | 27.4-29.2 | 9.0-9.9 | 15.8-23.3 | 2.7-3.2 | 18.0-20.6 | 2.4-3.0 |
+| W4c | 68.1-72.0 | 37.6-38.7 | 36.1-37.9 | 5.8-8.9 | 35.8-40.3 | 5.5-7.1 |
+| W6c | 85.1-85.5 | 65.3-65.7 | 39.1-53.8 | 8.2-9.0 | 40.3-46.5 | 8.0-9.2 |
 
 The vendor's times were steady. Ours varied up to ±30% between rounds, and
 since the data is the same each time, that variation is the service's. The
@@ -117,7 +117,25 @@ vendor's client-side work did not.
 - **W4c and W6c** have 12 and 8 requests of uneven size. The largest request
   (177k rows) sets the floor, and W4c needs two waves of 8.
 - The per-request split and the largest request, not the client, bound these
-  workloads at 8-way.
+  workloads at 8-way. In Rust, W4c at 8 ends when its largest request
+  (176,732 rows) ends. That request's first data arrived at 3.1-5.4 s, while
+  the other 11 requests finished inside its time.
+
+**5. Greeks keep arriving long after their first data (open lead).** In Rust,
+a W6c request receives its rows for 2.0-6.5 s after the first batch, about
+40-60% of the request. The 1-minute quote requests, with the same row
+counts, take 0.2-1.5 s after their first batch. Greeks are about 3-4× larger
+on the wire.
+- **Probably not our decoding:** the time after the first batch barely grows
+  from 1 to 8 requests at once (about 2.0-2.5 s against 2.5-3.3 s for about
+  100k rows), on 4 worker threads. If decoding were the limit, 8 requests
+  would roughly double it.
+- **Probably not the flow-control window:** each stream has a 2 MiB HTTP/2
+  window, and at about 2 MB/s per stream it would bind only with a round
+  trip of about a second.
+- **That leaves the server's sending rate.** This is not proven. To settle
+  it: capture one W6c response and replay it offline to time decoding
+  alone.
 
 ## Memory (peak RSS, whole run)
 
