@@ -359,6 +359,25 @@ path** (`job()` to Parquet, the Rust heap):
   cost of the stall overlap that took the 232-part job from 14.1 s to 7.4 s.
   It is not proposed without a measured need.
 
+## Step F: option endpoint live checks (prepared)
+
+- **Rust, `live_p0 option-checks`:** sends the PRO map's 51 option requests
+  again.
+  - **History, at-time and list requests** (2024-06-14, expiring
+    2024-06-21) go through `query()`, and their values are compared with the
+    legacy decoder on a second request.
+  - **Snapshots** use `--snapshot-expiration`, a SPY expiration listed
+    today, during US market hours.
+  - **Flat files** use `--flat-file-date`, a past trading day within the
+    vendor's 7 calendar days. They stay **bounded probes**, as in the map:
+    one message of at most 1 MiB. They record whether the reply is a file
+    manifest or data. **The option quote file (about 38 GB) is left out**
+    unless `--include-option-quote-flat-file`, which needs the user's
+    explicit go-ahead.
+- **Python, `bench/p1/option_checks.py`:** the same 47 non-flat-file requests
+  through the vendor-named methods: status, rows and column types.
+- **Recording:** the results go into the generated coverage table.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.

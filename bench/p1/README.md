@@ -15,6 +15,7 @@ per minute).
 | `live_checks.py` | The same 10 endpoints through the Python package's vendor-named methods | a |
 | `compare.py` | W1/W2 through the Python package, like the [vendor baseline](../python-baseline/README.md): end to end (Polars, pandas) and conversion only from the baseline's captures | b, c (Python), d |
 | `options_ours.py` | Options phase D2: whole W4-W6 workloads through the vendor-named methods into Polars, synchronously and threaded on one client (`--threads 1,8`); the vendor counterpart is `../python-baseline/options_vendor.py` | — |
+| `option_checks.py` | Options phase step F: the 47 non-flat-file option endpoints through the vendor-named methods, with the same requests as `live_p0 option-checks`; status, rows and column types | — |
 | `options_memory.py` | Options phase: one W5-shaped job (M1-M3, growing windows) in one mode per process, `to_parquet` (streamed) or a Polars frame (held), with peak memory, to test "bounded by configuration" | — |
 | `columnar_benchmark --replay <captures> --loopback` | The captures through the full Rust path: gRPC on localhost, `query()` and Parquet | c |
 
