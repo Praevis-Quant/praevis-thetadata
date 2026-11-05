@@ -94,14 +94,43 @@ and the pyarrow, Polars and pandas imports that both clients load. The data
 itself is small at these sizes: W2 is 2.5 MB on the wire. The criterion is
 not redefined here.
 
-**Proposal for a separate user decision:** add an incremental metric,
-measured for both clients. It would be the peak minus an idle baseline taken
-in the same process after imports and login, before the first request.
-- **Not available from these runs.** The reports hold only one end-of-run
-  peak per process, so this record does not estimate the figure.
-- **Instrumentation is in place.** Both runners now record
-  `import_peak_rss_bytes` at that point, so a rerun of the two memory commands
-  would give the incremental figure for both clients.
+### Incremental memory (approved by the user on 2026-11-04)
+
+**The metric:** the process's peak minus its idle baseline, which is taken in
+the same process after imports and login and before the first request. It is
+reported **alongside** the total; criterion d stays a miss on the total. Runs
+on 2026-11-05 (Windows, Ryzen, PROD, main 8aaa445), one process per workload:
+
+| Workload | Ours (`p1-mem-ours-*-003`): peak / idle / **delta** | Vendor (`py-20261105T034449Z` / `T034637Z`): peak / idle / **delta** | Delta ratio | Total ratio |
+| --- | --- | --- | ---: | ---: |
+| W1 (10 requests, 252 rows each) | 111.0 / 100.9 / **10.1 MiB** | 114.2 / 102.7 / **11.5 MiB** | **0.88×** | 0.97× |
+| W2 (1 request, 9,164 rows) | 115.4 / 100.5 / **14.9 MiB** | 147.5 / 103.0 / **44.5 MiB** | **0.33×** | 0.78× |
+
+**What each delta contains.** For each request, our process runs the
+vendor-named method twice: once returning a Polars frame and once a pandas
+frame. That covers decoding into Arrow, building the frame, and dropping it
+before the next call. The delta is therefore the largest moment of one
+request and one frame. It also includes modules imported lazily on first
+use, and memory the allocator keeps after frees.
+
+**The vendor run does more work in its process.** Its harness also runs, for
+each request:
+- a raw drain through the package's gRPC stub, keeping every response in
+  memory as Python protobuf objects;
+- 5 conversions of those responses to each frame type.
+
+The vendor delta therefore includes memory our run never uses, so **these
+ratios are not like-for-like.** They likely favour us, at least for W2, the
+only workload with real data volume. The same applies to the total-memory
+ratios in the table above. Even so, criterion d is not met on them.
+
+**Reading:**
+- **W1 (252 rows a request):** the delta is mostly fixed cost on both
+  sides, and the clients are close.
+- **W2:** ours is 3× smaller as measured, but the vendor figure includes the
+  drain. A like-for-like rerun, with only the end-to-end calls on the vendor
+  side (`baseline.py --e2e-only`), would settle it. Until then, this W2 ratio
+  is an upper bound on our advantage, not a measured equal-work figure.
 
 ## Full path over loopback (not client cost)
 

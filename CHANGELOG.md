@@ -27,6 +27,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Incremental memory recorded** in the P1 exit record: peak minus the idle
+  baseline after imports and login, beside the total.
+  - W1 is 10.1 MiB for ours against 11.5 MiB for the vendor (0.88×).
+  - W2 is 14.9 MiB against 44.5 MiB (0.33×).
+  - The vendor harness also keeps its drained responses and converts them in
+    the same process, so these ratios are not like-for-like.
+  - `baseline.py --e2e-only` runs only the public calls, for a like-for-like
+    rerun.
+  - Criterion d stays a miss on total RSS.
 - **`SessionEnded` error.** The service answers `UNAUTHENTICATED` when a
   later login for the account has ended the session. The session probe
   `opt-session-001` confirmed this on 2026-11-05: the first of two logins
