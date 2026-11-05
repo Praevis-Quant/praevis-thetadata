@@ -44,7 +44,20 @@ unsafe impl GlobalAlloc for Counting {
 #[global_allocator]
 static ALLOC: Counting = Counting;
 
-const STRIKES: i32 = 232;
+fn strikes() -> i32 {
+    std::env::var("JOB_MEMORY_STRIKES")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(232)
+}
+
+/// The process's peak resident memory (Linux `VmHWM`), if available.
+fn peak_rss_mib() -> Option<f64> {
+    let status = std::fs::read_to_string("/proc/self/status").ok()?;
+    let line = status.lines().find(|l| l.starts_with("VmHWM:"))?;
+    let kib: f64 = line.split_whitespace().nth(1)?.parse().ok()?;
+    Some(kib / 1024.0)
+}
 
 fn decimal_statistics() -> bool {
     std::env::var("JOB_MEMORY_DECIMAL_STATISTICS").is_ok_and(|v| v == "1")
@@ -89,7 +102,7 @@ fn fixture(rows: usize) -> support::Fixture {
         "GetOptionListStrikes" => {
             let table = DataTable {
                 headers: vec!["strike".into()],
-                data_table: (0..STRIKES)
+                data_table: (0..strikes())
                     .map(|s| DataValueList {
                         values: vec![DataValue {
                             data_type: Some(Wire::Price(Price {
@@ -176,7 +189,9 @@ async fn main() {
     } else {
         sizes
     };
-    println!("rows/part  parts  rows        peak heap MiB  heap after MiB  parquet MiB");
+    println!(
+        "rows/part  parts  rows        peak heap MiB  heap after MiB  parquet MiB  process peak RSS MiB"
+    );
     for rows in sizes {
         use std::io::BufRead;
         let mut child = std::process::Command::new(std::env::current_exe().unwrap())
@@ -232,11 +247,12 @@ async fn main() {
         let after = LIVE.load(Ordering::Relaxed).saturating_sub(before);
         let mib = |b: usize| b as f64 / (1 << 20) as f64;
         println!(
-            "{rows:>9}  {parts:>5}  {:>10}  {:>13.1}  {:>14.1}  {:>11.1}",
+            "{rows:>9}  {parts:>5}  {:>10}  {:>13.1}  {:>14.1}  {:>11.1}  {}",
             summary.rows,
             mib(peak),
             mib(after),
-            mib(summary.bytes as usize)
+            mib(summary.bytes as usize),
+            peak_rss_mib().map_or("-".into(), |r| format!("{r:.1}"))
         );
         let _ = std::fs::remove_file(&path);
         drop(client);
