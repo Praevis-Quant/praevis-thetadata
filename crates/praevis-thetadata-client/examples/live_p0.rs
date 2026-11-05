@@ -134,6 +134,11 @@ struct OptionChecksArgs {
     /// Only these RPCs, comma-separated.
     #[arg(long, value_delimiter = ',')]
     only: Vec<String>,
+    /// Decode ONE response both ways (columnar and legacy) instead of two
+    /// separate requests, so a moving market cannot cause differences.
+    /// Flat files: the first message only (at most 1 MiB), both ways.
+    #[arg(long)]
+    same_response: bool,
 }
 
 #[derive(Args)]
@@ -872,6 +877,9 @@ struct EntitlementRun<'a> {
     /// legacy decoder and compare values, instead of a bounded probe. Flat
     /// files are always probed.
     check: bool,
+    /// With `check`: decode ONE response both ways (`check_same`). Flat
+    /// files then read at most `max_messages` through the capped client.
+    same_response: bool,
 }
 impl EntitlementRun<'_> {
     async fn run<E: Endpoint + Clone + Send + Sync + 'static>(
@@ -880,6 +888,14 @@ impl EntitlementRun<'_> {
     ) -> Result<(), Stop> {
         if !self.only.is_empty() && !self.only.iter().any(|rpc| rpc == E::RPC) {
             return Ok(());
+        }
+        if self.check && self.same_response {
+            let limit = self.flat_files.then_some(self.max_messages);
+            let result = check_same(self.client, request, &mut self.pacer, limit).await;
+            let status = result["status"].as_str().unwrap_or("").to_owned();
+            let stop = ends_entitlement_run(&status).then_some(Stop(status));
+            self.report.results.push(result);
+            return stop.map_or(Ok(()), Err);
         }
         if self.check && !self.flat_files {
             let result = check(self.client, request, &mut self.pacer).await;
@@ -936,6 +952,7 @@ async fn entitlements(
             flat,
             include_quote_flat_file: true,
             check: false,
+            same_response: false,
         };
         return option_entitlements(&set, client, flat_files, report).await;
     }
@@ -950,6 +967,7 @@ async fn entitlements(
         max_messages: options.max_messages,
         flat_files: false,
         check: false,
+        same_response: false,
     };
     // Controls first: both returned rows on FREE in P0.
     r.run(typed::StockHistoryEod::new("AAPL", day, day)).await?;
@@ -1090,6 +1108,7 @@ struct OptionSet<'a> {
     /// go-ahead outside the one map run).
     include_quote_flat_file: bool,
     check: bool,
+    same_response: bool,
 }
 
 async fn option_entitlements(
@@ -1110,6 +1129,7 @@ async fn option_entitlements(
         max_messages: set.max_messages,
         flat_files: false,
         check: set.check,
+        same_response: set.same_response,
     };
     macro_rules! snapshot {
         ($($t:ident),+) => {$(
@@ -2007,6 +2027,105 @@ fn arrow_rows(batches: &[praevis_thetadata_client::arrow_array::RecordBatch]) ->
     out
 }
 
+/// One endpoint, ONE request: every message of the same response decoded by
+/// the columnar decoder (the one `query()` uses) and by the legacy decoder,
+/// compared exactly. Unlike [`check`], the two sides see identical bytes, so
+/// a moving market cannot make them differ. At most `max_messages` are read
+/// (`None`: the whole response). Never a value in the report.
+async fn check_same<E>(
+    client: &ThetaClient,
+    request: E,
+    pacer: &mut Pacer,
+    max_messages: Option<u32>,
+) -> serde_json::Value
+where
+    E: Endpoint + Clone + Send + Sync + 'static,
+{
+    pacer.wait().await;
+    let started = Instant::now();
+    let captured = async {
+        let mut stream = client.stream_raw(&request).await?;
+        let mut messages = Vec::new();
+        while max_messages.is_none_or(|m| (messages.len() as u32) < m) {
+            match stream.message().await? {
+                Some(message) => messages.push(message),
+                None => return Ok::<_, tonic::Status>((messages, true)),
+            }
+        }
+        Ok((messages, false))
+    }
+    .await;
+    let mut out = serde_json::json!({
+        "rpc": E::RPC,
+        "python_name": E::PYTHON_NAME,
+        "mode": "same-response",
+        "total_ns": started.elapsed().as_nanos(),
+    });
+    let (messages, complete) = match captured {
+        Ok(captured) => captured,
+        Err(status) => {
+            out["status"] = status_name(status.code()).into();
+            eprintln!("{:<45} {}", E::RPC, out["status"].as_str().unwrap_or("?"));
+            return out;
+        }
+    };
+    out["status"] = "OK".into();
+    out["messages"] = messages.len().into();
+    out["complete"] = complete.into();
+    out["manifest"] = messages
+        .iter()
+        .any(|m| m.flat_file_manifest.is_some())
+        .into();
+    let columnar = (|| {
+        let mut decoder = praevis_thetadata_arrow::ColumnarDecoder::new(
+            praevis_thetadata_arrow::Limits::default(),
+        )
+        .map_err(|_| "configuration")?;
+        let mut batches = Vec::new();
+        for message in &messages {
+            decoder.push(message).map_err(|_| "decode")?;
+            batches.extend(decoder.flush());
+        }
+        Ok::<_, &'static str>(praevis_thetadata_client::unify(batches))
+    })();
+    let legacy: Result<Vec<_>, _> = messages
+        .iter()
+        .map(|m| decode::decode(m.clone(), LIMIT))
+        .collect();
+    match (&columnar, &legacy) {
+        (Ok(batches), Ok(tables)) => {
+            let ours = arrow_rows(batches);
+            let theirs: Vec<Vec<Exact>> = tables.iter().flat_map(legacy_rows).collect();
+            let differing = ours.iter().zip(&theirs).filter(|(a, b)| a != b).count();
+            out["rows"] = ours.len().into();
+            out["legacy_rows"] = theirs.len().into();
+            out["values_equal"] = (ours == theirs).into();
+            out["differing_rows"] = (differing + ours.len().abs_diff(theirs.len())).into();
+            out["columns"] = batches
+                .first()
+                .map(|b| {
+                    b.schema()
+                        .fields()
+                        .iter()
+                        .map(|f| serde_json::json!([f.name(), format!("{}", f.data_type())]))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default()
+                .into();
+        }
+        (Err(error), _) => out["columnar_status"] = (*error).into(),
+        (_, Err(_)) => out["legacy_status"] = "decode".into(),
+    }
+    eprintln!(
+        "{:<45} same response: messages {:<5} rows {:<7} equal {}",
+        E::RPC,
+        out["messages"],
+        out["rows"],
+        out["values_equal"]
+    );
+    out
+}
+
 /// One endpoint: query() (collected), then the raw stream through the legacy
 /// decoder, compared exactly. Statuses, counts, column names and Arrow types
 /// only; never a value.
@@ -2256,13 +2375,14 @@ async fn run(cli: Cli) -> std::process::ExitCode {
                     let set = OptionSet {
                         min_interval: options.common.min_interval,
                         only: &options.only,
-                        max_messages: 5,
+                        max_messages: 1,
                         day: date(&options.date),
                         exp: date(&options.expiration),
                         snapshot_exp: date(&options.snapshot_expiration),
                         flat: date(&options.flat_file_date),
                         include_quote_flat_file: options.include_option_quote_flat_file,
                         check: true,
+                        same_response: options.same_response,
                     };
                     option_entitlements(&set, &client, &flat_files, &mut report).await
                 }
@@ -2707,6 +2827,7 @@ mod tests {
                 flat: date("2026-11-04"),
                 include_quote_flat_file,
                 check: true,
+                same_response: false,
             };
             let mut report = Report::default();
             option_entitlements(&set, &client, &flat_files, &mut report)
@@ -2726,6 +2847,56 @@ mod tests {
             let quote_file = probed.iter().any(|r| r["rpc"] == "GetOptionFlatFileQuote");
             assert_eq!(quote_file, include_quote_flat_file);
         }
+    }
+
+    #[tokio::test]
+    async fn the_same_response_is_decoded_both_ways_and_compared() {
+        let (wire_table, _) = fixture::table(fixture::Shape::Prices, 50);
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire_table, true)); 3],
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let mut pacer = Pacer {
+            interval: Duration::ZERO,
+            last: None,
+        };
+        let request =
+            || typed::StockHistoryEod::new("AAPL", date("2024-06-14"), date("2024-06-14"));
+        let whole = check_same(&client, request(), &mut pacer, None).await;
+        assert_eq!(
+            (
+                whole["status"].as_str(),
+                whole["messages"].as_u64(),
+                whole["rows"].as_u64(),
+                whole["legacy_rows"].as_u64(),
+                whole["values_equal"].as_bool(),
+                whole["complete"].as_bool(),
+                whole["manifest"].as_bool()
+            ),
+            (
+                Some("OK"),
+                Some(3),
+                Some(150),
+                Some(150),
+                Some(true),
+                Some(true),
+                Some(false)
+            )
+        );
+        // One request only: the comparison never sends a second one.
+        assert_eq!(server.requests.lock().unwrap().len(), 1);
+        // A bounded read (the flat files): the first message only.
+        let first = check_same(&client, request(), &mut pacer, Some(1)).await;
+        assert_eq!(
+            (
+                first["messages"].as_u64(),
+                first["rows"].as_u64(),
+                first["complete"].as_bool()
+            ),
+            (Some(1), Some(50), Some(false))
+        );
+        assert_eq!(first["values_equal"], true);
     }
 
     #[tokio::test]
@@ -2756,6 +2927,7 @@ mod tests {
                 max_messages: 1,
                 flat_files: true,
                 check: false,
+                same_response: false,
             };
             run.run(typed::StockHistoryEod::new(
                 "AAPL",
