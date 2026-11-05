@@ -28,6 +28,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Options baselines D2 recorded**
+  ([results](docs/performance/options-d2-results.md)).
+  - **W5c (8-way):** 9.8× the synchronous vendor package (Python) and 11.0×
+    (Rust); 3.3× and 3.7× its threaded variant.
+  - **W4c and W6c:** 5.0-8.1× threaded and 9.3-10.5× synchronous.
+  - **Why the vendor's threads gain little:** its client-side time does not
+    overlap. This is consistent with work held under the GIL, but not
+    profiled.
+  - **Caveats:** sequential runs, one host, one date, and per-expiration
+    workloads only. The memory bound is not yet assessed.
 - **`live_p0 split-probe`** (manual, never CI). It tests splitting
   all-strike tick and 1 s quote requests per contract.
   - **Why:** the shape probes showed that those requests pay about 60 s

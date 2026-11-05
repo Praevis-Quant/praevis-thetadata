@@ -30,6 +30,7 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Upstream source identity](research/upstream-source.md) | Attested publishing repository/commit, source hashes, and access limitations |
 | [Endpoint coverage](endpoints/coverage.md) | Generated: every RPC, its vendor wrapper, Rust request, stability, decoder test and live status |
 | [P1 design](architecture/p1-design.md) | Approved 2026-11-04: generated endpoints, Arrow columnar decoder, coalescing, scheduler, Parquet, Python pass-through, PR sequence and decisions |
+| [Options baselines D2](performance/options-d2-results.md) | 2026-11-05: W4c/W5c/W6c, vendor sync and threaded against ours (Python, Rust) at 1 and 8; every time target met for per-expiration workloads (W5c 9.8×/11.0× sync, 3.3×/3.7× threaded); memory bound not assessed; sequential, not interleaved |
 | [Options phase plan](architecture/options-phase.md) | Started 2026-11-05: options PRO; user decisions, vendor facts re-verified for PRO, step order and targets |
 | [P1 exit results](performance/p1-exit-results.md) | 2026-11-04: every P1 exit criterion with its status. a, b (within noise), c (Rust) and e met; c at the Python Polars boundary 9×; d not met (0.97× / 0.79×); incremental memory, like-for-like, 0.91× / 0.53×; one session per account (confirmed 2026-11-05) |
 | [Where the time goes in a request](performance/request-timing.md) | User guide: measured waits and sizes for option requests, what they mean, and how to get the best results |
