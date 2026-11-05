@@ -24,6 +24,9 @@ Polars by three runners, synchronously and 8 at a time:
   runner as a whole. Within a runner, rounds alternate the thread order.
 - **3 rounds; values are medians.** One host, one trade date (2024-06-14),
   one root (SPY).
+- **The two Python environments have different Polars versions:** 1.44.2
+  (the vendor's pinned set) and 2.1.0 (ours). Frame building is part of
+  both clients' times.
 - **The workloads are one request per expiration.** That is the shape the
   service answers in seconds. They are **not** the slow all-strike tick and
   1 s quote shape, which waits about 60 s per request
@@ -43,6 +46,19 @@ Polars by three runners, synchronously and 8 at a time:
 | W5c | 27.5 | 9.2 | 20.2 | **2.8** | 19.8 | **2.5** |
 | W4c | 71.0 | 38.2 | 36.6 | **7.6** | 37.4 | **6.9** |
 | W6c | 85.3 | 65.5 | 42.1 | **8.3** | 43.7 | **8.1** |
+
+**Spread across the 3 rounds (seconds, lowest to highest):**
+
+| Workload | Vendor, sync | Vendor, 8 | Ours Python, 1 | Ours Python, 8 |
+| --- | --- | --- | --- | --- |
+| W5c | 27.4-29.2 | 9.0-9.9 | 15.8-23.3 | 2.7-3.2 |
+| W4c | 68.1-72.0 | 37.6-38.7 | 36.1-37.9 | 5.8-8.9 |
+| W6c | 85.1-85.5 | 65.3-65.7 | 39.1-53.8 | 8.2-9.0 |
+
+The vendor's times were steady. Ours varied up to ±30% between rounds, and
+since the data is the same each time, that variation is the service's. The
+target ratios hold even in the worst case: W5c ours at 8 is at least 8.6×
+the vendor's fastest synchronous round, and 2.8× its fastest threaded round.
 
 ## Against the targets
 
