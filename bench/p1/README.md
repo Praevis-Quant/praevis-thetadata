@@ -16,8 +16,9 @@ per minute).
 | `compare.py` | W1/W2 through the Python package, like the [vendor baseline](../python-baseline/README.md): end to end (Polars, pandas) and conversion only from the baseline's captures | b, c (Python), d |
 | `columnar_benchmark --replay <captures> --loopback` | The captures through the full Rust path: gRPC on localhost, `query()` and Parquet | c |
 
-**One session per account.** Each login ends the account's earlier session,
-so the runners log in once. `compare.py` shares one session between its Polars
+**One session per account (unconfirmed).** The first exit run suggested that
+a new login ends the account's earlier session; `live_p0 session` tests it.
+The runners log in once. `compare.py` shares one session between its Polars
 and pandas clients (`existing_authorized_client`), as the baseline does.
 Failures record the gRPC code (`grpc_code`).
 

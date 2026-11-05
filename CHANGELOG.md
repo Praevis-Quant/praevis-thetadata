@@ -26,6 +26,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Options PRO live tooling** (manual, never CI):
+  - `live_p0 entitlements --set options-pro --flat-file-date <day>`: every
+    option RPC once, each read for a few messages. Flat files come last and
+    read one message of at most 1 MiB: a larger one is refused from its
+    length prefix before its body is read, so no bulk data is pulled.
+  - `live_p0 session`: a second login, then one request on each session,
+    recording both gRPC codes.
+  - CLAUDE.md records the user's approval of the one PRO map run.
 - **Dependency A/B benchmark mode.** `eod_benchmark compare
   --dependency-change`, and the `dependency_change` input of
   `eod-performance.yml`, compare two revisions whose only difference is

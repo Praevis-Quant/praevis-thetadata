@@ -108,7 +108,12 @@ it locally and sends only a classification per endpoint (entitled, tier-denied
 with the tier named if stated, invalid-argument, no-data or other) plus the
 gRPC code. `docs/endpoints/status.json` and every committed file hold codes and
 classifications only; the generator rejects anything else. Re-running the map,
-for example after a tier upgrade, needs the user's approval again.
+for example after a tier upgrade, needs the user's approval again. **The
+options PRO map was approved by the user on 2026-11-04, as one run:** their
+go-ahead to finish the option portion on PRO covers one run of
+`live_p0 entitlements --set options-pro`, which sends every option RPC once
+(not one per family), with the same pacing, stop rules and privacy rules. Any
+further run needs approval again.
 
 ## Architecture
 

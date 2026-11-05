@@ -24,7 +24,15 @@
 //!   user-approved exception to "never sweep endpoints" (CLAUDE.md); re-running
 //!   it needs approval again. The private report keeps truncated vendor status
 //!   text for a person to classify locally; the code never interprets it, and
-//!   only classifications and gRPC codes are committed.
+//!   only classifications and gRPC codes are committed. `--set options-pro`
+//!   is the options PRO map (one approved run, 2026-11-04): every option RPC
+//!   once, each read for at most `--max-messages`. Flat files come last,
+//!   through a second client on the same session with a 1 MiB message limit,
+//!   reading one message: a larger first message is refused from its length
+//!   prefix (`OverProbeLimit`), so a probe never pulls bulk data.
+//! * `session`: the session probe (approved 2026-11-04): a second login, then
+//!   one small request on the first session and one on the second, recording
+//!   each gRPC code.
 //!
 //! Output is timings, counts, sizes and status codes only in
 //! `artifacts/p0/<run-id>.json`: no row values, account email, subscription
@@ -58,6 +66,11 @@ mod eod {
 }
 
 const LIMIT: usize = 64 * 1024 * 1024;
+/// The flat-file probes' message limit. tonic refuses a message whose
+/// declared length is larger before reading its body, so a probe receives at
+/// most one such message plus what HTTP/2 flow control lets the server send
+/// ahead (the 2 MiB stream window) before the stream is dropped.
+const FLAT_FILE_PROBE_LIMIT: usize = 1024 * 1024;
 const WORKLOADS: &str = include_str!("../../../bench/python-baseline/workloads.json");
 
 #[derive(Parser)]
@@ -78,6 +91,8 @@ enum Command {
     /// P1 exit criterion a: the FREE-entitled endpoints through query(),
     /// compared value by value with the legacy decoder on a second request.
     Checks(ChecksArgs),
+    /// The session probe: a second login, then one request on each session.
+    Session(SessionArgs),
 }
 
 #[derive(Args)]
@@ -108,6 +123,23 @@ struct EntitlementsArgs {
     /// Only these RPCs, comma-separated (for example after a stopped run).
     #[arg(long, value_delimiter = ',')]
     only: Vec<String>,
+    /// `free`: the FREE map (one request per family). `options-pro`: every
+    /// option RPC, once, on the PRO account (approved 2026-11-04).
+    #[arg(long, default_value = "free", value_parser = ["free", "options-pro"])]
+    set: String,
+    /// A date among the 7 most recent calendar days, for the flat files
+    /// (`options-pro` only).
+    #[arg(long)]
+    flat_file_date: Option<String>,
+}
+
+#[derive(Args)]
+struct SessionArgs {
+    #[command(flatten)]
+    common: Common,
+    /// Historical trading day inside the FREE stock window.
+    #[arg(long, default_value = "2024-06-14")]
+    date: String,
 }
 
 #[derive(Args)]
@@ -743,6 +775,9 @@ struct EntitlementRun<'a> {
     pacer: Pacer,
     only: &'a [String],
     max_messages: u32,
+    /// Flat-file probes: a first message over the probe's limit is recorded
+    /// as `OverProbeLimit` (the request was accepted; nothing bulk was read).
+    flat_files: bool,
 }
 impl EntitlementRun<'_> {
     async fn run<E: Endpoint>(&mut self, request: E) -> Result<(), Stop> {
@@ -750,7 +785,11 @@ impl EntitlementRun<'_> {
             return Ok(());
         }
         self.pacer.wait().await;
-        let result = probe(self.client, &request, self.max_messages).await;
+        let mut result = probe(self.client, &request, self.max_messages).await;
+        if self.flat_files && result.status == "OutOfRange" && result.messages == 0 {
+            result.status = "OverProbeLimit".into();
+            result.status_text = None;
+        }
         eprintln!(
             "{:<45} {:<18} messages {}",
             result.rpc, result.status, result.messages
@@ -769,10 +808,21 @@ impl EntitlementRun<'_> {
 async fn entitlements(
     options: &EntitlementsArgs,
     client: &ThetaClient,
+    flat_files: Option<&ThetaClient>,
     report: &mut Report,
 ) -> Result<(), Stop> {
     let day = date(&options.date);
     let exp = date(&options.expiration);
+    if options.set == "options-pro" {
+        let flat = date(
+            options
+                .flat_file_date
+                .as_deref()
+                .ok_or_else(|| Stop("MissingFlatFileDate".into()))?,
+        );
+        let flat_files = flat_files.ok_or_else(|| Stop("MissingFlatFileClient".into()))?;
+        return option_entitlements(options, client, flat_files, report, day, exp, flat).await;
+    }
     let mut r = EntitlementRun {
         client,
         report,
@@ -782,6 +832,7 @@ async fn entitlements(
         },
         only: &options.only,
         max_messages: options.max_messages,
+        flat_files: false,
     };
     // Controls first: both returned rows on FREE in P0.
     r.run(typed::StockHistoryEod::new("AAPL", day, day)).await?;
@@ -894,6 +945,192 @@ async fn entitlements(
         end_date: "2024-12-31".into(),
     })
     .await?;
+    Ok(())
+}
+
+/// The PRO option map (approved by the user on 2026-11-04 as one run): every
+/// option RPC once, in the order of the coverage table, each as narrow as the
+/// request allows (SPY calls, one expiration, one day; tick requests over one
+/// minute, interval requests over five) and read for at most `max_messages`.
+/// Flat files come last, through `flat_files`: the same session with a
+/// [`FLAT_FILE_PROBE_LIMIT`] message limit, reading one message at most, so a
+/// probe never pulls bulk data. Dropping the stream cancels the rest.
+#[allow(clippy::too_many_arguments)]
+async fn option_entitlements(
+    options: &EntitlementsArgs,
+    client: &ThetaClient,
+    flat_files: &ThetaClient,
+    report: &mut Report,
+    day: NaiveDate,
+    exp: NaiveDate,
+    flat: NaiveDate,
+) -> Result<(), Stop> {
+    let mut r = EntitlementRun {
+        client,
+        report,
+        pacer: Pacer {
+            interval: Duration::from_secs_f64(options.common.min_interval),
+            last: None,
+        },
+        only: &options.only,
+        max_messages: options.max_messages,
+        flat_files: false,
+    };
+    macro_rules! snapshot {
+        ($($t:ident),+) => {$(
+            r.run(typed::$t::new("SPY", exp).right("call")).await?;
+        )+};
+    }
+    macro_rules! interval {
+        ($($t:ident),+) => {$(
+            r.run(
+                typed::$t::new("SPY", exp)
+                    .date(day)
+                    .interval("1m")
+                    .right("call")
+                    .start_time("10:00:00")
+                    .end_time("10:05:00"),
+            )
+            .await?;
+        )+};
+    }
+    macro_rules! tick {
+        ($($t:ident),+) => {$(
+            r.run(
+                typed::$t::new("SPY", exp)
+                    .date(day)
+                    .right("call")
+                    .start_time("10:00:00")
+                    .end_time("10:01:00"),
+            )
+            .await?;
+        )+};
+    }
+    macro_rules! eod_greeks {
+        ($($t:ident),+) => {$(
+            r.run(typed::$t::new("SPY", exp, day, day).right("call")).await?;
+        )+};
+    }
+    // Lists.
+    r.run(typed::OptionListSymbols::new()).await?;
+    r.run(typed::OptionListDates::new("trade", "SPY", exp).right("call"))
+        .await?;
+    r.run(typed::OptionListExpirations::new("SPY")).await?;
+    r.run(typed::OptionListStrikes::new("SPY", exp)).await?;
+    r.run(typed::OptionListContracts::new("trade", day).symbol("SPY"))
+        .await?;
+    // Snapshots.
+    snapshot!(OptionSnapshotOhlc);
+    r.run(typed::OptionSnapshotTrade::new("SPY", exp).right("call"))
+        .await?;
+    snapshot!(
+        OptionSnapshotQuote,
+        OptionSnapshotOpenInterest,
+        OptionSnapshotMarketValue,
+        OptionSnapshotGreeksImpliedVolatility,
+        OptionSnapshotGreeksAll,
+        OptionSnapshotBinomialGreeksAll,
+        OptionSnapshotGreeksFirstOrder,
+        OptionSnapshotBinomialGreeksFirstOrder,
+        OptionSnapshotGreeksSecondOrder,
+        OptionSnapshotBinomialGreeksSecondOrder,
+        OptionSnapshotGreeksThirdOrder,
+        OptionSnapshotBinomialGreeksThirdOrder
+    );
+    // History.
+    r.run(typed::OptionHistoryEod::new(day, day, "SPY", exp).right("call"))
+        .await?;
+    interval!(OptionHistoryOhlc);
+    tick!(OptionHistoryTrade);
+    interval!(OptionHistoryQuote);
+    tick!(OptionHistoryTradeQuote);
+    r.run(
+        typed::OptionHistoryOpenInterest::new("SPY", exp)
+            .date(day)
+            .right("call"),
+    )
+    .await?;
+    eod_greeks!(OptionHistoryGreeksEod, OptionHistoryBinomialGreeksEod);
+    interval!(OptionHistoryGreeksAll, OptionHistoryBinomialGreeksAll);
+    tick!(
+        OptionHistoryTradeGreeksAll,
+        OptionHistoryBinomialTradeGreeksAll
+    );
+    interval!(
+        OptionHistoryGreeksFirstOrder,
+        OptionHistoryBinomialGreeksFirstOrder
+    );
+    tick!(
+        OptionHistoryTradeGreeksFirstOrder,
+        OptionHistoryBinomialTradeGreeksFirstOrder
+    );
+    interval!(
+        OptionHistoryGreeksSecondOrder,
+        OptionHistoryBinomialGreeksSecondOrder
+    );
+    tick!(
+        OptionHistoryTradeGreeksSecondOrder,
+        OptionHistoryBinomialTradeGreeksSecondOrder
+    );
+    interval!(
+        OptionHistoryGreeksThirdOrder,
+        OptionHistoryBinomialGreeksThirdOrder
+    );
+    tick!(
+        OptionHistoryTradeGreeksThirdOrder,
+        OptionHistoryBinomialTradeGreeksThirdOrder
+    );
+    interval!(OptionHistoryGreeksImpliedVolatility);
+    tick!(OptionHistoryTradeGreeksImpliedVolatility);
+    // At time.
+    r.run(typed::OptionAtTimeTrade::new("SPY", day, day, "10:00:00", exp).right("call"))
+        .await?;
+    r.run(typed::OptionAtTimeQuote::new("SPY", day, day, "10:00:00", exp).right("call"))
+        .await?;
+    // Flat files: the smallest first; the option quote file (about 38 GB) last.
+    r.client = flat_files;
+    r.max_messages = 1;
+    r.flat_files = true;
+    r.run(typed::OptionFlatFileEod::new(flat)).await?;
+    r.run(typed::OptionFlatFileOpenInterest::new(flat)).await?;
+    r.run(typed::OptionFlatFileTradeQuote::new(flat)).await?;
+    r.run(typed::OptionFlatFileQuote::new(flat)).await?;
+    Ok(())
+}
+
+/// The session probe (approved 2026-11-04): the runner's session A is
+/// already logged in; log in again as B, then send one small FREE-entitled
+/// request on A and one on B, A first. Records each status and gRPC code, to
+/// learn whether a new login ends the earlier session and with which code.
+async fn session_probe(
+    options: &SessionArgs,
+    client_a: &ThetaClient,
+    report: &mut Report,
+    identity: &mut Vec<String>,
+) -> Result<(), Stop> {
+    let day = date(&options.date);
+    let session_b = login()
+        .await
+        .map_err(|_| Stop("SecondLoginFailed".into()))?;
+    identity.push(session_b.session_id().to_owned());
+    let client_b = connect(session_b)
+        .await
+        .map_err(|_| Stop("SecondConnectionFailed".into()))?;
+    let mut pacer = Pacer {
+        interval: Duration::from_secs_f64(options.common.min_interval),
+        last: None,
+    };
+    for (name, client) in [
+        ("A (first login)", client_a),
+        ("B (second login)", &client_b),
+    ] {
+        pacer.wait().await;
+        let result = probe(client, &typed::StockHistoryEod::new("AAPL", day, day), 5).await;
+        eprintln!("session {name:<17} {}", result.status);
+        let mut value = serde_json::to_value(&result).expect("probe serializes");
+        value["session"] = name.into();
+        report.results.push(value);
+    }
     Ok(())
 }
 
@@ -1131,6 +1368,7 @@ async fn main() -> std::process::ExitCode {
         Command::Limits(options) => (&options.common, "limits"),
         Command::Entitlements(options) => (&options.common, "entitlements"),
         Command::Checks(options) => (&options.common, "checks"),
+        Command::Session(options) => (&options.common, "session"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -1161,21 +1399,11 @@ async fn main() -> std::process::ExitCode {
         ..Default::default()
     };
     // The report must never contain account identity: checked before writing.
-    let identity = [
+    let mut identity = vec![
         session.session_id().to_owned(),
         session.user().email.clone(),
     ];
-    let client = match ThetaClient::with_eod_policy(
-        ClientConfig {
-            request_timeout: Duration::from_secs(120),
-            max_batch_bytes: LIMIT,
-            ..Default::default()
-        },
-        session,
-        EodPolicy::default(),
-    )
-    .await
-    {
+    let client = match connect(session).await {
         Ok(client) => client,
         Err(_) => {
             eprintln!("connection failed");
@@ -1185,8 +1413,25 @@ async fn main() -> std::process::ExitCode {
     let result = match &cli.command {
         Command::Breakdown(options) => breakdown(options, &client, &mut report).await,
         Command::Limits(options) => limits(options, &client, &mut report).await,
-        Command::Entitlements(options) => entitlements(options, &client, &mut report).await,
+        Command::Entitlements(options) => {
+            // The same session (no second login), with a small message limit.
+            let flat_files = if options.set == "options-pro" {
+                match connect_with_limit(client.session(), FLAT_FILE_PROBE_LIMIT).await {
+                    Ok(flat_files) => Some(flat_files),
+                    Err(_) => {
+                        eprintln!("connection failed");
+                        return std::process::ExitCode::FAILURE;
+                    }
+                }
+            } else {
+                None
+            };
+            entitlements(options, &client, flat_files.as_ref(), &mut report).await
+        }
         Command::Checks(options) => checks(options, &client, &mut report).await,
+        Command::Session(options) => {
+            session_probe(options, &client, &mut report, &mut identity).await
+        }
     };
     if let Err(Stop(reason)) = &result {
         report.stopped = Some(reason.clone());
@@ -1215,6 +1460,23 @@ fn contains_identity(text: &[u8], identity: &[String]) -> bool {
             text.windows(value.len())
                 .any(|window| window == value.as_bytes())
         })
+}
+
+async fn connect(session: Session) -> Result<ThetaClient, EodError> {
+    connect_with_limit(session, LIMIT).await
+}
+
+async fn connect_with_limit(session: Session, limit: usize) -> Result<ThetaClient, EodError> {
+    ThetaClient::with_eod_policy(
+        ClientConfig {
+            request_timeout: Duration::from_secs(120),
+            max_batch_bytes: limit,
+            ..Default::default()
+        },
+        session,
+        EodPolicy::default(),
+    )
+    .await
 }
 
 async fn login() -> Result<Session, &'static str> {
@@ -1313,10 +1575,15 @@ mod tests {
     }
 
     async fn fixture_client(server: &fixture::Fixture) -> ThetaClient {
+        fixture_client_with_limit(server, ClientConfig::default().max_batch_bytes).await
+    }
+
+    async fn fixture_client_with_limit(server: &fixture::Fixture, limit: usize) -> ThetaClient {
         ThetaClient::with_eod_policy(
             ClientConfig {
                 endpoint: Some(server.endpoint.clone()),
                 allow_insecure: true,
+                max_batch_bytes: limit,
                 ..Default::default()
             },
             fixture::session().await,
@@ -1338,6 +1605,97 @@ mod tests {
             expiration: "2024-06-21".into(),
             max_messages,
             only: only.iter().map(|rpc| (*rpc).to_owned()).collect(),
+            set: "free".into(),
+            flat_file_date: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn the_pro_option_map_sends_every_option_rpc_once() {
+        let server = fixture::Fixture::start(fixture::Script {
+            initial_error: Some(tonic::Status::permission_denied("synthetic")),
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let mut args = entitlement_args(&[], 5);
+        args.set = "options-pro".into();
+        let mut report = Report::default();
+        // Without a flat-file date nothing is sent.
+        assert!(matches!(
+            entitlements(&args, &client, Some(&client), &mut report).await,
+            Err(Stop(name)) if name == "MissingFlatFileDate"
+        ));
+        assert!(report.results.is_empty());
+        args.flat_file_date = Some("2026-11-04".into());
+        entitlements(&args, &client, Some(&client), &mut report)
+            .await
+            .unwrap();
+        let sent: Vec<_> = report
+            .results
+            .iter()
+            .map(|r| r["rpc"].as_str().unwrap().to_owned())
+            .collect();
+        let mut expected: Vec<_> = typed::ALL
+            .iter()
+            .filter(|e| e.rpc.starts_with("GetOption"))
+            .map(|e| e.rpc.to_owned())
+            .collect();
+        let mut unique = sent.clone();
+        unique.sort();
+        unique.dedup();
+        expected.sort();
+        assert_eq!((sent.len(), unique), (51, expected));
+        assert_eq!(sent.last().unwrap(), "GetOptionFlatFileQuote");
+    }
+
+    #[tokio::test]
+    async fn flat_file_probes_never_read_bulk_data() {
+        // The fixture serves only stock EOD, so the flat-file run settings
+        // (capped client, one message, OverProbeLimit) are driven with it.
+        let message = |rows| {
+            let (wire_table, _) = fixture::table(fixture::Shape::Mixed, rows);
+            fixture::response(&wire_table, false)
+        };
+        let big = message(40_000);
+        assert!(big.encoded_len() > FLAT_FILE_PROBE_LIMIT);
+        for (first, expected) in [(big, ("OverProbeLimit", 0)), (message(3), ("OK", 1))] {
+            let server = fixture::Fixture::start(fixture::Script {
+                messages: vec![Ok(first); 50],
+                ..Default::default()
+            });
+            let flat_files = fixture_client_with_limit(&server, FLAT_FILE_PROBE_LIMIT).await;
+            let mut report = Report::default();
+            let mut run = EntitlementRun {
+                client: &flat_files,
+                report: &mut report,
+                pacer: Pacer {
+                    interval: Duration::ZERO,
+                    last: None,
+                },
+                only: &[],
+                max_messages: 1,
+                flat_files: true,
+            };
+            run.run(typed::StockHistoryEod::new(
+                "AAPL",
+                date("2024-06-14"),
+                date("2024-06-14"),
+            ))
+            .await
+            .unwrap();
+            let result = &report.results[0];
+            assert_eq!(
+                (
+                    result["status"].as_str().unwrap(),
+                    result["messages"].as_u64().unwrap()
+                ),
+                expected
+            );
+            // No vendor text is kept for the limit, and nothing past one
+            // message is read.
+            assert!(result["status_text"].is_null());
+            assert_eq!(result["complete"], false);
+            assert!(result["bytes"].as_u64().unwrap() <= FLAT_FILE_PROBE_LIMIT as u64);
         }
     }
 
@@ -1353,7 +1711,7 @@ mod tests {
         });
         let client = fixture_client(&server).await;
         let mut report = Report::default();
-        entitlements(&entitlement_args(&[], 5), &client, &mut report)
+        entitlements(&entitlement_args(&[], 5), &client, None, &mut report)
             .await
             .unwrap();
         // About 35 single requests, each RPC once (the approved budget).
@@ -1395,6 +1753,7 @@ mod tests {
         entitlements(
             &entitlement_args(&["GetStockHistoryEod"], 3),
             &client,
+            None,
             &mut report,
         )
         .await
@@ -1412,7 +1771,7 @@ mod tests {
         });
         let client = fixture_client(&server).await;
         let mut report = Report::default();
-        match entitlements(&entitlement_args(&[], 5), &client, &mut report).await {
+        match entitlements(&entitlement_args(&[], 5), &client, None, &mut report).await {
             Err(Stop(name)) => assert_eq!(name, "ResourceExhausted"),
             Ok(()) => panic!("expected a stop"),
         }
