@@ -26,7 +26,10 @@
 //!   text for a person to classify locally; the code never interprets it, and
 //!   only classifications and gRPC codes are committed. `--set options-pro`
 //!   is the options PRO map (one approved run, 2026-11-04): every option RPC
-//!   once, flat files last, each read for at most `--max-messages`.
+//!   once, each read for at most `--max-messages`. Flat files come last,
+//!   through a second client on the same session with a 1 MiB message limit,
+//!   reading one message: a larger first message is refused from its length
+//!   prefix (`OverProbeLimit`), so a probe never pulls bulk data.
 //! * `session`: the session probe (approved 2026-11-04): a second login, then
 //!   one small request on the first session and one on the second, recording
 //!   each gRPC code.
@@ -63,6 +66,11 @@ mod eod {
 }
 
 const LIMIT: usize = 64 * 1024 * 1024;
+/// The flat-file probes' message limit. tonic refuses a message whose
+/// declared length is larger before reading its body, so a probe receives at
+/// most one such message plus what HTTP/2 flow control lets the server send
+/// ahead (the 2 MiB stream window) before the stream is dropped.
+const FLAT_FILE_PROBE_LIMIT: usize = 1024 * 1024;
 const WORKLOADS: &str = include_str!("../../../bench/python-baseline/workloads.json");
 
 #[derive(Parser)]
@@ -767,6 +775,9 @@ struct EntitlementRun<'a> {
     pacer: Pacer,
     only: &'a [String],
     max_messages: u32,
+    /// Flat-file probes: a first message over the probe's limit is recorded
+    /// as `OverProbeLimit` (the request was accepted; nothing bulk was read).
+    flat_files: bool,
 }
 impl EntitlementRun<'_> {
     async fn run<E: Endpoint>(&mut self, request: E) -> Result<(), Stop> {
@@ -774,7 +785,11 @@ impl EntitlementRun<'_> {
             return Ok(());
         }
         self.pacer.wait().await;
-        let result = probe(self.client, &request, self.max_messages).await;
+        let mut result = probe(self.client, &request, self.max_messages).await;
+        if self.flat_files && result.status == "OutOfRange" && result.messages == 0 {
+            result.status = "OverProbeLimit".into();
+            result.status_text = None;
+        }
         eprintln!(
             "{:<45} {:<18} messages {}",
             result.rpc, result.status, result.messages
@@ -793,6 +808,7 @@ impl EntitlementRun<'_> {
 async fn entitlements(
     options: &EntitlementsArgs,
     client: &ThetaClient,
+    flat_files: Option<&ThetaClient>,
     report: &mut Report,
 ) -> Result<(), Stop> {
     let day = date(&options.date);
@@ -804,7 +820,8 @@ async fn entitlements(
                 .as_deref()
                 .ok_or_else(|| Stop("MissingFlatFileDate".into()))?,
         );
-        return option_entitlements(options, client, report, day, exp, flat).await;
+        let flat_files = flat_files.ok_or_else(|| Stop("MissingFlatFileClient".into()))?;
+        return option_entitlements(options, client, flat_files, report, day, exp, flat).await;
     }
     let mut r = EntitlementRun {
         client,
@@ -815,6 +832,7 @@ async fn entitlements(
         },
         only: &options.only,
         max_messages: options.max_messages,
+        flat_files: false,
     };
     // Controls first: both returned rows on FREE in P0.
     r.run(typed::StockHistoryEod::new("AAPL", day, day)).await?;
@@ -934,10 +952,14 @@ async fn entitlements(
 /// option RPC once, in the order of the coverage table, each as narrow as the
 /// request allows (SPY calls, one expiration, one day; tick requests over one
 /// minute, interval requests over five) and read for at most `max_messages`.
-/// Flat files come last; dropping the stream cancels the rest of the file.
+/// Flat files come last, through `flat_files`: the same session with a
+/// [`FLAT_FILE_PROBE_LIMIT`] message limit, reading one message at most, so a
+/// probe never pulls bulk data. Dropping the stream cancels the rest.
+#[allow(clippy::too_many_arguments)]
 async fn option_entitlements(
     options: &EntitlementsArgs,
     client: &ThetaClient,
+    flat_files: &ThetaClient,
     report: &mut Report,
     day: NaiveDate,
     exp: NaiveDate,
@@ -952,6 +974,7 @@ async fn option_entitlements(
         },
         only: &options.only,
         max_messages: options.max_messages,
+        flat_files: false,
     };
     macro_rules! snapshot {
         ($($t:ident),+) => {$(
@@ -1065,6 +1088,9 @@ async fn option_entitlements(
     r.run(typed::OptionAtTimeQuote::new("SPY", day, day, "10:00:00", exp).right("call"))
         .await?;
     // Flat files: the smallest first; the option quote file (about 38 GB) last.
+    r.client = flat_files;
+    r.max_messages = 1;
+    r.flat_files = true;
     r.run(typed::OptionFlatFileEod::new(flat)).await?;
     r.run(typed::OptionFlatFileOpenInterest::new(flat)).await?;
     r.run(typed::OptionFlatFileTradeQuote::new(flat)).await?;
@@ -1387,7 +1413,21 @@ async fn main() -> std::process::ExitCode {
     let result = match &cli.command {
         Command::Breakdown(options) => breakdown(options, &client, &mut report).await,
         Command::Limits(options) => limits(options, &client, &mut report).await,
-        Command::Entitlements(options) => entitlements(options, &client, &mut report).await,
+        Command::Entitlements(options) => {
+            // The same session (no second login), with a small message limit.
+            let flat_files = if options.set == "options-pro" {
+                match connect_with_limit(client.session(), FLAT_FILE_PROBE_LIMIT).await {
+                    Ok(flat_files) => Some(flat_files),
+                    Err(_) => {
+                        eprintln!("connection failed");
+                        return std::process::ExitCode::FAILURE;
+                    }
+                }
+            } else {
+                None
+            };
+            entitlements(options, &client, flat_files.as_ref(), &mut report).await
+        }
         Command::Checks(options) => checks(options, &client, &mut report).await,
         Command::Session(options) => {
             session_probe(options, &client, &mut report, &mut identity).await
@@ -1423,10 +1463,14 @@ fn contains_identity(text: &[u8], identity: &[String]) -> bool {
 }
 
 async fn connect(session: Session) -> Result<ThetaClient, EodError> {
+    connect_with_limit(session, LIMIT).await
+}
+
+async fn connect_with_limit(session: Session, limit: usize) -> Result<ThetaClient, EodError> {
     ThetaClient::with_eod_policy(
         ClientConfig {
             request_timeout: Duration::from_secs(120),
-            max_batch_bytes: LIMIT,
+            max_batch_bytes: limit,
             ..Default::default()
         },
         session,
@@ -1531,10 +1575,15 @@ mod tests {
     }
 
     async fn fixture_client(server: &fixture::Fixture) -> ThetaClient {
+        fixture_client_with_limit(server, ClientConfig::default().max_batch_bytes).await
+    }
+
+    async fn fixture_client_with_limit(server: &fixture::Fixture, limit: usize) -> ThetaClient {
         ThetaClient::with_eod_policy(
             ClientConfig {
                 endpoint: Some(server.endpoint.clone()),
                 allow_insecure: true,
+                max_batch_bytes: limit,
                 ..Default::default()
             },
             fixture::session().await,
@@ -1573,12 +1622,14 @@ mod tests {
         let mut report = Report::default();
         // Without a flat-file date nothing is sent.
         assert!(matches!(
-            entitlements(&args, &client, &mut report).await,
+            entitlements(&args, &client, Some(&client), &mut report).await,
             Err(Stop(name)) if name == "MissingFlatFileDate"
         ));
         assert!(report.results.is_empty());
         args.flat_file_date = Some("2026-11-04".into());
-        entitlements(&args, &client, &mut report).await.unwrap();
+        entitlements(&args, &client, Some(&client), &mut report)
+            .await
+            .unwrap();
         let sent: Vec<_> = report
             .results
             .iter()
@@ -1598,6 +1649,57 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn flat_file_probes_never_read_bulk_data() {
+        // The fixture serves only stock EOD, so the flat-file run settings
+        // (capped client, one message, OverProbeLimit) are driven with it.
+        let message = |rows| {
+            let (wire_table, _) = fixture::table(fixture::Shape::Mixed, rows);
+            fixture::response(&wire_table, false)
+        };
+        let big = message(40_000);
+        assert!(big.encoded_len() > FLAT_FILE_PROBE_LIMIT);
+        for (first, expected) in [(big, ("OverProbeLimit", 0)), (message(3), ("OK", 1))] {
+            let server = fixture::Fixture::start(fixture::Script {
+                messages: vec![Ok(first); 50],
+                ..Default::default()
+            });
+            let flat_files = fixture_client_with_limit(&server, FLAT_FILE_PROBE_LIMIT).await;
+            let mut report = Report::default();
+            let mut run = EntitlementRun {
+                client: &flat_files,
+                report: &mut report,
+                pacer: Pacer {
+                    interval: Duration::ZERO,
+                    last: None,
+                },
+                only: &[],
+                max_messages: 1,
+                flat_files: true,
+            };
+            run.run(typed::StockHistoryEod::new(
+                "AAPL",
+                date("2024-06-14"),
+                date("2024-06-14"),
+            ))
+            .await
+            .unwrap();
+            let result = &report.results[0];
+            assert_eq!(
+                (
+                    result["status"].as_str().unwrap(),
+                    result["messages"].as_u64().unwrap()
+                ),
+                expected
+            );
+            // No vendor text is kept for the limit, and nothing past one
+            // message is read.
+            assert!(result["status_text"].is_null());
+            assert_eq!(result["complete"], false);
+            assert!(result["bytes"].as_u64().unwrap() <= FLAT_FILE_PROBE_LIMIT as u64);
+        }
+    }
+
+    #[tokio::test]
     async fn entitlement_map_records_refusals_and_continues() {
         let (wire_table, _) = fixture::table(fixture::Shape::Mixed, 3);
         let server = fixture::Fixture::start(fixture::Script {
@@ -1609,7 +1711,7 @@ mod tests {
         });
         let client = fixture_client(&server).await;
         let mut report = Report::default();
-        entitlements(&entitlement_args(&[], 5), &client, &mut report)
+        entitlements(&entitlement_args(&[], 5), &client, None, &mut report)
             .await
             .unwrap();
         // About 35 single requests, each RPC once (the approved budget).
@@ -1651,6 +1753,7 @@ mod tests {
         entitlements(
             &entitlement_args(&["GetStockHistoryEod"], 3),
             &client,
+            None,
             &mut report,
         )
         .await
@@ -1668,7 +1771,7 @@ mod tests {
         });
         let client = fixture_client(&server).await;
         let mut report = Report::default();
-        match entitlements(&entitlement_args(&[], 5), &client, &mut report).await {
+        match entitlements(&entitlement_args(&[], 5), &client, None, &mut report).await {
             Err(Stop(name)) => assert_eq!(name, "ResourceExhausted"),
             Ok(()) => panic!("expected a stop"),
         }
