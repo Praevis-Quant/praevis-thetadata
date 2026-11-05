@@ -105,10 +105,12 @@ of size, and `job()` splits them per strike (above).
   days was rejected with `INVALID_ARGUMENT` ([P0 results](p0-results.md)).
 - **Stream large results.** Use `batches()` or write to Parquet rather than
   holding everything in memory. Rows reach you as they arrive. `to_parquet`
-  keeps memory flat at any file size (about 108 MiB for 139M rows of
-  synthetic option quotes, measured offline). To get that, decimal price
-  columns carry no min/max statistics unless you ask for them with
-  `decimal_statistics`.
+  keeps the client's memory bounded. A whole day of tick quotes for every
+  SPY call strike, or two days (26.6M rows), peaked at 103-182 MiB of Rust
+  heap; the peak is set by stalls, not by row count. Parquet's footer
+  metadata (about 13 KB per row group) and your Python process are extra.
+  To get that, decimal price columns carry no min/max statistics unless you
+  ask for them with `decimal_statistics`.
 - **Use one login per account.** A second login ends the first session, which then
   fails with `SessionEnded`. Share a client instead: clone it in Rust, or pass
   `existing_authorized_client` in Python. This includes logins from the CLI and

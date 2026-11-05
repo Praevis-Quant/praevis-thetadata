@@ -62,6 +62,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **W5 memory target recorded as met for the streaming path.** Over 7 live
+  runs of up to 26.6M rows, `job()` to Parquet peaked at 103-182 MiB of Rust
+  heap, with no growth with rows.
+  - **Why it varies:** the spread comes from stalls (a slow request lets the
+    bounded read-ahead fill).
+  - **Not bounded:** Parquet footer metadata (about 13 KB per row group) and
+    the Python process baseline.
+  - The failed single-run prediction stays in the record as the reason for
+    the repeats.
+  - **AGENTS.md:** the memory rule gains one narrow, cited allowance for
+    this path's Rust heap.
 - **`live_job_memory`** (manual, never CI). It writes one live W5 job to
   Parquet under a counting allocator.
   - **What it records:** the Rust heap against rows written, the process

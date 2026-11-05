@@ -291,6 +291,14 @@ service compatibility.
   transport buffering of about one encoded message per open stream outside the
   shared budget (deferred item 8).
   Do not claim complete heap/RSS or typed-slice acceptance from those checks.
+  **One narrow addition, from the 2026-11-05 W5 evidence:** for the streaming
+  job-to-Parquet path only, docs may say the **Rust heap** is bounded by
+  configuration (read-ahead, batch limits, stream windows, one row group) plus
+  Parquet footer metadata of about 13 KB per row group, which grows with the
+  file. They must cite the [record](docs/architecture/options-phase.md#memory-bound-under-w5-planned)
+  (heap peaks 103-182 MiB, 7 live runs). This does not extend to process RSS
+  (interpreter, libraries, allocator), to collected frames, or to other
+  paths.
 - **Preserve platform and wire behavior.** Exercise Windows and Linux for
   changes to native persistence or process behavior. Preserve descriptor bytes
   and follow `.gitattributes`; write Markdown/source as UTF-8 with LF to avoid
