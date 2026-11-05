@@ -15,6 +15,7 @@ from praevis_thetadata import _native  # noqa: E402
 import common  # noqa: E402
 import compare  # noqa: E402
 import live_checks  # noqa: E402
+import option_checks  # noqa: E402
 import options_memory  # noqa: E402
 import options_ours  # noqa: E402
 
@@ -152,6 +153,22 @@ class Runners(unittest.TestCase):
                     "--out", str(out)]
             with mock.patch.object(sys, "argv", argv):
                 self.assertEqual(options_memory.main(), 2)
+
+
+    def test_option_checks_cover_every_option_method_but_flat_files(self):
+        import datetime as dt
+
+        names = [vendor for vendor, _ in pt.endpoints() if vendor and vendor.startswith("option_")]
+        expected = sorted(n for n in names if "flat_file" not in n)
+        checks = option_checks.requests(dt.date(2024, 6, 14), dt.date(2024, 6, 21), dt.date(2026, 11, 6))
+        self.assertEqual(sorted(m for m, _ in checks), expected)
+        self.assertEqual(len(checks), 47)
+        # Every request is valid for this package's method.
+        for method, kwargs in checks:
+            with self.subTest(method):
+                query, parts = pt.describe(method, **kwargs)
+                self.assertEqual(parts, 1)
+                self.assertTrue(query)
 
 
 if __name__ == "__main__":

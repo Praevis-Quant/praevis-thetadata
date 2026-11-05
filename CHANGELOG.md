@@ -62,6 +62,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Step F live checks for every option endpoint** (manual, never CI).
+  - **`live_p0 option-checks`:** every option RPC through `query()`, with
+    values compared against the legacy decoder. Snapshots use a current
+    expiration. Flat files are bounded probes that record whether the reply
+    is a manifest; the 38 GB option quote file is opt-in only.
+  - **`bench/p1/option_checks.py`:** the same requests through the Python
+    package.
+  - **Shared requests:** the PRO map and the checks now use one request set,
+    so they cannot drift apart.
 - **W5 memory target recorded as met for the streaming path.** Over 7 live
   runs of up to 26.6M rows, `job()` to Parquet peaked at 103-182 MiB of Rust
   heap, with no growth with rows.

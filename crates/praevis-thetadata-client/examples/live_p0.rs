@@ -104,6 +104,36 @@ enum Command {
     Workload(WorkloadArgs),
     /// One all-strike request against the same request split per strike.
     SplitProbe(SplitProbeArgs),
+    /// Step F: every option RPC through `query()`, values compared with the
+    /// legacy decoder; flat files probed, bounded.
+    OptionChecks(OptionChecksArgs),
+}
+
+#[derive(Args)]
+struct OptionChecksArgs {
+    #[command(flatten)]
+    common: Common,
+    /// Historical trading day for history, at-time and list requests.
+    #[arg(long, default_value = "2024-06-14")]
+    date: String,
+    /// An option expiration listed on `--date`.
+    #[arg(long, default_value = "2024-06-21")]
+    expiration: String,
+    /// A SPY expiration listed today, for the snapshots (run during US
+    /// market hours).
+    #[arg(long)]
+    snapshot_expiration: String,
+    /// A past trading day within the vendor's 7 most recent calendar days,
+    /// for the flat files (bounded probes: one message of at most 1 MiB).
+    #[arg(long)]
+    flat_file_date: String,
+    /// Also probe the option quote flat file (about 38 GB, about 30 minutes
+    /// to generate). Needs the user's explicit go-ahead.
+    #[arg(long)]
+    include_option_quote_flat_file: bool,
+    /// Only these RPCs, comma-separated.
+    #[arg(long, value_delimiter = ',')]
+    only: Vec<String>,
 }
 
 #[derive(Args)]
@@ -757,6 +787,8 @@ struct Probe {
     bytes: usize,
     /// The stream ended within `max_messages`.
     complete: bool,
+    /// Whether the first message carried a flat-file manifest (not data).
+    manifest: Option<bool>,
 }
 
 /// Service-wide signals: anything else is a per-endpoint answer to record.
@@ -790,6 +822,7 @@ async fn probe<E: Endpoint>(client: &ThetaClient, request: &E, max_messages: u32
         messages: 0,
         bytes: 0,
         complete: false,
+        manifest: None,
     };
     let start = Instant::now();
     let body = async {
@@ -800,6 +833,7 @@ async fn probe<E: Endpoint>(client: &ThetaClient, request: &E, max_messages: u32
                 Some(message) => {
                     if out.messages == 0 {
                         out.first_message_ns = Some(start.elapsed().as_nanos());
+                        out.manifest = Some(message.flat_file_manifest.is_some());
                     }
                     out.messages += 1;
                     out.bytes += message.encoded_len();
@@ -834,11 +868,26 @@ struct EntitlementRun<'a> {
     /// Flat-file probes: a first message over the probe's limit is recorded
     /// as `OverProbeLimit` (the request was accepted; nothing bulk was read).
     flat_files: bool,
+    /// Live checks (step F): run each request through `query()` and the
+    /// legacy decoder and compare values, instead of a bounded probe. Flat
+    /// files are always probed.
+    check: bool,
 }
 impl EntitlementRun<'_> {
-    async fn run<E: Endpoint>(&mut self, request: E) -> Result<(), Stop> {
+    async fn run<E: Endpoint + Clone + Send + Sync + 'static>(
+        &mut self,
+        request: E,
+    ) -> Result<(), Stop> {
         if !self.only.is_empty() && !self.only.iter().any(|rpc| rpc == E::RPC) {
             return Ok(());
+        }
+        if self.check && !self.flat_files {
+            let result = check(self.client, request, &mut self.pacer).await;
+            let status = result["query_status"].as_str().unwrap_or("").to_owned();
+            let stop = (status.contains("ResourceExhausted") || status.contains("Unavailable"))
+                .then_some(Stop(status));
+            self.report.results.push(result);
+            return stop.map_or(Ok(()), Err);
         }
         self.pacer.wait().await;
         let mut result = probe(self.client, &request, self.max_messages).await;
@@ -877,7 +926,18 @@ async fn entitlements(
                 .ok_or_else(|| Stop("MissingFlatFileDate".into()))?,
         );
         let flat_files = flat_files.ok_or_else(|| Stop("MissingFlatFileClient".into()))?;
-        return option_entitlements(options, client, flat_files, report, day, exp, flat).await;
+        let set = OptionSet {
+            min_interval: options.common.min_interval,
+            only: &options.only,
+            max_messages: options.max_messages,
+            day,
+            exp,
+            snapshot_exp: exp,
+            flat,
+            include_quote_flat_file: true,
+            check: false,
+        };
+        return option_entitlements(&set, client, flat_files, report).await;
     }
     let mut r = EntitlementRun {
         client,
@@ -889,6 +949,7 @@ async fn entitlements(
         only: &options.only,
         max_messages: options.max_messages,
         flat_files: false,
+        check: false,
     };
     // Controls first: both returned rows on FREE in P0.
     r.run(typed::StockHistoryEod::new("AAPL", day, day)).await?;
@@ -1012,29 +1073,47 @@ async fn entitlements(
 /// [`FLAT_FILE_PROBE_LIMIT`] message limit, reading one message at most, so a
 /// probe never pulls bulk data. Dropping the stream cancels the rest.
 #[allow(clippy::too_many_arguments)]
+/// The option request set, shared by the PRO map (bounded probes) and the
+/// step F live checks (values compared).
+struct OptionSet<'a> {
+    min_interval: f64,
+    only: &'a [String],
+    max_messages: u32,
+    /// History, at-time and list requests: this trading day and expiration.
+    day: NaiveDate,
+    exp: NaiveDate,
+    /// Snapshots: an expiration listed now (the map used `exp`).
+    snapshot_exp: NaiveDate,
+    /// Flat files: a past day within the vendor's 7-day window.
+    flat: NaiveDate,
+    /// Probe the about-38 GB option quote flat file too (needs the user's
+    /// go-ahead outside the one map run).
+    include_quote_flat_file: bool,
+    check: bool,
+}
+
 async fn option_entitlements(
-    options: &EntitlementsArgs,
+    set: &OptionSet<'_>,
     client: &ThetaClient,
     flat_files: &ThetaClient,
     report: &mut Report,
-    day: NaiveDate,
-    exp: NaiveDate,
-    flat: NaiveDate,
 ) -> Result<(), Stop> {
+    let (day, exp, snapshot_exp, flat) = (set.day, set.exp, set.snapshot_exp, set.flat);
     let mut r = EntitlementRun {
         client,
         report,
         pacer: Pacer {
-            interval: Duration::from_secs_f64(options.common.min_interval),
+            interval: Duration::from_secs_f64(set.min_interval),
             last: None,
         },
-        only: &options.only,
-        max_messages: options.max_messages,
+        only: set.only,
+        max_messages: set.max_messages,
         flat_files: false,
+        check: set.check,
     };
     macro_rules! snapshot {
         ($($t:ident),+) => {$(
-            r.run(typed::$t::new("SPY", exp).right("call")).await?;
+            r.run(typed::$t::new("SPY", snapshot_exp).right("call")).await?;
         )+};
     }
     macro_rules! interval {
@@ -1077,7 +1156,7 @@ async fn option_entitlements(
         .await?;
     // Snapshots.
     snapshot!(OptionSnapshotOhlc);
-    r.run(typed::OptionSnapshotTrade::new("SPY", exp).right("call"))
+    r.run(typed::OptionSnapshotTrade::new("SPY", snapshot_exp).right("call"))
         .await?;
     snapshot!(
         OptionSnapshotQuote,
@@ -1150,7 +1229,9 @@ async fn option_entitlements(
     r.run(typed::OptionFlatFileEod::new(flat)).await?;
     r.run(typed::OptionFlatFileOpenInterest::new(flat)).await?;
     r.run(typed::OptionFlatFileTradeQuote::new(flat)).await?;
-    r.run(typed::OptionFlatFileQuote::new(flat)).await?;
+    if set.include_quote_flat_file {
+        r.run(typed::OptionFlatFileQuote::new(flat)).await?;
+    }
     Ok(())
 }
 
@@ -2101,6 +2182,7 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::Sizes(options) => (&options.common, "sizes"),
         Command::Workload(options) => (&options.common, "workload"),
         Command::SplitProbe(options) => (&options.common, "split-probe"),
+        Command::OptionChecks(options) => (&options.common, "option-checks"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -2167,6 +2249,29 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::Sizes(options) => sizes(options, &client, &mut report).await,
         Command::Workload(options) => workload(options, &client, &mut report).await,
         Command::SplitProbe(options) => split_probe(options, &client, &mut report).await,
+        Command::OptionChecks(options) => {
+            // Flat files through the capped client, as in the PRO map.
+            match connect_with_limit(client.session(), FLAT_FILE_PROBE_LIMIT).await {
+                Ok(flat_files) => {
+                    let set = OptionSet {
+                        min_interval: options.common.min_interval,
+                        only: &options.only,
+                        max_messages: 5,
+                        day: date(&options.date),
+                        exp: date(&options.expiration),
+                        snapshot_exp: date(&options.snapshot_expiration),
+                        flat: date(&options.flat_file_date),
+                        include_quote_flat_file: options.include_option_quote_flat_file,
+                        check: true,
+                    };
+                    option_entitlements(&set, &client, &flat_files, &mut report).await
+                }
+                Err(_) => {
+                    eprintln!("connection failed");
+                    return std::process::ExitCode::FAILURE;
+                }
+            }
+        }
     };
     if let Err(Stop(reason)) = &result {
         report.stopped = Some(reason.clone());
@@ -2576,6 +2681,54 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn option_checks_compare_values_and_only_probe_flat_files() {
+        // The fixture serves stock EOD only: every option RPC is refused
+        // there, which is enough to see which path each one takes.
+        let server = fixture::Fixture::start(fixture::Script::default());
+        // The fixture login has no tier (FREE: 20 a minute); query() is
+        // scheduled, so use PRO's limits.
+        let client = fixture_client(&server)
+            .await
+            .with_scheduler(praevis_thetadata_client::SchedulerPolicy::for_tier(
+                praevis_thetadata_client::Tier::Pro,
+            ))
+            .unwrap();
+        let flat_files = fixture_client_with_limit(&server, FLAT_FILE_PROBE_LIMIT).await;
+        // 5 lists, 14 snapshots, 26 history and 2 at-time requests are value
+        // checks; the 3 (or 4) flat files are probes.
+        for (include_quote_flat_file, expected) in [(false, 50), (true, 51)] {
+            let set = OptionSet {
+                min_interval: 0.0,
+                only: &[],
+                max_messages: 5,
+                day: date("2024-06-14"),
+                exp: date("2024-06-21"),
+                snapshot_exp: date("2026-11-06"),
+                flat: date("2026-11-04"),
+                include_quote_flat_file,
+                check: true,
+            };
+            let mut report = Report::default();
+            option_entitlements(&set, &client, &flat_files, &mut report)
+                .await
+                .unwrap();
+            assert_eq!(report.results.len(), expected);
+            let (checked, probed): (Vec<_>, Vec<_>) = report
+                .results
+                .iter()
+                .partition(|r| r.get("query_status").is_some());
+            // Every non-flat-file RPC is a value check; flat files are probes.
+            assert_eq!(checked.len(), 47);
+            assert!(probed.iter().all(|r| {
+                r["rpc"].as_str().unwrap().starts_with("GetOptionFlatFile")
+                    && r.get("status").is_some()
+            }));
+            let quote_file = probed.iter().any(|r| r["rpc"] == "GetOptionFlatFileQuote");
+            assert_eq!(quote_file, include_quote_flat_file);
+        }
+    }
+
+    #[tokio::test]
     async fn flat_file_probes_never_read_bulk_data() {
         // The fixture serves only stock EOD, so the flat-file run settings
         // (capped client, one message, OverProbeLimit) are driven with it.
@@ -2602,6 +2755,7 @@ mod tests {
                 only: &[],
                 max_messages: 1,
                 flat_files: true,
+                check: false,
             };
             run.run(typed::StockHistoryEod::new(
                 "AAPL",
