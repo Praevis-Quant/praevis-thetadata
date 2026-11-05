@@ -28,6 +28,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **`live_p0 split-probe`** (manual, never CI). It tests splitting
+  all-strike tick and 1 s quote requests per contract.
+  - **Why:** the shape probes showed that those requests pay about 60 s
+    before any data, while one contract over a whole day takes about 1 s.
+  - **What it compares:** the all-strike request, run before and after, with
+    the same request once per listed strike, at concurrency 1 and 8.
+  - **What it reports:** wall times, rows, and whether the results are
+    exactly equal, using an order-independent digest of the row values. Only
+    the equality is reported.
 - **Options baselines harness (D2)** (manual, never CI):
   - `options_vendor.py` (vendor package) and `bench/p1/options_ours.py`
     (this package): time whole workloads into Polars, synchronously and

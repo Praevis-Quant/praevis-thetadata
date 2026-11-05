@@ -86,6 +86,41 @@ over 1M rows. All are SPY on 2024-06-14.
   separate the window from the quote resolution before any baseline: a
   shorter window, one contract over the day, and windows on cheap requests.
 
+## Shape probes (`opt-sizes-002`, 2026-11-05)
+
+`live_p0 sizes` on main 480f558: 37 requests, all OK, none over 1M rows. All
+are SPY 2024-06-21 calls on 2024-06-14.
+
+| Probe | Shape | Rows | First data | Total |
+| --- | --- | ---: | ---: | ---: |
+| S1 | tick quotes, every strike, 10:00-10:01 | 73k | **60.8 s** | 64.5 s |
+| W5b | tick quotes, every strike, 10:00-10:15 | 939k | **59.4 s** | 62.3 s |
+| S3 | 1 s quotes, every strike, 10:00-10:01 | 14k | **63.4 s** | 70.0 s |
+| W4b | 1 s quotes, every strike, 10:00-10:30 | 407k | **71.8 s** | 80.4 s |
+| S2 | tick quotes, **one contract**, whole day | 486k | **0.2 s** | 1.1 s |
+| S4 | 1-minute quotes, every strike, 10:00-10:30 | 7k | 3.4 s | 3.8 s |
+| S5 | tick trades, every strike, 10:00-10:15 | 1.6k | 1.6 s | 1.7 s |
+
+**The slow shape is every strike × fine-grained quotes.** It costs about
+60 s before the first data, whatever the window or the row count. One
+contract over the whole day took 1.1 s (about 440k rows/s). The 1-minute
+quotes and tick trades over every strike are not slow.
+
+**Hypothesis (to test, single samples so far):** split tick and 1 s quote
+requests per contract and run them 8 at a time. `live_p0 split-probe` tests
+this, comparing for the same request (W5b):
+- the all-strike request, run before and after;
+- the same request once per listed strike (`option_list_strikes`), at
+  concurrency 1 and 8.
+
+It reports wall times, rows, and whether the split results equal the
+reference exactly: an order-independent digest of every row's values, of
+which only the equality is reported.
+- **Request sizing:** each per-strike request is one contract for 15
+  minutes, well inside the vendor's sizing guide (one day for a liquid
+  root, under 1M ticks).
+- **Load:** at most 8 at a time, the PRO limit. About 4M rows in total.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.
