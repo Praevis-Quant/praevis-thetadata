@@ -121,6 +121,12 @@ which only the equality is reported.
   root, under 1M ticks).
 - **Load:** at most 8 at a time, the PRO limit. About 4M rows in total.
 
+## Baselines D2
+
+Recorded in [options-d2-results.md](../performance/options-d2-results.md):
+every time target is met for the per-expiration workloads. The memory bound
+is not yet assessed, and the slow all-strike quote shape is not covered.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.

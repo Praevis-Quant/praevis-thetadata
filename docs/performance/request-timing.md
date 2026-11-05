@@ -47,9 +47,12 @@ should overlap those waits. That is why the client has a scheduler and why tier
 concurrency (FREE 1, VALUE 2, STANDARD 4, PRO 8) should be the main speed lever
 for large jobs. The vendor Python package runs one request at a time.
 
-**This is a prediction.** The vendor could serve concurrent requests more slowly
-than single ones. The head-to-head benchmark of the options phase measures it,
-and this guide will be updated with the result. Do not quote a speedup from here.
+**Measured since** ([D2 results](options-d2-results.md), one host, one date,
+3 rounds). For per-expiration option workloads, 8 requests at once finished
+4.8-7.2× faster than one at a time, and 9.8-10.3× faster than the vendor
+package used synchronously. Requests that ask for tick or 1-second quotes
+across every strike behave differently: each waits about a minute regardless
+of size, and is being measured separately.
 
 ## How to get the best results
 
