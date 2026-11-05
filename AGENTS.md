@@ -165,6 +165,21 @@ go-ahead to finish the option portion on PRO covers one run of
 (not one per family), with the same pacing, stop rules and privacy rules. Any
 further run needs approval again.
 
+**Flat files: probes are bounded, and full downloads are approved one file
+at a time.**
+- **Probes:** a flat-file probe or check reads at most one message of at
+  most 1 MiB, through a client whose message limit refuses anything larger.
+  It never pulls bulk data.
+- **Full downloads:** approved by the Coordinator on 2026-11-05 for step G
+  of the options phase: the **option open-interest, EOD and trade/quote**
+  flat files, in that order. Each is downloaded to Parquet with memory
+  measured (`live_job_memory --flat-file`). The Parquet output is private
+  under the ignored `artifacts/` and deleted after its size is recorded.
+- **Still needs approval:** the **option quote flat file (about 38 GB)**
+  needs the user's explicit go-ahead, even for a probe, which starts the
+  vendor's roughly 30-minute generation. Every other flat file (stock,
+  index) needs approval too.
+
 ## Architecture
 
 ### Dependency boundaries

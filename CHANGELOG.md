@@ -62,6 +62,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Step G runner: option flat files to Parquet** (`live_job_memory
+  --flat-file open-interest|eod|trade-quote --date <day>`, manual).
+  - **What it does:** downloads one whole file through `job()` to private
+    Parquet, deleted afterwards, measuring heap, RSS, rows, batch sizes and
+    time.
+  - **Timeout:** a longer request timeout, 1800 s by default.
+  - **Refused:** the option quote file (about 38 GB). It is not an accepted
+    value.
+  - **AGENTS.md:** records the flat-file rule. Probes are bounded; full
+    downloads of these three files are approved, and the quote file and all
+    other flat files still need approval.
 - **`live_p0 option-checks --same-response`.** Each request is sent once,
   and every message of that response is decoded by both the columnar decoder
   (the one `query()` uses) and the legacy decoder, then compared.
