@@ -489,6 +489,7 @@ CHECK_RESULTS = {
     "probe-data": "bounded probe: data, not a manifest; values not checked",
     "values-equal-same-response": "values equal on the same response (columnar and legacy decoders)",
     "first-message-equal": "first message equal on the same response (bounded); whole file not yet checked",
+    "full-download": "whole file decoded to Parquet with no error or manifest; values compared on the first message only",
 }
 CHECK_PYTHON = {"ok": "Python OK", "not-run": "Python not run"}
 
