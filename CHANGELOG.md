@@ -62,6 +62,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **`live_p0 option-checks --same-response`.** Each request is sent once,
+  and every message of that response is decoded by both the columnar decoder
+  (the one `query()` uses) and the legacy decoder, then compared.
+  - **Why:** separate live requests made the snapshot checks
+    inconclusive, because the market moves in between.
+  - **Flat files:** the first message only (at most 1 MiB), decoded both
+    ways. This tests whether flat-file data decodes as ordinary tables before
+    step G downloads any file.
 - **Step F results recorded** (`opt-checks-001`).
   - **Values equal to the legacy decoder:** 34 option endpoints.
   - **Rows equal, values pending:** 13 snapshots. The two requests ran
