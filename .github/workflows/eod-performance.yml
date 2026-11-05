@@ -75,7 +75,7 @@ jobs:
           retention-days: 30
 
   compare:
-    # Before/after protocol (CLAUDE.md, EOD-L3-027): release builds of two clean commits
+    # Before/after protocol (AGENTS.md, EOD-L3-027): release builds of two clean commits
     # on the same runner, warmups inside each run, alternating AB/BA order across rounds,
     # raw reports retained. Use baseline == candidate for an A/A noise run. Shared-runner
     # timings are informational until calibrated (PERF-L3-008); no vendor credentials.

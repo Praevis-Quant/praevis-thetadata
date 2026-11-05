@@ -2,7 +2,7 @@
 
 This harness runs the **official `thetadata` 1.0.17 package** to measure the
 baseline every Praevis performance claim is compared against. It exists under
-the single scoped exception in [CLAUDE.md](../../CLAUDE.md):
+the single scoped exception in [AGENTS.md](../../AGENTS.md):
 
 - It runs **only manually, by the Coordinator, on the user's machine**, with the
   user's own key from `THETADATA_API_KEY`. It never runs in CI or from `tools/`,

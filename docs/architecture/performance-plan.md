@@ -28,7 +28,7 @@ our own authorized PROD runs. **[estimate]** is a project estimate to verify.
 
 | # | Decision |
 | --- | --- |
-| 1 | **Python baseline exception approved**: a separate harness outside the workspace, a hash-pinned isolated venv, never in CI, run by the Coordinator on the user's machine with their key (C.1; CLAUDE.md) |
+| 1 | **Python baseline exception approved**: a separate harness outside the workspace, a hash-pinned isolated venv, never in CI, run by the Coordinator on the user's machine with their key (C.1; AGENTS.md) |
 | 2 | **Targets approved** as proposed (B) |
 | 3 | **Dependencies `arrow-rs`, `parquet` and `pyo3` approved as a set for P1**; Arrow Flight later |
 | 4 | **Real-time uses the official Terminal path only**, within ThetaData's terms. No undocumented direct FPSS. Plus a review of ThetaDataDx (section H) |
@@ -183,8 +183,8 @@ baseline on the same host and account):
 
 ### C.1 Vendor Python baseline: the approved scoped exception
 
-CLAUDE.md says: never import or execute the vendor package. **The exception
-approved on 2026-11-03** (now in CLAUDE.md):
+AGENTS.md says: never import or execute the vendor package. **The exception
+approved on 2026-11-03** (now in AGENTS.md):
 
 > The vendor package may be executed **only** by the Python baseline harness
 > in `bench/python-baseline/`. That directory sits outside the Cargo

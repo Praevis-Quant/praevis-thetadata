@@ -21,7 +21,7 @@
 //!   and paced, reading at most a few messages before dropping the stream.
 //!   Per-endpoint refusals are recorded and the run continues; it stops at the
 //!   first `RESOURCE_EXHAUSTED` or `UNAVAILABLE`. No concurrency. A one-time,
-//!   user-approved exception to "never sweep endpoints" (CLAUDE.md); re-running
+//!   user-approved exception to "never sweep endpoints" (AGENTS.md); re-running
 //!   it needs approval again. The private report keeps truncated vendor status
 //!   text for a person to classify locally; the code never interprets it, and
 //!   only classifications and gRPC codes are committed. `--set options-pro`

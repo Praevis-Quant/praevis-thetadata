@@ -182,7 +182,7 @@ Approved by the user on 2026-11-02 as one decision; **executed 2026-11-03** (#37
      `=0.1.0-alpha.2` internal dependency pins.
    - Refresh `Cargo.lock` (five package versions).
    - Update the version and install lines in the root README, the five package
-     READMEs and `CLAUDE.md`.
+     READMEs and `AGENTS.md`.
    - Update the `=0.1.0-alpha.2` pins in `tools/release-consumers/*` and in
      `tools/test_staging_registry.py`.
    - In the CHANGELOG, retitle `[Unreleased]` as `## [0.1.0-alpha.2] - <UTC publication date>`
