@@ -97,7 +97,7 @@ class AliasOverheadGate(unittest.TestCase):
         object.__setattr__(client, "_native", native)
         object.__setattr__(client, "_dataframe_type", "arrow")
         start, end = "2024-01-02", "2024-01-05"
-        calls = 2000
+        calls = 500
 
         def direct():
             return pa.table(pt.Result(native.query("stock_history_eod", plan=True, symbol="AAPL",
@@ -106,19 +106,30 @@ class AliasOverheadGate(unittest.TestCase):
         def alias():
             return client.stock_history_eod("AAPL", start, end)
 
-        def per_call(function) -> float:
-            samples = []
-            for _ in range(7):
-                begin = time.perf_counter()
-                for _ in range(calls):
-                    function()
-                samples.append((time.perf_counter() - begin) / calls * 1e6)
-            return statistics.median(samples)
+        def block(function) -> float:
+            begin = time.perf_counter()
+            for _ in range(calls):
+                function()
+            return (time.perf_counter() - begin) / calls * 1e6
 
-        per_call(direct)  # warm
-        base, wrapped = per_call(direct), per_call(alias)
-        print(f"\nnative call + conversion {base:.2f} µs, vendor alias {wrapped:.2f} µs", file=sys.stderr)
-        self.assertLess(wrapped - base, 5.0)
+        # Paired, interleaved samples: each pair times both paths back to
+        # back, alternating which goes first, and the gate uses the median
+        # difference. Timing all of one path and then all of the other let
+        # runner noise between the two phases decide the result (Windows CI
+        # saw -12.6 to +9.3 µs on unchanged code).
+        block(direct), block(alias)  # warm
+        bases, differences = [], []
+        for pair in range(21):
+            if pair % 2:
+                wrapped, base = block(alias), block(direct)
+            else:
+                base, wrapped = block(direct), block(alias)
+            bases.append(base)
+            differences.append(wrapped - base)
+        base, overhead = statistics.median(bases), statistics.median(differences)
+        print(f"\nnative call + conversion {base:.2f} µs, vendor alias adds {overhead:.2f} µs "
+              f"(median of {len(differences)} paired samples)", file=sys.stderr)
+        self.assertLess(overhead, 5.0)
 
 
 if __name__ == "__main__":

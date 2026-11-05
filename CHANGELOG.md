@@ -16,6 +16,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **The vendor-alias overhead gate (D.2) measures paired samples.** It
+  times the direct path and the alias back to back, 21 times in alternating
+  order, and gates on the median difference.
+  - **Before:** it timed all direct calls and then all alias calls, so runner
+    noise between the two phases decided the result. Windows CI measured
+    -12.6 to +9.3 µs on unchanged code and failed once on noise alone.
+  - **Unchanged:** the 5 µs limit.
 - Added a user guide, [where the time goes in a request](docs/performance/request-timing.md): measured option request waits and sizes, what is measured versus predicted, and practical advice.
 - `AGENTS.md` is now the single home for agent guidance and `CLAUDE.md` only points to it, matching aero1553, so every agent reads the same rules. Stale statements (planned PyO3, the proposed primary path, next-work status) were updated in the move; nothing else was dropped.
 - **One zstd wrapper:** the workspace now uses `zstd` 0.14 (`zstd-safe` 8),
