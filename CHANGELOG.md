@@ -26,6 +26,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Options PRO entitlement map recorded** (`opt-pro-entitlements-001`).
+  - **Entitled:** 33 of 51 option RPCs, including every Greeks and
+    trade-Greeks order. None is tier-denied.
+  - **Uncertain:** the 14 snapshots (no data) and the 4 flat files
+    (invalid argument).
+  - **Coverage table:** gains an options PRO column beside FREE.
+  - **Generator:** checks the PRO entries against the same closed
+    vocabulary.
 - **Tier-aware scheduler.** A new client sizes its scheduler from the
   account's tier in the login response: the highest of the stock, options
   and indices subscriptions, since the vendor sets concurrency account-wide.

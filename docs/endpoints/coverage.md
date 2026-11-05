@@ -6,112 +6,114 @@ per-clause requirement matrices for generated endpoints
 ([lighter process](../architecture/performance-plan.md#f-process-simplification)).
 
 The FREE column is the one-time entitlement map: one request per endpoint family,
-classified by a person from the private report. Only the classification and gRPC
-code are committed. A named tier is the tier the service said is required.
+classified by a person from the private report. The options PRO column is the
+one approved PRO map (options PRO; stocks and indices FREE): every option RPC once.
+Only the classification and gRPC code are committed. A named tier is the tier the
+service said is required.
 *Uncertain* marks a classification the evidence does not settle. Endpoints that
 were not probed are not inferred from their family.
 
 100 RPCs: 81 with a vendor wrapper, 19 descriptor-only (unstable).
 
-| RPC | Vendor wrapper | Rust request | Stability | Decoder test | Live check (FREE) |
-| --- | --- | --- | --- | --- | --- |
-| `GetStockListSymbols` | `stock_list_symbols` | `endpoints::StockListSymbols` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetStockListDates` | `stock_list_dates` | `endpoints::StockListDates` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetStockSnapshotOhlc` | `stock_snapshot_ohlc` | `endpoints::StockSnapshotOhlc` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetStockSnapshotTrade` | `stock_snapshot_trade` | `endpoints::StockSnapshotTrade` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) |
-| `GetStockSnapshotQuote` | `stock_snapshot_quote` | `endpoints::StockSnapshotQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetStockSnapshotMarketValue` | `stock_snapshot_market_value` | `endpoints::StockSnapshotMarketValue` | vendor wrapper | generic (`query`) | not probed |
-| `GetStockHistoryEod` | `stock_history_eod` | `endpoints::StockHistoryEod` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetStockHistoryOhlc` | `stock_history_ohlc` | `endpoints::StockHistoryOhlc` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetStockHistoryTrade` | `stock_history_trade` | `endpoints::StockHistoryTrade` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) |
-| `GetStockHistoryQuote` | `stock_history_quote` | `endpoints::StockHistoryQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetStockHistoryTradeQuote` | `stock_history_trade_quote` | `endpoints::StockHistoryTradeQuote` | vendor wrapper | generic (`query`) | not probed |
-| `GetStockAtTimeTrade` | `stock_at_time_trade` | `endpoints::StockAtTimeTrade` | vendor wrapper | generic (`query`) | not probed |
-| `GetStockAtTimeQuote` | `stock_at_time_quote` | `endpoints::StockAtTimeQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionListSymbols` | `option_list_symbols` | `endpoints::OptionListSymbols` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetOptionListDates` | `option_list_dates` | `endpoints::OptionListDates` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionListExpirations` | `option_list_expirations` | `endpoints::OptionListExpirations` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetOptionListStrikes` | `option_list_strikes` | `endpoints::OptionListStrikes` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetOptionListContracts` | `option_list_contracts` | `endpoints::OptionListContracts` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionSnapshotOhlc` | `option_snapshot_ohlc` | `endpoints::OptionSnapshotOhlc` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotTrade` | `option_snapshot_trade` | `endpoints::OptionSnapshotTrade` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotQuote` | `option_snapshot_quote` | `endpoints::OptionSnapshotQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionSnapshotOpenInterest` | `option_snapshot_open_interest` | `endpoints::OptionSnapshotOpenInterest` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionSnapshotMarketValue` | `option_snapshot_market_value` | `endpoints::OptionSnapshotMarketValue` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotGreeksImpliedVolatility` | `option_snapshot_greeks_implied_volatility` | `endpoints::OptionSnapshotGreeksImpliedVolatility` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotGreeksAll` | `option_snapshot_greeks_all` | `endpoints::OptionSnapshotGreeksAll` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotBinomialGreeksAll` | `option_snapshot_binomial_greeks_all` | `endpoints::OptionSnapshotBinomialGreeksAll` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotGreeksFirstOrder` | `option_snapshot_greeks_first_order` | `endpoints::OptionSnapshotGreeksFirstOrder` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionSnapshotBinomialGreeksFirstOrder` | `option_snapshot_binomial_greeks_first_order` | `endpoints::OptionSnapshotBinomialGreeksFirstOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotGreeksSecondOrder` | `option_snapshot_greeks_second_order` | `endpoints::OptionSnapshotGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotBinomialGreeksSecondOrder` | `option_snapshot_binomial_greeks_second_order` | `endpoints::OptionSnapshotBinomialGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotGreeksThirdOrder` | `option_snapshot_greeks_third_order` | `endpoints::OptionSnapshotGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionSnapshotBinomialGreeksThirdOrder` | `option_snapshot_binomial_greeks_third_order` | `endpoints::OptionSnapshotBinomialGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryEod` | `option_history_eod` | `endpoints::OptionHistoryEod` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetOptionHistoryOhlc` | `option_history_ohlc` | `endpoints::OptionHistoryOhlc` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionHistoryTrade` | `option_history_trade` | `endpoints::OptionHistoryTrade` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionHistoryQuote` | `option_history_quote` | `endpoints::OptionHistoryQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionHistoryTradeQuote` | `option_history_trade_quote` | `endpoints::OptionHistoryTradeQuote` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryOpenInterest` | `option_history_open_interest` | `endpoints::OptionHistoryOpenInterest` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionHistoryGreeksEod` | `option_history_greeks_eod` | `endpoints::OptionHistoryGreeksEod` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionHistoryBinomialGreeksEod` | `option_history_binomial_greeks_eod` | `endpoints::OptionHistoryBinomialGreeksEod` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryGreeksAll` | `option_history_greeks_all` | `endpoints::OptionHistoryGreeksAll` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryBinomialGreeksAll` | `option_history_binomial_greeks_all` | `endpoints::OptionHistoryBinomialGreeksAll` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryTradeGreeksAll` | `option_history_trade_greeks_all` | `endpoints::OptionHistoryTradeGreeksAll` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryBinomialTradeGreeksAll` | `option_history_binomial_trade_greeks_all` | `endpoints::OptionHistoryBinomialTradeGreeksAll` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryGreeksFirstOrder` | `option_history_greeks_first_order` | `endpoints::OptionHistoryGreeksFirstOrder` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionHistoryBinomialGreeksFirstOrder` | `option_history_binomial_greeks_first_order` | `endpoints::OptionHistoryBinomialGreeksFirstOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryTradeGreeksFirstOrder` | `option_history_trade_greeks_first_order` | `endpoints::OptionHistoryTradeGreeksFirstOrder` | vendor wrapper | generic (`query`) | tier-denied (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionHistoryBinomialTradeGreeksFirstOrder` | `option_history_binomial_trade_greeks_first_order` | `endpoints::OptionHistoryBinomialTradeGreeksFirstOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryGreeksSecondOrder` | `option_history_greeks_second_order` | `endpoints::OptionHistoryGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryBinomialGreeksSecondOrder` | `option_history_binomial_greeks_second_order` | `endpoints::OptionHistoryBinomialGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryTradeGreeksSecondOrder` | `option_history_trade_greeks_second_order` | `endpoints::OptionHistoryTradeGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryBinomialTradeGreeksSecondOrder` | `option_history_binomial_trade_greeks_second_order` | `endpoints::OptionHistoryBinomialTradeGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryGreeksThirdOrder` | `option_history_greeks_third_order` | `endpoints::OptionHistoryGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryBinomialGreeksThirdOrder` | `option_history_binomial_greeks_third_order` | `endpoints::OptionHistoryBinomialGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryTradeGreeksThirdOrder` | `option_history_trade_greeks_third_order` | `endpoints::OptionHistoryTradeGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryBinomialTradeGreeksThirdOrder` | `option_history_binomial_trade_greeks_third_order` | `endpoints::OptionHistoryBinomialTradeGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionHistoryGreeksImpliedVolatility` | `option_history_greeks_implied_volatility` | `endpoints::OptionHistoryGreeksImpliedVolatility` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) |
-| `GetOptionHistoryTradeGreeksImpliedVolatility` | `option_history_trade_greeks_implied_volatility` | `endpoints::OptionHistoryTradeGreeksImpliedVolatility` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionAtTimeTrade` | `option_at_time_trade` | `endpoints::OptionAtTimeTrade` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionAtTimeQuote` | `option_at_time_quote` | `endpoints::OptionAtTimeQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetIndexListSymbols` | `index_list_symbols` | `endpoints::IndexListSymbols` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetIndexListDates` | `index_list_dates` | `endpoints::IndexListDates` | vendor wrapper | generic (`query`) | not probed |
-| `GetIndexSnapshotOhlc` | `index_snapshot_ohlc` | `endpoints::IndexSnapshotOhlc` | vendor wrapper | generic (`query`) | not probed |
-| `GetIndexSnapshotPrice` | `index_snapshot_price` | `endpoints::IndexSnapshotPrice` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) |
-| `GetIndexSnapshotMarketValue` | `index_snapshot_market_value` | `endpoints::IndexSnapshotMarketValue` | vendor wrapper | generic (`query`) | not probed |
-| `GetIndexHistoryEod` | `index_history_eod` | `endpoints::IndexHistoryEod` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetIndexHistoryOhlc` | `index_history_ohlc` | `endpoints::IndexHistoryOhlc` | vendor wrapper | generic (`query`) | not probed |
-| `GetIndexHistoryPrice` | `index_history_price` | `endpoints::IndexHistoryPrice` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetIndexAtTimePrice` | `index_at_time_price` | `endpoints::IndexAtTimePrice` | vendor wrapper | generic (`query`) | not probed |
-| `GetCalendarOpenToday` | `calendar_open_today` | `endpoints::CalendarOpenToday` | vendor wrapper | generic (`query`) | not probed |
-| `GetCalendarOnDate` | `calendar_on_date` | `endpoints::CalendarOnDate` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) |
-| `GetCalendarYear` | `calendar_year` | `endpoints::CalendarYear` | vendor wrapper | generic (`query`) | not probed |
-| `GetInterestRateHistoryEod` | `interest_rate_history_eod` | `endpoints::InterestRateHistoryEod` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) |
-| `GetCorporateActionDividend` | — | `endpoints::CorporateActionDividend` | unstable | generic (`query`) | not probed |
-| `GetCorporateActionSplit` | — | `endpoints::CorporateActionSplit` | unstable | generic (`query`) | no-data (uncertain) (`NotFound`, p1-entitlements-001) |
-| `GetOptionFlatFileTradeQuote` | `option_flat_file_trade_quote` | `endpoints::OptionFlatFileTradeQuote` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionFlatFileEod` | `option_flat_file_eod` | `endpoints::OptionFlatFileEod` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionFlatFileOpenInterest` | `option_flat_file_open_interest` | `endpoints::OptionFlatFileOpenInterest` | vendor wrapper | generic (`query`) | not probed |
-| `GetOptionFlatFileQuote` | `option_flat_file_quote` | `endpoints::OptionFlatFileQuote` | vendor wrapper | generic (`query`) | not probed |
-| `GetStockFlatFileTradeQuote` | `stock_flat_file_trade_quote` | `endpoints::StockFlatFileTradeQuote` | vendor wrapper | generic (`query`) | not probed |
-| `GetStockFlatFileEod` | `stock_flat_file_eod` | `endpoints::StockFlatFileEod` | vendor wrapper | generic (`query`) | tier-denied (`PermissionDenied`, p1-entitlements-001) |
-| `GetStockFlatFileQuote` | `stock_flat_file_quote` | `endpoints::StockFlatFileQuote` | vendor wrapper | generic (`query`) | not probed |
-| `GetIndexFlatFileEod` | `index_flat_file_eod` | `endpoints::IndexFlatFileEod` | vendor wrapper | generic (`query`) | not probed |
-| `GetFutureListSymbols` | — | `endpoints::FutureListSymbols` | unstable | generic (`query`) | no-data (uncertain) (`NotFound`, p1-entitlements-001) |
-| `GetFutureListDates` | — | `endpoints::FutureListDates` | unstable | generic (`query`) | not probed |
-| `GetFutureHistoryTrade` | — | `endpoints::FutureHistoryTrade` | unstable | generic (`query`) | not probed |
-| `GetFutureHistoryBbo` | — | `endpoints::FutureHistoryBbo` | unstable | generic (`query`) | not probed |
-| `GetFutureHistoryTradeBbo` | — | `endpoints::FutureHistoryTradeBbo` | unstable | generic (`query`) | not probed |
-| `GetFutureHistoryOhlc` | — | `endpoints::FutureHistoryOhlc` | unstable | generic (`query`) | not probed |
-| `GetFutureHistoryEod` | — | `endpoints::FutureHistoryEod` | unstable | generic (`query`) | not probed |
-| `GetFutureHistorySettlement` | — | `endpoints::FutureHistorySettlement` | unstable | generic (`query`) | not probed |
-| `GetFutureAtTimeTrade` | — | `endpoints::FutureAtTimeTrade` | unstable | generic (`query`) | not probed |
-| `GetFutureAtTimeBbo` | — | `endpoints::FutureAtTimeBbo` | unstable | generic (`query`) | not probed |
-| `GetFutureSnapshotBbo` | — | `endpoints::FutureSnapshotBbo` | unstable | generic (`query`) | not probed |
-| `GetFutureSnapshotTrade` | — | `endpoints::FutureSnapshotTrade` | unstable | generic (`query`) | not probed |
-| `GetFutureSnapshotOhlc` | — | `endpoints::FutureSnapshotOhlc` | unstable | generic (`query`) | not probed |
-| `GetFutureSnapshotMarketValue` | — | `endpoints::FutureSnapshotMarketValue` | unstable | generic (`query`) | not probed |
-| `GetFutureFlatFileTradeBbo` | — | `endpoints::FutureFlatFileTradeBbo` | unstable | generic (`query`) | not probed |
-| `GetFutureFlatFileEod` | — | `endpoints::FutureFlatFileEod` | unstable | generic (`query`) | not probed |
-| `GetFutureFlatFileBbo` | — | `endpoints::FutureFlatFileBbo` | unstable | generic (`query`) | not probed |
+| RPC | Vendor wrapper | Rust request | Stability | Decoder test | Live check (FREE) | Live check (options PRO) |
+| --- | --- | --- | --- | --- | --- | --- |
+| `GetStockListSymbols` | `stock_list_symbols` | `endpoints::StockListSymbols` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | not probed |
+| `GetStockListDates` | `stock_list_dates` | `endpoints::StockListDates` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | not probed |
+| `GetStockSnapshotOhlc` | `stock_snapshot_ohlc` | `endpoints::StockSnapshotOhlc` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetStockSnapshotTrade` | `stock_snapshot_trade` | `endpoints::StockSnapshotTrade` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetStockSnapshotQuote` | `stock_snapshot_quote` | `endpoints::StockSnapshotQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetStockSnapshotMarketValue` | `stock_snapshot_market_value` | `endpoints::StockSnapshotMarketValue` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetStockHistoryEod` | `stock_history_eod` | `endpoints::StockHistoryEod` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | not probed |
+| `GetStockHistoryOhlc` | `stock_history_ohlc` | `endpoints::StockHistoryOhlc` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetStockHistoryTrade` | `stock_history_trade` | `endpoints::StockHistoryTrade` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetStockHistoryQuote` | `stock_history_quote` | `endpoints::StockHistoryQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetStockHistoryTradeQuote` | `stock_history_trade_quote` | `endpoints::StockHistoryTradeQuote` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetStockAtTimeTrade` | `stock_at_time_trade` | `endpoints::StockAtTimeTrade` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetStockAtTimeQuote` | `stock_at_time_quote` | `endpoints::StockAtTimeQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetOptionListSymbols` | `option_list_symbols` | `endpoints::OptionListSymbols` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionListDates` | `option_list_dates` | `endpoints::OptionListDates` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionListExpirations` | `option_list_expirations` | `endpoints::OptionListExpirations` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionListStrikes` | `option_list_strikes` | `endpoints::OptionListStrikes` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionListContracts` | `option_list_contracts` | `endpoints::OptionListContracts` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotOhlc` | `option_snapshot_ohlc` | `endpoints::OptionSnapshotOhlc` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotTrade` | `option_snapshot_trade` | `endpoints::OptionSnapshotTrade` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotQuote` | `option_snapshot_quote` | `endpoints::OptionSnapshotQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotOpenInterest` | `option_snapshot_open_interest` | `endpoints::OptionSnapshotOpenInterest` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotMarketValue` | `option_snapshot_market_value` | `endpoints::OptionSnapshotMarketValue` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotGreeksImpliedVolatility` | `option_snapshot_greeks_implied_volatility` | `endpoints::OptionSnapshotGreeksImpliedVolatility` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotGreeksAll` | `option_snapshot_greeks_all` | `endpoints::OptionSnapshotGreeksAll` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotBinomialGreeksAll` | `option_snapshot_binomial_greeks_all` | `endpoints::OptionSnapshotBinomialGreeksAll` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotGreeksFirstOrder` | `option_snapshot_greeks_first_order` | `endpoints::OptionSnapshotGreeksFirstOrder` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotBinomialGreeksFirstOrder` | `option_snapshot_binomial_greeks_first_order` | `endpoints::OptionSnapshotBinomialGreeksFirstOrder` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotGreeksSecondOrder` | `option_snapshot_greeks_second_order` | `endpoints::OptionSnapshotGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotBinomialGreeksSecondOrder` | `option_snapshot_binomial_greeks_second_order` | `endpoints::OptionSnapshotBinomialGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotGreeksThirdOrder` | `option_snapshot_greeks_third_order` | `endpoints::OptionSnapshotGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionSnapshotBinomialGreeksThirdOrder` | `option_snapshot_binomial_greeks_third_order` | `endpoints::OptionSnapshotBinomialGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed | no-data (uncertain) (`NotFound`, opt-pro-entitlements-001) |
+| `GetOptionHistoryEod` | `option_history_eod` | `endpoints::OptionHistoryEod` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryOhlc` | `option_history_ohlc` | `endpoints::OptionHistoryOhlc` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryTrade` | `option_history_trade` | `endpoints::OptionHistoryTrade` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryQuote` | `option_history_quote` | `endpoints::OptionHistoryQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryTradeQuote` | `option_history_trade_quote` | `endpoints::OptionHistoryTradeQuote` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryOpenInterest` | `option_history_open_interest` | `endpoints::OptionHistoryOpenInterest` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryGreeksEod` | `option_history_greeks_eod` | `endpoints::OptionHistoryGreeksEod` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryBinomialGreeksEod` | `option_history_binomial_greeks_eod` | `endpoints::OptionHistoryBinomialGreeksEod` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryGreeksAll` | `option_history_greeks_all` | `endpoints::OptionHistoryGreeksAll` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryBinomialGreeksAll` | `option_history_binomial_greeks_all` | `endpoints::OptionHistoryBinomialGreeksAll` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryTradeGreeksAll` | `option_history_trade_greeks_all` | `endpoints::OptionHistoryTradeGreeksAll` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryBinomialTradeGreeksAll` | `option_history_binomial_trade_greeks_all` | `endpoints::OptionHistoryBinomialTradeGreeksAll` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryGreeksFirstOrder` | `option_history_greeks_first_order` | `endpoints::OptionHistoryGreeksFirstOrder` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryBinomialGreeksFirstOrder` | `option_history_binomial_greeks_first_order` | `endpoints::OptionHistoryBinomialGreeksFirstOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryTradeGreeksFirstOrder` | `option_history_trade_greeks_first_order` | `endpoints::OptionHistoryTradeGreeksFirstOrder` | vendor wrapper | generic (`query`) | tier-denied (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryBinomialTradeGreeksFirstOrder` | `option_history_binomial_trade_greeks_first_order` | `endpoints::OptionHistoryBinomialTradeGreeksFirstOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryGreeksSecondOrder` | `option_history_greeks_second_order` | `endpoints::OptionHistoryGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryBinomialGreeksSecondOrder` | `option_history_binomial_greeks_second_order` | `endpoints::OptionHistoryBinomialGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryTradeGreeksSecondOrder` | `option_history_trade_greeks_second_order` | `endpoints::OptionHistoryTradeGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryBinomialTradeGreeksSecondOrder` | `option_history_binomial_trade_greeks_second_order` | `endpoints::OptionHistoryBinomialTradeGreeksSecondOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryGreeksThirdOrder` | `option_history_greeks_third_order` | `endpoints::OptionHistoryGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryBinomialGreeksThirdOrder` | `option_history_binomial_greeks_third_order` | `endpoints::OptionHistoryBinomialGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryTradeGreeksThirdOrder` | `option_history_trade_greeks_third_order` | `endpoints::OptionHistoryTradeGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryBinomialTradeGreeksThirdOrder` | `option_history_binomial_trade_greeks_third_order` | `endpoints::OptionHistoryBinomialTradeGreeksThirdOrder` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryGreeksImpliedVolatility` | `option_history_greeks_implied_volatility` | `endpoints::OptionHistoryGreeksImpliedVolatility` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionHistoryTradeGreeksImpliedVolatility` | `option_history_trade_greeks_implied_volatility` | `endpoints::OptionHistoryTradeGreeksImpliedVolatility` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionAtTimeTrade` | `option_at_time_trade` | `endpoints::OptionAtTimeTrade` | vendor wrapper | generic (`query`) | not probed | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetOptionAtTimeQuote` | `option_at_time_quote` | `endpoints::OptionAtTimeQuote` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | entitled (`OK`, opt-pro-entitlements-001) |
+| `GetIndexListSymbols` | `index_list_symbols` | `endpoints::IndexListSymbols` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | not probed |
+| `GetIndexListDates` | `index_list_dates` | `endpoints::IndexListDates` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetIndexSnapshotOhlc` | `index_snapshot_ohlc` | `endpoints::IndexSnapshotOhlc` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetIndexSnapshotPrice` | `index_snapshot_price` | `endpoints::IndexSnapshotPrice` | vendor wrapper | generic (`query`) | tier-denied: STANDARD required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetIndexSnapshotMarketValue` | `index_snapshot_market_value` | `endpoints::IndexSnapshotMarketValue` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetIndexHistoryEod` | `index_history_eod` | `endpoints::IndexHistoryEod` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | not probed |
+| `GetIndexHistoryOhlc` | `index_history_ohlc` | `endpoints::IndexHistoryOhlc` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetIndexHistoryPrice` | `index_history_price` | `endpoints::IndexHistoryPrice` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetIndexAtTimePrice` | `index_at_time_price` | `endpoints::IndexAtTimePrice` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetCalendarOpenToday` | `calendar_open_today` | `endpoints::CalendarOpenToday` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetCalendarOnDate` | `calendar_on_date` | `endpoints::CalendarOnDate` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetCalendarYear` | `calendar_year` | `endpoints::CalendarYear` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetInterestRateHistoryEod` | `interest_rate_history_eod` | `endpoints::InterestRateHistoryEod` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | not probed |
+| `GetCorporateActionDividend` | — | `endpoints::CorporateActionDividend` | unstable | generic (`query`) | not probed | not probed |
+| `GetCorporateActionSplit` | — | `endpoints::CorporateActionSplit` | unstable | generic (`query`) | no-data (uncertain) (`NotFound`, p1-entitlements-001) | not probed |
+| `GetOptionFlatFileTradeQuote` | `option_flat_file_trade_quote` | `endpoints::OptionFlatFileTradeQuote` | vendor wrapper | generic (`query`) | not probed | invalid-argument (uncertain) (`InvalidArgument`, opt-pro-entitlements-001) |
+| `GetOptionFlatFileEod` | `option_flat_file_eod` | `endpoints::OptionFlatFileEod` | vendor wrapper | generic (`query`) | not probed | invalid-argument (uncertain) (`InvalidArgument`, opt-pro-entitlements-001) |
+| `GetOptionFlatFileOpenInterest` | `option_flat_file_open_interest` | `endpoints::OptionFlatFileOpenInterest` | vendor wrapper | generic (`query`) | not probed | invalid-argument (uncertain) (`InvalidArgument`, opt-pro-entitlements-001) |
+| `GetOptionFlatFileQuote` | `option_flat_file_quote` | `endpoints::OptionFlatFileQuote` | vendor wrapper | generic (`query`) | not probed | invalid-argument (uncertain) (`InvalidArgument`, opt-pro-entitlements-001) |
+| `GetStockFlatFileTradeQuote` | `stock_flat_file_trade_quote` | `endpoints::StockFlatFileTradeQuote` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetStockFlatFileEod` | `stock_flat_file_eod` | `endpoints::StockFlatFileEod` | vendor wrapper | generic (`query`) | tier-denied (`PermissionDenied`, p1-entitlements-001) | not probed |
+| `GetStockFlatFileQuote` | `stock_flat_file_quote` | `endpoints::StockFlatFileQuote` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetIndexFlatFileEod` | `index_flat_file_eod` | `endpoints::IndexFlatFileEod` | vendor wrapper | generic (`query`) | not probed | not probed |
+| `GetFutureListSymbols` | — | `endpoints::FutureListSymbols` | unstable | generic (`query`) | no-data (uncertain) (`NotFound`, p1-entitlements-001) | not probed |
+| `GetFutureListDates` | — | `endpoints::FutureListDates` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureHistoryTrade` | — | `endpoints::FutureHistoryTrade` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureHistoryBbo` | — | `endpoints::FutureHistoryBbo` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureHistoryTradeBbo` | — | `endpoints::FutureHistoryTradeBbo` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureHistoryOhlc` | — | `endpoints::FutureHistoryOhlc` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureHistoryEod` | — | `endpoints::FutureHistoryEod` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureHistorySettlement` | — | `endpoints::FutureHistorySettlement` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureAtTimeTrade` | — | `endpoints::FutureAtTimeTrade` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureAtTimeBbo` | — | `endpoints::FutureAtTimeBbo` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureSnapshotBbo` | — | `endpoints::FutureSnapshotBbo` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureSnapshotTrade` | — | `endpoints::FutureSnapshotTrade` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureSnapshotOhlc` | — | `endpoints::FutureSnapshotOhlc` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureSnapshotMarketValue` | — | `endpoints::FutureSnapshotMarketValue` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureFlatFileTradeBbo` | — | `endpoints::FutureFlatFileTradeBbo` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureFlatFileEod` | — | `endpoints::FutureFlatFileEod` | unstable | generic (`query`) | not probed | not probed |
+| `GetFutureFlatFileBbo` | — | `endpoints::FutureFlatFileBbo` | unstable | generic (`query`) | not probed | not probed |

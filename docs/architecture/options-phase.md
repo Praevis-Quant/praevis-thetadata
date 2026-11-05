@@ -33,6 +33,34 @@ FREE. 1 = VALUE and 2 = STANDARD are inferred from the order, not observed.
 | Flat files | **PRO only.** The 7 most recent calendar days; the previous day is ready about 00:30-01:00 ET. Files: option trade_quote (about 1.2 GB CSV, 3 min), **option quote (38 GB, 30 min)**, option open interest (50 MB), option EOD (150 MB), plus stock and index files ([doc][flat]) | Option quote, open interest and EOD files are new to us. The docs show the Terminal REST path; the pinned descriptor also has direct gRPC RPCs (`GetOptionFlatFile*`), whose format is unknown until the map |
 | Streaming | Terminal only (`ws://127.0.0.1:25520/v1/events`), **one connection**; PRO: 15,000 quote contracts, unlimited trades via the full trade stream ([doc][stream], [doc][subs]) | None. Sessions per account are not documented |
 
+## Options PRO entitlement map (`opt-pro-entitlements-001`, 2026-11-05)
+
+Run by the Coordinator on Windows at 8aaa445, 2026-11-05 03:3x UTC (22:3x ET
+on 2026-11-04, market closed). 51 requests, exit 0, no
+`RESOURCE_EXHAUSTED` or `UNAVAILABLE`, secret scan clean. Per-RPC results are
+in the [coverage table](../endpoints/coverage.md).
+
+| Group | RPCs | Result |
+| --- | ---: | --- |
+| Lists | 5 | entitled |
+| History, every Greeks and trade-Greeks order, binomial included | 26 | entitled |
+| At time | 2 | entitled |
+| Snapshots | 14 | `NotFound`, no-data (**uncertain**) |
+| Flat files | 4 | `InvalidArgument` (**uncertain**); 0 messages, 0 bytes read |
+
+- **No option RPC is tier-denied on PRO.** Higher-order and trade Greeks are
+  served, which settles the Greeks question above for PRO.
+- **Snapshots:** most likely the probe's expiration (2024-06-21, long expired)
+  and the closed market, not entitlement.
+- **Flat files:** the probe asked for 2026-11-04 while it was still that day
+  in New York; the vendor publishes a day's files about 00:30-01:00 ET the
+  next day. The probe's date choice is the likely cause.
+- Both are settled by the step F live checks (a current expiration during
+  market hours, and a past flat-file date). That is a live check, not a map
+  re-run.
+- `GetOptionHistoryBinomialGreeksEod` returned 1 message, where the other
+  history RPCs reached the 5-message cap. Its request covered one day.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.
