@@ -16,6 +16,7 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- Added a user guide, [where the time goes in a request](docs/performance/request-timing.md): measured option request waits and sizes, what is measured versus predicted, and practical advice.
 - `AGENTS.md` is now the single home for agent guidance and `CLAUDE.md` only points to it, matching aero1553, so every agent reads the same rules. Stale statements (planned PyO3, the proposed primary path, next-work status) were updated in the move; nothing else was dropped.
 - **One zstd wrapper:** the workspace now uses `zstd` 0.14 (`zstd-safe` 8),
   the version `parquet` already brought in, over the same `zstd-sys` 2.1.2
