@@ -158,6 +158,15 @@ The Windows backend uses the keyring crate's native `CRED_PERSIST_ENTERPRISE` st
 
 Native persistence supports Windows and Linux. Linux uses a persistent Secret Service collection, so records survive CLI exits and keyring daemon restarts; the collection must be unlocked again when required by the provider. The HTTP authentication API can be used on other platforms; persistence operations return an explicit unsupported-platform error there.
 
+## How long requests take
+
+Large option requests can be silent for a minute or more before the first row
+arrives. In our measurements more than half of every request passed before any
+data reached the client. That is normal
+and is not a hung client. See [where the time goes](docs/performance/request-timing.md)
+for the measurements and how to get the best results. One login per account: a
+second login ends the first session.
+
 ## Reuse in another Rust project
 
 Add `praevis-thetadata-auth = "=0.1.0-alpha.2"` from crates.io (experimental prerelease), or a path dependency on `crates/praevis-thetadata-auth`. Authentication is explicit; the library never discovers environment variables or credentials on its own. By default the session lives in memory, as in the vendor Python package: clone it to reuse it within your process ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md)). The default build has no keyring or D-Bus dependencies.

@@ -57,3 +57,7 @@ through; nothing is logged.
 
 Build locally with [maturin](https://www.maturin.rs/):
 `maturin develop --release` from this directory, inside a virtual environment.
+
+## Request timing
+
+Large option requests can wait a minute or more for their first row, and a second login ends the first session. See [where the time goes](https://github.com/Praevis-Quant/praevis-thetadata/blob/main/docs/performance/request-timing.md).
