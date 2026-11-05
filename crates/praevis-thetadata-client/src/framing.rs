@@ -26,6 +26,7 @@ impl Failure {
             2 => EodError::Decode,
             3 => EodError::Unsupported,
             _ if status.code() == tonic::Code::NotFound => EodError::NoData,
+            _ if status.code() == tonic::Code::Unauthenticated => EodError::SessionEnded,
             _ => EodError::Remote(status.code()),
         }
     }

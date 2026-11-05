@@ -28,12 +28,11 @@ pub enum QueryError {
     Cancelled,
     #[error("no data found")]
     NoData,
-    /// `query()` and `job()`: the service answered `UNAUTHENTICATED`, so the
-    /// session is no longer valid. A new login for the same account ends the
-    /// earlier session (confirmed by `opt-session-001`). Not retried; the
-    /// client does not log in again by itself; share one session instead
-    /// (clone the client). The stock EOD streams keep reporting
-    /// `Remote(Unauthenticated)` (EOD-L3-016).
+    /// The service answered `UNAUTHENTICATED`, on any query path: the session
+    /// is no longer valid. A new login for the same account ends the earlier
+    /// session (confirmed by `opt-session-001`). Not retried; the client does
+    /// not log in again by itself; share one session instead (clone the
+    /// client). EOD-L3-016.
     #[error("session is no longer valid; another login may have ended it")]
     SessionEnded,
     #[error("query remote status: {0}")]

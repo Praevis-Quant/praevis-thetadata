@@ -70,7 +70,7 @@ fn safe(error: EodError) {
 }
 
 #[tokio::test]
-async fn every_remote_code_stays_remote_except_not_found_even_with_spoofed_text() {
+async fn every_remote_code_keeps_its_category_even_with_spoofed_text() {
     use tonic::Code::*;
     for code in [
         Cancelled,
@@ -97,10 +97,10 @@ async fn every_remote_code_stays_remote_except_not_found_even_with_spoofed_text(
         status
             .metadata_mut()
             .insert("secret", "SENTINEL".parse().unwrap());
-        let expected = if code == NotFound {
-            EodError::NoData
-        } else {
-            EodError::Remote(code)
+        let expected = match code {
+            NotFound => EodError::NoData,
+            Unauthenticated => EodError::SessionEnded,
+            _ => EodError::Remote(code),
         };
         for table_api in [false, true] {
             for partial in [false, true] {
@@ -623,7 +623,7 @@ async fn typed_queries_never_authenticate_again() {
     .unwrap();
     // The status arrives with the response headers, so opening the stream fails.
     let error = Stream::open(&failing_client, false).await.err().unwrap();
-    assert_eq!(error, EodError::Remote(tonic::Code::Unauthenticated));
+    assert_eq!(error, EodError::SessionEnded);
     safe(error);
     let mut cancelled = client
         .stock_eod_batches(
