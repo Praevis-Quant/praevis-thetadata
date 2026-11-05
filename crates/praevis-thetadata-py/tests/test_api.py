@@ -83,3 +83,10 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(tier("PRO", per_minute=100), (8, 100))
         with self.assertRaises(ValueError):
             tier("GOLD")
+
+
+class ErrorTests(unittest.TestCase):
+    def test_an_ended_session_is_a_typed_query_failure(self):
+        self.assertTrue(issubclass(pt.SessionEnded, pt.QueryFailed))
+        self.assertTrue(issubclass(pt.QueryFailed, pt.ThetaDataError))
+        self.assertIn("existing_authorized_client", pt.SessionEnded.__doc__)

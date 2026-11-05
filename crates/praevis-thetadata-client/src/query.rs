@@ -189,7 +189,7 @@ impl ThetaClient {
                 envelope::EnvelopeCodec::<E::Request>::default(),
             )
             .await
-            .map_err(|error| failure.classify(error))
+            .map_err(|error| session_ended(failure.classify(error)))
         })
         .await
         .map_err(|_| QueryError::Deadline)?;
@@ -332,7 +332,7 @@ impl QueryStream {
             let step = match timeout_at(wait_until, inner.message()).await {
                 Ok(Ok(Some(frame))) => Step::Message(frame),
                 Ok(Ok(None)) => Step::End,
-                Ok(Err(status)) => return Err(self.failure.classify(status)),
+                Ok(Err(status)) => return Err(session_ended(self.failure.classify(status))),
                 Err(_) if flush_at.is_some_and(|f| f <= Instant::now()) => Step::Flush,
                 Err(_) if Instant::now() >= self.deadline => return Err(QueryError::Deadline),
                 Err(_) => return Err(QueryError::Idle),
@@ -443,4 +443,13 @@ pub fn unify(batches: Vec<RecordBatch>) -> Vec<RecordBatch> {
             RecordBatch::try_new(schema.clone(), columns).expect("only Null columns are retyped")
         })
         .collect()
+}
+
+/// `query()` and `job()` report `UNAUTHENTICATED` as an ended session. The
+/// stock EOD streams keep `Remote(Unauthenticated)` (EOD-L3-016).
+fn session_ended(error: QueryError) -> QueryError {
+    match error {
+        QueryError::Remote(tonic::Code::Unauthenticated) => QueryError::SessionEnded,
+        other => other,
+    }
 }

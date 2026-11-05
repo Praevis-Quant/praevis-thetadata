@@ -14,7 +14,7 @@ import os
 from typing import Any
 
 from . import _native
-from ._native import Batch, BatchIterator, OutputFailed, QueryFailed, ThetaDataError, __version__
+from ._native import Batch, BatchIterator, OutputFailed, QueryFailed, SessionEnded, ThetaDataError, __version__
 from ._vendor import VendorMethods
 
 __all__ = [
@@ -23,6 +23,7 @@ __all__ = [
     "Client",
     "OutputFailed",
     "QueryFailed",
+    "SessionEnded",
     "Result",
     "ThetaDataError",
     "VendorMethods",
@@ -148,10 +149,12 @@ class Client(VendorMethods):
     ``per_minute=`` override it (``per_minute=0`` removes the limit);
     ``scheduler`` shows the limits in use.
 
-    **One session per account.** Each login starts a new session, and the
-    service ends the account's earlier session: a second ``Client`` that logs
-    in (or a CLI or vendor-package login) makes the first one's requests fail.
-    Log in once and share it: ``Client(existing_authorized_client=client,
+    **One session per account** (confirmed by ``opt-session-001``). Each login
+    starts a new session, and the service ends the account's earlier one: a
+    second ``Client`` that logs in (or a CLI or vendor-package login) makes
+    the first one's requests fail with ``SessionEnded`` (gRPC
+    ``UNAUTHENTICATED``). The client neither retries nor logs in again by
+    itself. Log in once and share it: ``Client(existing_authorized_client=client,
     dataframe_type="pandas")`` reuses ``client``'s session, connection and
     scheduler, as in the vendor package.
     """

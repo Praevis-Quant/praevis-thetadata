@@ -168,6 +168,12 @@ async fn opening_errors_keep_the_stock_eod_classes() {
             tonic::Status::permission_denied("synthetic"),
             QueryError::Remote(tonic::Code::PermissionDenied),
         ),
+        // An ended session (a later login for the account): a typed error,
+        // sent once, with no retry and no new login.
+        (
+            tonic::Status::unauthenticated("synthetic"),
+            QueryError::SessionEnded,
+        ),
     ] {
         let fixture = Fixture::start(Script {
             initial_error: Some(status),
@@ -175,6 +181,7 @@ async fn opening_errors_keep_the_stock_eod_classes() {
         });
         let client = connect(&fixture, ClientConfig::default()).await;
         assert_eq!(client.query(&request()).await.err(), Some(expected));
+        assert_eq!(fixture.requests.lock().unwrap().len(), 1);
     }
     let fixture = Fixture::start(script(vec![]));
     let client = connect(&fixture, ClientConfig::default()).await;
