@@ -166,8 +166,8 @@ the account's earlier session.** This contradicts ThetaDataDx's README, which
 says separately logged-in market-data clients coexist
 ([review](../research/thetadatadx-review.md#watch-items)).
 
-The client now reports this as a typed error: `QueryError::SessionEnded` from
-Rust's `query()` and `job()`, and `SessionEnded` (a `QueryFailed`) in Python, "session is no longer
+The client now reports this as a typed error: `QueryError::SessionEnded` on every
+Rust query path, and `SessionEnded` (a `QueryFailed`) in Python, "session is no longer
 valid; another login may have ended it". It is not retried, and the client
 never logs in again by itself. Share one session instead: clone the Rust
 client, or pass `existing_authorized_client` in Python.

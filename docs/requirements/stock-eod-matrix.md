@@ -102,7 +102,8 @@ those phases.
 | Idle | Stalled next message before/after a batch | Idle, terminal; no-data is not substituted |
 | Cancellation | Explicit cancel, dropped pending receive, queued/running work | Cancelled once then fused; worker retains reservations until exit |
 | No data | NOT_FOUND initial/post-batch | NoData, distinct from successful empty EOF |
-| Remote status | All other non-OK codes, including PermissionDenied, Unauthenticated, DeadlineExceeded, OutOfRange and ResourceExhausted | Remote(code); server-supplied text imitating local errors cannot change category |
+| Session ended | UNAUTHENTICATED initial/post-batch (a later login for the account ended the session; `opt-session-001`) | SessionEnded; not retried, no re-authentication (amended 2026-11-05) |
+| Remote status | All other non-OK codes, including PermissionDenied, DeadlineExceeded, OutOfRange and ResourceExhausted | Remote(code); server-supplied text imitating local errors cannot change category |
 | Decode | Malformed protobuf/ZSTD, timestamp overflow/zone, invalid price scale; truncated/invalid framing at guard unit boundary | Decode, terminal; payload/metadata omitted from public error |
 | Schema | Duplicate/ragged/no-header row, changing/reordered schema | Schema, terminal |
 | Unsupported | Unknown envelope compression, manifest; gRPC compression flag at guard boundary | Unsupported; no downloader or implicit compression negotiation |

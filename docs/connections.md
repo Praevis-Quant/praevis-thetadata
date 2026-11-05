@@ -36,7 +36,7 @@ an arbitrary local/remote HTTP URL. Connector choice must be explicit.
 | Situation | Direct typed EOD API today | Raw API today | Future Terminal adapter |
 | --- | --- | --- | --- |
 | Endpoint access denied | `EodError::Remote(tonic::Code::PermissionDenied)` | `Error::Rpc(status)` or generated `tonic::Status`; code preserved | Map documented HTTP 471 permission error explicitly; do not interpret it as a gRPC numeric code |
-| Missing/invalid authentication | `Remote(Unauthenticated)` on a query; auth HTTP failure is separate | gRPC code / `AuthError::Rejected(http_status)` | Separate Terminal session/config/HTTP error contract |
+| Missing/invalid authentication | `SessionEnded` (gRPC `UNAUTHENTICATED`) on a query; auth HTTP failure is separate | gRPC code / `AuthError::Rejected(http_status)` | Separate Terminal session/config/HTTP error contract |
 | No data | `EodError::NoData` for gRPC NOT_FOUND | `Error::NoData` in raw helper; generated stub retains NOT_FOUND | HTTP 472 is the documented Terminal no-data response |
 | Other non-OK gRPC status | `Remote(code)` for each code, including Unavailable and ResourceExhausted | Status retained | Preserve original HTTP/status domain and define explicit mappings |
 | Local deadline, cancellation, decoding or resource failure | Distinct `Deadline`, `Idle`, `Cancelled`, `Decode`, `Schema`, `Unsupported`, `Resource(...)` variants | Legacy raw errors have different granularity | Must distinguish local failures from upstream and Terminal failures |
