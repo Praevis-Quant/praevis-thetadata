@@ -83,7 +83,17 @@ class OverheadGate(unittest.TestCase):
 
 
 class AliasOverheadGate(unittest.TestCase):
-    def test_a_vendor_alias_adds_a_fixed_few_microseconds(self):
+    """D.2 gate: a vendor-named alias adds at most a fixed few microseconds.
+
+    Timing noise on a shared runner only ever adds time. So the two paths are
+    timed in interleaved blocks (alternating which goes first), and each
+    side's **minimum** block is compared. Timing all of one path and then all
+    of the other let noise between the two phases decide the result: Windows
+    CI saw -12.6 to +9.3 µs on unchanged code."""
+
+    LIMIT_US = 5.0
+
+    def setUp(self):
         import pyarrow as pa
 
         table = _native._synthetic(3)
@@ -97,29 +107,48 @@ class AliasOverheadGate(unittest.TestCase):
         object.__setattr__(client, "_native", native)
         object.__setattr__(client, "_dataframe_type", "arrow")
         start, end = "2024-01-02", "2024-01-05"
-        calls = 2000
+        self.direct = lambda: pa.table(pt.Result(native.query(
+            "stock_history_eod", plan=True, symbol="AAPL", start_date=start, end_date=end)))
+        self.alias = lambda: client.stock_history_eod("AAPL", start, end)
 
-        def direct():
-            return pa.table(pt.Result(native.query("stock_history_eod", plan=True, symbol="AAPL",
-                                                   start_date=start, end_date=end)))
+    @staticmethod
+    def overhead(direct, alias, blocks: int = 21, calls: int = 500) -> tuple[float, float]:
+        """(direct µs per call, alias overhead µs per call), minimum per side
+        over interleaved blocks."""
+        def block(function) -> float:
+            begin = time.perf_counter()
+            for _ in range(calls):
+                function()
+            return (time.perf_counter() - begin) / calls * 1e6
 
-        def alias():
-            return client.stock_history_eod("AAPL", start, end)
+        block(direct), block(alias)  # warm
+        bases, wrapped = [], []
+        for index in range(blocks):
+            if index % 2:
+                wrapped.append(block(alias))
+                bases.append(block(direct))
+            else:
+                bases.append(block(direct))
+                wrapped.append(block(alias))
+        return min(bases), min(wrapped) - min(bases)
 
-        def per_call(function) -> float:
-            samples = []
-            for _ in range(7):
-                begin = time.perf_counter()
-                for _ in range(calls):
-                    function()
-                samples.append((time.perf_counter() - begin) / calls * 1e6)
-            return statistics.median(samples)
+    def test_a_vendor_alias_adds_a_fixed_few_microseconds(self):
+        base, added = self.overhead(self.direct, self.alias)
+        print(f"\nnative call + conversion {base:.2f} µs, vendor alias adds {added:.2f} µs "
+              f"(minimum of 21 interleaved blocks per side)", file=sys.stderr)
+        self.assertLess(added, self.LIMIT_US)
 
-        per_call(direct)  # warm
-        base, wrapped = per_call(direct), per_call(alias)
-        print(f"\nnative call + conversion {base:.2f} µs, vendor alias {wrapped:.2f} µs", file=sys.stderr)
-        self.assertLess(wrapped - base, 5.0)
+    def test_the_gate_still_fails_a_genuinely_slow_alias(self):
+        # Mutation check: an alias that spends at least 10 µs more per call
+        # must fail the same measurement, so the minimum cannot hide real cost.
+        def slow_alias():
+            stop = time.perf_counter() + 10e-6
+            while time.perf_counter() < stop:
+                pass
+            return self.alias()
 
+        _, added = self.overhead(self.direct, slow_alias, blocks=7, calls=200)
+        self.assertGreaterEqual(added, self.LIMIT_US)
 
 if __name__ == "__main__":
     unittest.main()
