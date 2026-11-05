@@ -30,6 +30,7 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Upstream source identity](research/upstream-source.md) | Attested publishing repository/commit, source hashes, and access limitations |
 | [Endpoint coverage](endpoints/coverage.md) | Generated: every RPC, its vendor wrapper, Rust request, stability, decoder test and live status |
 | [P1 design](architecture/p1-design.md) | Approved 2026-11-04: generated endpoints, Arrow columnar decoder, coalescing, scheduler, Parquet, Python pass-through, PR sequence and decisions |
+| [Options phase plan](architecture/options-phase.md) | Started 2026-11-05: options PRO; user decisions, vendor facts re-verified for PRO, step order and targets |
 | [P1 exit results](performance/p1-exit-results.md) | 2026-11-04: every P1 exit criterion with its status. a, b (within noise), c (Rust) and e met; c at the Python Polars boundary 9×; d not met (0.97× / 0.79×), with a proposed incremental metric; one session per account |
 | [P1 columnar CPU](performance/p1-columnar-results.md) | 2026-11-04: Arrow decoder vs legacy and bounded decoders; replay of the real P0 captures on the Ryzen (criterion c met for decoding: 15.9× / 10.4× less CPU than Python with Polars) and the synthetic-frame artifact explained |
 | [P0 results](performance/p0-results.md) | 2026-11-03: vendor Python vs Praevis breakdown, CPU per row, time to first row, FREE limits observed, P1 design adjustments |
