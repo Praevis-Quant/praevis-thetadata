@@ -364,7 +364,9 @@ impl Client {
 
     /// Write the result to a Parquet file from Rust. Returns
     /// `(rows, row_groups, bytes)`; the file appears only when complete.
-    #[pyo3(signature = (endpoint, path, *, overwrite = false, zstd_level = Some(1), plan = true, **kwargs))]
+    /// Decimal columns get no min/max statistics unless `decimal_statistics`
+    /// (memory that grows with the file otherwise; see `ParquetOptions`).
+    #[pyo3(signature = (endpoint, path, *, overwrite = false, zstd_level = Some(1), plan = true, decimal_statistics = false, **kwargs))]
     #[allow(clippy::too_many_arguments)]
     fn to_parquet(
         &self,
@@ -374,6 +376,7 @@ impl Client {
         overwrite: bool,
         zstd_level: Option<i32>,
         plan: bool,
+        decimal_statistics: bool,
         kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<(usize, usize, u64)> {
         let runner = Parquet {
@@ -384,6 +387,7 @@ impl Client {
             options: ParquetOptions {
                 zstd_level,
                 overwrite,
+                decimal_statistics,
                 ..Default::default()
             },
         };

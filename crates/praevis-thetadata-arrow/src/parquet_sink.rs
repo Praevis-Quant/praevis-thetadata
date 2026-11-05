@@ -12,11 +12,22 @@
 //! [`ParquetOptions::pending_bytes`], then writes them with the final types. A
 //! column still `Null` when the cap is reached is written as `Null`; if it is
 //! typed later, writing fails with [`SinkError::Schema`].
+//!
+//! **Decimal columns are written without min/max statistics by default**
+//! ([`ParquetOptions::decimal_statistics`]). With them, the `parquet` writer
+//! (60.1) keeps each row group's decimal min/max as slices of the whole
+//! written batch's converted values until the file is closed. That pins up
+//! to 2 × 16 bytes × batch rows per decimal column per row group: memory
+//! that grows with the file (about 31 bytes per row for 4 decimal columns
+//! in 65,536-row batches, measured by `examples/job_memory.rs` in the client
+//! crate). Statistics stay on every
+//! other column, so time and integer filters keep their pushdown.
 use arrow_array::{ArrayRef, RecordBatch, new_null_array};
 use arrow_schema::{DataType, Field, Schema, SchemaRef};
 use parquet::arrow::ArrowWriter;
 use parquet::basic::{Compression, ZstdLevel};
-use parquet::file::properties::WriterProperties;
+use parquet::file::properties::{EnabledStatistics, WriterProperties};
+use parquet::schema::types::ColumnPath;
 use std::fs::{File, OpenOptions};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -32,6 +43,12 @@ pub struct ParquetOptions {
     pub pending_bytes: usize,
     /// Replace an existing file at the target path (default `false`).
     pub overwrite: bool,
+    /// Write min/max statistics for decimal (price) columns too (default
+    /// `false`). Enables readers' pushdown on prices, at a memory cost that
+    /// grows with the file: up to 2 × 16 bytes × batch rows per decimal
+    /// column per row group, held until [`ParquetSink::finish`] (see the
+    /// module documentation).
+    pub decimal_statistics: bool,
 }
 impl Default for ParquetOptions {
     fn default() -> Self {
@@ -40,6 +57,7 @@ impl Default for ParquetOptions {
             row_group_rows: 128 << 10,
             pending_bytes: 64 << 20,
             overwrite: false,
+            decimal_statistics: false,
         }
     }
 }
@@ -181,15 +199,25 @@ impl ParquetSink {
                 .map(|(name, data_type)| Field::new(name, data_type.clone(), true))
                 .collect::<Vec<_>>(),
         ));
-        let properties = WriterProperties::builder()
+        let mut properties = WriterProperties::builder()
             .set_compression(match self.options.zstd_level {
                 Some(level) => Compression::ZSTD(
                     ZstdLevel::try_new(level).map_err(|_| SinkError::Configuration)?,
                 ),
                 None => Compression::UNCOMPRESSED,
             })
-            .set_max_row_group_row_count(Some(self.options.row_group_rows))
-            .build();
+            .set_max_row_group_row_count(Some(self.options.row_group_rows));
+        if !self.options.decimal_statistics {
+            for (name, data_type) in names.iter().zip(&self.types) {
+                if matches!(data_type, DataType::Decimal128(_, _)) {
+                    properties = properties.set_column_statistics_enabled(
+                        ColumnPath::new(vec![name.clone()]),
+                        EnabledStatistics::None,
+                    );
+                }
+            }
+        }
+        let properties = properties.build();
         let file = self.file.take().ok_or(SinkError::Configuration)?;
         self.writer = Some(
             ArrowWriter::try_new(file, schema.clone(), Some(properties))

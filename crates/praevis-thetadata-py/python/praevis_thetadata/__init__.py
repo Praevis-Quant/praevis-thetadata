@@ -222,12 +222,21 @@ class Client(VendorMethods):
         overwrite: bool = False,
         zstd_level: int | None = 1,
         plan: bool = True,
+        decimal_statistics: bool = False,
         **params: Any,
     ) -> tuple[int, int, int]:
         """Write the result to Parquet from Rust; returns ``(rows, row_groups,
-        bytes)``. The file appears only when it is complete."""
+        bytes)``. The file appears only when it is complete.
+
+        Decimal (price) columns are written without min/max statistics, so
+        memory stays flat however large the file. ``decimal_statistics=True``
+        writes them for readers' pushdown on prices, at a cost that grows with
+        the file: up to 2 x 16 bytes x the batch's rows (1-2 MiB with the
+        default 65,536-row batches) per decimal column per row group, held
+        until the file is closed."""
         return self._native.to_parquet(
-            endpoint, os.fspath(path), overwrite=overwrite, zstd_level=zstd_level, plan=plan, **params
+            endpoint, os.fspath(path), overwrite=overwrite, zstd_level=zstd_level, plan=plan,
+            decimal_statistics=decimal_statistics, **params
         )
 
     def _vendor(self, name: str, plan: bool, params: dict[str, Any]) -> Any:

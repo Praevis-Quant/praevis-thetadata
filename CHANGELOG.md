@@ -16,6 +16,20 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Parquet output keeps memory flat: no min/max statistics on decimal
+  columns by default.**
+  - **The cause:** the `parquet` writer (60.1) holds each row group's
+    decimal statistics as slices of the whole written batch until the file
+    closes. Its memory grew linearly: 4.3 GiB for 140M rows, 1 GiB for a
+    139M-row options job.
+  - **After the fix:** 25.7 MiB and 107.6 MiB.
+  - **Unchanged:** every other column keeps its statistics.
+  - **Opt-in:** `ParquetOptions::decimal_statistics` and Python
+    `to_parquet(decimal_statistics=True)` restore decimal statistics, at
+    the stated memory cost.
+  - **Tests and reproduction:** a test checks flat memory over 100 row
+    groups (+0.4 MiB, against +100.5 MiB with decimal statistics).
+    `examples/job_memory.rs` is the reproduction.
 - **Jobs keep every request slot busy.** A job now sends a part whenever a
   request slot is free, not only after the head part has been read, and
   still returns rows in order.

@@ -219,6 +219,34 @@ Real batches are far smaller. A per-strike part over two hours is about
 streamed with `to_parquet` and held as a frame. Bounded means the streamed
 peak minus idle stays flat as rows grow, while the frame's grows.
 
+**First run** (2026-11-05, main b403a06): the streamed delta was 57.8, 103.8
+and 130.6 MiB for 0.94M, 3.0M and 5.1M rows. That is far below the frames
+(240.8, 636.4 and 1,041.0 MiB) but **not flat**. It is not recorded as
+bounded.
+
+**Cause, measured offline** (`examples/job_memory.rs`: the fixture in a
+child process, a counting allocator):
+- **The Parquet writer alone grew linearly:** 42 MiB at 1M rows and 4.3 GiB
+  at 140M.
+- **Only through decimal statistics:** turning statistics off gave a flat
+  25 MiB, and the Decimal128 columns accounted for all of the growth.
+- **The mechanism:** `parquet` 60.1 converts a written batch's decimals into
+  one shared buffer. Each row group's min/max statistics keep slices of it,
+  so whole batches stay alive until the file is closed.
+- **Not our read-ahead:** a single stream stayed at 22.6 MiB, and the job's
+  read-ahead levels off.
+
+**Fix** (Coordinator decision): no min/max statistics on decimal columns by
+default, with an explicit opt-in. Offline after the fix:
+
+| Test | Before | After |
+| --- | ---: | ---: |
+| The writer alone, 140M rows | 4,299 MiB | 25.7 MiB |
+| The 232-part job, 600k rows per part (139M rows) | 1,005 MiB | 107.6 MiB, flat from 150k rows per part |
+
+`parquet` 60.1.0 (2026-10-28) is the newest release, so no upstream fix
+exists yet. The rerun of M1-M3, plus M4 (a whole day), is the live check.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.

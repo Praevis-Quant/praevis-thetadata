@@ -90,3 +90,12 @@ class ErrorTests(unittest.TestCase):
         self.assertTrue(issubclass(pt.SessionEnded, pt.QueryFailed))
         self.assertTrue(issubclass(pt.QueryFailed, pt.ThetaDataError))
         self.assertIn("existing_authorized_client", pt.SessionEnded.__doc__)
+
+
+class ParquetOptionTests(unittest.TestCase):
+    def test_decimal_statistics_are_off_unless_asked_for(self):
+        import inspect
+
+        parameter = inspect.signature(pt.Client.to_parquet).parameters["decimal_statistics"]
+        self.assertIs(parameter.default, False)
+        self.assertEqual(parameter.kind, inspect.Parameter.KEYWORD_ONLY)
