@@ -16,6 +16,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Jobs keep every request slot busy.** A job now sends a part whenever a
+  request slot is free, not only after the head part has been read, and
+  still returns rows in order.
+  - **Bound:** at most 4× the concurrency parts are open, each buffering at
+    most 2 batches.
+  - **Why:** the live `job()` check (`opt-split-002`) was exact but took
+    14.1 s against 9.1 s for the hand-made 8-way split. The job left slots
+    idle behind a slow head part (head-of-line blocking; simulated 18.4 s
+    against 10.0 s).
+  - `live_p0 split-probe --no-splits` runs only the references and `job()`.
+    It replaces an empty `--concurrency`, which Windows PowerShell 5.1 drops.
 - **The vendor-alias overhead gate (D.2) is robust to runner noise.** It
   times the direct path and the alias in 21 interleaved blocks each, in
   alternating order, and compares each side's minimum. Noise only adds

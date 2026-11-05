@@ -115,9 +115,14 @@ struct SplitProbeArgs {
     #[arg(long, default_value = "W5b")]
     workload: String,
     /// Concurrency of the hand-made per-strike runs, each run in turn (`job()`
-    /// runs once more at the tier's concurrency). An empty value skips them.
+    /// runs once more at the tier's concurrency).
     #[arg(long, default_value = "1,8")]
     concurrency: String,
+    /// Skip the hand-made per-strike runs: only the references and `job()`.
+    /// (Use this rather than an empty `--concurrency`, which Windows
+    /// PowerShell 5.1 drops.)
+    #[arg(long)]
+    no_splits: bool,
 }
 
 #[derive(Args)]
@@ -1650,7 +1655,7 @@ async fn split_probe(
     let levels: Vec<u32> = options
         .concurrency
         .split(',')
-        .filter(|c| !c.trim().is_empty())
+        .filter(|c| !options.no_splits && !c.trim().is_empty())
         .map(|c| c.trim().parse().ok().filter(|c| (1..=8).contains(c)))
         .collect::<Option<_>>()
         .ok_or_else(|| Stop("ConcurrencyOneToEight".into()))?;
@@ -2559,6 +2564,7 @@ mod tests {
                 common: entitlement_args(&[], 5).common,
                 workload: workload.into(),
                 concurrency: "1,8".into(),
+                no_splits: false,
             };
             let mut report = Report::default();
             assert!(matches!(

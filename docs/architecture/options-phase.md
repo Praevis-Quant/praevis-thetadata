@@ -157,6 +157,35 @@ The reference was stable (identical before and after).
   per strike, at a scheduler concurrency of 2 or more. `split-probe` also
   runs `job()` and compares it exactly with the reference.
 
+## `job()` live check (`opt-split-002`, 2026-11-05)
+
+`split-probe` on main 6b90f38 sent W5b through `job()`. **The result was
+exact:** 938,663 rows, with columns and value digest equal to the
+reference. It took **14.1 s**, against references of 46.3 s and 38.1 s that
+day, and against 9.1 s for the hand-made 8-way split the day before.
+
+**The 5 s gap is head-of-line blocking in the job, not the strikes list or
+the service:**
+- **Not the list:** the job's first batch arrived at 0.17 s, and that
+  includes the strikes-list request.
+- **Not the service:** it was faster that day, with references of 38-46 s
+  against 59-70 s.
+- **The cause:** the job started a new part only after the head part had
+  been read to the end, so a slow strike at the head left the other 7 slots
+  idle.
+- **Simulation** (232 parts, `opt-split-001` latencies, 8 slots):
+
+  | Scheduling | Median |
+  | --- | ---: |
+  | Next part only after the head (the old job) | 18.4 s |
+  | Work-conserving (the hand-made run) | 10.0 s |
+
+  The observed times (14.1 s and 9.1 s) fall in the same order.
+- **Fix:** the job now sends a part whenever a request slot is free, still
+  reads parts in order, and keeps at most 4× the concurrency parts open (32
+  at PRO). In the simulation a window of 1× gives 18.4 s, 2× 12.0 s, and
+  4× 10.0 s, which is work-conserving.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.

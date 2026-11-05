@@ -405,3 +405,46 @@ async fn other_quote_shapes_and_query_are_never_split() {
     assert_eq!(job.parts(), 1);
     assert_eq!(strike_texts(&client, &base()).await, ["*"]);
 }
+
+#[tokio::test]
+async fn a_slow_first_part_does_not_hold_the_other_slots() {
+    // 10 yearly parts; the first request waits 2 s, the rest answer at once.
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(two_rows())],
+        header_delay: Duration::from_secs(2),
+        delay_requests: vec![1],
+        ..Default::default()
+    });
+    let client = connect(
+        &fixture,
+        SchedulerPolicy {
+            concurrency: 2,
+            per_minute: None,
+            ..fast()
+        },
+    )
+    .await;
+    let eod = endpoints::StockHistoryEod::new("AAPL", day("2015-01-01"), day("2024-12-31"));
+    let job = client.job(&eod).await.unwrap();
+    assert_eq!(job.parts(), 10);
+    let reader = tokio::spawn(job.collect());
+    tokio::time::sleep(Duration::from_millis(1000)).await;
+    // While the head waits, the second slot works through the read-ahead
+    // window (4 x 2 = 8 open parts), not just the second part.
+    let sent = fixture.requests.lock().unwrap().len();
+    assert_eq!(sent, 8, "parts sent while the head was slow");
+    let batches = reader.await.unwrap().unwrap();
+    assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 20);
+    // Order is unchanged: the parts' date ranges were requested in order.
+    let starts: Vec<String> = fixture
+        .requests
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|r| r.params.as_ref().unwrap().start_date.clone())
+        .collect();
+    let mut sorted = starts.clone();
+    sorted.sort();
+    assert_eq!(starts, sorted);
+    assert_eq!(fixture.requests.lock().unwrap().len(), 10);
+}
