@@ -183,5 +183,12 @@
     "requests": [
       {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "tick", "right": "call", "start_time": "10:00:00", "end_time": "12:00:00"}
     ]
+  },
+  "M4": {
+    "description": "Memory-bound probe, whole day: tick quotes for every SPY call expiring 2024-06-21, on 2024-06-14, 09:30-16:00 (the vendor defaults), split per strike by the job planner. Parquet mode only: a frame would need several GB.",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "tick", "right": "call"}
+    ]
   }
 }
