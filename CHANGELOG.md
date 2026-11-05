@@ -36,6 +36,10 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     hashes.
   - The 1.05/0.95 decode-p50 gate and the decision rules are unchanged
     (`benchmark-policy.md`, "Dependency A/B").
+- **Options phase plan** ([plan](docs/architecture/options-phase.md)): the
+  user's 2026-11-04 decisions (options PRO, P1 done, the incremental memory
+  metric), the vendor facts re-verified for PRO, and the step order from
+  measurement to optimization.
 - **ThetaDataDx P1 phase-exit re-review**
   ([record](docs/research/thetadatadx-review.md)).
   - No changes since the reviewed revision, and every watch item is

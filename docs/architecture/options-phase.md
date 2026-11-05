@@ -1,0 +1,77 @@
+# Options phase plan (options PRO)
+
+Status: **started 2026-11-05.** The user's goal: "finish the option portion
+of the project. Keep it performant." This plan follows the approved
+[performance plan](performance-plan.md) (its upgrade 3 row, options only) and
+proceeds without separate approval unless a decision below is needed.
+
+## Decisions (user, 2026-11-04)
+
+| # | Decision |
+| --- | --- |
+| 1 | The incremental memory metric (peak minus the idle baseline after imports and login) is reported **alongside** total peak RSS, for both clients |
+| 2 | **P1 is done** as [recorded](../performance/p1-exit-results.md). Python into Polars at 9.0-9.2× and criterion d stay recorded misses |
+| 3 | The account has **options PRO**; VALUE and STANDARD are skipped. Stocks and indices stay **FREE** (EOD only). Stock tick (W7) is out of scope |
+| 4 | The two-login session probe is approved |
+| 5 | The FREE concurrency question above 3 is closed: moot on PRO |
+| 6 | The PRO entitlement map of **every option RPC** is approved as one run (CLAUDE.md) |
+
+Live check (Coordinator, 2026-11-04): the login response has subscription
+fields options = 3, stock = 0 and indices = 0. We read 3 as PRO and 0 as
+FREE. 1 = VALUE and 2 = STANDARD are inferred from the order, not observed.
+
+## A. Vendor facts re-verified for PRO (2026-11-05)
+
+| Fact | Today's vendor docs | Change from the plan |
+| --- | --- | --- |
+| Concurrency | FREE 1, VALUE 2, STANDARD 4, **PRO 8**; account-wide, set by the highest tier across products ([doc][conc]) | None. So stock and index requests also get 8 slots |
+| Rate limit | "Your requests are NOT rate-limited in any way", concurrency only. The page no longer limits that to paid tiers ([doc][conc]) | The subscriptions page still says 20/min (prose) and 30/min (table) for FREE ([doc][subs]). FREE keeps its documented defaults |
+| Over the limit | Queue of 16 (up to 128), then HTTP 429; written for the Terminal REST API | Direct gRPC behaviour is still **unknown**. We stay at ≤ 8 and do not probe above it |
+| Options PRO | Tick level, from **2012-06-01**, real time, 8 concurrent ([doc][subs]) | None |
+| Greeks | The table marks 2nd/3rd order and every trade-Greeks row with a single tick, which reads as **PRO only** ([doc][subs]) | The plan inferred STANDARD. The map settles it |
+| Request sizing | Option tick: 1 week, **1 day for liquid roots** (AAPL, SPX, SPY); 100 ms: 1 week; 1 s: 1 month; under **1M ticks** per response ([doc][sizing]) | None |
+| Flat files | **PRO only.** The 7 most recent calendar days; the previous day is ready about 00:30-01:00 ET. Files: option trade_quote (about 1.2 GB CSV, 3 min), **option quote (38 GB, 30 min)**, option open interest (50 MB), option EOD (150 MB), plus stock and index files ([doc][flat]) | Option quote, open interest and EOD files are new to us. The docs show the Terminal REST path; the pinned descriptor also has direct gRPC RPCs (`GetOptionFlatFile*`), whose format is unknown until the map |
+| Streaming | Terminal only (`ws://127.0.0.1:25520/v1/events`), **one connection**; PRO: 15,000 quote contracts, unlimited trades via the full trade stream ([doc][stream], [doc][subs]) | None. Sessions per account are not documented |
+
+## Scope and order
+
+Measurement first. One PR at a time; final titles before green; rule 3 holds.
+Official paths only (no direct FPSS). No publish or tag.
+
+| Step | PR / run | Content |
+| --- | --- | --- |
+| A | this PR | Vendor facts above; this plan |
+| B | live tooling PR, then one Coordinator batch | (i) the session probe: two logins, then one request each, recording the gRPC code; (ii) the incremental memory rerun, both clients; (iii) the PRO entitlement map of every option RPC (one bounded request each, flat files read for a few messages only). Text stays local; the Coordinator sends classes, codes and tiers |
+| C | scheduler PR | Size concurrency from the login's highest tier (PRO → 8), with an explicit override; no per-minute limit on paid tiers; FREE keeps 1 and 20/min |
+| D | baseline PR, then runs | W4 (1-minute and 1 s quotes for a chain), W5 (tick quote and trade for a liquid root day), W6 (Greeks) against the vendor package: synchronous, plus a threaded variant at the same concurrency. First runs are bounded (a smaller root or a few expirations), then scaled. Every request stays under about 1M rows |
+| E | one PR per change, each with evidence | The fan-out hypothesis (1 vs N shards, 1 vs N connections: is there a per-stream send cap?); planner splits for option tick (per day, expiration or contract) under 1M rows; Parquet throughput; whether the Polars per-call cost and the coalescing thresholds matter at this volume. D-B applies to data-path changes |
+| F | coverage PR | Live checks for every option endpoint through `query()` and the Python package, recorded in the generated coverage table |
+| G | later | W9: option flat files to Parquet with bounded memory. W10 real time needs the Terminal: when we get there, list what the user must provide. W10 comes last |
+
+## Targets (from the approved plan)
+
+- **W5:** time to complete ≥ **7×** the synchronous vendor package at 8-way,
+  and ≥ **1.0×** the threaded variant at the same concurrency.
+- **W4 and W6:** at least as fast as the threaded variant, and ≥ C× the
+  synchronous package minus scheduling losses (C = 8).
+- **Memory:** bounded by configuration under W5. Reported as total peak RSS
+  and the incremental figure, for both clients. Only our accounted
+  allocations are claimed bounded.
+- **CPU per row:** the P1 replay method, on option captures.
+
+## Limits we keep
+
+- Requests under about 1M rows; concurrency ≤ 8; no over-limit probes.
+- First runs bounded, then scaled. Captures are private and live on the
+  user's D: drive; check free space before each capture run (a liquid root's
+  tick day is GBs).
+- Only one flat file at a time, never the 38 GB option quote file without a
+  separate go-ahead.
+- Vendor error text stays in private local reports; committed files hold
+  codes and classifications only.
+
+[conc]: https://thetadata.net/docs/Articles/Data-And-Requests/Concurrent-Requests.html
+[subs]: https://thetadata.net/docs/Articles/Getting-Started/Subscriptions.html
+[sizing]: https://thetadata.net/docs/Articles/Data-And-Requests/Request-Sizing.html
+[flat]: https://thetadata.net/docs/Flat-Files/Getting-Started.html
+[stream]: https://thetadata.net/docs/Streaming/Getting-Started.html

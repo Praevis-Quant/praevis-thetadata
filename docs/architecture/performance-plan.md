@@ -131,6 +131,7 @@ Third party: [ThetaDataDx README][dx]. The pinned artifact research:
 [1.0.12](../research/thetadata-1.0.12.md) and
 [1.0.13-1.0.17](../research/thetadata-1.0.13-1.0.17.md).
 Re-verify all of them at each tier upgrade; vendor pages contradict each other.
+Re-verified for options PRO on 2026-11-05: [options phase plan](options-phase.md#a-vendor-facts-re-verified-for-pro-2026-11-05).
 
 ---
 
