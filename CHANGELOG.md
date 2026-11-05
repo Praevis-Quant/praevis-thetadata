@@ -62,6 +62,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **M5 and the job memory reproduction's controls.**
+  - **M5:** M4 over two days. Same part sizes, twice the rows.
+  - **`job_memory.rs`:** `JOB_MEMORY_STRIKES` sets the number of parts, and
+    the output adds the process's peak RSS. Offline, quadrupling the parts
+    at a fixed part size moves the peak only by Parquet's footer metadata.
+  - The memory reruns are recorded in the plan. The target is not yet
+    recorded as met.
 - **`job()` per-strike split verified live** (`opt-split-003`). It returned
   the same 938,663 rows, exactly equal, in 7.4 s. That is 1.9× faster than
   before the read-ahead fix at a similar service speed, and 5.3-6.5× faster

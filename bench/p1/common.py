@@ -97,13 +97,14 @@ def write_report(report: dict, path: Path) -> int:
 
 def option_kwargs(request: dict) -> dict:
     """A workloads.json options request as keyword arguments both packages
-    accept: `date` as a `datetime.date`; expirations, strikes and times stay
+    accept: `date`, `start_date` and `end_date` as `datetime.date`; expirations, strikes and times stay
     text (the vendor signature accepts text for those)."""
     import datetime as dt
 
     kwargs = dict(request)
-    if "date" in kwargs:
-        kwargs["date"] = dt.date.fromisoformat(kwargs["date"])
+    for key in ("date", "start_date", "end_date"):
+        if key in kwargs:
+            kwargs[key] = dt.date.fromisoformat(kwargs[key])
     return kwargs
 
 

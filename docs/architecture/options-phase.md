@@ -247,6 +247,49 @@ default, with an explicit opt-in. Offline after the fix:
 `parquet` 60.1.0 (2026-10-28) is the newest release, so no upstream fix
 exists yet. The rerun of M1-M3, plus M4 (a whole day), is the live check.
 
+**Rerun after the fix** (2026-11-05, main f520b09, Windows, PRO; all OK):
+
+| Workload | Rows | Rows per part (average) | Parquet delta | Frame delta |
+| --- | ---: | ---: | ---: | ---: |
+| M1 | 0.94M | 4.0k | 62.1 MiB | 241.3 MiB |
+| M2 | 3.02M | 13.0k | 98.8 MiB | 631.8 MiB |
+| M3 | 5.12M | 22.1k | 107.3 MiB | 1,030.7 MiB |
+| M4 (whole day) | 12.85M | 55.4k | 133.9 MiB | (not run) |
+
+The frame grows linearly. The Parquet delta grows 2.2× for 13.7× the rows:
+not flat. **Two things change at once from M1 to M4: part size and total
+rows.** An offline test separates them (`examples/job_memory.rs`: the
+fixture in a child process; Rust heap peak and Linux peak RSS). It holds the
+part size fixed and multiplies the parts:
+
+| Rows per part | Parts | Total rows | Peak heap | Peak RSS |
+| ---: | ---: | ---: | ---: | ---: |
+| 55,000 | 232 / 464 / 928 | 12.8M / 25.5M / 51.0M | 73.1 / 74.5 / 75.5 MiB | 151.7 / 144.3 / 153.3 MiB |
+| 200,000 | 232 / 464 / 928 | 46.4M / 92.8M / 185.6M | 99.4 / 104.2 / 112.2 MiB | 229.6 / 241.1 / 252.7 MiB |
+
+- **Part size sets the level:** the read-ahead holds bigger batches as parts
+  grow, up to its cap.
+- **Total rows add only Parquet's footer metadata:** about 13 KB per row
+  group, held until the file closes. That is about 0.1 MiB per million rows
+  with 131,072-row groups.
+- **No allocator retention:** RSS follows the heap.
+- **The live runs fit this:** the average part grew 14× from M1 to M4.
+
+**The ceiling we state.** It covers our own buffers, never the whole
+process:
+- the read-ahead: up to 4 × concurrency parts × 2 batches, each at most
+  65,536 rows or 8 MiB;
+- the decoders: concurrency × 8 MiB;
+- the stream windows: concurrency × 2 MiB;
+- one Parquet row group in progress;
+- **plus** Parquet footer metadata of about 13 KB per row group, which grows
+  with the file (`row_group_rows` sets how fast).
+
+**Pending: M5**, M4 over two days. It has the same part sizes, twice the
+parts and about twice the rows. Prediction: M4's delta plus about 1.3 MiB.
+If it is materially higher, something still grows with total rows, and the
+target stays unmet.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.

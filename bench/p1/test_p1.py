@@ -80,7 +80,8 @@ class Runners(unittest.TestCase):
             for request in workloads[workload]["requests"]:
                 with self.subTest(workload=workload, request=request):
                     query, parts = pt.describe(workloads[workload]["method"], **common.option_kwargs(request))
-                    self.assertEqual(parts, 1)
+                    # M5 spans two days: the planner makes one part per day.
+                    self.assertEqual(parts, 2 if workload == "M5" else 1)
                     self.assertTrue(query)
 
     def test_workloads_are_timed_whole_in_order_or_threaded(self):
