@@ -15,6 +15,7 @@ from praevis_thetadata import _native  # noqa: E402
 import common  # noqa: E402
 import compare  # noqa: E402
 import live_checks  # noqa: E402
+import options_memory  # noqa: E402
 import options_ours  # noqa: E402
 
 
@@ -72,8 +73,9 @@ class Runners(unittest.TestCase):
 
     def test_every_options_workload_request_builds_one_query(self):
         workloads = json.loads(common.WORKLOADS.read_text())
-        ids = [w for w in workloads if w[:2] in {"W4", "W5", "W6"} or w.startswith("S")]
+        ids = [w for w in workloads if w[:2] in {"W4", "W5", "W6"} or w[0] in {"S", "M"}]
         self.assertIn("W5c", ids)
+        self.assertIn("M3", ids)
         for workload in ids:
             for request in workloads[workload]["requests"]:
                 with self.subTest(workload=workload, request=request):
@@ -111,6 +113,44 @@ class Runners(unittest.TestCase):
             self.assertEqual(result["requests"][-1]["status"], "SYNTHETIC")
             self.assertGreaterEqual(result["wall_ns"], max(r["start_ns"] + r["ns"] for r in result["requests"]))
         self.assertTrue(callable(options_ours.main))
+
+
+    def test_the_memory_runner_records_one_mode_and_removes_the_file(self):
+        class Frame:
+            shape = (5, 3)
+
+            def estimated_size(self):
+                return 1234
+
+        class Stub:
+            tier, scheduler = "PRO", (8, None)
+
+            def to_parquet(self, method, path, **kwargs):
+                Path(path).write_bytes(b"PAR1")
+                return 5, 1, 4
+
+            def option_history_quote(self, **kwargs):
+                return Frame()
+
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(pt.Client, "from_env", return_value=Stub()):
+            out = Path(directory)
+            for mode, run in (("parquet", "m-parquet"), ("frame", "m-frame")):
+                argv = ["options_memory.py", "--run-id", run, "--workload", "M1", "--mode", mode,
+                        "--out", str(out)]
+                with mock.patch.object(sys, "argv", argv):
+                    self.assertEqual(options_memory.main(), 0)
+            parquet = json.loads((out / "m-parquet.json").read_text())
+            frame = json.loads((out / "m-frame.json").read_text())
+            self.assertEqual((parquet["status"], parquet["rows"], parquet["file_bytes"]), ("OK", 5, 4))
+            self.assertEqual((frame["status"], frame["rows"], frame["frame_bytes"]), ("OK", 5, 1234))
+            self.assertFalse((out / "m-parquet.parquet").exists())
+            self.assertGreater(parquet["peak_rss_bytes"], 0)
+            # A workload with several requests is refused.
+            argv = ["options_memory.py", "--run-id", "x", "--workload", "W5c", "--mode", "frame",
+                    "--out", str(out)]
+            with mock.patch.object(sys, "argv", argv):
+                self.assertEqual(options_memory.main(), 2)
 
 
 if __name__ == "__main__":

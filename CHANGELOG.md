@@ -48,6 +48,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Memory-bound runner for W5** (`bench/p1/options_memory.py`, manual).
+  - **What it does:** runs one job in one mode per process, either streamed
+    to Parquet or held as a Polars frame, and records peak memory, rows and
+    file size.
+  - **Workloads:** M1-M3 are the W5b shape over 15, 60 and 120 minutes.
+  - The private Parquet file is deleted after its size is recorded.
 - **D2 interleaved repeat recorded.** Three cycles, each running the vendor,
   ours Python, Rust at 8 and Rust at 1 in that fixed order, give the same
   ratios as the sequential run. W5c at 8 is 9.4× (Python) and 8.4× (Rust)
