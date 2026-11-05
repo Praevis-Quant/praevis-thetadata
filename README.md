@@ -6,7 +6,7 @@ Rust workspace derived from the ThetaData Python package, originally **1.0.12** 
 
 See the [auth requirements and ADRs](docs/README.md), [roadmap](docs/ROADMAP.md), [vendor research](docs/research/thetadata-1.0.12.md), and [performance methodology](docs/performance/auth.md). Only authentication is a baselined feature scope; the market-data crates are foundations for later work.
 
-For implemented changes, see the [changelog](CHANGELOG.md). Coding agents should start with [AGENTS.md](AGENTS.md) and the shared [project guidance and Git conventions](CLAUDE.md).
+For implemented changes, see the [changelog](CHANGELOG.md). Coding agents should start with [AGENTS.md](AGENTS.md), which holds the project guidance and Git conventions.
 
 Start with the [connection map and SVG](docs/connections.md) to distinguish our
 direct HTTPS/gRPC client from optional Theta Terminal REST/WebSocket adapters.

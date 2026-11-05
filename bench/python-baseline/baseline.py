@@ -10,7 +10,7 @@ records, per request:
 * ``convert``-- the drained responses replayed offline through the package's
                 converter, for Polars and pandas (CPU only).
 
-This file may only be executed under the scoped exception in CLAUDE.md: by the
+This file may only be executed under the scoped exception in AGENTS.md: by the
 Coordinator, on the user's machine, from the hash-pinned virtual environment,
 with the key taken from ``THETADATA_API_KEY``. It never prints or stores the key
 or any row value. Output is timings and counts; optional raw captures are written

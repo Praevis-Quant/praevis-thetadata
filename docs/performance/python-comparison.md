@@ -50,7 +50,7 @@ reuse (checked 2026-10-04). The versioned artifact remains the comparator author
 | Optimize and repeat | Profile Rust null/price regressions against the retained Rust control, then rerun the cross-language suite | Correctness/resource contracts preserved; repeat-run results and regression decisions reviewed |
 | Publish evidence | Generate charts and a scoped conclusion from retained reports | Claim identifies version, platform, workload, output, metric and variability; release notes link the report |
 
-[CLAUDE.md](../../CLAUDE.md) currently says never to import or execute the vendor
+[AGENTS.md](../../AGENTS.md) currently says never to import or execute the vendor
 package during research. This documentation change does not execute it or
 silently override that policy. The benchmark implementation must reconcile that
 instruction explicitly for its isolated comparison runner. The wheel remains

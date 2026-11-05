@@ -14,7 +14,7 @@ proceeds without separate approval unless a decision below is needed.
 | 3 | The account has **options PRO**; VALUE and STANDARD are skipped. Stocks and indices stay **FREE** (EOD only). Stock tick (W7) is out of scope |
 | 4 | The two-login session probe is approved |
 | 5 | The FREE concurrency question above 3 is closed: moot on PRO |
-| 6 | The PRO entitlement map of **every option RPC** is approved as one run (CLAUDE.md) |
+| 6 | The PRO entitlement map of **every option RPC** is approved as one run (AGENTS.md) |
 
 Live check (Coordinator, 2026-11-04): the login response has subscription
 fields options = 3, stock = 0 and indices = 0. We read 3 as PRO and 0 as
