@@ -77,7 +77,7 @@ Measured on SPY calls expiring 2024-06-21, on 2024-06-14 from 10:00 to 10:15
   order within a strike. The single request's order is not documented, so
   sort if you depend on one.
 
-## What we expect, not yet measured
+## Running requests at once
 
 If a request spends most of its time waiting, several requests running at once
 should overlap those waits. That is why the client has a scheduler and why tier
@@ -89,7 +89,7 @@ for large jobs. The vendor Python package runs one request at a time.
 4.8-7.2× faster than one at a time, and 9.8-10.3× faster than the vendor
 package used synchronously. Requests that ask for tick or 1-second quotes
 across every strike behave differently: each waits about a minute regardless
-of size, and is being measured separately.
+of size, and `job()` splits them per strike (above).
 
 ## How to get the best results
 
