@@ -30,6 +30,11 @@
 //!   through a second client on the same session with a 1 MiB message limit,
 //!   reading one message: a larger first message is refused from its length
 //!   prefix (`OverProbeLimit`), so a probe never pulls bulk data.
+//! * `sizes`: the options workloads (W4-W6 in `workloads.json`), one paced
+//!   request at a time through the typed requests, counting rows (decoded)
+//!   and bytes. A request is dropped as soon as it passes `--max-rows`
+//!   (default 1M, the vendor's sizing guide), so a run never pulls more than
+//!   about that much per request. Sizes the workloads before any baseline.
 //! * `session`: the session probe (approved 2026-11-04): a second login, then
 //!   one small request on the first session and one on the second, recording
 //!   each gRPC code.
@@ -93,6 +98,19 @@ enum Command {
     Checks(ChecksArgs),
     /// The session probe: a second login, then one request on each session.
     Session(SessionArgs),
+    /// Rows and bytes per request of the options workloads, capped.
+    Sizes(SizesArgs),
+}
+
+#[derive(Args)]
+struct SizesArgs {
+    #[command(flatten)]
+    common: Common,
+    #[arg(long, default_value = "W4a,W4b,W5a,W5b,W6a,W6b")]
+    workloads: String,
+    /// Drop a request once it has returned more rows than this.
+    #[arg(long, default_value_t = 1_000_000, value_parser = clap::value_parser!(u64).range(1..=1_000_000))]
+    max_rows: u64,
 }
 
 #[derive(Args)]
@@ -1134,6 +1152,203 @@ async fn session_probe(
     Ok(())
 }
 
+/// One options workload request, typed from its `workloads.json` entry (the
+/// vendor's keyword names), sized with [`size`]. Unknown methods or fields are
+/// refused before anything is sent.
+async fn size_request(
+    client: &ThetaClient,
+    method: &str,
+    request: &serde_json::Value,
+    max_rows: u64,
+) -> Result<Size, Stop> {
+    let bad = || Stop("BadWorkload".into());
+    let known = [
+        "symbol",
+        "expiration",
+        "date",
+        "interval",
+        "strike",
+        "right",
+        "start_time",
+        "end_time",
+    ];
+    let fields = request.as_object().ok_or_else(bad)?;
+    if fields.keys().any(|k| !known.contains(&k.as_str()))
+        || fields.values().any(|v| !v.is_string())
+    {
+        return Err(bad());
+    }
+    let text = |name: &str| request[name].as_str().map(str::to_owned);
+    let symbol = text("symbol").ok_or_else(bad)?;
+    let expiration = text("expiration").ok_or_else(bad)?;
+    let expiration = expiration.as_str();
+    let day = date(&text("date").ok_or_else(bad)?);
+    let interval = text("interval");
+    macro_rules! common {
+        ($r:expr) => {{
+            let mut r = $r.date(day);
+            if let Some(v) = text("strike") {
+                r = r.strike(v);
+            }
+            if let Some(v) = text("right") {
+                r = r.right(v);
+            }
+            if let Some(v) = text("start_time") {
+                r = r.start_time(v);
+            }
+            if let Some(v) = text("end_time") {
+                r = r.end_time(v);
+            }
+            r
+        }};
+    }
+    macro_rules! with_interval {
+        ($r:expr) => {{
+            let r = common!($r);
+            match interval.clone() {
+                Some(v) => r.interval(v),
+                None => r,
+            }
+        }};
+    }
+    Ok(match (method, interval.is_some()) {
+        ("option_history_quote", _) => {
+            let r = with_interval!(typed::OptionHistoryQuote::new(symbol, expiration));
+            size(client, r, max_rows).await
+        }
+        ("option_history_greeks_all", _) => {
+            let r = with_interval!(typed::OptionHistoryGreeksAll::new(symbol, expiration));
+            size(client, r, max_rows).await
+        }
+        ("option_history_trade", false) => {
+            let r = common!(typed::OptionHistoryTrade::new(symbol, expiration));
+            size(client, r, max_rows).await
+        }
+        ("option_history_trade_quote", false) => {
+            let r = common!(typed::OptionHistoryTradeQuote::new(symbol, expiration));
+            size(client, r, max_rows).await
+        }
+        ("option_history_trade_greeks_all", false) => {
+            let r = common!(typed::OptionHistoryTradeGreeksAll::new(symbol, expiration));
+            size(client, r, max_rows).await
+        }
+        _ => return Err(bad()),
+    })
+}
+
+/// Rows, bytes and timing of one capped request; never a value.
+#[derive(Serialize, Debug, Default)]
+struct Size {
+    status: String,
+    first_message_ns: Option<u128>,
+    total_ns: u128,
+    messages: u64,
+    bytes: u64,
+    rows: u64,
+    /// Dropped after passing `max_rows`: the request is larger than that.
+    over_max_rows: bool,
+}
+
+async fn size<E: Endpoint>(client: &ThetaClient, request: E, max_rows: u64) -> Size {
+    let mut out = Size::default();
+    let start = Instant::now();
+    let mut decoder = match praevis_thetadata_arrow::ColumnarDecoder::new(
+        praevis_thetadata_arrow::Limits::default(),
+    ) {
+        Ok(decoder) => decoder,
+        Err(_) => {
+            out.status = "DecoderConfiguration".into();
+            return out;
+        }
+    };
+    let body = async {
+        let mut stream = client.stream_raw(&request).await?;
+        while let Some(message) = stream.message().await? {
+            if out.messages == 0 {
+                out.first_message_ns = Some(start.elapsed().as_nanos());
+            }
+            out.messages += 1;
+            out.bytes += message.encoded_len() as u64;
+            match decoder.push(&message) {
+                Ok(rows) => out.rows += rows as u64,
+                Err(_) => return Ok(Some("DecodeError")),
+            }
+            // Counting only: release the decoded rows at once.
+            let _ = decoder.flush();
+            if out.rows > max_rows {
+                out.over_max_rows = true;
+                return Ok(None);
+            }
+        }
+        Ok::<_, tonic::Status>(None)
+        // Dropping the stream cancels the rest of the response.
+    };
+    match tokio::time::timeout(Duration::from_secs(600), body).await {
+        Ok(Ok(None)) => out.status = "OK".into(),
+        Ok(Ok(Some(local))) => out.status = local.into(),
+        Ok(Err(status)) => out.status = status_name(status.code()),
+        Err(_) => out.status = "ClientTimeout".into(),
+    }
+    out.total_ns = start.elapsed().as_nanos();
+    out
+}
+
+/// The options workloads, one paced request at a time, capped at `max_rows`.
+/// Stops on `RESOURCE_EXHAUSTED`, `UNAVAILABLE` or a local failure; other
+/// statuses are recorded and the run continues.
+async fn sizes(options: &SizesArgs, client: &ThetaClient, report: &mut Report) -> Result<(), Stop> {
+    let workloads: serde_json::Value =
+        serde_json::from_str(WORKLOADS).expect("valid workloads.json");
+    let mut pacer = Pacer {
+        interval: Duration::from_secs_f64(options.common.min_interval),
+        last: None,
+    };
+    for id in options
+        .workloads
+        .split(',')
+        .map(str::trim)
+        .filter(|w| !w.is_empty())
+    {
+        let spec = &workloads[id];
+        let method = spec["method"]
+            .as_str()
+            .ok_or_else(|| Stop(format!("UnknownWorkload {id}")))?;
+        let requests = spec["requests"]
+            .as_array()
+            .ok_or_else(|| Stop(format!("UnknownWorkload {id}")))?;
+        for (index, request) in requests.iter().enumerate() {
+            pacer.wait().await;
+            let result = size_request(client, method, request, options.max_rows).await?;
+            eprintln!(
+                "{id}[{index}] {:<16} rows {:>9} messages {:>8} {:.1} s{}",
+                result.status,
+                result.rows,
+                result.messages,
+                result.total_ns as f64 / 1e9,
+                if result.over_max_rows {
+                    " (over max rows)"
+                } else {
+                    ""
+                }
+            );
+            let stop = ends_entitlement_run(&result.status)
+                || matches!(
+                    result.status.as_str(),
+                    "DecodeError" | "DecoderConfiguration"
+                );
+            let status = result.status.clone();
+            let mut value = serde_json::to_value(&result).expect("size serializes");
+            value["workload"] = id.into();
+            value["request"] = index.into();
+            report.results.push(value);
+            if stop {
+                return Err(Stop(status));
+            }
+        }
+    }
+    Ok(())
+}
+
 /// A comparable value: prices as Decimal128(38, 10) unscaled, timestamps as
 /// the legacy RFC 3339 text. Only equality is reported, never a value.
 #[derive(Debug, PartialEq)]
@@ -1369,6 +1584,7 @@ async fn main() -> std::process::ExitCode {
         Command::Entitlements(options) => (&options.common, "entitlements"),
         Command::Checks(options) => (&options.common, "checks"),
         Command::Session(options) => (&options.common, "session"),
+        Command::Sizes(options) => (&options.common, "sizes"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -1432,6 +1648,7 @@ async fn main() -> std::process::ExitCode {
         Command::Session(options) => {
             session_probe(options, &client, &mut report, &mut identity).await
         }
+        Command::Sizes(options) => sizes(options, &client, &mut report).await,
     };
     if let Err(Stop(reason)) = &result {
         report.stopped = Some(reason.clone());
@@ -1646,6 +1863,89 @@ mod tests {
         expected.sort();
         assert_eq!((sent.len(), unique), (51, expected));
         assert_eq!(sent.last().unwrap(), "GetOptionFlatFileQuote");
+    }
+
+    #[tokio::test]
+    async fn sizes_types_every_options_workload_and_records_each_request() {
+        // The fixture serves only stock EOD: every option request reaches it
+        // (no BadWorkload) and is answered Unimplemented.
+        let server = fixture::Fixture::start(fixture::Script::default());
+        let client = fixture_client(&server).await;
+        let args = SizesArgs {
+            common: entitlement_args(&[], 5).common,
+            workloads: "W4a,W4b,W5a,W5b,W6a,W6b".into(),
+            max_rows: 1_000_000,
+        };
+        let mut report = Report::default();
+        sizes(&args, &client, &mut report).await.unwrap();
+        assert_eq!(report.results.len(), 12);
+        assert!(
+            report
+                .results
+                .iter()
+                .all(|r| r["status"] == "Unimplemented"),
+            "{:?}",
+            report.results
+        );
+        // Unknown fields, non-text values and tick-only methods with an
+        // interval are refused before sending.
+        for (method, request) in [
+            ("option_history_quote", serde_json::json!({"symbol": "SPY"})),
+            (
+                "option_history_trade",
+                serde_json::json!({"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "1m"}),
+            ),
+            (
+                "option_history_quote",
+                serde_json::json!({"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "strike": 540}),
+            ),
+            (
+                "option_history_quote",
+                serde_json::json!({"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "api_key": "x"}),
+            ),
+            (
+                "stock_history_eod",
+                serde_json::json!({"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14"}),
+            ),
+        ] {
+            assert!(
+                matches!(size_request(&client, method, &request, 10).await, Err(Stop(s)) if s == "BadWorkload"),
+                "{method} {request}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn sizes_counts_rows_and_drops_a_request_past_the_cap() {
+        // Prices: one type per column, as the columnar decoder requires.
+        let (wire_table, _) = fixture::table(fixture::Shape::Prices, 100);
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire_table, true)); 30],
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let request =
+            || typed::StockHistoryEod::new("AAPL", date("2024-06-14"), date("2024-06-14"));
+        let whole = size(&client, request(), 1_000_000).await;
+        assert_eq!(
+            (
+                whole.status.as_str(),
+                whole.rows,
+                whole.messages,
+                whole.over_max_rows
+            ),
+            ("OK", 3000, 30, false)
+        );
+        let capped = size(&client, request(), 250).await;
+        assert_eq!(
+            (
+                capped.status.as_str(),
+                capped.rows,
+                capped.messages,
+                capped.over_max_rows
+            ),
+            ("OK", 300, 3, true)
+        );
     }
 
     #[tokio::test]

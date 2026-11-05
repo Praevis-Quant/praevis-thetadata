@@ -1,5 +1,5 @@
 {
-  "_comment": "Performance plan section B. FREE-tier workloads only (P0). Shared with the Rust harness so both clients run identical requests. Dates stay inside the documented FREE window (from 2023-06-01).",
+  "_comment": "Performance plan section B. W1/W2/W2b: FREE-tier workloads (P0). W4-W6: options PRO (options phase, first bounded definitions; sized by `live_p0 sizes` before any baseline). Shared with the Rust harness so both clients run identical requests. Every option request must stay under about 1M rows (vendor request-sizing guide).",
   "W1": {
     "description": "Bulk stock EOD backfill: one year for ten liquid symbols, one request per symbol.",
     "method": "stock_history_eod",
@@ -28,6 +28,54 @@
     "method": "option_history_eod",
     "requests": [
       {"symbol": "SPY", "expiration": "2024-06-21", "start_date": "2024-06-14", "end_date": "2024-06-14", "strike": "*", "right": "both"}
+    ]
+  },
+  "W4a": {
+    "description": "Option quotes at 1-minute for a chain: SPY on 2024-06-14, one request per expiration (4 expirations, every strike, both rights).",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-17", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-18", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-20", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "1m"}
+    ]
+  },
+  "W4b": {
+    "description": "Option quotes at 1 s: SPY calls expiring 2024-06-21 on 2024-06-14, 10:00-10:30, every strike.",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "1s", "right": "call", "start_time": "10:00:00", "end_time": "10:30:00"}
+    ]
+  },
+  "W5a": {
+    "description": "Tick trades for a liquid root day: SPY on 2024-06-14, one request per expiration (4 expirations).",
+    "method": "option_history_trade",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-17", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-18", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-20", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14"}
+    ]
+  },
+  "W5b": {
+    "description": "Tick quotes, bounded first run: SPY calls expiring 2024-06-21 on 2024-06-14, 10:00-10:15, every strike.",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "tick", "right": "call", "start_time": "10:00:00", "end_time": "10:15:00"}
+    ]
+  },
+  "W6a": {
+    "description": "Greeks at 1-minute: SPY expiring 2024-06-21 on 2024-06-14, every strike, both rights.",
+    "method": "option_history_greeks_all",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "1m"}
+    ]
+  },
+  "W6b": {
+    "description": "Trade Greeks: SPY expiring 2024-06-21 on 2024-06-14, every trade.",
+    "method": "option_history_trade_greeks_all",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14"}
     ]
   }
 }
