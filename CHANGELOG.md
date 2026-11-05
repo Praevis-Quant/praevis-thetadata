@@ -27,6 +27,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Options workloads W4-W6 and `live_p0 sizes`** (manual, never CI). First
+  bounded definitions in `bench/python-baseline/workloads.json`: SPY on
+  2024-06-14 at 1-minute and 1 s quotes, tick trades and quotes, and Greeks.
+  `sizes` sends them one at a time and counts decoded rows and bytes per
+  request. It drops a request once it passes `--max-rows` (default 1M, the
+  vendor's sizing guide), so the volumes are measured before any baseline.
 - **Incremental memory recorded** in the P1 exit record: peak minus the idle
   baseline after imports and login, beside the total.
   - W1 is 10.1 MiB for ours against 11.5 MiB for the vendor (0.88×).
