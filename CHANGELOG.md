@@ -37,6 +37,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **D2 interleaved repeat recorded.** Three cycles, each running the vendor,
+  ours Python, Rust at 8 and Rust at 1 in that fixed order, give the same
+  ratios as the sequential run. W5c at 8 is 9.4× (Python) and 8.4× (Rust)
+  the synchronous vendor package, and 3.4× and 3.0× its threaded variant.
+  The worst-case W5c pair is 7.1×. This resolves the drift caveat.
 - **Per-strike split for all-strike fine option quotes** (`job()` and the
   Python methods with `plan`).
   - **What splits:** an `option_history_quote` for every strike at a `tick`
