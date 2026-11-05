@@ -162,5 +162,26 @@
     "requests": [
       {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "right": "call", "start_time": "10:00:00", "end_time": "10:15:00"}
     ]
+  },
+  "M1": {
+    "description": "Memory-bound probe (W5 shape, split per strike by the job planner): tick quotes, SPY calls expiring 2024-06-21, on 2024-06-14, 10:00-10:15 (about 0.94M rows).",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "tick", "right": "call", "start_time": "10:00:00", "end_time": "10:15:00"}
+    ]
+  },
+  "M2": {
+    "description": "Memory-bound probe: as M1, 10:00-11:00 (about 4x M1's rows).",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "tick", "right": "call", "start_time": "10:00:00", "end_time": "11:00:00"}
+    ]
+  },
+  "M3": {
+    "description": "Memory-bound probe: as M1, 10:00-12:00 (about 8x M1's rows).",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "tick", "right": "call", "start_time": "10:00:00", "end_time": "12:00:00"}
+    ]
   }
 }

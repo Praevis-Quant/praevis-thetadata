@@ -186,6 +186,28 @@ the service:**
   at PRO). In the simulation a window of 1× gives 18.4 s, 2× 12.0 s, and
   4× 10.0 s, which is work-conserving.
 
+## Memory bound under W5 (planned)
+
+The target is that memory is bounded by configuration. We claim this for our
+accounted buffers only, never for the whole process.
+
+**The configured ceiling** (PRO, defaults):
+
+| Buffer | Bound |
+| --- | ---: |
+| Open job parts: 32 (4× concurrency) × 2 batches × ≤ 8 MiB | ≤ 512 MiB |
+| 8 decoders building a batch, ≤ 8 MiB each | ≤ 64 MiB |
+| 8 HTTP/2 stream windows of 2 MiB | 16 MiB |
+| One Parquet row group | 131,072 rows |
+
+Real batches are far smaller. A per-strike part over two hours is about
+30k rows.
+
+**The test:** `options_memory.py` runs M1, M2 and M3 (the W5b shape over 15,
+60 and 120 minutes, about 0.9M, 4M and 7.5M rows), each in its own process,
+streamed with `to_parquet` and held as a frame. Bounded means the streamed
+peak minus idle stays flat as rows grow, while the frame's grows.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.
