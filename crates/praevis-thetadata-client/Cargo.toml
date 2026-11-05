@@ -31,6 +31,10 @@ required-features = ["live-tests"]
 name = "live_p0"
 required-features = ["live-tests"]
 
+[[example]]
+name = "live_job_memory"
+required-features = ["live-tests"]
+
 # Runnable consumer pattern (EOD-L3-025). `test = true` runs its tests in
 # `cargo test --workspace`; it is checkout-only like the other examples.
 [[example]]

@@ -191,6 +191,13 @@
       {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "tick", "right": "call"}
     ]
   },
+  "M4b": {
+    "description": "M4 on the other day of M5 (2024-06-13): tick quotes for every SPY call expiring 2024-06-21, whole day. With M4 (2024-06-14), the single-day halves of M5. Parquet mode only.",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-13", "interval": "tick", "right": "call"}
+    ]
+  },
   "M5": {
     "description": "Memory-bound discriminator: M4 over two days (2024-06-13 and 2024-06-14). Same per-part sizes as M4, twice the parts and about twice the rows: separates growth with total rows from growth with part size. Parquet mode only.",
     "method": "option_history_quote",

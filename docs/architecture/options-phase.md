@@ -285,10 +285,26 @@ process:
 - **plus** Parquet footer metadata of about 13 KB per row group, which grows
   with the file (`row_group_rows` sets how fast).
 
-**Pending: M5**, M4 over two days. It has the same part sizes, twice the
-parts and about twice the rows. Prediction: M4's delta plus about 1.3 MiB.
-If it is materially higher, something still grows with total rows, and the
-target stays unmet.
+**M5 result (`opt-mem-M5-parquet-001`, main 699f245): the prediction
+failed.**
+- **Measured:** 26,576,223 rows and 203 row groups in 38.3 s. The delta was
+  **204.4 MiB**, against about 135 MiB predicted.
+- **The excess:** +70.5 MiB for +13.7M rows, about 5 MiB per million rows
+  (0.68 MiB per added row group), where the offline test gave about 0.1.
+- **The target stays unmet.**
+
+The difference is live-only so far. The Python `to_parquet` path is the same
+code as the offline example, so the Python layer is ruled out. Still open:
+- part sizes on each day;
+- our buffers (heap) against the Windows allocator (RSS);
+- steady accumulation against a higher plateau.
+
+`live_job_memory` measures them live:
+- the Rust heap against rows written, through the run;
+- the process peak working set;
+- batch sizes.
+
+It runs on M4, M4b (06-13 alone) and M5. The Python runner repeats M4b.
 
 ## Scope and order
 

@@ -37,7 +37,7 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Compile-check the manual live runner (never executed in CI)
-        run: cargo clippy --locked -p praevis-thetadata-client --features live-tests --example live_eod --example live_p0 -- -D warnings
+        run: cargo clippy --locked -p praevis-thetadata-client --features live-tests --example live_eod --example live_p0 --example live_job_memory -- -D warnings
       - name: Tests
         run: cargo test --workspace --locked
       - name: Live runner offline tests (loopback fixture only; never contacts the service)
