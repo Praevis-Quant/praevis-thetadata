@@ -27,6 +27,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Options baselines harness (D2)** (manual, never CI):
+  - `options_vendor.py` (vendor package) and `bench/p1/options_ours.py`
+    (this package): time whole workloads into Polars, synchronously and
+    threaded at the same concurrency.
+  - `live_p0 workload`: the same workloads through Rust `query()`, up to 8
+    at a time.
+  - **Workloads:** scaled 12-request W4c/W5c and 8-request W6c for fan-out,
+    plus shape probes S1-S5 for the server-slow windowed quote requests.
+  - **Correction:** "one row per message" holds for EOD only.
 - **Like-for-like incremental memory.** Both clients ran only the public
   calls (`baseline.py --e2e-only` for the vendor).
   - W1 is 0.91×, and W2 is 0.53×, just over the 0.5 line. Total RSS is 0.98×

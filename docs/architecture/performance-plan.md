@@ -71,7 +71,10 @@ our own authorized PROD runs. **[estimate]** is a project estimate to verify.
 - **no per-minute limit at up to 40/min**;
 - **an EOD request may span at most 366-730 days** (731 days gives
   `INVALID_ARGUMENT`);
-- **one row per gRPC message**, each an independent ZSTD frame.
+- **one row per gRPC message**, each an independent ZSTD frame. This holds
+  for EOD only: option tick and interval history carries hundreds to
+  thousands of rows per message (`opt-sizes-001`,
+  [options phase](options-phase.md#workload-sizes-opt-sizes-001-2026-11-05)).
 
 **Our FREE observations** ([live observations](../research/live-observations.md)):
 - stock EOD works for 2024-01 and 2024-06, and 2020-08 is denied, consistent

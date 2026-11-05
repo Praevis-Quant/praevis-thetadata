@@ -77,5 +77,90 @@
     "requests": [
       {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14"}
     ]
+  },
+  "W4c": {
+    "description": "Scaled W4a for fan-out: 1-minute quotes, SPY on 2024-06-14, one request per expiration (12 expirations, every strike, both rights).",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-17", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-18", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-20", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-24", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-25", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-26", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-27", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-28", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-07-05", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-07-12", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-07-19", "date": "2024-06-14", "interval": "1m"}
+    ]
+  },
+  "W5c": {
+    "description": "Scaled W5a for fan-out: tick trades, SPY on 2024-06-14, one request per expiration (12 expirations).",
+    "method": "option_history_trade",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-17", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-18", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-20", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-24", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-25", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-26", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-27", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-06-28", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-07-05", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-07-12", "date": "2024-06-14"},
+      {"symbol": "SPY", "expiration": "2024-07-19", "date": "2024-06-14"}
+    ]
+  },
+  "W6c": {
+    "description": "Scaled W6a for fan-out: 1-minute Greeks, SPY on 2024-06-14, one request per expiration (the first 8 of W4c's).",
+    "method": "option_history_greeks_all",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-17", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-18", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-20", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-24", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-25", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-26", "date": "2024-06-14", "interval": "1m"},
+      {"symbol": "SPY", "expiration": "2024-06-27", "date": "2024-06-14", "interval": "1m"}
+    ]
+  },
+  "S1": {
+    "description": "Shape probe against W5b (tick quotes, calls, 10:00-10:15): the same with a 1-minute window (10:00-10:01).",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "tick", "right": "call", "start_time": "10:00:00", "end_time": "10:01:00"}
+    ]
+  },
+  "S2": {
+    "description": "Shape probe against W5b: tick quotes for one contract (the 542 call) over the whole day.",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "tick", "right": "call", "strike": "542.00"}
+    ]
+  },
+  "S3": {
+    "description": "Shape probe against W4b (1 s quotes, calls, 10:00-10:30): the same with a 1-minute window (10:00-10:01).",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "1s", "right": "call", "start_time": "10:00:00", "end_time": "10:01:00"}
+    ]
+  },
+  "S4": {
+    "description": "Shape probe against W4a[3] (1-minute quotes, whole day, both rights): calls only, 10:00-10:30.",
+    "method": "option_history_quote",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "interval": "1m", "right": "call", "start_time": "10:00:00", "end_time": "10:30:00"}
+    ]
+  },
+  "S5": {
+    "description": "Shape probe against W5a[3] (tick trades, whole day, both rights): calls only, 10:00-10:15.",
+    "method": "option_history_trade",
+    "requests": [
+      {"symbol": "SPY", "expiration": "2024-06-21", "date": "2024-06-14", "right": "call", "start_time": "10:00:00", "end_time": "10:15:00"}
+    ]
   }
 }

@@ -100,6 +100,23 @@ enum Command {
     Session(SessionArgs),
     /// Rows and bytes per request of the options workloads, capped.
     Sizes(SizesArgs),
+    /// Time to complete whole options workloads through `query()`.
+    Workload(WorkloadArgs),
+}
+
+#[derive(Args)]
+struct WorkloadArgs {
+    #[command(flatten)]
+    common: Common,
+    /// Comma-separated workload IDs from `workloads.json`.
+    #[arg(long)]
+    workloads: String,
+    /// Requests in flight at once; the client's tier scheduler (PRO: 8) is
+    /// the upper bound.
+    #[arg(long, default_value_t = 8, value_parser = clap::value_parser!(u32).range(1..=8))]
+    concurrency: u32,
+    #[arg(long, default_value_t = 3, value_parser = clap::value_parser!(u32).range(1..=10))]
+    rounds: u32,
 }
 
 #[derive(Args)]
@@ -1152,88 +1169,112 @@ async fn session_probe(
     Ok(())
 }
 
-/// One options workload request, typed from its `workloads.json` entry (the
-/// vendor's keyword names), sized with [`size`]. Unknown methods or fields are
-/// refused before anything is sent.
+/// Type an options workload request from its `workloads.json` entry (the
+/// vendor's keyword names) and evaluate `$body` with it bound to `$r`, as
+/// `Ok($body)`. Unknown methods or fields give `Err(Stop("BadWorkload"))`
+/// before anything is sent. A macro, because each method is a different type.
+macro_rules! option_dispatch {
+    ($method:expr, $request:expr, $r:ident => $body:expr) => {{
+        let method: &str = $method;
+        let request: &serde_json::Value = $request;
+        let bad = || Stop("BadWorkload".into());
+        let known = [
+            "symbol",
+            "expiration",
+            "date",
+            "interval",
+            "strike",
+            "right",
+            "start_time",
+            "end_time",
+        ];
+        match request.as_object() {
+            Some(fields)
+                if fields.keys().all(|k| known.contains(&k.as_str()))
+                    && fields.values().all(|v| v.is_string()) =>
+            {
+                let text = |name: &str| request[name].as_str().map(str::to_owned);
+                match (text("symbol"), text("expiration"), text("date")) {
+                    (Some(symbol), Some(expiration), Some(day)) => {
+                        let expiration = expiration.as_str();
+                        let day = date(&day);
+                        let interval = text("interval");
+                        macro_rules! common {
+                            ($e:expr) => {{
+                                let mut r = $e.date(day);
+                                if let Some(v) = text("strike") {
+                                    r = r.strike(v);
+                                }
+                                if let Some(v) = text("right") {
+                                    r = r.right(v);
+                                }
+                                if let Some(v) = text("start_time") {
+                                    r = r.start_time(v);
+                                }
+                                if let Some(v) = text("end_time") {
+                                    r = r.end_time(v);
+                                }
+                                r
+                            }};
+                        }
+                        macro_rules! with_interval {
+                            ($e:expr) => {{
+                                let r = common!($e);
+                                match interval.clone() {
+                                    Some(v) => r.interval(v),
+                                    None => r,
+                                }
+                            }};
+                        }
+                        match (method, interval.is_some()) {
+                            ("option_history_quote", _) => {
+                                let $r = with_interval!(typed::OptionHistoryQuote::new(
+                                    symbol, expiration
+                                ));
+                                Ok($body)
+                            }
+                            ("option_history_greeks_all", _) => {
+                                let $r = with_interval!(typed::OptionHistoryGreeksAll::new(
+                                    symbol, expiration
+                                ));
+                                Ok($body)
+                            }
+                            ("option_history_trade", false) => {
+                                let $r =
+                                    common!(typed::OptionHistoryTrade::new(symbol, expiration));
+                                Ok($body)
+                            }
+                            ("option_history_trade_quote", false) => {
+                                let $r = common!(typed::OptionHistoryTradeQuote::new(
+                                    symbol, expiration
+                                ));
+                                Ok($body)
+                            }
+                            ("option_history_trade_greeks_all", false) => {
+                                let $r = common!(typed::OptionHistoryTradeGreeksAll::new(
+                                    symbol, expiration
+                                ));
+                                Ok($body)
+                            }
+                            _ => Err(bad()),
+                        }
+                    }
+                    _ => Err(bad()),
+                }
+            }
+            _ => Err(bad()),
+        }
+    }};
+}
+
+/// One options workload request, sized with [`size`].
 async fn size_request(
     client: &ThetaClient,
     method: &str,
     request: &serde_json::Value,
     max_rows: u64,
 ) -> Result<Size, Stop> {
-    let bad = || Stop("BadWorkload".into());
-    let known = [
-        "symbol",
-        "expiration",
-        "date",
-        "interval",
-        "strike",
-        "right",
-        "start_time",
-        "end_time",
-    ];
-    let fields = request.as_object().ok_or_else(bad)?;
-    if fields.keys().any(|k| !known.contains(&k.as_str()))
-        || fields.values().any(|v| !v.is_string())
-    {
-        return Err(bad());
-    }
-    let text = |name: &str| request[name].as_str().map(str::to_owned);
-    let symbol = text("symbol").ok_or_else(bad)?;
-    let expiration = text("expiration").ok_or_else(bad)?;
-    let expiration = expiration.as_str();
-    let day = date(&text("date").ok_or_else(bad)?);
-    let interval = text("interval");
-    macro_rules! common {
-        ($r:expr) => {{
-            let mut r = $r.date(day);
-            if let Some(v) = text("strike") {
-                r = r.strike(v);
-            }
-            if let Some(v) = text("right") {
-                r = r.right(v);
-            }
-            if let Some(v) = text("start_time") {
-                r = r.start_time(v);
-            }
-            if let Some(v) = text("end_time") {
-                r = r.end_time(v);
-            }
-            r
-        }};
-    }
-    macro_rules! with_interval {
-        ($r:expr) => {{
-            let r = common!($r);
-            match interval.clone() {
-                Some(v) => r.interval(v),
-                None => r,
-            }
-        }};
-    }
-    Ok(match (method, interval.is_some()) {
-        ("option_history_quote", _) => {
-            let r = with_interval!(typed::OptionHistoryQuote::new(symbol, expiration));
-            size(client, r, max_rows).await
-        }
-        ("option_history_greeks_all", _) => {
-            let r = with_interval!(typed::OptionHistoryGreeksAll::new(symbol, expiration));
-            size(client, r, max_rows).await
-        }
-        ("option_history_trade", false) => {
-            let r = common!(typed::OptionHistoryTrade::new(symbol, expiration));
-            size(client, r, max_rows).await
-        }
-        ("option_history_trade_quote", false) => {
-            let r = common!(typed::OptionHistoryTradeQuote::new(symbol, expiration));
-            size(client, r, max_rows).await
-        }
-        ("option_history_trade_greeks_all", false) => {
-            let r = common!(typed::OptionHistoryTradeGreeksAll::new(symbol, expiration));
-            size(client, r, max_rows).await
-        }
-        _ => return Err(bad()),
-    })
+    option_dispatch!(method, request, r => size(client, r, max_rows).await)
 }
 
 /// Rows, bytes and timing of one capped request; never a value.
@@ -1291,6 +1332,121 @@ async fn size<E: Endpoint>(client: &ThetaClient, request: E, max_rows: u64) -> S
     }
     out.total_ns = start.elapsed().as_nanos();
     out
+}
+
+/// One request through `query()`: rows counted and dropped, never kept.
+#[derive(Serialize, Debug, Default)]
+struct Run {
+    request: usize,
+    status: String,
+    first_batch_ns: Option<u128>,
+    total_ns: u128,
+    rows: u64,
+}
+
+async fn run_query<E: Endpoint>(client: &ThetaClient, request: E, index: usize) -> Run {
+    let start = Instant::now();
+    let mut out = Run {
+        request: index,
+        ..Default::default()
+    };
+    let result = async {
+        let mut stream = client.query(&request).await?;
+        while let Some(batch) = stream.next_batch().await? {
+            out.first_batch_ns
+                .get_or_insert_with(|| start.elapsed().as_nanos());
+            out.rows += batch.num_rows() as u64;
+        }
+        Ok::<(), EodError>(())
+    }
+    .await;
+    out.status = match result {
+        Ok(()) => "OK".into(),
+        Err(error) => format!("{error:?}"),
+    };
+    out.total_ns = start.elapsed().as_nanos();
+    out
+}
+
+/// Whole options workloads through `query()`, `--concurrency` requests at a
+/// time, `--rounds` times, paced between workload runs (not within one). The
+/// time to complete is the workload's wall time. Stops on `RESOURCE_EXHAUSTED`
+/// or `UNAVAILABLE`.
+async fn workload(
+    options: &WorkloadArgs,
+    client: &ThetaClient,
+    report: &mut Report,
+) -> Result<(), Stop> {
+    let workloads: serde_json::Value =
+        serde_json::from_str(WORKLOADS).expect("valid workloads.json");
+    let mut pacer = Pacer {
+        interval: Duration::from_secs_f64(options.common.min_interval),
+        last: None,
+    };
+    let ids: Vec<&str> = options
+        .workloads
+        .split(',')
+        .map(str::trim)
+        .filter(|w| !w.is_empty())
+        .collect();
+    for round in 0..options.rounds {
+        for id in &ids {
+            let spec = &workloads[*id];
+            let method = spec["method"]
+                .as_str()
+                .ok_or_else(|| Stop(format!("UnknownWorkload {id}")))?;
+            let requests = spec["requests"]
+                .as_array()
+                .ok_or_else(|| Stop(format!("UnknownWorkload {id}")))?;
+            pacer.wait().await;
+            let slots =
+                std::sync::Arc::new(tokio::sync::Semaphore::new(options.concurrency as usize));
+            let mut tasks = tokio::task::JoinSet::new();
+            let start = Instant::now();
+            for (index, request) in requests.iter().enumerate() {
+                let client = client.clone();
+                let slots = slots.clone();
+                option_dispatch!(method, request, r => {
+                    tasks.spawn(async move {
+                        let _slot = slots.acquire_owned().await.expect("open semaphore");
+                        run_query(&client, r, index).await
+                    });
+                })?;
+            }
+            let mut runs = Vec::new();
+            while let Some(run) = tasks.join_next().await {
+                runs.push(run.expect("request task"));
+            }
+            let wall_ns = start.elapsed().as_nanos();
+            runs.sort_by_key(|r| r.request);
+            let rows: u64 = runs.iter().map(|r| r.rows).sum();
+            let ok = runs.iter().filter(|r| r.status == "OK").count();
+            eprintln!(
+                "round {round} {id:<5} x{} {:>8.2} s {rows:>9} rows, {ok}/{} OK",
+                options.concurrency,
+                wall_ns as f64 / 1e9,
+                runs.len()
+            );
+            let stop = runs
+                .iter()
+                .find(|r| {
+                    r.status.contains("ResourceExhausted") || r.status.contains("Unavailable")
+                })
+                .map(|r| r.status.clone());
+            report.results.push(serde_json::json!({
+                "round": round,
+                "workload": id,
+                "concurrency": options.concurrency,
+                "wall_ns": wall_ns,
+                "rows": rows,
+                "requests": runs,
+            }));
+            if let Some(status) = stop {
+                return Err(Stop(status));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// The options workloads, one paced request at a time, capped at `max_rows`.
@@ -1575,9 +1731,26 @@ fn output_path(run_id: &str) -> Result<PathBuf, &'static str> {
     Ok(path)
 }
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> std::process::ExitCode {
+fn main() -> std::process::ExitCode {
     let cli = Cli::parse();
+    // `workload` runs many queries at once: a multi-threaded runtime with the
+    // Python package's worker count (at most 4), so decoding is not confined
+    // to one thread. Every other command keeps the single-threaded runtime
+    // its earlier results were measured with.
+    let runtime = match cli.command {
+        Command::Workload(_) => tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(std::thread::available_parallelism().map_or(2, |n| n.get().min(4)))
+            .enable_all()
+            .build(),
+        _ => tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build(),
+    }
+    .expect("tokio runtime");
+    runtime.block_on(run(cli))
+}
+
+async fn run(cli: Cli) -> std::process::ExitCode {
     let (common, name) = match &cli.command {
         Command::Breakdown(options) => (&options.common, "breakdown"),
         Command::Limits(options) => (&options.common, "limits"),
@@ -1585,6 +1758,7 @@ async fn main() -> std::process::ExitCode {
         Command::Checks(options) => (&options.common, "checks"),
         Command::Session(options) => (&options.common, "session"),
         Command::Sizes(options) => (&options.common, "sizes"),
+        Command::Workload(options) => (&options.common, "workload"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -1649,6 +1823,7 @@ async fn main() -> std::process::ExitCode {
             session_probe(options, &client, &mut report, &mut identity).await
         }
         Command::Sizes(options) => sizes(options, &client, &mut report).await,
+        Command::Workload(options) => workload(options, &client, &mut report).await,
     };
     if let Err(Stop(reason)) = &result {
         report.stopped = Some(reason.clone());
@@ -1946,6 +2121,55 @@ mod tests {
             ),
             ("OK", 300, 3, true)
         );
+    }
+
+    #[tokio::test]
+    async fn workload_times_every_request_and_counts_rows() {
+        // Option RPCs reach the stock-EOD-only fixture and are refused there;
+        // every request of each workload is still sent and recorded once.
+        let server = fixture::Fixture::start(fixture::Script::default());
+        // The fixture login has no tier (FREE: 20 a minute); 26 requests here.
+        let client = fixture_client(&server)
+            .await
+            .with_scheduler(praevis_thetadata_client::SchedulerPolicy::for_tier(
+                praevis_thetadata_client::Tier::Pro,
+            ))
+            .unwrap();
+        let args = WorkloadArgs {
+            common: entitlement_args(&[], 5).common,
+            workloads: "W5c,S2".into(),
+            concurrency: 3,
+            rounds: 2,
+        };
+        let mut report = Report::default();
+        workload(&args, &client, &mut report).await.unwrap();
+        assert_eq!(report.results.len(), 4);
+        let first = &report.results[0];
+        assert_eq!(
+            (first["workload"].as_str(), first["round"].as_u64()),
+            (Some("W5c"), Some(0))
+        );
+        let requests = first["requests"].as_array().unwrap();
+        assert_eq!(requests.len(), 12);
+        assert!(
+            requests.iter().enumerate().all(|(i, r)| r["request"] == i
+                && r["status"].as_str().unwrap().contains("Unimplemented"))
+        );
+        // Rows through query(), counted and dropped.
+        let (wire_table, _) = fixture::table(fixture::Shape::Prices, 100);
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire_table, true)); 5],
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let run = run_query(
+            &client,
+            typed::StockHistoryEod::new("AAPL", date("2024-06-14"), date("2024-06-14")),
+            7,
+        )
+        .await;
+        assert_eq!((run.status.as_str(), run.rows, run.request), ("OK", 500, 7));
+        assert!(run.first_batch_ns.is_some());
     }
 
     #[tokio::test]
