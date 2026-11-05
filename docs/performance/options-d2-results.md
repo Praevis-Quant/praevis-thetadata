@@ -72,7 +72,7 @@ the vendor's fastest synchronous round, and 2.8× its fastest threaded round.
 | W4 ≥ C× synchronous minus scheduling losses (C = 8) | 9.3× | 10.3× | **Met** (W4c) |
 | W6 ≥ 1.0× threaded | 7.9× | 8.1× | **Met** (W6c) |
 | W6 ≥ C× synchronous minus scheduling losses (C = 8) | 10.3× | 10.5× | **Met** (W6c) |
-| Memory bounded by configuration under W5 | — | — | **Not assessed** (below) |
+| Memory bounded by configuration under W5 | — | — | **Met for the streaming path** (job to Parquet; [plan](../architecture/options-phase.md#memory-bound-under-w5-planned)): Rust heap peaks 103-182 MiB over 7 live runs of up to 26.6M rows; Parquet footer metadata (about 13 KB per row group) and the Python process baseline are not bounded |
 
 The targets are met for these per-expiration workloads only. The slow
 all-strike quote shape is not covered.
@@ -150,10 +150,9 @@ Ours used about half the vendor's memory over the run (0.51× delta, 0.53×
 total). Each peak is the whole run, with up to 8 results built at once in the
 threaded runs.
 
-**The memory target ("bounded by configuration under W5") is not
-assessed.** These runners build each result as a Polars frame, so memory
-grows with the result. A bounded run would stream (`batches()` or
-`to_parquet`) with a configured limit, and is a separate measurement.
+**The memory target ("bounded by configuration under W5")** could not be
+assessed by these runners, which build each result as a Polars frame. It was
+measured separately on the streaming path and is met there ([plan](../architecture/options-phase.md#memory-bound-under-w5-planned)).
 
 ## Interleaved repeat (2026-11-05, 01:12-01:38 local)
 

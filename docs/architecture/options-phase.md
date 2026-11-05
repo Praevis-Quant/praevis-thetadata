@@ -306,6 +306,59 @@ code as the offline example, so the Python layer is ruled out. Still open:
 
 It runs on M4, M4b (06-13 alone) and M5. The Python runner repeats M4b.
 
+**Diagnosis (main 57cac8f, Windows, PRO; all runs OK).** The samples of
+heap against rows written show:
+- **No accumulation:** the heap returns to 0.4-0.6 MiB after every run.
+  Between peaks it moves between about 15 and 97 MiB with no upward trend,
+  on both days of M5.
+- **The peak is a stall:** each peak falls where the rows stop arriving for
+  seconds while one slow request holds the head. The other open parts keep
+  receiving and fill their buffers (the bounded read-ahead).
+- **Same spot, different runs:** M4 stalled about 3.0M rows into 06-14 (5 s).
+  M5 stalled at the same point of its second day, 06-14 (3.9 s), and peaked
+  there. M5's first day did not repeat M4b's early stall (97.6 MiB against
+  172.0).
+- **Heap and RSS agree:** the peak working set above idle was 155-188 MiB
+  against heap peaks of 155-182 MiB, so the Windows allocator adds little.
+
+**Repeats** (heap peak above idle; process peak working set):
+
+| Workload | Rows | Run 1 | Run 2 | Run 3 |
+| --- | ---: | ---: | ---: | ---: |
+| M4 (one day) | 12.85M | 154.9 MiB (RSS 176) | 103.3 MiB (RSS 138) | 107.2 MiB (RSS 133) |
+| M4b (the other day) | 13.73M | 172.0 MiB (RSS 166) | | |
+| M5 (both days) | 26.58M | 182.4 MiB (RSS 199) | 163.8 MiB (RSS 179) | 109.9 MiB (RSS 137) |
+
+M5's lowest run (109.9 MiB) matches M4's (103.3 MiB) with twice the rows.
+**The "M5 excess" was the spread of a stall-driven peak**, read from single
+runs. That is why the prediction above failed, and why the repeats were run.
+
+**Result: memory bounded by configuration under W5, met for the streaming
+path** (`job()` to Parquet, the Rust heap):
+- **Observed:** heap peaks of **103-182 MiB** above idle over 7 live runs of
+  up to 26.6M rows. The process peak working set was 133-199 MiB (idle about
+  11 MiB).
+- **Configured worst case:**
+  - the read-ahead: 4 × concurrency parts × 2 batches of at most 65,536 rows
+    or 8 MiB (32 × 2 × 8 MiB = 512 MiB at PRO);
+  - the decoders: 8 × 8 MiB;
+  - the stream windows: 8 × 2 MiB;
+  - one Parquet row group in progress.
+
+  Peaks reach this only if one request stalls long enough for every other
+  open part to fill.
+- **Not bounded:**
+  - Parquet footer metadata, about **13 KB per row group**, held until the
+    file closes. It grows with the file (about 0.1 MiB per million rows at
+    131,072-row groups).
+  - The Python process baseline (interpreter, pyarrow, Polars), the
+    allocator and the OS. The Python runner's RSS deltas were 62-204 MiB.
+  - Holding results as frames grows with the rows (241 MiB to 1,031 MiB for
+    M1-M3).
+- **A tighter guarantee** would need a byte budget on the read-ahead, at the
+  cost of the stall overlap that took the 232-part job from 14.1 s to 7.4 s.
+  It is not proposed without a measured need.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.
