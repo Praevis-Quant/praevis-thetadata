@@ -41,6 +41,12 @@ create_exception!(
 );
 create_exception!(
     _native,
+    SessionEnded,
+    QueryFailed,
+    "The session is no longer valid (UNAUTHENTICATED); another login may have ended it. Not retried and no automatic login: share one session with existing_authorized_client."
+);
+create_exception!(
+    _native,
     OutputFailed,
     ThetaDataError,
     "A local output failed; args: (kind, detail)."
@@ -68,6 +74,7 @@ fn kind(error: QueryError) -> &'static str {
         QueryError::Idle => "idle",
         QueryError::Cancelled => "cancelled",
         QueryError::NoData => "no_data",
+        QueryError::SessionEnded => "session_ended",
         QueryError::Remote(_) => "remote",
         QueryError::Decode => "decode",
         QueryError::Schema => "schema",
@@ -80,9 +87,14 @@ fn kind(error: QueryError) -> &'static str {
 fn query_error(error: QueryError) -> PyErr {
     let code = match error {
         QueryError::Remote(code) => Some(format!("{code:?}")),
+        QueryError::SessionEnded => Some("Unauthenticated".to_owned()),
         _ => None,
     };
-    QueryFailed::new_err((kind(error), error.to_string(), code))
+    let args = (kind(error), error.to_string(), code);
+    match error {
+        QueryError::SessionEnded => SessionEnded::new_err(args),
+        _ => QueryFailed::new_err(args),
+    }
 }
 fn output_error(error: ParquetOutputError) -> PyErr {
     match error {
@@ -769,6 +781,7 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("ThetaDataError", m.py().get_type::<ThetaDataError>())?;
     m.add("QueryFailed", m.py().get_type::<QueryFailed>())?;
     m.add("OutputFailed", m.py().get_type::<OutputFailed>())?;
+    m.add("SessionEnded", m.py().get_type::<SessionEnded>())?;
     m.add_class::<Client>()?;
     m.add_class::<Table>()?;
     m.add_class::<Batch>()?;

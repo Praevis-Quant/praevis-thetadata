@@ -42,6 +42,12 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   VALUE 2, STANDARD 4 and PRO 8 concurrent requests with no per-minute limit.
   `with_scheduler` overrides it. Retry happens only on `RESOURCE_EXHAUSTED`
   and `UNAVAILABLE` at open.
+- **One session per account** (confirmed live, `opt-session-001`): a new
+  login for the account ends its earlier session, whose `query()` and `job()`
+  requests then fail with `QueryError::SessionEnded` (gRPC `UNAUTHENTICATED`;
+  the stock EOD streams keep `Remote(Unauthenticated)`, EOD-L3-016). It is not retried
+  and the client never logs in again by itself. Log in once and clone the
+  client (Python: `existing_authorized_client`).
 - **Raw helpers** call every descriptor RPC with wire query types. They are
   unsupported foundations: no typed validation, and no claim that any endpoint
   or entitlement works.

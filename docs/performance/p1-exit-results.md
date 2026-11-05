@@ -121,20 +121,24 @@ Decoding overlaps with receiving, so `query()` adds almost no wall time on
 top of the transport. This is added wall time, not CPU; CPU per row is
 section c.
 
-## Finding: one session per account
+## Finding: one session per account (confirmed by `opt-session-001`)
 
 The first exit run (`p1-py-compare-001`, `p1-mem-ours-*` 001) made two
 `Client`s, which each logged in. The first-logged-in client then failed
-about 118 ms into every first request, while the second succeeded. This is
-consistent with the service keeping one active session per account, with a
-new login ending the previous one.
+about 118 ms into every first request, while the second succeeded. The rerun
+shared one session (`existing_authorized_client`, the vendor's mechanism) and
+had no failures.
 
-The rerun shared one session (`existing_authorized_client`, the vendor's
-mechanism) and had no failures. ThetaDataDx's README states the opposite for
-market data: separately logged-in instances work together, and only the
-real-time feed is limited to one session per account
-([review](../research/thetadatadx-review.md#watch-items)). So the eviction
-explanation is **unconfirmed**. **The gRPC code the service returns to an
-ended session is still unknown:** the first run predates recording the code,
-and the rerun did not trigger it. The Python `Client` documents the rule.
-Mapping the code to a clear error waits until a run records it.
+**Confirmed on 2026-11-05** by the session probe `opt-session-001` (Windows,
+PROD, main 8aaa445): log in as A, log in again as B, then one request on
+each. A failed with **`UNAUTHENTICATED`** (gRPC 16) about 120 ms in, with no
+message; B returned its row. On the historical gRPC path, **a new login ends
+the account's earlier session.** This contradicts ThetaDataDx's README, which
+says separately logged-in market-data clients coexist
+([review](../research/thetadatadx-review.md#watch-items)).
+
+The client now reports this as a typed error: `QueryError::SessionEnded` from
+Rust's `query()` and `job()`, and `SessionEnded` (a `QueryFailed`) in Python, "session is no longer
+valid; another login may have ended it". It is not retried, and the client
+never logs in again by itself. Share one session instead: clone the Rust
+client, or pass `existing_authorized_client` in Python.

@@ -26,6 +26,18 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **`SessionEnded` error.** The service answers `UNAUTHENTICATED` when a
+  later login for the account has ended the session. The session probe
+  `opt-session-001` confirmed this on 2026-11-05: the first of two logins
+  failed with that code.
+  - `query()` and `job()` now report it as `QueryError::SessionEnded`, and
+    Python as `SessionEnded` (a `QueryFailed`): "session is no longer valid;
+    another login may have ended it".
+  - It is not retried, and the client never logs in again by itself.
+  - The stock EOD streams keep `Remote(Unauthenticated)`, as EOD-L3-016
+    requires.
+  - The P1 exit record, the ThetaDataDx review and the client docs now call
+    the one-session rule confirmed.
 - **Options PRO entitlement map recorded** (`opt-pro-entitlements-001`).
   - **Entitled:** 33 of 51 option RPCs, including every Greeks and
     trade-Greeks order. None is tier-denied.
