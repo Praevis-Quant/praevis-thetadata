@@ -16,9 +16,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
-- **The vendor-alias overhead gate (D.2) measures paired samples.** It
-  times the direct path and the alias back to back, 21 times in alternating
-  order, and gates on the median difference.
+- **The vendor-alias overhead gate (D.2) is robust to runner noise.** It
+  times the direct path and the alias in 21 interleaved blocks each, in
+  alternating order, and compares each side's minimum. Noise only adds
+  time, so the minimum is the cleanest estimate. A mutation test checks
+  that an alias costing at least 10 µs more still fails.
   - **Before:** it timed all direct calls and then all alias calls, so runner
     noise between the two phases decided the result. Windows CI measured
     -12.6 to +9.3 µs on unchanged code and failed once on noise alone.
