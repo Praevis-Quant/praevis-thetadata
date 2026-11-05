@@ -229,6 +229,9 @@ def main() -> int:
     parser.add_argument("--save-captures", action="store_true",
                         help="write raw responses (private) for the Rust replay comparison")
     parser.add_argument("--target", default=PROD_TARGET)
+    parser.add_argument("--e2e-only", action="store_true",
+                        help="only the public wrapper calls, no drain or convert: the same work as "
+                             "bench/p1/compare.py, for like-for-like memory")
     args = parser.parse_args()
 
     key = os.environ.get("THETADATA_API_KEY")
@@ -276,6 +279,8 @@ def main() -> int:
                     entry = {"round": round_no, "workload": workload, "request": index}
                     # Alternate the order of e2e and drain between rounds (AB/BA).
                     order = ("e2e", "drain") if round_no % 2 == 0 else ("drain", "e2e")
+                    if args.e2e_only:
+                        order = ("e2e",)
                     responses = []
                     for mode in order:
                         if mode == "e2e":
