@@ -26,6 +26,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Tier-aware scheduler.** A new client sizes its scheduler from the
+  account's tier in the login response: the highest of the stock, options
+  and indices subscriptions, since the vendor sets concurrency account-wide.
+  - FREE keeps the documented 1 concurrent request and 20 per minute.
+  - VALUE, STANDARD and PRO get 2, 4 and 8 concurrent requests, with no
+    per-minute limit (the vendor documents concurrency limits only).
+  - Rust: `Tier`, `SchedulerPolicy::for_tier`, `ThetaClient::tier` and
+    `scheduler_policy`; `with_scheduler` still overrides.
+  - Python: `Client.tier` and `Client.scheduler`. Unset `concurrency` and
+    `per_minute` come from the tier; `per_minute=0` removes the limit.
+  - An unrecognised subscription value counts as FREE.
 - **Options PRO live tooling** (manual, never CI):
   - `live_p0 entitlements --set options-pro --flat-file-date <day>`: every
     option RPC once, each read for a few messages. Flat files come last and

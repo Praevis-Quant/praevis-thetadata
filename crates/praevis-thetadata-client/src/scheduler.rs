@@ -1,6 +1,7 @@
 //! Request admission shared by clones of a client (P1 PR 4b): the tier's
 //! concurrency, a per-minute request limit and retry with jittered
-//! exponential backoff on `RESOURCE_EXHAUSTED` and `UNAVAILABLE` only.
+//! exponential backoff on `RESOURCE_EXHAUSTED` and `UNAVAILABLE` only. A new
+//! client sizes it from the account's tier in the login response.
 use crate::eod::QueryError;
 use std::{collections::VecDeque, sync::Arc, time::Duration};
 use tokio::{
@@ -8,12 +9,72 @@ use tokio::{
     time::{Instant, sleep_until},
 };
 
+/// A subscription tier, ordered from FREE to PRO.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Tier {
+    Free,
+    Value,
+    Standard,
+    Pro,
+}
+impl Tier {
+    /// One subscription field of the login response: a number (0 FREE,
+    /// 1 VALUE, 2 STANDARD, 3 PRO) or the tier's name. Anything else is `None`.
+    ///
+    /// Options PRO was observed as 3 and FREE as 0 (2026-11-04); 1 and 2 follow
+    /// the order and are not observed.
+    pub fn from_subscription(value: &serde_json::Value) -> Option<Self> {
+        let tier = |n: u64| match n {
+            0 => Some(Self::Free),
+            1 => Some(Self::Value),
+            2 => Some(Self::Standard),
+            3 => Some(Self::Pro),
+            _ => None,
+        };
+        match value {
+            serde_json::Value::Number(n) => n.as_u64().and_then(tier),
+            serde_json::Value::String(text) => match text.to_ascii_uppercase().as_str() {
+                "FREE" => Some(Self::Free),
+                "VALUE" => Some(Self::Value),
+                "STANDARD" => Some(Self::Standard),
+                "PRO" | "PROFESSIONAL" => Some(Self::Pro),
+                _ => text.parse().ok().and_then(tier),
+            },
+            _ => None,
+        }
+    }
+    /// The account's tier for request limits: the highest of its stock,
+    /// options and indices subscriptions, since the vendor sets concurrency
+    /// account-wide from the highest tier. FREE when none is recognised.
+    pub fn of_account(user: &praevis_thetadata_auth::User) -> Self {
+        [
+            &user.stock_subscription,
+            &user.options_subscription,
+            &user.indices_subscription,
+        ]
+        .into_iter()
+        .filter_map(Self::from_subscription)
+        .max()
+        .unwrap_or(Self::Free)
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Free => "FREE",
+            Self::Value => "VALUE",
+            Self::Standard => "STANDARD",
+            Self::Pro => "PRO",
+        }
+    }
+}
+
 /// Limits applied to every `query()` request of a client and its clones.
 ///
-/// The default is the FREE tier's **documented** limits: 1 concurrent request
-/// and 20 per minute (design decision D5). P0 observed FREE serving 3 at once
-/// and no limit at 40 per minute; those are available only as an explicit
-/// choice ([`SchedulerPolicy::free_observed`]). Paid tiers set their own.
+/// A new client uses [`SchedulerPolicy::for_tier`] with the account's tier;
+/// [`ThetaClient::with_scheduler`](crate::ThetaClient::with_scheduler)
+/// overrides it. The `Default` is the FREE tier's **documented** limits: 1
+/// concurrent request and 20 per minute (design decision D5). P0 observed FREE
+/// serving 3 at once and no limit at 40 per minute; those are available only
+/// as an explicit choice ([`SchedulerPolicy::free_observed`]).
 #[derive(Debug, Clone)]
 pub struct SchedulerPolicy {
     /// Concurrent requests (1..=64). A request holds its slot until its
@@ -40,6 +101,23 @@ impl Default for SchedulerPolicy {
     }
 }
 impl SchedulerPolicy {
+    /// The vendor's documented limits for `tier`: FREE 1 concurrent request
+    /// and 20 per minute; VALUE 2, STANDARD 4 and PRO 8 concurrent requests
+    /// with no per-minute limit ("not rate-limited in any way", concurrency
+    /// only; re-verified 2026-11-05).
+    pub fn for_tier(tier: Tier) -> Self {
+        let concurrency = match tier {
+            Tier::Free => return Self::default(),
+            Tier::Value => 2,
+            Tier::Standard => 4,
+            Tier::Pro => 8,
+        };
+        Self {
+            concurrency,
+            per_minute: None,
+            ..Self::default()
+        }
+    }
     /// FREE as observed in P0 (3 concurrent, 40 per minute): faster, but not
     /// guaranteed by the vendor. Opt in explicitly.
     pub fn free_observed() -> Self {
@@ -229,5 +307,53 @@ mod tests {
         }
         assert_eq!(SchedulerPolicy::free_observed().concurrency, 3);
         assert_eq!(SchedulerPolicy::default().per_minute, Some(20));
+    }
+
+    #[test]
+    fn the_tier_comes_from_the_highest_subscription() {
+        use serde_json::json;
+        for (value, tier) in [
+            (json!(0), Some(Tier::Free)),
+            (json!(1), Some(Tier::Value)),
+            (json!(2), Some(Tier::Standard)),
+            (json!(3), Some(Tier::Pro)),
+            (json!("PRO"), Some(Tier::Pro)),
+            (json!("standard"), Some(Tier::Standard)),
+            (json!("3"), Some(Tier::Pro)),
+            (json!(4), None),
+            (json!(-1), None),
+            (json!(1.5), None),
+            (json!(null), None),
+            (json!({"tier": 3}), None),
+        ] {
+            assert_eq!(Tier::from_subscription(&value), tier, "{value}");
+        }
+        let user = |stock, options, indices| praevis_thetadata_auth::User {
+            email: String::new(),
+            stock_subscription: stock,
+            options_subscription: options,
+            indices_subscription: indices,
+        };
+        // The observed account: options PRO, stocks and indices FREE.
+        assert_eq!(
+            Tier::of_account(&user(json!(0), json!(3), json!(0))),
+            Tier::Pro
+        );
+        assert_eq!(
+            Tier::of_account(&user(json!(null), json!("odd"), json!(1))),
+            Tier::Value
+        );
+        assert_eq!(
+            Tier::of_account(&user(json!(null), json!(null), json!(null))),
+            Tier::Free
+        );
+        let limits = |tier| {
+            let p = SchedulerPolicy::for_tier(tier);
+            (p.concurrency, p.per_minute)
+        };
+        assert_eq!(limits(Tier::Free), (1, Some(20)));
+        assert_eq!(limits(Tier::Value), (2, None));
+        assert_eq!(limits(Tier::Standard), (4, None));
+        assert_eq!(limits(Tier::Pro), (8, None));
     }
 }

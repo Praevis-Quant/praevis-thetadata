@@ -143,7 +143,14 @@ pub async fn session() -> Session {
 /// every connection it accepts (EOD-L3-005 injected counter). The first is the login;
 /// any later connection means something tried to authenticate again.
 pub async fn session_with_auth_counter() -> (Session, Arc<std::sync::atomic::AtomicUsize>) {
+    session_with_user(&format!(r#"{{"email":"{EMAIL}"}}"#)).await
+}
+
+/// Like [`session_with_auth_counter`], with this `user` object in the login
+/// response (for example its subscription fields).
+pub async fn session_with_user(user: &str) -> (Session, Arc<std::sync::atomic::AtomicUsize>) {
     use std::sync::atomic::{AtomicUsize, Ordering};
+    let user = user.to_owned();
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let endpoint = format!("http://{}/auth", listener.local_addr().unwrap());
     let connections = Arc::new(AtomicUsize::new(0));
@@ -172,7 +179,7 @@ pub async fn session_with_auth_counter() -> (Session, Arc<std::sync::atomic::Ato
                 }
             }
         }
-        let body = format!(r#"{{"sessionId":"{TOKEN}","user":{{"email":"{EMAIL}"}}}}"#);
+        let body = format!(r#"{{"sessionId":"{TOKEN}","user":{user}}}"#);
         let reply = format!(
             "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
             body.len()
