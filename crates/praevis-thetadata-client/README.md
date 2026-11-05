@@ -35,7 +35,12 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   and job streams. The file appears only once the whole stream is written.
 - **Jobs and scheduling** (`ThetaClient::job`, `SchedulerPolicy`, unreleased P1
   work): a request is split by date within the vendor's limits (EOD at 366
-  days, intraday history per day), and the parts are merged in order. Every
+  days, intraday history per day), and the parts are merged in order.
+  All-strike tick and 1 s option quote requests are also split per listed
+  strike (one extra `option_list_strikes` request) when the scheduler runs
+  at least 2 requests at once. The service waits about 60 s before answering
+  them whole, and the split returned identical rows 6.4-7.6× sooner at 8
+  ([request timing](../../docs/performance/request-timing.md)). Every
   `query()` is admitted by the client's scheduler. By default it follows the
   account's tier from the login response (`ThetaClient::tier`, the highest
   subscription): FREE's documented 1 concurrent request and 20 per minute;

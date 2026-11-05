@@ -1,11 +1,14 @@
 //! Planned jobs (P1 PR 4b): one typed request split by date into requests
 //! within the vendor's limits, run through the client's scheduler and merged
 //! back, in date order, into one stream of Arrow batches.
+//!
+//! Options phase: an all-strike tick or 1 s option quote request is also
+//! split per listed strike (see [`ThetaClient::job`]).
 use crate::ThetaClient;
-use crate::endpoints::{Endpoint, Split};
+use crate::endpoints::{Endpoint, Expiration, OptionHistoryQuote, OptionListStrikes, Split};
 use crate::eod::QueryError;
 use crate::query::BatchPolicy;
-use chrono::Days;
+use chrono::{Days, NaiveDate};
 use praevis_thetadata_arrow::arrow_array::{ArrayRef, RecordBatch, new_null_array};
 use praevis_thetadata_arrow::arrow_schema::{DataType, Field, Schema};
 use std::{collections::VecDeque, sync::Arc};
@@ -38,6 +41,142 @@ pub fn plan<E: Endpoint + Clone>(request: &E) -> Vec<E> {
     }
 }
 
+/// Whether an option quote request is the all-strike, fine-grained shape the
+/// service is slow to answer whole: every strike (`*`), a `tick` or `1s`
+/// interval (`1s` is the vendor default), one concrete expiration, and no
+/// `strike_range` or `max_dte`. Measured (`opt-sizes-002`, `opt-split-001`):
+/// such a request waits about 60 s before any data, while the same request
+/// per strike, 8 at a time, returned identical rows 6.4-7.6x sooner. Other
+/// intervals were not slow (1-minute) or are unmeasured (sub-second, 5-30 s),
+/// so they are not split.
+fn strike_split_expiration(request: &OptionHistoryQuote) -> Option<NaiveDate> {
+    let interval = request.interval.as_deref().unwrap_or("1s");
+    let all_strikes = request.strike.as_deref().is_none_or(|s| s == "*");
+    if !matches!(interval, "tick" | "1s")
+        || !all_strikes
+        || request.strike_range.is_some()
+        || request.max_dte.is_some()
+    {
+        return None;
+    }
+    match &request.expiration {
+        Expiration::Date(date) => Some(*date),
+        Expiration::Text(text) => NaiveDate::parse_from_str(text, "%Y-%m-%d")
+            .or_else(|_| NaiveDate::parse_from_str(text, "%Y%m%d"))
+            .ok(),
+    }
+}
+
+/// A decimal strike as request text in dollars, with at least two decimals
+/// (`542.00`, `542.50`, `0.125`), as the vendor documents strikes.
+fn strike_text(value: i128, scale: u32) -> String {
+    let unit = 10i128.pow(scale);
+    let (whole, mut frac) = (value / unit, (value % unit).abs());
+    let mut digits = scale;
+    while digits > 2 && frac % 10 == 0 {
+        frac /= 10;
+        digits -= 1;
+    }
+    if digits < 2 {
+        frac *= 10i128.pow(2 - digits);
+        digits = 2;
+    }
+    format!("{whole}.{frac:0width$}", width = digits as usize)
+}
+
+impl ThetaClient {
+    /// The strikes listed for `symbol` and `expiration`, ascending by value,
+    /// as request text. One `option_list_strikes` request. `None` if the
+    /// service lists none or the strikes are not decimals.
+    async fn listed_strikes(
+        &self,
+        symbol: &str,
+        expiration: NaiveDate,
+    ) -> Result<Option<Vec<String>>, QueryError> {
+        use praevis_thetadata_arrow::arrow_array::Array;
+        use praevis_thetadata_arrow::arrow_array::cast::AsArray;
+        use praevis_thetadata_arrow::arrow_array::types::Decimal128Type;
+        let batches = match self
+            .query(&OptionListStrikes::new(symbol, expiration))
+            .await
+        {
+            Ok(stream) => stream.collect().await,
+            Err(error) => Err(error),
+        };
+        let batches = match batches {
+            Ok(batches) => batches,
+            Err(QueryError::NoData) => return Ok(None),
+            Err(error) => return Err(error),
+        };
+        let mut values = Vec::new();
+        let mut scale = None;
+        for batch in &batches {
+            let Some(column) = batch.column_by_name("strike") else {
+                return Ok(None);
+            };
+            let DataType::Decimal128(_, s) = column.data_type() else {
+                return Ok(None);
+            };
+            if *scale.get_or_insert(*s) != *s || column.null_count() > 0 {
+                return Ok(None);
+            }
+            values.extend(
+                column
+                    .as_primitive::<Decimal128Type>()
+                    .values()
+                    .iter()
+                    .copied(),
+            );
+        }
+        values.sort_unstable();
+        values.dedup();
+        let scale = scale.map_or(0, |s| s.max(0) as u32);
+        Ok((!values.is_empty())
+            .then(|| values.into_iter().map(|v| strike_text(v, scale)).collect()))
+    }
+
+    /// The parts of `request`: its date split, and for the all-strike fine
+    /// quote shape each date part once per listed strike (one extra list
+    /// request), in date then ascending strike order.
+    async fn job_parts<E>(&self, request: &E) -> Result<Vec<E>, QueryError>
+    where
+        E: Endpoint + Clone + Send + Sync + 'static,
+    {
+        use std::any::Any;
+        let by_date = plan(request);
+        let Some(quote) = (request as &dyn Any).downcast_ref::<OptionHistoryQuote>() else {
+            return Ok(by_date);
+        };
+        // One at a time, the split is slower than the single request (95.9 s
+        // against about 60 s in opt-split-001): only split when requests
+        // can overlap.
+        let Some(expiration) =
+            strike_split_expiration(quote).filter(|_| self.scheduler.policy.concurrency >= 2)
+        else {
+            return Ok(by_date);
+        };
+        let Some(strikes) = self.listed_strikes(&quote.symbol, expiration).await? else {
+            return Ok(by_date);
+        };
+        let mut parts = Vec::with_capacity(by_date.len() * strikes.len());
+        for part in by_date {
+            let Some(part) = (&part as &dyn Any).downcast_ref::<OptionHistoryQuote>() else {
+                return Ok(vec![request.clone()]);
+            };
+            for strike in &strikes {
+                let mut one = part.clone();
+                one.strike = Some(strike.clone());
+                let boxed: Box<dyn Any> = Box::new(one);
+                match boxed.downcast::<E>() {
+                    Ok(one) => parts.push(*one),
+                    Err(_) => return Ok(vec![request.clone()]),
+                }
+            }
+        }
+        Ok(parts)
+    }
+}
+
 type Shard = mpsc::Receiver<Result<RecordBatch, QueryError>>;
 
 impl ThetaClient {
@@ -45,8 +184,21 @@ impl ThetaClient {
     /// days, intraday history per day), each part a scheduled `query()`, with
     /// at most the scheduler's concurrency in flight, merged in date order.
     ///
-    /// A part that finds no data (`NOT_FOUND`, for example a holiday) is
-    /// skipped; if every part does, the job reports `NoData`. Any other error
+    /// **All-strike tick and 1 s option quotes are also split per strike.**
+    /// An `option_history_quote` request for every strike (`*`) at a `tick`
+    /// or `1s` interval, with one concrete expiration and no `strike_range`
+    /// or `max_dte`, first lists the expiration's strikes (one extra
+    /// `option_list_strikes` request), then sends each date part once per
+    /// strike, when the scheduler runs at least 2 requests at once (one at a
+    /// time, the split is slower than the single request). The rows are the
+    /// same as the single request's (verified exactly, `opt-split-001`). The order is date, then strike ascending,
+    /// then the service's order within a strike; the single request's own
+    /// order is not documented. If the list is empty, the request is sent
+    /// unsplit. `query()` never splits.
+    ///
+    /// A part that finds no data (`NOT_FOUND`, for example a holiday, or a
+    /// strike without quotes) is skipped; if every part does, the job
+    /// reports `NoData`. Any other error
     /// ends the job after the rows before it. Dropping or cancelling the job
     /// cancels its queued and running requests.
     pub async fn job<E>(&self, request: &E) -> Result<JobStream, QueryError>
@@ -65,7 +217,7 @@ impl ThetaClient {
     where
         E: Endpoint + Clone + Send + Sync + 'static,
     {
-        let parts: VecDeque<E> = plan(request).into();
+        let parts: VecDeque<E> = self.job_parts(request).await?.into();
         let ahead = self.scheduler.policy.concurrency;
         let client = self.clone();
         let mut start = Box::new(move |part: E| -> (Shard, JoinHandle<()>) {

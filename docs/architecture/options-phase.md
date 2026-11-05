@@ -127,6 +127,24 @@ Recorded in [options-d2-results.md](../performance/options-d2-results.md):
 every time target is met for the per-expiration workloads. The memory bound
 is not yet assessed, and the slow all-strike quote shape is not covered.
 
+## Per-strike split (`opt-split-001`, 2026-11-05)
+
+`live_p0 split-probe` on main f91554c used W5b (tick quotes, SPY calls
+expiring 2024-06-21, on 2024-06-14, 10:00-10:15) and 232 listed strikes.
+The reference was stable (identical before and after).
+
+| Run | Rows | Time |
+| --- | ---: | ---: |
+| All-strike request, before / after | 938,663 | 69.6 s / 58.9 s (first data 65.7 s / 55.8 s) |
+| Per strike, 1 at a time | 938,663 | 95.9 s |
+| Per strike, 8 at a time | 938,663 | **9.1 s** |
+
+- **Exact:** rows, columns and the value digest equal the reference at both
+  concurrencies. 226 strikes returned data and 6 had none (`NoData`).
+- **Decision:** the planner splits all-strike tick and 1 s quote requests
+  per strike, at a scheduler concurrency of 2 or more. `split-probe` also
+  runs `job()` and compares it exactly with the reference.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.

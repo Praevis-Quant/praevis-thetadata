@@ -206,8 +206,15 @@ pub async fn session_with_user(user: &str) -> (Session, Arc<std::sync::atomic::A
     (result, connections)
 }
 
+/// Answers any RPC other than stock EOD: the RPC name and the encoded request
+/// in, the messages to stream (or an initial status) out.
+pub type Handler =
+    Arc<dyn Fn(&str, Vec<u8>) -> Result<Vec<wire::ResponseData>, tonic::Status> + Send + Sync>;
+
 #[derive(Clone, Default)]
 pub struct Script {
+    /// Every other RPC; without it they are `UNIMPLEMENTED`.
+    pub other: Option<Handler>,
     pub messages: Vec<Result<wire::ResponseData, tonic::Status>>,
     pub message_delay: Duration,
     pub initial_error: Option<tonic::Status>,
@@ -257,6 +264,25 @@ impl FixtureService {
                     tokio::time::sleep(script.message_delay).await;
                 }
                 if tx.send(item).await.is_err() {
+                    break;
+                }
+            }
+        });
+        Ok(tonic::Response::new(ReceiverStream::new(rx)))
+    }
+}
+impl FixtureService {
+    async fn other(
+        &self,
+        handler: Handler,
+        rpc: &str,
+        request: Vec<u8>,
+    ) -> Result<tonic::Response<FixtureStream>, tonic::Status> {
+        let messages = handler(rpc, request)?;
+        let (tx, rx) = mpsc::channel(1);
+        tokio::spawn(async move {
+            for message in messages {
+                if tx.send(Ok(message)).await.is_err() {
                     break;
                 }
             }

@@ -40,6 +40,43 @@ All 12 requests of the run were under the vendor's recommended 1 million rows.
    hundreds or thousands of rows per message. Conclusions about one do not carry
    over to the other.
 
+## Why some quote requests wait a minute, and what the client does
+
+**The cause (measured).** Tick and 1-second quote requests across every
+strike of an expiration wait about **60 s** before their first data,
+whatever the time window. A 1-minute window waited 61-63 s, and 15 to 30
+minutes waited 59-72 s. The same quotes for **one** contract over a whole
+day (486k rows) arrived in 1.1 s. 1-minute quotes and tick trades across
+every strike are not slow (`opt-sizes-002`).
+
+**The fix: `job()` splits these requests per strike.** It lists the
+expiration's strikes (one extra request, `option_list_strikes`), then sends
+one request per strike, up to your tier's concurrency.
+
+Measured on SPY calls expiring 2024-06-21, on 2024-06-14 from 10:00 to 10:15
+(`opt-split-001`, 232 strikes, 938,663 rows):
+
+| How | Time |
+| --- | ---: |
+| One request, every strike | 58.9-69.6 s |
+| Per strike, one at a time | 95.9 s |
+| Per strike, 8 at a time (PRO) | **9.1 s** |
+
+- **The rows are identical:** the same count, columns and values, checked
+  exactly. 6 strikes had no quotes in the window and are skipped.
+- **When it applies:** `option_history_quote` with every strike (`*`), a
+  `tick` or `1s` interval (the vendor default is `1s`), one concrete
+  expiration, and no `strike_range` or `max_dte`.
+- **What stays whole:** other intervals, a single strike, `query()` in Rust,
+  and `plan=False` in Python.
+- **The cost:** one list request per job. One at a time, per-strike requests
+  are slower than the single request (95.9 s), so `job()` splits only when
+  the scheduler runs at least 2 requests at once. On PRO (8) the split was
+  6.4-7.6× faster. STANDARD (4) is not measured.
+- **Order:** rows come by date, then strike ascending, then the service's
+  order within a strike. The single request's order is not documented, so
+  sort if you depend on one.
+
 ## What we expect, not yet measured
 
 If a request spends most of its time waiting, several requests running at once

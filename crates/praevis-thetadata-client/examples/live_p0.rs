@@ -114,7 +114,8 @@ struct SplitProbeArgs {
     /// tick quotes for SPY calls, 10:00-10:15, about 939k rows).
     #[arg(long, default_value = "W5b")]
     workload: String,
-    /// Concurrency of the per-strike runs, each run in turn.
+    /// Concurrency of the hand-made per-strike runs, each run in turn (`job()`
+    /// runs once more at the tier's concurrency). An empty value skips them.
     #[arg(long, default_value = "1,8")]
     concurrency: String,
 }
@@ -1504,15 +1505,48 @@ fn row_digest(batch: &praevis_thetadata_client::arrow_array::RecordBatch) -> u64
     sum
 }
 
-async fn digest_query<E: Endpoint>(client: &ThetaClient, request: E, index: usize) -> Digested {
+/// How a digested request is sent: `query()` as given, or `job()` (which
+/// plans the per-strike split for the all-strike fine quote shape).
+#[derive(Clone, Copy)]
+enum Via {
+    Query,
+    Job,
+}
+
+async fn digest_query<E: Endpoint + Clone + Send + Sync + 'static>(
+    client: &ThetaClient,
+    request: E,
+    index: usize,
+) -> Digested {
+    digest_via(client, request, index, Via::Query).await
+}
+
+async fn digest_via<E: Endpoint + Clone + Send + Sync + 'static>(
+    client: &ThetaClient,
+    request: E,
+    index: usize,
+    via: Via,
+) -> Digested {
+    enum Stream {
+        Query(Box<praevis_thetadata_client::QueryStream>),
+        Job(praevis_thetadata_client::JobStream),
+    }
     let start = Instant::now();
     let mut out = Digested {
         request: index,
         ..Default::default()
     };
     let result = async {
-        let mut stream = client.query(&request).await?;
-        while let Some(batch) = stream.next_batch().await? {
+        let mut stream = match via {
+            Via::Query => Stream::Query(Box::new(client.query(&request).await?)),
+            Via::Job => Stream::Job(client.job(&request).await?),
+        };
+        loop {
+            let next = match &mut stream {
+                Stream::Query(s) => s.next_batch().await?,
+                Stream::Job(s) => s.next_batch().await?,
+            };
+            let Some(batch) = next else { break };
             out.first_batch_ns
                 .get_or_insert_with(|| start.elapsed().as_nanos());
             if out.columns.is_empty() {
@@ -1616,6 +1650,7 @@ async fn split_probe(
     let levels: Vec<u32> = options
         .concurrency
         .split(',')
+        .filter(|c| !c.trim().is_empty())
         .map(|c| c.trim().parse().ok().filter(|c| (1..=8).contains(c)))
         .collect::<Option<_>>()
         .ok_or_else(|| Stop("ConcurrencyOneToEight".into()))?;
@@ -1710,6 +1745,30 @@ async fn split_probe(
             return Err(Stop(status));
         }
     }
+    // The same request through job(), whose planner makes the per-strike
+    // split itself (one extra strikes-list request), at the tier's
+    // concurrency.
+    pacer.wait().await;
+    let job = option_dispatch!(method, &request, r => digest_via(client, r, 0, Via::Job).await)?;
+    eprintln!(
+        "job(): {} {} rows in {:.1} s, digest equal: {}",
+        job.status,
+        job.rows,
+        job.total_ns as f64 / 1e9,
+        job.digest == reference[0].digest
+    );
+    if stop_on(&job.status) {
+        return Err(Stop(job.status));
+    }
+    let job = serde_json::json!({
+        "status": job.status,
+        "total_ns": job.total_ns,
+        "first_batch_ns": job.first_batch_ns,
+        "rows": job.rows,
+        "rows_equal_reference": job.rows == reference[0].rows,
+        "digest_equal_reference": job.digest == reference[0].digest,
+        "columns_equal_reference": job.columns == reference[0].columns,
+    });
     reference.push(run_reference("after", &mut pacer).await?);
     let stable =
         reference[0].rows == reference[1].rows && reference[0].digest == reference[1].digest;
@@ -1719,6 +1778,7 @@ async fn split_probe(
         "reference_stable": stable,
         "reference": reference,
         "splits": splits,
+        "job": job,
     }));
     Ok(())
 }

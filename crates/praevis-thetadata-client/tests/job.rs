@@ -42,6 +42,14 @@ async fn connect(fixture: &Fixture, policy: SchedulerPolicy) -> ThetaClient {
     .with_scheduler(policy)
     .unwrap()
 }
+/// 8 at a time with no per-minute limit, like PRO.
+fn parallel() -> SchedulerPolicy {
+    SchedulerPolicy {
+        concurrency: 8,
+        per_minute: None,
+        ..fast()
+    }
+}
 fn fast() -> SchedulerPolicy {
     SchedulerPolicy {
         backoff: Duration::from_millis(5),
@@ -226,4 +234,174 @@ async fn the_default_scheduler_follows_the_account_tier() {
     assert_eq!(client.tier(), praevis_thetadata_client::Tier::Free);
     let policy = client.scheduler_policy();
     assert_eq!((policy.concurrency, policy.per_minute), (1, Some(20)));
+}
+
+/// A fixture for the per-strike split: `option_list_strikes` lists the given
+/// strikes (in dollars, 2 decimals); `option_history_quote` answers each
+/// strike with `rows` rows naming it, or `NOT_FOUND` for `empty`, and the
+/// all-strike request with one row named `*`. Every quote request's strike is
+/// recorded in order of arrival.
+fn strike_fixture(
+    strikes: &'static [i32],
+    empty: &'static str,
+    rows: i64,
+) -> (Fixture, std::sync::Arc<std::sync::Mutex<Vec<String>>>) {
+    use praevis_thetadata_proto::beta_endpoints::OptionHistoryQuoteRequest;
+    use prost::Message;
+    let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let log = seen.clone();
+    let handler: support::Handler = std::sync::Arc::new(move |rpc, request| match rpc {
+        "GetOptionListStrikes" => {
+            if strikes.is_empty() {
+                return Err(tonic::Status::not_found("synthetic"));
+            }
+            let table = DataTable {
+                headers: vec!["strike".into()],
+                data_table: strikes
+                    .iter()
+                    .map(|cents| DataValueList {
+                        values: vec![DataValue {
+                            data_type: Some(Wire::Price(wire::Price {
+                                value: *cents,
+                                r#type: 8,
+                            })),
+                        }],
+                    })
+                    .collect(),
+            };
+            Ok(vec![support::response(&table, false)])
+        }
+        "GetOptionHistoryQuote" => {
+            let query = OptionHistoryQuoteRequest::decode(request.as_slice())
+                .unwrap()
+                .params
+                .unwrap();
+            let strike = query
+                .contract_spec
+                .and_then(|c| c.strike)
+                .unwrap_or_else(|| "*".into());
+            log.lock().unwrap().push(strike.clone());
+            if strike == empty {
+                return Err(tonic::Status::not_found("synthetic"));
+            }
+            let count = if strike == "*" { 1 } else { rows };
+            let table = DataTable {
+                headers: vec!["s".into(), "n".into()],
+                data_table: (0..count)
+                    .map(|i| DataValueList {
+                        values: vec![
+                            DataValue {
+                                data_type: Some(Wire::Text(strike.clone())),
+                            },
+                            DataValue {
+                                data_type: Some(Wire::Number(i)),
+                            },
+                        ],
+                    })
+                    .collect(),
+            };
+            Ok(vec![support::response(&table, true)])
+        }
+        _ => Err(tonic::Status::unimplemented("synthetic")),
+    });
+    let fixture = Fixture::start(Script {
+        other: Some(handler),
+        ..Default::default()
+    });
+    (fixture, seen)
+}
+
+async fn strike_texts(
+    client: &ThetaClient,
+    request: &endpoints::OptionHistoryQuote,
+) -> Vec<String> {
+    use praevis_thetadata_client::arrow_array::Array;
+    use praevis_thetadata_client::arrow_array::cast::AsArray;
+    let batches = client.job(request).await.unwrap().collect().await.unwrap();
+    batches
+        .iter()
+        .flat_map(|b| {
+            let column = b.column_by_name("s").unwrap().as_string::<i32>().clone();
+            (0..column.len()).map(move |i| column.value(i).to_owned())
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn all_strike_fine_quotes_split_per_listed_strike_in_strike_order() {
+    // 99.00 sorts before 540.00 by value, after it as text.
+    let (fixture, seen) = strike_fixture(&[54250, 9900, 54000], "540.00", 2);
+    let client = connect(&fixture, parallel()).await;
+    let request = endpoints::OptionHistoryQuote::new("SPY", day("2024-06-21"))
+        .date(day("2024-06-14"))
+        .interval("tick");
+    let mut job = client.job(&request).await.unwrap();
+    // One list request was made while planning; 3 strike parts follow.
+    assert_eq!(job.parts(), 3);
+    let mut rows = Vec::new();
+    while let Some(batch) = job.next_batch().await.unwrap() {
+        rows.push(batch.num_rows());
+    }
+    // The strike without quotes (NOT_FOUND) is skipped, not an error.
+    let texts = strike_texts(&client, &request).await;
+    assert_eq!(texts, ["99.00", "99.00", "542.50", "542.50"]);
+    let mut sent = seen.lock().unwrap().clone();
+    sent.sort();
+    assert_eq!(
+        sent,
+        ["540.00", "540.00", "542.50", "542.50", "99.00", "99.00"]
+    );
+    // The default interval (1 s) splits too.
+    let default_interval =
+        endpoints::OptionHistoryQuote::new("SPY", "2024-06-21").date(day("2024-06-14"));
+    assert_eq!(client.job(&default_interval).await.unwrap().parts(), 3);
+}
+
+#[tokio::test]
+async fn other_quote_shapes_and_query_are_never_split() {
+    let (fixture, seen) = strike_fixture(&[54000, 54250], "", 2);
+    let client = connect(&fixture, parallel()).await;
+    let base = || {
+        endpoints::OptionHistoryQuote::new("SPY", day("2024-06-21"))
+            .date(day("2024-06-14"))
+            .interval("tick")
+    };
+    for unsplit in [
+        base().interval("1m"),
+        base().interval("100ms"),
+        base().strike("540.00"),
+        base().strike_range(5),
+        base().max_dte(7),
+        endpoints::OptionHistoryQuote::new("SPY", "*")
+            .date(day("2024-06-14"))
+            .interval("tick"),
+    ] {
+        let job = client.job(&unsplit).await.unwrap();
+        assert_eq!(job.parts(), 1, "{unsplit:?}");
+    }
+    // query() sends the request as given.
+    let batches = client
+        .query(&base())
+        .await
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 1);
+    assert_eq!(seen.lock().unwrap().last().map(String::as_str), Some("*"));
+    // One request at a time: never split (slower than the single request).
+    let serial = client
+        .clone()
+        .with_scheduler(SchedulerPolicy {
+            concurrency: 1,
+            ..fast()
+        })
+        .unwrap();
+    assert_eq!(serial.job(&base()).await.unwrap().parts(), 1);
+    // No strikes listed: the job sends the request unsplit.
+    let (fixture, _) = strike_fixture(&[], "", 2);
+    let client = connect(&fixture, parallel()).await;
+    let job = client.job(&base()).await.unwrap();
+    assert_eq!(job.parts(), 1);
+    assert_eq!(strike_texts(&client, &base()).await, ["*"]);
 }

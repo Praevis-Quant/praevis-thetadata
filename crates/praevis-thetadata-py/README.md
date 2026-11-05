@@ -40,7 +40,11 @@ client.to_parquet("stock_history_eod", "aapl.parquet", symbol="AAPL",
 ```
 
 Parameter names are the vendor package's. `pt.describe(...)` shows the wire
-query without sending it.
+query without sending it, and how many date parts `plan` makes. With `plan`
+(the default), an all-strike tick or 1 s `option_history_quote` is also split
+per strike when it runs, after one strikes-list request; `describe` does not
+count those parts. `plan=False` sends the request as given
+([request timing](../../docs/performance/request-timing.md)).
 
 **Vendor-named methods.** All 81 vendor `ThetaClient` methods exist with the
 vendor 1.0.17 signatures (names, order and defaults; checked against the pinned
