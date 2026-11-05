@@ -11,8 +11,39 @@ use crate::query::BatchPolicy;
 use chrono::{Days, NaiveDate};
 use praevis_thetadata_arrow::arrow_array::{ArrayRef, RecordBatch, new_null_array};
 use praevis_thetadata_arrow::arrow_schema::{DataType, Field, Schema};
-use std::{collections::VecDeque, sync::Arc};
-use tokio::{sync::mpsc, task::JoinHandle};
+use std::{
+    collections::VecDeque,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
+use tokio::{
+    sync::{Notify, mpsc},
+    task::JoinHandle,
+};
+
+/// How many parts a job keeps open (started and not yet read), as a
+/// multiple of the scheduler's concurrency. A part is only *sent* when a
+/// request slot is free; the window lets parts behind a slow head part run
+/// and finish instead of waiting for it. Measured on 232 per-strike parts
+/// at 8 slots (`opt-split-002`, simulated from `opt-split-001`'s latencies):
+/// a window of 1x left slots idle (14.1 s against 9.1 s work-conserving);
+/// 4x reaches the work-conserving time.
+const READ_AHEAD: usize = 4;
+
+/// Counts a running part task; decrements and wakes the job when the task
+/// ends, however it ends (finished, failed, aborted).
+struct Running {
+    active: Arc<AtomicUsize>,
+    wake: Arc<Notify>,
+}
+impl Drop for Running {
+    fn drop(&mut self) {
+        self.active.fetch_sub(1, Ordering::AcqRel);
+        self.wake.notify_one();
+    }
+}
 
 /// Split `request` by its date range according to its [`Split`] rule, in
 /// date order. A request without a range, or with an inverted one, is sent
@@ -218,13 +249,22 @@ impl ThetaClient {
         E: Endpoint + Clone + Send + Sync + 'static,
     {
         let parts: VecDeque<E> = self.job_parts(request).await?.into();
-        let ahead = self.scheduler.policy.concurrency;
+        let concurrency = self.scheduler.policy.concurrency;
+        let active = Arc::new(AtomicUsize::new(0));
+        let wake = Arc::new(Notify::new());
         let client = self.clone();
-        let mut start = Box::new(move |part: E| -> (Shard, JoinHandle<()>) {
+        let (counter, waker) = (active.clone(), wake.clone());
+        let start = Box::new(move |part: E| -> (Shard, JoinHandle<()>) {
             let (tx, rx) = mpsc::channel(2);
             let client = client.clone();
             let batch = batch.clone();
+            counter.fetch_add(1, Ordering::AcqRel);
+            let running = Running {
+                active: counter.clone(),
+                wake: waker.clone(),
+            };
             let task = tokio::spawn(async move {
+                let _running = running;
                 let mut stream = match client.query_with(&part, batch).await {
                     Ok(stream) => stream,
                     Err(error) => {
@@ -250,30 +290,44 @@ impl ThetaClient {
         }) as Box<dyn FnMut(E) -> (Shard, JoinHandle<()>) + Send>;
         let total = parts.len();
         let mut parts = parts;
-        let mut running = VecDeque::new();
-        while running.len() < ahead {
-            let Some(part) = parts.pop_front() else { break };
-            running.push_back(start(part));
-        }
-        Ok(JobStream {
+        let mut start = start;
+        let mut job = JobStream {
             next: Box::new(move || parts.pop_front().map(&mut start)),
-            running,
+            running: VecDeque::new(),
             total,
+            concurrency,
+            window: concurrency * READ_AHEAD,
+            active,
+            wake,
             empty_parts: 0,
             names: None,
             types: Vec::new(),
             rows: 0,
             terminal: false,
-        })
+        };
+        job.top_up();
+        Ok(job)
     }
 }
 
 /// The merged, date-ordered stream of a planned job.
+///
+/// Parts are sent while fewer than the scheduler's concurrency are running,
+/// and read in order. Up to `READ_AHEAD` times the concurrency may be open
+/// at once, so a slow part at the head does not hold the others back. Each
+/// open part buffers at most 2 batches, and its own request's limits apply.
 pub struct JobStream {
     /// Starts the next part, if any remain.
     next: Box<dyn FnMut() -> Option<(Shard, JoinHandle<()>)> + Send>,
+    /// Open parts, in order: started and not yet read to the end.
     running: VecDeque<(Shard, JoinHandle<()>)>,
     total: usize,
+    concurrency: usize,
+    window: usize,
+    /// Part tasks still running (sending or holding their request).
+    active: Arc<AtomicUsize>,
+    /// Woken when a part task ends.
+    wake: Arc<Notify>,
     empty_parts: usize,
     names: Option<Vec<String>>,
     /// The type of each column so far; `Null` until a part types it.
@@ -297,10 +351,25 @@ impl JobStream {
         self.terminal = true;
     }
 
+    /// Start parts while a request slot is free and the window has room.
+    fn top_up(&mut self) {
+        while !self.terminal
+            && self.running.len() < self.window
+            && self.active.load(Ordering::Acquire) < self.concurrency
+        {
+            match (self.next)() {
+                Some(part) => self.running.push_back(part),
+                None => break,
+            }
+        }
+    }
+
     /// The next batch in date order, `Ok(None)` at the end, or a terminal
     /// error returned once (after the rows before it).
     pub async fn next_batch(&mut self) -> Result<Option<RecordBatch>, QueryError> {
         while !self.terminal {
+            self.top_up();
+            let wake = self.wake.clone();
             let Some((head, _)) = self.running.front_mut() else {
                 self.terminal = true;
                 if self.rows == 0 && self.total > 0 && self.empty_parts == self.total {
@@ -308,7 +377,14 @@ impl JobStream {
                 }
                 return Ok(None);
             };
-            match head.recv().await {
+            // A part behind the head may finish first: start the next one
+            // then, without waiting for the head.
+            let item = tokio::select! {
+                biased;
+                item = head.recv() => item,
+                () = wake.notified() => continue,
+            };
+            match item {
                 Some(Ok(batch)) => match self.conform(batch) {
                     Ok(batch) => {
                         self.rows += batch.num_rows();
@@ -333,12 +409,9 @@ impl JobStream {
         Ok(None)
     }
 
-    /// The head part is done: start the next one.
+    /// The head part is read to the end; `top_up` starts the next ones.
     fn advance(&mut self) {
         self.running.pop_front();
-        if let Some(part) = (self.next)() {
-            self.running.push_back(part);
-        }
     }
 
     /// Every part must have the same columns. A column typed by an earlier
@@ -423,6 +496,10 @@ mod tests {
             next: Box::new(|| None),
             running: VecDeque::new(),
             total: 0,
+            concurrency: 1,
+            window: READ_AHEAD,
+            active: Arc::new(AtomicUsize::new(0)),
+            wake: Arc::new(Notify::new()),
             empty_parts: 0,
             names: None,
             types: Vec::new(),

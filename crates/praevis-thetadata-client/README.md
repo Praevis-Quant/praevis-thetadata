@@ -40,7 +40,10 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   strike (one extra `option_list_strikes` request) when the scheduler runs
   at least 2 requests at once. The service waits about 60 s before answering
   them whole, and the split returned identical rows 6.4-7.6× sooner at 8
-  ([request timing](../../docs/performance/request-timing.md)). Every
+  ([request timing](../../docs/performance/request-timing.md)). A job sends
+  a part whenever a request slot is free and reads parts in order. It keeps
+  at most 4× the concurrency parts open, each buffering at most 2 batches,
+  so a slow part does not hold back the others. Every
   `query()` is admitted by the client's scheduler. By default it follows the
   account's tier from the login response (`ThetaClient::tier`, the highest
   subscription): FREE's documented 1 concurrent request and 20 per minute;

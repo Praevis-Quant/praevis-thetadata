@@ -221,6 +221,9 @@ pub struct Script {
     /// With `initial_error`: fail only the first this many requests (0: all).
     pub fail_first: usize,
     pub header_delay: Duration,
+    /// With `header_delay`: delay only these requests (1-based, in order of
+    /// arrival); empty delays every request.
+    pub delay_requests: Vec<usize>,
     pub pause_before: Option<(usize, Duration)>,
 }
 
@@ -242,10 +245,13 @@ impl FixtureService {
             .map(str::to_owned);
         self.timeouts.lock().unwrap().push(timeout);
         self.requests.lock().unwrap().push(request.into_inner());
-        if !self.script.header_delay.is_zero() {
+        let calls = self.requests.lock().unwrap().len();
+        if !self.script.header_delay.is_zero()
+            && (self.script.delay_requests.is_empty()
+                || self.script.delay_requests.contains(&calls))
+        {
             tokio::time::sleep(self.script.header_delay).await;
         }
-        let calls = self.requests.lock().unwrap().len();
         if let Some(error) = &self.script.initial_error
             && (self.script.fail_first == 0 || calls <= self.script.fail_first)
         {
