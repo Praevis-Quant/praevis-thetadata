@@ -39,6 +39,11 @@ client.to_parquet("stock_history_eod", "aapl.parquet", symbol="AAPL",
                   start_date="2020-01-02", end_date="2024-12-31")
 ```
 
+`to_parquet` keeps memory flat however large the file. Decimal (price)
+columns get no min/max statistics; every other column does.
+`decimal_statistics=True` writes them for price pushdown in readers, at a
+memory cost that grows with the file.
+
 Parameter names are the vendor package's. `pt.describe(...)` shows the wire
 query without sending it, and how many date parts `plan` makes. With `plan`
 (the default), an all-strike tick or 1 s `option_history_quote` is also split
