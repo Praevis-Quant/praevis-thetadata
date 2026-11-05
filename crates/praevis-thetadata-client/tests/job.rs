@@ -196,3 +196,34 @@ async fn one_slot_holds_until_the_stream_ends_and_dropping_a_job_releases_it() {
             .is_ok()
     );
 }
+
+#[tokio::test]
+async fn the_default_scheduler_follows_the_account_tier() {
+    let fixture = Fixture::start(Script::default());
+    let config = || ClientConfig {
+        endpoint: Some(fixture.endpoint.clone()),
+        allow_insecure: true,
+        ..Default::default()
+    };
+    // The observed PRO account: options 3, stocks and indices 0.
+    let pro = support::session_with_user(
+        r#"{"email":"x","stockSubscription":0,"optionsSubscription":3,"indicesSubscription":0}"#,
+    )
+    .await
+    .0;
+    let client = ThetaClient::with_session(config(), pro).await.unwrap();
+    assert_eq!(client.tier(), praevis_thetadata_client::Tier::Pro);
+    let policy = client.scheduler_policy();
+    assert_eq!((policy.concurrency, policy.per_minute), (8, None));
+    // An explicit policy overrides the tier.
+    let client = client.with_scheduler(SchedulerPolicy::default()).unwrap();
+    let policy = client.scheduler_policy();
+    assert_eq!((policy.concurrency, policy.per_minute), (1, Some(20)));
+    // No recognised subscription: FREE's documented limits.
+    let client = ThetaClient::with_session(config(), support::session().await)
+        .await
+        .unwrap();
+    assert_eq!(client.tier(), praevis_thetadata_client::Tier::Free);
+    let policy = client.scheduler_policy();
+    assert_eq!((policy.concurrency, policy.per_minute), (1, Some(20)));
+}

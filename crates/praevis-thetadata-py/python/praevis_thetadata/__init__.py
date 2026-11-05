@@ -142,7 +142,11 @@ class Client(VendorMethods):
 
     ``dataframe_type`` (``"polars"``, the vendor default, ``"pandas"`` or
     ``"arrow"``) is what the vendor-named methods return. The scheduler
-    defaults to FREE's documented limits (1 concurrent request, 20 per minute).
+    follows the account's tier from the login response (``tier``): FREE 1
+    concurrent request and 20 per minute; VALUE 2, STANDARD 4 and PRO 8
+    concurrent requests with no per-minute limit. ``concurrency=`` and
+    ``per_minute=`` override it (``per_minute=0`` removes the limit);
+    ``scheduler`` shows the limits in use.
 
     **One session per account.** Each login starts a new session, and the
     service ends the account's earlier session: a second ``Client`` that logs
@@ -185,6 +189,16 @@ class Client(VendorMethods):
     @property
     def dataframe_type(self) -> str:
         return self._dataframe_type
+
+    @property
+    def tier(self) -> str:
+        """The account's tier from the login response, such as ``"PRO"``."""
+        return self._native.tier
+
+    @property
+    def scheduler(self) -> tuple[int, int | None]:
+        """``(concurrency, per_minute)`` in use; ``None`` means no per-minute limit."""
+        return self._native.scheduler
 
     def query(self, endpoint: str, /, *, plan: bool = True, **params: Any) -> Result:
         """Run ``endpoint`` (a vendor name such as ``"stock_history_eod"``, or

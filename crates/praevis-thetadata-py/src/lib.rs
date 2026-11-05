@@ -18,7 +18,7 @@ use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment};
 use praevis_thetadata_client::endpoints::Endpoint;
 use praevis_thetadata_client::{
     ClientConfig, JobStream, ParquetOutputError, QueryError, QueryStream, SchedulerPolicy,
-    ThetaClient, plan as plan_parts,
+    ThetaClient, Tier, plan as plan_parts,
 };
 use pyo3::create_exception;
 use pyo3::exceptions::{PyException, PyStopIteration, PyValueError};
@@ -230,7 +230,7 @@ struct Client {
 #[pymethods]
 impl Client {
     #[new]
-    #[pyo3(signature = (*, api_key = None, email = None, password = None, creds_file = None, environment = "prod", concurrency = 1, per_minute = Some(20), retries = 3, request_timeout = 300.0, idle_timeout = 60.0))]
+    #[pyo3(signature = (*, api_key = None, email = None, password = None, creds_file = None, environment = "prod", concurrency = None, per_minute = None, retries = 3, request_timeout = 300.0, idle_timeout = 60.0))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python<'_>,
@@ -239,7 +239,7 @@ impl Client {
         password: Option<String>,
         creds_file: Option<std::path::PathBuf>,
         environment: &str,
-        concurrency: usize,
+        concurrency: Option<usize>,
         per_minute: Option<u32>,
         retries: u32,
         request_timeout: f64,
@@ -277,12 +277,7 @@ impl Client {
             idle_timeout: seconds("idle_timeout", idle_timeout)?,
             ..Default::default()
         };
-        let policy = SchedulerPolicy {
-            concurrency,
-            per_minute,
-            retries,
-            ..Default::default()
-        };
+
         let inner = py.detach(move || {
             runtime().block_on(async move {
                 let auth = AuthClient::new(AuthConfig {
@@ -294,14 +289,29 @@ impl Client {
                 let session = auth.authenticate(&credentials).await.map_err(|_| {
                     QueryFailed::new_err(("authentication", "authentication failed"))
                 })?;
-                ThetaClient::with_session(config, session)
+                let client = ThetaClient::with_session(config, session)
                     .await
-                    .map_err(|_| query_error(QueryError::Connection))?
-                    .with_scheduler(policy)
-                    .map_err(query_error)
+                    .map_err(|_| query_error(QueryError::Connection))?;
+                let policy = scheduler_policy(client.tier(), concurrency, per_minute, retries);
+                client.with_scheduler(policy).map_err(query_error)
             })
         })?;
         Ok(Self { inner })
+    }
+
+    /// The account's tier from the login response: `"FREE"`, `"VALUE"`,
+    /// `"STANDARD"` or `"PRO"` (the highest of its subscriptions).
+    #[getter]
+    fn tier(&self) -> &'static str {
+        self.inner.tier().name()
+    }
+
+    /// The scheduler limits in use: `(concurrency, per_minute)`, where
+    /// `per_minute` is `None` for no per-minute limit.
+    #[getter]
+    fn scheduler(&self) -> (usize, Option<u32>) {
+        let policy = self.inner.scheduler_policy();
+        (policy.concurrency, policy.per_minute)
     }
 
     /// Run `endpoint` (a vendor name such as `stock_history_eod`, or an RPC
@@ -549,6 +559,47 @@ impl BatchIterator {
     }
 }
 
+/// The tier's limits with the caller's overrides: unset values come from
+/// the tier, and a `per_minute` of 0 removes the per-minute limit.
+fn scheduler_policy(
+    tier: Tier,
+    concurrency: Option<usize>,
+    per_minute: Option<u32>,
+    retries: u32,
+) -> SchedulerPolicy {
+    let base = SchedulerPolicy::for_tier(tier);
+    SchedulerPolicy {
+        concurrency: concurrency.unwrap_or(base.concurrency),
+        per_minute: match per_minute {
+            None => base.per_minute,
+            Some(0) => None,
+            Some(limit) => Some(limit),
+        },
+        retries,
+        ..base
+    }
+}
+
+/// Test seam for `scheduler_policy`: `(concurrency, per_minute)` for a tier
+/// name, without logging in.
+#[pyfunction]
+#[pyo3(signature = (tier, concurrency = None, per_minute = None))]
+fn _scheduler_policy(
+    tier: &str,
+    concurrency: Option<usize>,
+    per_minute: Option<u32>,
+) -> PyResult<(usize, Option<u32>)> {
+    let tier = match tier {
+        "FREE" => Tier::Free,
+        "VALUE" => Tier::Value,
+        "STANDARD" => Tier::Standard,
+        "PRO" => Tier::Pro,
+        _ => return Err(PyValueError::new_err("tier: FREE, VALUE, STANDARD or PRO")),
+    };
+    let policy = scheduler_policy(tier, concurrency, per_minute, 3);
+    Ok((policy.concurrency, policy.per_minute))
+}
+
 /// Decode encoded `ResponseData` messages (one request's responses, as the
 /// vendor baseline captures them) into a whole result, with the GIL released.
 /// The offline counterpart of the vendor package's `_convert_response_stream`,
@@ -726,6 +777,7 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(endpoints, m)?)?;
     m.add_function(wrap_pyfunction!(_synthetic, m)?)?;
     m.add_function(wrap_pyfunction!(_decode_frames, m)?)?;
+    m.add_function(wrap_pyfunction!(_scheduler_policy, m)?)?;
     m.add_function(wrap_pyfunction!(_synthetic_frames, m)?)?;
     Ok(())
 }

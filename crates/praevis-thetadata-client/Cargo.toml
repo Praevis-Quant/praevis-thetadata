@@ -50,6 +50,8 @@ praevis-thetadata-arrow.workspace = true
 praevis-thetadata-core.workspace = true
 praevis-thetadata-proto.workspace = true
 prost.workspace = true
+# Already in the graph through the auth crate: its subscription fields are JSON.
+serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tonic.workspace = true
@@ -66,7 +68,6 @@ heck = "0.5"
 tokio-stream = { version = "0.1", features = ["net"] }
 clap.workspace = true
 serde.workspace = true
-serde_json.workspace = true
 sha2 = "0.10"
 # Dependency-log capture test (EOD-L3-017, decision D-D a): both are already in the
 # graph through tonic/hyper/reqwest; used only to install test collectors.

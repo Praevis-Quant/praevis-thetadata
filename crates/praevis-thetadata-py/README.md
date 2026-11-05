@@ -7,8 +7,8 @@ pass-through over Arrow.
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
 > identifies the service it interoperates with. It is not published yet.
 
-- Queries run in Rust: the scheduler (FREE's documented limits by default),
-  transport and decoding, with the GIL released.
+- Queries run in Rust: the scheduler (the account tier's documented limits
+  by default, overridable), transport and decoding, with the GIL released.
 - Results are Arrow record batches shared through the Arrow PyCapsule
   interface (`__arrow_c_stream__`, `__arrow_c_array__`). `pyarrow.table(r)`,
   `r.to_polars()` and `r.to_pandas()` import them without copying and without

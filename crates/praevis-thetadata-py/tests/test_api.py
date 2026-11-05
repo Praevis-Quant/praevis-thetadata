@@ -66,3 +66,20 @@ class EndpointTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SchedulerTests(unittest.TestCase):
+    def test_limits_follow_the_tier_unless_overridden(self):
+        from praevis_thetadata import _native
+
+        tier = _native._scheduler_policy
+        self.assertEqual(tier("FREE"), (1, 20))
+        self.assertEqual(tier("VALUE"), (2, None))
+        self.assertEqual(tier("STANDARD"), (4, None))
+        self.assertEqual(tier("PRO"), (8, None))
+        self.assertEqual(tier("PRO", concurrency=3), (3, None))
+        self.assertEqual(tier("FREE", concurrency=3, per_minute=40), (3, 40))
+        self.assertEqual(tier("FREE", per_minute=0), (1, None))
+        self.assertEqual(tier("PRO", per_minute=100), (8, 100))
+        with self.assertRaises(ValueError):
+            tier("GOLD")

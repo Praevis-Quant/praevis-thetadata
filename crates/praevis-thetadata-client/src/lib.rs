@@ -33,7 +33,7 @@ pub use praevis_thetadata_arrow::{ParquetOptions, ParquetSummary, SinkError};
 pub use praevis_thetadata_arrow::{arrow_array, arrow_schema};
 pub use praevis_thetadata_core::{BatchValue, DataBatch, TimeZone, Timestamp};
 pub use query::{BatchPolicy, QueryStream, unify};
-pub use scheduler::SchedulerPolicy;
+pub use scheduler::{SchedulerPolicy, Tier};
 
 pub use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, Session};
 pub use praevis_thetadata_core::{Table, Value};
@@ -116,7 +116,8 @@ pub struct ThetaClient {
 
 impl ThetaClient {
     /// Replace the request scheduler used by `query()` and `job()` (the
-    /// default is FREE's documented limits). Clones made afterwards share it.
+    /// default is [`SchedulerPolicy::for_tier`] with the account's tier from
+    /// the login response). Clones made afterwards share it.
     pub fn with_scheduler(mut self, policy: SchedulerPolicy) -> Result<Self, QueryError> {
         self.scheduler = scheduler::Scheduler::new(policy)?;
         Ok(self)
@@ -203,6 +204,7 @@ impl ThetaClient {
         } else {
             (typed_endpoint.connect_lazy(), endpoint.connect().await?)
         };
+        let tier = Tier::of_account(session.user());
         let stub = api::beta_theta_terminal_client::BetaThetaTerminalClient::new(raw)
             .max_decoding_message_size(config.max_batch_bytes + 1024);
         Ok(Self {
@@ -211,9 +213,18 @@ impl ThetaClient {
             session,
             config,
             eod_pool,
-            scheduler: scheduler::Scheduler::new(SchedulerPolicy::default())
-                .expect("valid default scheduler policy"),
+            scheduler: scheduler::Scheduler::new(SchedulerPolicy::for_tier(tier))
+                .expect("valid tier scheduler policy"),
         })
+    }
+    /// The account's tier as the login response reported it: the highest of
+    /// its subscriptions ([`Tier::of_account`]).
+    pub fn tier(&self) -> Tier {
+        Tier::of_account(self.session.user())
+    }
+    /// The scheduler limits in use (the tier's, unless replaced).
+    pub fn scheduler_policy(&self) -> &SchedulerPolicy {
+        &self.scheduler.policy
     }
     pub fn session(&self) -> Session {
         self.session.clone()
