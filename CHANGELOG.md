@@ -37,6 +37,20 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Per-strike split for all-strike fine option quotes** (`job()` and the
+  Python methods with `plan`).
+  - **What splits:** an `option_history_quote` for every strike at a `tick`
+    or `1s` interval, with one concrete expiration and no `strike_range` or
+    `max_dte`. When the scheduler runs at least 2 requests at once, the job
+    lists the expiration's strikes (one extra request) and sends one request
+    per strike, skipping strikes without data.
+  - **Why:** the service waits about 60 s before answering such a request
+    whole. Split 8 at a time, the same 938,663 rows came back exactly equal
+    in 9.1 s instead of 58.9-69.6 s (`opt-split-001`).
+  - **What stays whole:** `query()`, `plan=False` and every other shape.
+  - **Order:** by date, then strike ascending.
+  - **Probe:** `live_p0 split-probe` also runs `job()` and compares it
+    exactly with the reference.
 - **Options baselines D2 recorded**
   ([results](docs/performance/options-d2-results.md)).
   - **W5c (8-way):** 9.8× the synchronous vendor package (Python) and 11.0×

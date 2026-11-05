@@ -45,7 +45,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if rpc == "GetStockHistoryEod" {
                     fixture.push_str("self.eod(request).await\n}\n");
                 } else {
-                    fixture.push_str("let _ = request; Err(tonic::Status::unimplemented(\"synthetic EOD fixture only\"))\n}\n");
+                    fixture.push_str(&format!(
+                        "if let Some(handler) = self.script.other.clone() {{ return self.other(handler, \"{rpc}\", prost::Message::encode_to_vec(request.get_ref())).await; }}\n\
+                         let _ = request; Err(tonic::Status::unimplemented(\"synthetic EOD fixture only\"))\n}}\n"
+                    ));
                 }
                 source.push_str(&format!(
                     "/// Calls `{rpc}`. Query fields use wire types; set optional defaults explicitly.\n\
