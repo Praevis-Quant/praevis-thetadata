@@ -62,6 +62,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **`live_job_memory`** (manual, never CI). It writes one live W5 job to
+  Parquet under a counting allocator.
+  - **What it records:** the Rust heap against rows written, the process
+    peak working set or RSS, and batch sizes.
+  - **What it is for:** finding why M5 (two days) used 204 MiB where 135
+    were predicted, before any fix.
+  - **Also added:** workload M4b, M4's other day. CI's clippy step builds
+    the example on Windows too.
 - **M5 and the job memory reproduction's controls.**
   - **M5:** M4 over two days. Same part sizes, twice the rows.
   - **`job_memory.rs`:** `JOB_MEMORY_STRIKES` sets the number of parts, and
