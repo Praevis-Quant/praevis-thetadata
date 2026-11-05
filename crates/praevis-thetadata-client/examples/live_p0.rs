@@ -102,6 +102,21 @@ enum Command {
     Sizes(SizesArgs),
     /// Time to complete whole options workloads through `query()`.
     Workload(WorkloadArgs),
+    /// One all-strike request against the same request split per strike.
+    SplitProbe(SplitProbeArgs),
+}
+
+#[derive(Args)]
+struct SplitProbeArgs {
+    #[command(flatten)]
+    common: Common,
+    /// A one-request options workload with every strike (default: W5b,
+    /// tick quotes for SPY calls, 10:00-10:15, about 939k rows).
+    #[arg(long, default_value = "W5b")]
+    workload: String,
+    /// Concurrency of the per-strike runs, each run in turn.
+    #[arg(long, default_value = "1,8")]
+    concurrency: String,
 }
 
 #[derive(Args)]
@@ -1449,6 +1464,265 @@ async fn workload(
     Ok(())
 }
 
+/// One request's rows and an order-independent digest of its values: the sum
+/// (wrapping) of a fixed hash of each row's (column name, exact value)
+/// pairs. Two results with the same multiset of rows have the same digest
+/// whatever the order or the request split. Only the digest is reported.
+#[derive(Serialize, Debug, Default, Clone)]
+struct Digested {
+    request: usize,
+    status: String,
+    first_batch_ns: Option<u128>,
+    total_ns: u128,
+    rows: u64,
+    #[serde(skip)]
+    digest: u64,
+    #[serde(skip)]
+    columns: Vec<String>,
+}
+
+fn row_digest(batch: &praevis_thetadata_client::arrow_array::RecordBatch) -> u64 {
+    use std::hash::{DefaultHasher, Hash, Hasher};
+    let schema = batch.schema();
+    let mut names: Vec<(usize, &str)> = schema
+        .fields()
+        .iter()
+        .enumerate()
+        .map(|(i, f)| (i, f.name().as_str()))
+        .collect();
+    names.sort_by_key(|(_, name)| *name);
+    let mut sum = 0u64;
+    for row in arrow_rows(std::slice::from_ref(batch)) {
+        // DefaultHasher::new() has fixed keys: the same row hashes the same.
+        let mut hasher = DefaultHasher::new();
+        for (index, name) in &names {
+            name.hash(&mut hasher);
+            row[*index].hash(&mut hasher);
+        }
+        sum = sum.wrapping_add(hasher.finish());
+    }
+    sum
+}
+
+async fn digest_query<E: Endpoint>(client: &ThetaClient, request: E, index: usize) -> Digested {
+    let start = Instant::now();
+    let mut out = Digested {
+        request: index,
+        ..Default::default()
+    };
+    let result = async {
+        let mut stream = client.query(&request).await?;
+        while let Some(batch) = stream.next_batch().await? {
+            out.first_batch_ns
+                .get_or_insert_with(|| start.elapsed().as_nanos());
+            if out.columns.is_empty() {
+                let mut names: Vec<String> = batch
+                    .schema()
+                    .fields()
+                    .iter()
+                    .map(|f| f.name().clone())
+                    .collect();
+                names.sort();
+                out.columns = names;
+            }
+            out.rows += batch.num_rows() as u64;
+            out.digest = out.digest.wrapping_add(row_digest(&batch));
+        }
+        Ok::<(), EodError>(())
+    }
+    .await;
+    out.status = match result {
+        Ok(()) => "OK".into(),
+        Err(EodError::NoData) => "NoData".into(),
+        Err(error) => format!("{error:?}"),
+    };
+    out.total_ns = start.elapsed().as_nanos();
+    out
+}
+
+/// A decimal strike as request text in dollars, with at least two decimals
+/// (`542.00`, `542.50`, `0.125`), as the vendor documents strikes.
+fn strike_text(value: i128, scale: u32) -> String {
+    let unit = 10i128.pow(scale);
+    let (whole, mut frac) = (value / unit, (value % unit).abs());
+    let mut digits = scale;
+    while digits > 2 && frac % 10 == 0 {
+        frac /= 10;
+        digits -= 1;
+    }
+    if digits < 2 {
+        frac *= 10i128.pow(2 - digits);
+        digits = 2;
+    }
+    format!("{whole}.{frac:0width$}", width = digits as usize)
+}
+
+/// The strikes listed for the workload's symbol and expiration, as request
+/// text in dollars (`542.00`, `542.50`). Decimal strikes only.
+async fn listed_strikes(
+    client: &ThetaClient,
+    symbol: &str,
+    expiration: &str,
+) -> Result<Vec<String>, Stop> {
+    use praevis_thetadata_client::arrow_array::cast::AsArray;
+    use praevis_thetadata_client::arrow_array::types::Decimal128Type;
+    use praevis_thetadata_client::arrow_schema::DataType;
+    let expiration = date(expiration);
+    let batches = client
+        .query(&typed::OptionListStrikes::new(symbol, expiration))
+        .await
+        .map_err(|e| Stop(format!("ListStrikes {e:?}")))?
+        .collect()
+        .await
+        .map_err(|e| Stop(format!("ListStrikes {e:?}")))?;
+    let mut strikes = Vec::new();
+    for batch in &batches {
+        let column = batch
+            .column_by_name("strike")
+            .ok_or_else(|| Stop("ListStrikesNoStrikeColumn".into()))?;
+        let DataType::Decimal128(_, scale) = column.data_type() else {
+            return Err(Stop(format!("ListStrikesType {:?}", column.data_type())));
+        };
+        let scale = *scale as u32;
+        for value in column.as_primitive::<Decimal128Type>().iter().flatten() {
+            strikes.push(strike_text(value, scale));
+        }
+    }
+    strikes.sort();
+    strikes.dedup();
+    Ok(strikes)
+}
+
+/// The per-strike split hypothesis: the workload's all-strike request (run
+/// before and after, as the reference), then the same request once per
+/// listed strike at each `--concurrency`. Reports wall times, row counts and
+/// whether each split's digest equals the reference; never a value or a
+/// strike. Stops on `RESOURCE_EXHAUSTED` or `UNAVAILABLE`.
+async fn split_probe(
+    options: &SplitProbeArgs,
+    client: &ThetaClient,
+    report: &mut Report,
+) -> Result<(), Stop> {
+    let workloads: serde_json::Value =
+        serde_json::from_str(WORKLOADS).expect("valid workloads.json");
+    let spec = &workloads[options.workload.as_str()];
+    let method = spec["method"]
+        .as_str()
+        .ok_or_else(|| Stop("UnknownWorkload".into()))?;
+    let request = match spec["requests"].as_array().map(Vec::as_slice) {
+        Some([one]) if one.get("strike").is_none() => one.clone(),
+        _ => return Err(Stop("NeedsOneAllStrikeRequest".into())),
+    };
+    let levels: Vec<u32> = options
+        .concurrency
+        .split(',')
+        .map(|c| c.trim().parse().ok().filter(|c| (1..=8).contains(c)))
+        .collect::<Option<_>>()
+        .ok_or_else(|| Stop("ConcurrencyOneToEight".into()))?;
+    let mut pacer = Pacer {
+        interval: Duration::from_secs_f64(options.common.min_interval),
+        last: None,
+    };
+    let stop_on =
+        |status: &str| status.contains("ResourceExhausted") || status.contains("Unavailable");
+    pacer.wait().await;
+    let strikes = listed_strikes(
+        client,
+        request["symbol"].as_str().unwrap_or_default(),
+        request["expiration"].as_str().unwrap_or_default(),
+    )
+    .await?;
+    eprintln!("{} listed strikes", strikes.len());
+    let mut reference = Vec::new();
+    let run_reference = async |label: &str, pacer: &mut Pacer| -> Result<Digested, Stop> {
+        pacer.wait().await;
+        let run = option_dispatch!(method, &request, r => digest_query(client, r, 0).await)?;
+        eprintln!(
+            "reference ({label}) {} {} rows in {:.1} s (first {:.1} s)",
+            run.status,
+            run.rows,
+            run.total_ns as f64 / 1e9,
+            run.first_batch_ns.unwrap_or(0) as f64 / 1e9
+        );
+        if stop_on(&run.status) {
+            return Err(Stop(run.status));
+        }
+        Ok(run)
+    };
+    reference.push(run_reference("before", &mut pacer).await?);
+    let mut splits = Vec::new();
+    for &level in &levels {
+        pacer.wait().await;
+        let slots = std::sync::Arc::new(tokio::sync::Semaphore::new(level as usize));
+        let mut tasks = tokio::task::JoinSet::new();
+        let start = Instant::now();
+        for (index, strike) in strikes.iter().enumerate() {
+            let mut one = request.clone();
+            one["strike"] = strike.clone().into();
+            let client = client.clone();
+            let slots = slots.clone();
+            option_dispatch!(method, &one, r => {
+                tasks.spawn(async move {
+                    let _slot = slots.acquire_owned().await.expect("open semaphore");
+                    digest_query(&client, r, index).await
+                });
+            })?;
+        }
+        let mut runs = Vec::new();
+        while let Some(run) = tasks.join_next().await {
+            runs.push(run.expect("request task"));
+        }
+        let wall_ns = start.elapsed().as_nanos();
+        runs.sort_by_key(|r| r.request);
+        let rows: u64 = runs.iter().map(|r| r.rows).sum();
+        let digest = runs.iter().fold(0u64, |d, r| d.wrapping_add(r.digest));
+        let mut statuses = std::collections::BTreeMap::<String, usize>::new();
+        for run in &runs {
+            *statuses.entry(run.status.clone()).or_default() += 1;
+        }
+        let columns_match = runs
+            .iter()
+            .filter(|r| !r.columns.is_empty())
+            .all(|r| r.columns == reference[0].columns);
+        eprintln!(
+            "split x{level}: {} requests, {rows} rows in {:.1} s, digest equal: {}, {statuses:?}",
+            runs.len(),
+            wall_ns as f64 / 1e9,
+            digest == reference[0].digest
+        );
+        let stop = runs
+            .iter()
+            .find(|r| stop_on(&r.status))
+            .map(|r| r.status.clone());
+        splits.push(serde_json::json!({
+            "concurrency": level,
+            "requests": runs.len(),
+            "wall_ns": wall_ns,
+            "rows": rows,
+            "statuses": statuses,
+            "rows_equal_reference": rows == reference[0].rows,
+            "digest_equal_reference": digest == reference[0].digest,
+            "columns_equal_reference": columns_match,
+            "runs": runs,
+        }));
+        if let Some(status) = stop {
+            report.results.push(serde_json::json!({"workload": options.workload, "strikes": strikes.len(), "reference": reference, "splits": splits}));
+            return Err(Stop(status));
+        }
+    }
+    reference.push(run_reference("after", &mut pacer).await?);
+    let stable =
+        reference[0].rows == reference[1].rows && reference[0].digest == reference[1].digest;
+    report.results.push(serde_json::json!({
+        "workload": options.workload,
+        "strikes": strikes.len(),
+        "reference_stable": stable,
+        "reference": reference,
+        "splits": splits,
+    }));
+    Ok(())
+}
+
 /// The options workloads, one paced request at a time, capped at `max_rows`.
 /// Stops on `RESOURCE_EXHAUSTED`, `UNAVAILABLE` or a local failure; other
 /// statuses are recorded and the run continues.
@@ -1507,7 +1781,7 @@ async fn sizes(options: &SizesArgs, client: &ThetaClient, report: &mut Report) -
 
 /// A comparable value: prices as Decimal128(38, 10) unscaled, timestamps as
 /// the legacy RFC 3339 text. Only equality is reported, never a value.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Hash)]
 enum Exact {
     Null,
     Text(String),
@@ -1738,10 +2012,12 @@ fn main() -> std::process::ExitCode {
     // to one thread. Every other command keeps the single-threaded runtime
     // its earlier results were measured with.
     let runtime = match cli.command {
-        Command::Workload(_) => tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(std::thread::available_parallelism().map_or(2, |n| n.get().min(4)))
-            .enable_all()
-            .build(),
+        Command::Workload(_) | Command::SplitProbe(_) => {
+            tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(std::thread::available_parallelism().map_or(2, |n| n.get().min(4)))
+                .enable_all()
+                .build()
+        }
         _ => tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build(),
@@ -1759,6 +2035,7 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::Session(options) => (&options.common, "session"),
         Command::Sizes(options) => (&options.common, "sizes"),
         Command::Workload(options) => (&options.common, "workload"),
+        Command::SplitProbe(options) => (&options.common, "split-probe"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -1824,6 +2101,7 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         }
         Command::Sizes(options) => sizes(options, &client, &mut report).await,
         Command::Workload(options) => workload(options, &client, &mut report).await,
+        Command::SplitProbe(options) => split_probe(options, &client, &mut report).await,
     };
     if let Err(Stop(reason)) = &result {
         report.stopped = Some(reason.clone());
@@ -2170,6 +2448,65 @@ mod tests {
         .await;
         assert_eq!((run.status.as_str(), run.rows, run.request), ("OK", 500, 7));
         assert!(run.first_batch_ns.is_some());
+    }
+
+    #[test]
+    fn strikes_are_dollar_text_and_the_digest_ignores_order_and_splits() {
+        for (value, scale, text) in [
+            (5_420_000_000_000i128, 10, "542.00"),
+            (5_425_000_000_000, 10, "542.50"),
+            (1_250_000_000, 10, "0.125"),
+            (542, 0, "542.00"),
+            (54_250, 2, "542.50"),
+        ] {
+            assert_eq!(strike_text(value, scale), text);
+        }
+        use praevis_thetadata_client::arrow_array::{
+            ArrayRef, Int64Array, RecordBatch, StringArray,
+        };
+        let batch = |ids: &[i64], names: &[&str], flip: bool| {
+            let a: ArrayRef = std::sync::Arc::new(Int64Array::from(ids.to_vec()));
+            let b: ArrayRef = std::sync::Arc::new(StringArray::from(names.to_vec()));
+            if flip {
+                RecordBatch::try_from_iter([("b", b), ("a", a)]).unwrap()
+            } else {
+                RecordBatch::try_from_iter([("a", a), ("b", b)]).unwrap()
+            }
+        };
+        let whole = row_digest(&batch(&[1, 2, 3], &["x", "y", "z"], false));
+        // Split into two batches, rows reordered, columns reordered: equal.
+        let split = row_digest(&batch(&[3, 1], &["z", "x"], true))
+            .wrapping_add(row_digest(&batch(&[2], &["y"], false)));
+        assert_eq!(whole, split);
+        // A changed value, a missing row or a duplicate row: not equal.
+        assert_ne!(
+            whole,
+            row_digest(&batch(&[1, 2, 4], &["x", "y", "z"], false))
+        );
+        assert_ne!(whole, row_digest(&batch(&[1, 2], &["x", "y"], false)));
+        assert_ne!(
+            whole,
+            row_digest(&batch(&[1, 2, 3, 3], &["x", "y", "z", "z"], false))
+        );
+    }
+
+    #[tokio::test]
+    async fn split_probe_refuses_a_request_that_already_names_a_strike() {
+        let server = fixture::Fixture::start(fixture::Script::default());
+        let client = fixture_client(&server).await;
+        for workload in ["S2", "W5c"] {
+            let args = SplitProbeArgs {
+                common: entitlement_args(&[], 5).common,
+                workload: workload.into(),
+                concurrency: "1,8".into(),
+            };
+            let mut report = Report::default();
+            assert!(matches!(
+                split_probe(&args, &client, &mut report).await,
+                Err(Stop(s)) if s == "NeedsOneAllStrikeRequest"
+            ));
+        }
+        assert!(server.requests.lock().unwrap().is_empty());
     }
 
     #[tokio::test]
