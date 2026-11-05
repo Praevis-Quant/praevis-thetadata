@@ -487,6 +487,8 @@ CHECK_RESULTS = {
     "values-equal": "values equal to the legacy decoder",
     "rows-equal": "rows equal; values pending a same-response replay",
     "probe-data": "bounded probe: data, not a manifest; values not checked",
+    "values-equal-same-response": "values equal on the same response (columnar and legacy decoders)",
+    "first-message-equal": "first message equal on the same response (bounded); whole file not yet checked",
 }
 CHECK_PYTHON = {"ok": "Python OK", "not-run": "Python not run"}
 
@@ -544,7 +546,8 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS) -> tuple[s
            "",
            "The value check is step F (`live_p0 option-checks`, `bench/p1/option_checks.py`): each",
            "request through `query()` compared with the legacy decoder, and through the Python",
-           "package. Flat files are bounded probes only.",
+           "package. Flat files are bounded probes only. The run named is the Rust run; every",
+           "\"Python OK\" is from the Python run `opt-checks-py-001`.",
            "",
            "The FREE column is the one-time entitlement map: one request per endpoint family,",
            "classified by a person from the private report. The options PRO column is the",

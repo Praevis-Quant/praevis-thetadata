@@ -62,6 +62,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Option snapshots value-verified on identical bytes** (`opt-same-001`).
+  - **Snapshots:** all 14 decode equal through the columnar and legacy
+    decoders from one response. The earlier differences were the market
+    moving between two requests.
+  - **Flat files:** the first message of each of the three probed files
+    (8,192 rows) decodes as ordinary tables, equal both ways.
+  - **Coverage table:** records both, in two new check values.
 - **Step G runner: option flat files to Parquet** (`live_job_memory
   --flat-file open-interest|eod|trade-quote --date <day>`, manual).
   - **What it does:** downloads one whole file through `job()` to private

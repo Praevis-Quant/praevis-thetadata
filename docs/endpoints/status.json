@@ -182,9 +182,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotOpenInterest": {
@@ -200,9 +200,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "values-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotGreeksFirstOrder": {
@@ -218,9 +218,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionHistoryOhlc": {
@@ -464,9 +464,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotTrade": {
@@ -476,9 +476,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotMarketValue": {
@@ -488,9 +488,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotGreeksImpliedVolatility": {
@@ -500,9 +500,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotGreeksAll": {
@@ -512,9 +512,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotBinomialGreeksAll": {
@@ -524,9 +524,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotBinomialGreeksFirstOrder": {
@@ -536,9 +536,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotGreeksSecondOrder": {
@@ -548,9 +548,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotBinomialGreeksSecondOrder": {
@@ -560,9 +560,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotGreeksThirdOrder": {
@@ -572,9 +572,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionSnapshotBinomialGreeksThirdOrder": {
@@ -584,9 +584,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "rows-equal",
+      "result": "values-equal-same-response",
       "python": "ok",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionHistoryTradeQuote": {
@@ -812,9 +812,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "probe-data",
+      "result": "first-message-equal",
       "python": "not-run",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionFlatFileOpenInterest": {
@@ -824,9 +824,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "probe-data",
+      "result": "first-message-equal",
       "python": "not-run",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionFlatFileTradeQuote": {
@@ -836,9 +836,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "probe-data",
+      "result": "first-message-equal",
       "python": "not-run",
-      "run": "opt-checks-001"
+      "run": "opt-same-001"
     }
   },
   "GetOptionFlatFileQuote": {

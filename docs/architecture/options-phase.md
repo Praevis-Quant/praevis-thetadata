@@ -388,6 +388,18 @@ clean.
   The map's `InvalidArgument` was the same-day date. The option quote file
   (about 38 GB) was not probed.
 
+**Same-response replay (`opt-same-001`, main f05c0e9, about 10:55 ET,
+market open; exit 0, scan clean):**
+- **Method:** each request sent once, and every message decoded by the
+  columnar decoder and the legacy decoder.
+- **All 17 equal on identical bytes.**
+  - **The 14 snapshots:** one message each. Ohlc and trade had 195 rows; the
+    others 201. They are now recorded as value-verified.
+  - **The 3 flat files:** first message only (8,192 rows each). They decode
+    as our tables.
+- **So:** the snapshot differences in `opt-checks-001` were the market
+  moving between two requests, not the decoders.
+
 **What this means for step G (flat files to Parquet):**
 - **Data, not a manifest:** over direct gRPC, a flat file streams as
   ordinary `ResponseData` messages, not a manifest pointing elsewhere. The
@@ -396,9 +408,8 @@ clean.
 - **So G can reuse the existing path:** `query()`, the columnar decoder and
   `ParquetSink`. One file is one request, with no date or strike split. The
   single-stream path measured 22.6 MiB offline.
-- **Still unverified:**
-  - that the messages decode as our tables (a same-response decode of the
-    first messages, before any full file);
+- **Still unverified** (decoding as our tables is now confirmed on the first
+  message, `opt-same-001`):
   - whether a manifest arrives later in the stream (the decoder would stop
     with `Unsupported`);
   - the real row counts and file sizes.
