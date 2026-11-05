@@ -54,13 +54,17 @@ expiration's strikes (one extra request, `option_list_strikes`), then sends
 one request per strike, up to your tier's concurrency.
 
 Measured on SPY calls expiring 2024-06-21, on 2024-06-14 from 10:00 to 10:15
-(`opt-split-001`, 232 strikes, 938,663 rows):
+(232 strikes, 938,663 rows):
 
 | How | Time |
 | --- | ---: |
-| One request, every strike | 58.9-69.6 s |
-| Per strike, one at a time | 95.9 s |
-| Per strike, 8 at a time (PRO) | **9.1 s** |
+| One request, every strike | 58.9-69.6 s (`opt-split-001`); 39.5-48.3 s (`opt-split-003`) |
+| Per strike, one at a time | 95.9 s (`opt-split-001`) |
+| Per strike, 8 at a time (PRO), hand-made | 9.1 s (`opt-split-001`) |
+| **`job()` (PRO)** | **7.4 s** (`opt-split-003`) |
+
+The service's speed varies from day to day, so compare rows from the same
+run.
 
 - **The rows are identical:** the same count, columns and values, checked
   exactly. 6 strikes had no quotes in the window and are skipped.

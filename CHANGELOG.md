@@ -48,6 +48,10 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **`job()` per-strike split verified live** (`opt-split-003`). It returned
+  the same 938,663 rows, exactly equal, in 7.4 s. That is 1.9× faster than
+  before the read-ahead fix at a similar service speed, and 5.3-6.5× faster
+  than the single all-strike request that day.
 - **Memory-bound runner for W5** (`bench/p1/options_memory.py`, manual).
   - **What it does:** runs one job in one mode per process, either streamed
     to Parquet or held as a Polars frame, and records peak memory, rows and

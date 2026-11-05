@@ -186,6 +186,17 @@ the service:**
   at PRO). In the simulation a window of 1× gives 18.4 s, 2× 12.0 s, and
   4× 10.0 s, which is work-conserving.
 
+**Verified live (`opt-split-003`, main 5f17c10):** `job()` returned the same
+938,663 rows in **7.4 s**, with rows, columns and digest equal to the
+reference.
+- **Same speed band:** that day's references were 48.3 s and 39.5 s, close
+  to `opt-split-002`'s 46.3 s and 38.1 s. So the fair comparison is 14.1 s
+  against 7.4 s, a 1.9× gain, where the simulation predicted 1.83×.
+- **The single request:** `job()` is 5.3-6.5× faster than the all-strike
+  request on the same day.
+- **The hand-made 9.1 s** (`opt-split-001`) ran on a slower day, with
+  references of 58.9-69.6 s. It is not a like-for-like comparison.
+
 ## Memory bound under W5 (planned)
 
 The target is that memory is bounded by configuration. We claim this for our
