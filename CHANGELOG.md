@@ -27,6 +27,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Like-for-like incremental memory.** Both clients ran only the public
+  calls (`baseline.py --e2e-only` for the vendor).
+  - W1 is 0.91×, and W2 is 0.53×, just over the 0.5 line. Total RSS is 0.98×
+    and 0.88×.
+  - These replace the earlier 0.88× / 0.33× and 0.78×, whose vendor runs also
+    kept a raw drain in the same process.
+  - Criterion d stays a recorded miss.
 - **Options workloads W4-W6 and `live_p0 sizes`** (manual, never CI). First
   bounded definitions in `bench/python-baseline/workloads.json`: SPY on
   2024-06-14 at 1-minute and 1 s quotes, tick trades and quotes, and Greeks.
