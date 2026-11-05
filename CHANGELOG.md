@@ -62,6 +62,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Step F results recorded** (`opt-checks-001`).
+  - **Values equal to the legacy decoder:** 34 option endpoints.
+  - **Rows equal, values pending:** 13 snapshots. The two requests ran
+    seconds apart in a moving market; a same-response replay is next.
+  - **Python:** all 47 OK.
+  - **Snapshots:** entitled during market hours.
+  - **Flat files:** the three probed files stream data, not manifests.
+  - **Coverage table:** gains a value-check column from a closed
+    vocabulary.
 - **Step F live checks for every option endpoint** (manual, never CI).
   - **`live_p0 option-checks`:** every option RPC through `query()`, with
     values compared against the legacy decoder. Snapshots use a current

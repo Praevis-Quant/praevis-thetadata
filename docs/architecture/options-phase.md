@@ -359,7 +359,55 @@ path** (`job()` to Parquet, the Rust heap):
   cost of the stall overlap that took the 232-part job from 14.1 s to 7.4 s.
   It is not proposed without a measured need.
 
-## Step F: option endpoint live checks (prepared)
+## Step F: option endpoint live checks (`opt-checks-001`, 2026-11-05)
+
+**The run:** main 838febb, Windows, options PRO, at 10:02 ET. Snapshots
+used expiration 2026-11-05, and the flat files used 2026-11-04. Exit 0, scan
+clean.
+- **Rust:** all 47 non-flat-file requests returned OK through both `query()`
+  and the legacy decoder, with equal row counts.
+  - **Values equal:** the 33 history, at-time and list requests, and the
+    open interest snapshot.
+  - **13 snapshots differ** (ohlc 22/193 rows, trade 25/193, quote, market
+    value and every Greeks snapshot 201/201). The two decoders read two live
+    requests seconds apart in a moving market, so this neither shows nor
+    rules out a decoder difference.
+  - **Next:** a same-response replay (one response decoded both ways). Until
+    then those snapshots are recorded as *rows equal*, not value-verified.
+- **Python:** all 47 OK, with the same rows as Rust.
+- **Snapshots** are entitled during market hours. The map's no-data was the
+  expired contract and the closed market.
+- **Flat files** (bounded probes, one message each):
+
+  | File | First message | Bytes | Manifest |
+  | --- | ---: | ---: | --- |
+  | Option EOD | 0.3 s | 232,570 | no |
+  | Option open interest | 0.1 s | 79,761 | no |
+  | Option trade/quote | 0.3 s | 220,393 | no |
+
+  The map's `InvalidArgument` was the same-day date. The option quote file
+  (about 38 GB) was not probed.
+
+**What this means for step G (flat files to Parquet):**
+- **Data, not a manifest:** over direct gRPC, a flat file streams as
+  ordinary `ResponseData` messages, not a manifest pointing elsewhere. The
+  vendor package sends them through the converter it uses for every other
+  endpoint.
+- **So G can reuse the existing path:** `query()`, the columnar decoder and
+  `ParquetSink`. One file is one request, with no date or strike split. The
+  single-stream path measured 22.6 MiB offline.
+- **Still unverified:**
+  - that the messages decode as our tables (a same-response decode of the
+    first messages, before any full file);
+  - whether a manifest arrives later in the stream (the decoder would stop
+    with `Unsupported`);
+  - the real row counts and file sizes.
+- **Order:** the 50 MB open interest file, then the 150 MB EOD file, then
+  the 1.2 GB trade/quote file, each measured for memory. Full downloads are
+  a change from "flat-file probes never pull bulk data" and need the
+  Coordinator's go-ahead. The 38 GB quote file needs the user's.
+
+## Step F: how the checks run
 
 - **Rust, `live_p0 option-checks`:** sends the PRO map's 51 option requests
   again.

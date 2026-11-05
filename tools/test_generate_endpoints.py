@@ -107,6 +107,16 @@ class OutputTests(unittest.TestCase):
                     status.write_text(json.dumps({"GetStockHistoryTrade": {column: entry}}))
                     with self.subTest(column=column, entry=entry), self.assertRaises(gen.GenerationError):
                         gen.generate(status_path=status)
+            # The step F value check is its own column, from a closed vocabulary.
+            check = {"result": "rows-equal", "python": "ok", "run": "opt-checks-001"}
+            status.write_text(json.dumps({"GetStockHistoryTrade": {"check": check}}))
+            _, doc = gen.generate(status_path=status)
+            self.assertIn("| rows equal; values pending a same-response replay; Python OK (opt-checks-001) |", doc)
+            for bad_check in [{**check, "result": "looks fine"}, {**check, "python": "yes"},
+                              {**check, "note": "vendor text"}, {"result": "values-equal", "run": "r"}]:
+                status.write_text(json.dumps({"GetStockHistoryTrade": {"check": bad_check}}))
+                with self.subTest(check=bad_check), self.assertRaises(gen.GenerationError):
+                    gen.generate(status_path=status)
             # The options PRO map has its own column beside FREE.
             pro = {"class": "entitled", "code": "OK", "run": "opt-pro-001"}
             status.write_text(json.dumps({"GetStockHistoryTrade": {"free": ok, "pro": pro}}))
