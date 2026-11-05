@@ -11,6 +11,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetStockListSymbols": {
@@ -95,6 +100,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionListExpirations": {
@@ -102,6 +112,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionListStrikes": {
@@ -109,6 +124,11 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionListContracts": {
@@ -117,6 +137,11 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionSnapshotQuote": {
@@ -125,6 +150,12 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
     }
   },
   "GetOptionSnapshotOpenInterest": {
@@ -133,6 +164,12 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
     }
   },
   "GetOptionSnapshotGreeksFirstOrder": {
@@ -141,6 +178,12 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "STANDARD"
+    },
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
     }
   },
   "GetOptionHistoryOhlc": {
@@ -149,6 +192,11 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionHistoryTrade": {
@@ -157,6 +205,11 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "STANDARD"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionHistoryQuote": {
@@ -165,6 +218,11 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionHistoryOpenInterest": {
@@ -173,6 +231,11 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionHistoryGreeksEod": {
@@ -181,6 +244,11 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "STANDARD"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionHistoryGreeksFirstOrder": {
@@ -189,6 +257,11 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "STANDARD"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionHistoryTradeGreeksFirstOrder": {
@@ -196,6 +269,11 @@
       "class": "tier-denied",
       "code": "PermissionDenied",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionHistoryGreeksImpliedVolatility": {
@@ -204,6 +282,11 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "STANDARD"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetOptionAtTimeQuote": {
@@ -212,6 +295,11 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
     }
   },
   "GetIndexListSymbols": {
@@ -272,6 +360,259 @@
       "class": "no-data",
       "code": "NotFound",
       "run": "p1-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionListDates": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionSnapshotOhlc": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotTrade": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotMarketValue": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotGreeksImpliedVolatility": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotGreeksAll": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotBinomialGreeksAll": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotBinomialGreeksFirstOrder": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotGreeksSecondOrder": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotBinomialGreeksSecondOrder": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotGreeksThirdOrder": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionSnapshotBinomialGreeksThirdOrder": {
+    "pro": {
+      "class": "no-data",
+      "code": "NotFound",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionHistoryTradeQuote": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryBinomialGreeksEod": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryGreeksAll": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryBinomialGreeksAll": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryTradeGreeksAll": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryBinomialTradeGreeksAll": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryBinomialGreeksFirstOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryBinomialTradeGreeksFirstOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryGreeksSecondOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryBinomialGreeksSecondOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryTradeGreeksSecondOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryBinomialTradeGreeksSecondOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryGreeksThirdOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryBinomialGreeksThirdOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryTradeGreeksThirdOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryBinomialTradeGreeksThirdOrder": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionHistoryTradeGreeksImpliedVolatility": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionAtTimeTrade": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "opt-pro-entitlements-001"
+    }
+  },
+  "GetOptionFlatFileEod": {
+    "pro": {
+      "class": "invalid-argument",
+      "code": "InvalidArgument",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionFlatFileOpenInterest": {
+    "pro": {
+      "class": "invalid-argument",
+      "code": "InvalidArgument",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionFlatFileTradeQuote": {
+    "pro": {
+      "class": "invalid-argument",
+      "code": "InvalidArgument",
+      "run": "opt-pro-entitlements-001",
+      "uncertain": true
+    }
+  },
+  "GetOptionFlatFileQuote": {
+    "pro": {
+      "class": "invalid-argument",
+      "code": "InvalidArgument",
+      "run": "opt-pro-entitlements-001",
       "uncertain": true
     }
   }

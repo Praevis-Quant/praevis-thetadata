@@ -103,9 +103,16 @@ class OutputTests(unittest.TestCase):
                 {**ok, "uncertain": False},                    # absent or true only
             ]
             for entry in bad:
-                status.write_text(json.dumps({"GetStockHistoryTrade": {"free": entry}}))
-                with self.subTest(entry=entry), self.assertRaises(gen.GenerationError):
-                    gen.generate(status_path=status)
+                for column in ("free", "pro"):
+                    status.write_text(json.dumps({"GetStockHistoryTrade": {column: entry}}))
+                    with self.subTest(column=column, entry=entry), self.assertRaises(gen.GenerationError):
+                        gen.generate(status_path=status)
+            # The options PRO map has its own column beside FREE.
+            pro = {"class": "entitled", "code": "OK", "run": "opt-pro-001"}
+            status.write_text(json.dumps({"GetStockHistoryTrade": {"free": ok, "pro": pro}}))
+            _, doc = gen.generate(status_path=status)
+            self.assertIn("| tier-denied: VALUE required (`PermissionDenied`, p1-ent-001) "
+                          "| entitled (`OK`, opt-pro-001) |", doc)
             status.write_text(json.dumps({"GetStockHistoryTrade": {"live": "vendor text"}}))
             with self.assertRaises(gen.GenerationError):
                 gen.generate(status_path=status)
