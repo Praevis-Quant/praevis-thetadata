@@ -93,3 +93,45 @@ def write_report(report: dict, path: Path) -> int:
     path.write_text(text)
     print(f"Wrote {path}")
     return 0
+
+
+def option_kwargs(request: dict) -> dict:
+    """A workloads.json options request as keyword arguments both packages
+    accept: `date` as a `datetime.date`; expirations, strikes and times stay
+    text (the vendor signature accepts text for those)."""
+    import datetime as dt
+
+    kwargs = dict(request)
+    if "date" in kwargs:
+        kwargs["date"] = dt.date.fromisoformat(kwargs["date"])
+    return kwargs
+
+
+def time_workload(call, requests: list[dict], threads: int, status_of) -> dict:
+    """Run every request of one workload, `threads` at a time (1: in order),
+    and time the whole workload. `call(kwargs)` returns a frame; `status_of`
+    turns an exception into a status name (or raises to stop). Timings and
+    counts only: the frames are dropped at once."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    start = time.perf_counter_ns()
+
+    def one(index: int) -> dict:
+        begin = time.perf_counter_ns()
+        try:
+            frame = call(option_kwargs(requests[index]))
+        except Exception as error:  # noqa: BLE001 - classified by the caller
+            return {"request": index, "status": status_of(error),
+                    "start_ns": begin - start, "ns": time.perf_counter_ns() - begin, "rows": 0}
+        rows = int(frame.shape[0])
+        del frame
+        return {"request": index, "status": "OK", "start_ns": begin - start,
+                "ns": time.perf_counter_ns() - begin, "rows": rows}
+
+    if threads == 1:
+        runs = [one(i) for i in range(len(requests))]
+    else:
+        with ThreadPoolExecutor(max_workers=threads) as pool:
+            runs = list(pool.map(one, range(len(requests))))
+    return {"threads": threads, "wall_ns": time.perf_counter_ns() - start,
+            "rows": sum(r["rows"] for r in runs), "requests": runs}

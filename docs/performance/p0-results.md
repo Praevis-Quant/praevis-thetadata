@@ -22,6 +22,10 @@ were run 3 rounds each:
 
 ## 1. The response format: one row per gRPC message
 
+> **EOD only.** Option tick and interval history batches many rows per
+> message, about 3,270 for tick quotes (`opt-sizes-001`, see the
+> [options phase](../architecture/options-phase.md#workload-sizes-opt-sizes-001-2026-11-05)).
+
 Both clients, every request: **one row per message.** W1 is 252 messages for
 252 rows (about 230-250 bytes each); W2 is 9,164 for 9,164 (at most 293
 bytes). Each message is an independent ZSTD frame. The vendor chooses this

@@ -41,6 +41,12 @@ Workloads come from [`workloads.json`](workloads.json); W1 and W2 are FREE-tier
 | `drain` | The same request through the package's own generated gRPC stub, consuming the stream without conversion: network + server, time to first message, message count and bytes |
 | `convert` | The drained responses replayed offline through the package's converter (Polars and pandas), repeated: CPU only |
 
+`options_vendor.py` times whole options workloads (W4-W6) through the
+package's public methods into Polars: synchronously and threaded on one
+client (`--threads 1,8`), rounds alternating the order. It follows the same
+rules: the key from `THETADATA_API_KEY`, the log guard, timings and counts
+only, and a report refused if it holds account identity.
+
 `--e2e-only` runs only `e2e`: no drain, no conversion and no responses kept.
 That is the same work as `bench/p1/compare.py`, so memory figures from the
 two are like-for-like.

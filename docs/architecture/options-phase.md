@@ -61,6 +61,31 @@ in the [coverage table](../endpoints/coverage.md).
 - `GetOptionHistoryBinomialGreeksEod` returned 1 message, where the other
   history RPCs reached the 5-message cap. Its request covered one day.
 
+## Workload sizes (`opt-sizes-001`, 2026-11-05)
+
+`live_p0 sizes` on main 1cae6e4 (Windows, PROD): 12 requests, all OK, none
+over 1M rows. All are SPY on 2024-06-14.
+
+| Request | Rows | Messages | First message | Total |
+| --- | ---: | ---: | ---: | ---: |
+| W4a 1-minute quotes, 4 expirations | 95k-177k each | 244-452 | 1.9-3.5 s | 2.2-3.9 s |
+| W4b 1 s quotes, calls, 10:00-10:30 | 407k | 226 | **71.8 s** | 80.4 s |
+| W5a tick trades, 4 expirations | 12k-123k each | 129-296 | 1.0-1.7 s | 1.2-2.2 s |
+| W5b tick quotes, calls, 10:00-10:15 | 939k | 287 | **59.4 s** | 62.3 s |
+| W6a 1-minute Greeks | 177k | 452 | 3.3 s | 5.9 s |
+| W6b trade Greeks | 47k | 296 | 3.2 s | 6.1 s |
+
+- **Rows per message:** option history is not one row per message (that was
+  EOD). Here it is about 90-3,300 rows per message.
+- **The server builds the result before sending.** The first message
+  arrives after 53-95% of the total time, so the time is server work, not
+  transport or decoding. Overlapping decode with receipt hides little; only
+  parallel requests can.
+- **Two requests were 20-30× slower than the rest:** 1 s quotes (5k rows/s)
+  and tick quotes (15k rows/s), both with a time window. Shape probes S1-S5
+  separate the window from the quote resolution before any baseline: a
+  shorter window, one contract over the day, and windows on cheap requests.
+
 ## Scope and order
 
 Measurement first. One PR at a time; final titles before green; rule 3 holds.

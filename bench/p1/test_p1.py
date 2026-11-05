@@ -15,6 +15,7 @@ from praevis_thetadata import _native  # noqa: E402
 import common  # noqa: E402
 import compare  # noqa: E402
 import live_checks  # noqa: E402
+import options_ours  # noqa: E402
 
 
 def write_capture(path: Path, frames: list[bytes]) -> None:
@@ -67,6 +68,49 @@ class Runners(unittest.TestCase):
                 query, parts = pt.describe(method, **params)
                 self.assertEqual(parts, 1)
                 self.assertTrue(query)
+
+
+    def test_every_options_workload_request_builds_one_query(self):
+        workloads = json.loads(common.WORKLOADS.read_text())
+        ids = [w for w in workloads if w[:2] in {"W4", "W5", "W6"} or w.startswith("S")]
+        self.assertIn("W5c", ids)
+        for workload in ids:
+            for request in workloads[workload]["requests"]:
+                with self.subTest(workload=workload, request=request):
+                    query, parts = pt.describe(workloads[workload]["method"], **common.option_kwargs(request))
+                    self.assertEqual(parts, 1)
+                    self.assertTrue(query)
+
+    def test_workloads_are_timed_whole_in_order_or_threaded(self):
+        import threading
+        import time as clock
+
+        class Frame:
+            shape = (3, 2)
+
+        in_flight, peak, lock = [0], [0], threading.Lock()
+
+        def call(kwargs):
+            with lock:
+                in_flight[0] += 1
+                peak[0] = max(peak[0], in_flight[0])
+            clock.sleep(0.05)
+            with lock:
+                in_flight[0] -= 1
+            if kwargs["symbol"] == "BAD":
+                raise RuntimeError("synthetic")
+            return Frame()
+
+        requests = [{"symbol": "SPY", "date": "2024-06-14"}] * 7 + [{"symbol": "BAD", "date": "2024-06-14"}]
+        for threads, expected_peak in ((1, 1), (8, 8)):
+            peak[0] = 0
+            result = common.time_workload(call, requests, threads, lambda e: "SYNTHETIC")
+            self.assertEqual(peak[0], expected_peak)
+            self.assertEqual((result["threads"], result["rows"]), (threads, 21))
+            self.assertEqual([r["request"] for r in result["requests"]], list(range(8)))
+            self.assertEqual(result["requests"][-1]["status"], "SYNTHETIC")
+            self.assertGreaterEqual(result["wall_ns"], max(r["start_ns"] + r["ns"] for r in result["requests"]))
+        self.assertTrue(callable(options_ours.main))
 
 
 if __name__ == "__main__":
