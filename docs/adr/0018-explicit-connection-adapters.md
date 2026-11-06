@@ -108,8 +108,9 @@ REST adapter and JAR supervision above stay unimplemented.
 PRO, live market, 15:02-15:06 UTC; SPY 20261106 742 C). The strike was taken
 from the Terminal's own REST snapshot, so there was no extra login.
 - **Our login ends the Terminal's historical session.** Its REST answered
-  **200 before and 478 after**, and stayed at 478 until the user restarted
-  the Terminal. This matches the one-historical-session rule
+  **200 before and 478 after**. It was still 478 at the end of the run and
+  later (`w10-idle-001`). A Terminal restart should restore it; that is not
+  yet verified. This matches the one-historical-session rule
   (`opt-session-001`).
 - **The Terminal's live stream survives our login.** It delivered 24,135
   quotes after it, with no drops, no unparsed frames and no heartbeat gaps,
