@@ -62,6 +62,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **W10 design note** (ADR-0018). The real-time slice covers:
+  - **Connection:** the operator's Terminal WebSocket only, through a new
+    `praevis-thetadata-stream` crate (`tungstenite`, no TLS).
+  - **Events:** fixed-size, parsed without allocation, with exact decimal
+    prices, delivered through a bounded queue that drops and counts when the
+    consumer is slow.
+  - **Measurement:** latency from the frame read to the consumer at p50,
+    p99 and p99.9.
+  - **Probe:** the login-conflict probe.
+  - **Order:** the dev server first, then scale, then the live market.
 - **Option snapshots value-verified on identical bytes** (`opt-same-001`).
   - **Snapshots:** all 14 decode equal through the columnar and legacy
     decoders from one response. The earlier differences were the market
