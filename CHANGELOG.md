@@ -62,6 +62,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **`praevis-thetadata-stream`** (W10, unreleased, `publish = false`).
+  Real-time option quotes from the operator's Theta Terminal WebSocket.
+  - **Delivery:** one reader thread, an allocation-free parser with exact
+    decimal prices, and a bounded, preallocated queue. When the queue is
+    full it drops the newest event and counts it, and never blocks the
+    Terminal.
+  - **Counters:** heartbeat gaps, unparsed frames and drops.
+  - **Dependency:** `tungstenite` (no TLS), approved for the real-time path
+    only. Auth and history users do not pull it.
+  - **Tests:** a loopback WebSocket server, and a counting allocator
+    showing parse plus queue hand-off allocate nothing.
+  - **`login_conflict_probe`** (manual, `live-tests`): what our gRPC login
+    does to the Terminal's stream and its REST session.
 - **W10 design note** (ADR-0018). The real-time slice covers:
   - **Connection:** the operator's Terminal WebSocket only, through a new
     `praevis-thetadata-stream` crate (`tungstenite`, no TLS).

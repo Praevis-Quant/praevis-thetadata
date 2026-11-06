@@ -1,0 +1,33 @@
+[package]
+name = "praevis-thetadata-stream"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+# Not published: the real-time slice is unreleased (W10, ADR-0018 note).
+publish = false
+description = "Real-time option events from an operator-run Theta Terminal's local WebSocket, parsed without allocation"
+readme = "README.md"
+
+[dependencies]
+# Approved by the user on 2026-11-05 (the WebSocket client, real-time path
+# only). The synchronous core of tokio-tungstenite; no TLS: the Terminal is
+# local.
+tungstenite = { version = "0.30", default-features = false, features = ["handshake"] }
+thiserror.workspace = true
+
+[features]
+# Manual live examples only (never CI): the login-conflict probe.
+live-tests = []
+
+[[example]]
+name = "login_conflict_probe"
+required-features = ["live-tests"]
+
+[dev-dependencies]
+# The probe logs in the historical (gRPC) client while the stream is open.
+praevis-thetadata-client.workspace = true
+tokio.workspace = true
+clap.workspace = true
+serde_json.workspace = true

@@ -1,0 +1,40 @@
+# praevis-thetadata-stream
+
+Real-time option events from an **operator-run Theta Terminal v3**, through
+its local WebSocket (`ws://127.0.0.1:25520/v1/events`). Unreleased (W10;
+see the ADR-0018 design note).
+
+- **Official path only:** it connects to the Terminal you run, on this
+  machine, and never to the vendor's feed servers directly. It never starts,
+  stops, updates or reconfigures the Terminal.
+- **One reader thread:** it reads a frame, stamps its arrival, parses it
+  without allocation into a fixed-size event, and hands it to a bounded,
+  preallocated queue. Prices are exact (`mantissa × 10^-scale`, from the
+  JSON digits), and strikes stay in tenths of a cent, as sent.
+- **A slow consumer never backs up the Terminal:** when the queue is full,
+  the newest event is dropped and counted (`Stats::dropped`).
+- **Gaps:** the stream has no sequence numbers, so gaps in data cannot be
+  detected. Heartbeat gaps over 2 s are counted.
+- **Disconnects:** a disconnect ends the stream with `Kind::Disconnected`.
+  There is no automatic reconnect.
+- **Scope of this slice:** option quotes. Other message types are counted
+  but not decoded.
+
+```rust,no_run
+use praevis_thetadata_stream::{Contract, Kind, Options, Right, Root, Stream};
+use std::time::Duration;
+
+let stream = Stream::connect(Options::default())?;
+stream.subscribe_quotes(&Contract {
+    root: Root::new("SPY").unwrap(),
+    expiration: 20261106,
+    strike: 570_000, // $570.00, in tenths of a cent
+    right: Right::Call,
+})?;
+while let Some(event) = stream.recv_timeout(Duration::from_secs(5)) {
+    if let Kind::Quote { quote, .. } = event.kind {
+        let _ = (quote.bid, quote.ask, event.received);
+    }
+}
+# Ok::<(), praevis_thetadata_stream::StreamError>(())
+```
