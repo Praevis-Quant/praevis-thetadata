@@ -39,6 +39,69 @@ delivery. Missing account access remains not-run; mock status coverage cannot
 establish paid-tier interoperability. This extends testing policy, not a local
 entitlement engine or a promise to purchase accounts.
 
+## W10 design note (2026-11-06)
+
+The user decided on 2026-11-05: a WebSocket client is approved for the
+real-time path only; the login-conflict probe is approved; and the dev
+(replay) server comes first, with a small contract list, then scale, then
+the live market. Option quotes for a contract list come first, and the full
+trade stream later. This note fixes the design for that first slice. The
+REST adapter and JAR supervision above stay unimplemented.
+
+- **Path:** the operator's running Theta Terminal v3 only, at its local
+  WebSocket `ws://127.0.0.1:25520/v1/events`, which allows one connection.
+  No direct FPSS. We never start, stop, update or reconfigure the Terminal.
+- **Packaging:** a new crate, `praevis-thetadata-stream` (`publish = false`
+  for now), so auth and history users never pull a WebSocket dependency.
+  - It uses `tungstenite`, the synchronous core of the approved
+    `tokio-tungstenite`, without TLS (the connection is local). That is a
+    narrower dependency set and needs no async runtime on the hot path.
+- **Threads:**
+  - One reader thread owns the socket. It reads a frame, stamps the receive
+    time, parses it and hands the event to a bounded single-producer,
+    single-consumer queue (a preallocated array channel).
+  - The user's thread drains the queue.
+  - Subscriptions go out on the same socket; the vendor asks for a new
+    `id` per request.
+- **Events:** fixed-size and `Copy`, parsed **without allocation** by a
+  purpose-built parser for the vendor's flat JSON.
+  - **Contract:** root (8 bytes), expiration `yyyymmdd`, strike in tenths
+    of a cent (as sent) and right.
+  - **Quote fields:** `ms_of_day`, sizes, exchanges and conditions as
+    integers, and `date`.
+  - **Prices are exact:** a mantissa and scale taken from the JSON number's
+    digits, never a float.
+  - **Status:** heartbeats (about one per second) are passed through as
+    events.
+  - `tungstenite` allocates one buffer per frame. That allocation is the
+    library's, not the parse or the hand-off's; the measurement counts it
+    separately.
+- **Slow consumer:** the reader never blocks on the queue, because blocking
+  would back up the Terminal's only connection. A full queue drops the
+  newest event and counts it; the count is part of every measurement. A
+  `Block` policy exists for tests only.
+- **Gaps and reconnects:** the stream carries no sequence numbers, so gaps
+  in data cannot be detected. Heartbeat gaps over 2 s are counted. A closed
+  socket ends the stream with an explicit disconnect event; there is no
+  automatic reconnect in this slice.
+- **Measurement (W10):**
+  - **What:** added latency per event, from the frame read to the event
+    reaching the consumer, at p50, p99 and p99.9, against the **p99 ≤ 50 µs**
+    target. Also drops, heartbeat gaps, allocations per event and CPU.
+  - **What it cannot measure:** the Terminal's own delay. The events carry
+    no send timestamp.
+  - **Order:** the dev server first, with a small contract list (about 10),
+    then 100 and 1,000, then the live market.
+- **Login-conflict probe:**
+  1. Hold a quote subscription and record heartbeats and events for 60 s.
+  2. Log in our gRPC client and send one small request.
+  3. Record the same for another 120 s.
+  4. Read one Terminal REST status code before and after, a small list
+     request, to see whether the Terminal's own historical session ended.
+
+  It records only counts, codes and states. It runs during market hours, so
+  quotes flow.
+
 ## Alternatives
 
 Requiring Terminal for every user would add Java/startup/configuration costs to
