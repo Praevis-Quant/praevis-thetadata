@@ -418,6 +418,41 @@ market open; exit 0, scan clean):**
   a change from "flat-file probes never pull bulk data" and need the
   Coordinator's go-ahead. The 38 GB quote file needs the user's.
 
+## Step G: option flat files to Parquet (2026-11-05)
+
+`live_job_memory --flat-file` on main e3cd65c (Windows, options PRO, file
+date 2026-11-04), the three approved files in order. All OK, scan clean, and
+each Parquet file deleted after measuring.
+
+| File | Rows | Time | Heap peak | Peak RSS (idle 11.4) | Parquet | Row groups |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Option open interest | 2,022,241 | 1.7 s | 13.7 MiB | 30.0 MiB | 12.2 MB | 16 |
+| Option EOD | 2,030,667 | 3.9 s | 23.9 MiB | 43.1 MiB | 30.0 MB | 16 |
+| Option trade/quote | 13,777,618 | 38.1 s | 33.1 MiB | 66.3 MiB | 297.8 MB | 106 |
+
+- **The stream is data throughout:** every file decoded to the end with no
+  manifest and no error.
+- **What was verified, exactly:** values were compared with the legacy
+  decoder on the first message only (`opt-same-001`); the whole files were
+  decoded end to end.
+  - **Why not the whole file:** a whole-file comparison would need another
+    full download, and the legacy decoder would hold every row in memory
+    (gigabytes for trade/quote). A streaming digest comparison is possible
+    if wanted.
+- **The sizes are in different units:** the vendor's 1.2 GB for trade/quote
+  is the **CSV** size from their flat-file page. For 13.8M rows of 25 text
+  fields that is about 87 bytes per row, which matches. Our 297.8 MB is
+  ZSTD-compressed columnar Parquet, about 21.6 bytes per row, roughly 4×
+  smaller. We did not record the gRPC bytes on the wire.
+- **The default timeout is enough:** the largest file took 38.1 s, well
+  inside the client's default 300 s request timeout. The vendor's "about 3
+  minutes" is for its Terminal REST path. The runner's 1800 s was not
+  needed, and the library default stays.
+- **Memory:** one stream with no split peaked at 14-33 MiB of heap, and the
+  heap after each run was 0.1-0.2 MiB.
+- **Still not run:** the option quote file (about 38 GB) needs the user's
+  go-ahead.
+
 ## Step F: how the checks run
 
 - **Rust, `live_p0 option-checks`:** sends the PRO map's 51 option requests

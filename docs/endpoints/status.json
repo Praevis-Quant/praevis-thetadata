@@ -812,9 +812,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "first-message-equal",
+      "result": "full-download",
       "python": "not-run",
-      "run": "opt-same-001"
+      "run": "opt-flat-eod-001"
     }
   },
   "GetOptionFlatFileOpenInterest": {
@@ -824,9 +824,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "first-message-equal",
+      "result": "full-download",
       "python": "not-run",
-      "run": "opt-same-001"
+      "run": "opt-flat-open-interest-001"
     }
   },
   "GetOptionFlatFileTradeQuote": {
@@ -836,9 +836,9 @@
       "run": "opt-checks-001"
     },
     "check": {
-      "result": "first-message-equal",
+      "result": "full-download",
       "python": "not-run",
-      "run": "opt-same-001"
+      "run": "opt-flat-trade-quote-001"
     }
   },
   "GetOptionFlatFileQuote": {

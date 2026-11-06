@@ -72,6 +72,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Step G recorded: the three approved option flat files to Parquet.**
+  - **Results:** open interest (2.0M rows, 1.7 s), EOD (2.0M rows, 3.9 s)
+    and trade/quote (13.8M rows, 38.1 s, 297.8 MB of Parquet against the
+    vendor's 1.2 GB CSV). Heap peaks were 14-33 MiB.
+  - **The stream is data:** no manifest anywhere in the streams.
+  - **Timeout:** the 300 s default suffices.
+  - **Coverage table:** marks the files as fully decoded, with values
+    compared on the first message only.
 - **`praevis-thetadata-stream`** (W10, unreleased, `publish = false`).
   Real-time option quotes from the operator's Theta Terminal WebSocket.
   - **Delivery:** one reader thread, an allocation-free parser with exact
