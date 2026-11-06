@@ -89,6 +89,54 @@ pub enum Status {
     Other,
 }
 
+/// The Terminal's answer to a stream request (`type` REQ_RESPONSE), as the
+/// vendor documents it ("Verify Stream Requests").
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Response {
+    /// Accepted. It does not confirm the contract exists: data flows only if
+    /// it does.
+    Subscribed,
+    /// Too many contracts are streaming for the subscription.
+    MaxStreamsReached,
+    /// The subscription does not cover this stream.
+    InvalidPerms,
+    /// A generic failure.
+    Error,
+    /// A code this slice does not know.
+    Other,
+}
+
+/// A message type name, for counting types this slice does not decode:
+/// up to 16 bytes of `A-Z` and `_` (a schema word, never a value).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct TypeName {
+    bytes: [u8; 16],
+    len: u8,
+}
+impl TypeName {
+    pub(crate) fn new(text: &str) -> Self {
+        let raw = text.as_bytes();
+        if raw.len() > 16 || !raw.iter().all(|b| b.is_ascii_uppercase() || *b == b'_') {
+            return Self::default();
+        }
+        let mut bytes = [0u8; 16];
+        bytes[..raw.len()].copy_from_slice(raw);
+        Self {
+            bytes,
+            len: raw.len() as u8,
+        }
+    }
+    /// Empty if the type was not a short upper-case word.
+    pub fn as_str(&self) -> &str {
+        std::str::from_utf8(&self.bytes[..self.len as usize]).unwrap_or("")
+    }
+}
+impl std::fmt::Debug for TypeName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Kind {
     Quote {
@@ -99,10 +147,16 @@ pub enum Kind {
     Heartbeat {
         status: Status,
     },
+    /// The answer to stream request `id` (`type` REQ_RESPONSE).
+    Response {
+        id: i64,
+        response: Response,
+    },
     /// A message of another type (for example TRADE), not decoded in this
-    /// slice.
+    /// slice; `kind` is its type name.
     Other {
         status: Status,
+        kind: TypeName,
     },
     /// The WebSocket closed or failed; the stream ends after this.
     Disconnected,

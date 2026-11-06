@@ -107,6 +107,18 @@ enum Command {
     /// Step F: every option RPC through `query()`, values compared with the
     /// legacy decoder; flat files probed, bounded.
     OptionChecks(OptionChecksArgs),
+    /// One login, then the same small request after growing idle gaps:
+    /// does an idle connection fail the next request, and with which code?
+    IdleReconnect(IdleReconnectArgs),
+}
+
+#[derive(Args)]
+struct IdleReconnectArgs {
+    #[command(flatten)]
+    common: Common,
+    /// Idle gaps in seconds before each further request.
+    #[arg(long, default_value = "30,60,120,180", value_delimiter = ',')]
+    gaps: Vec<u64>,
 }
 
 #[derive(Args)]
@@ -2027,6 +2039,54 @@ fn arrow_rows(batches: &[praevis_thetadata_client::arrow_array::RecordBatch]) ->
     out
 }
 
+/// The request through `query()` (the path that returned `Internal` in
+/// `w10-conflict-001`): `OK` or our error variant.
+async fn query_status(client: &ThetaClient) -> String {
+    let day = date("2024-06-14");
+    match client
+        .query(&typed::StockHistoryEod::new("AAPL", day, day))
+        .await
+    {
+        Ok(stream) => match stream.collect().await {
+            Ok(_) => "OK".into(),
+            Err(error) => format!("{error:?}"),
+        },
+        Err(error) => format!("{error:?}"),
+    }
+}
+
+/// One login (this run's), then the same small request after each idle gap,
+/// through `query()` and through the raw stub. The raw probe keeps the
+/// server's status text in the private report only (as the entitlement
+/// map does): a person reads it locally, and only codes are sent.
+async fn idle_reconnect(
+    options: &IdleReconnectArgs,
+    client: &ThetaClient,
+    report: &mut Report,
+) -> Result<(), Stop> {
+    let request = || typed::StockHistoryEod::new("AAPL", date("2024-06-14"), date("2024-06-14"));
+    let start = Instant::now();
+    for (index, gap) in std::iter::once(0)
+        .chain(options.gaps.iter().copied())
+        .enumerate()
+    {
+        tokio::time::sleep(Duration::from_secs(gap)).await;
+        let at_s = start.elapsed().as_secs();
+        let query = query_status(client).await;
+        let raw = probe(client, &request(), 5).await;
+        eprintln!(
+            "request {index} after {gap:>3} s idle (t={at_s}s): query {query}, raw {}",
+            raw.status
+        );
+        let mut value = serde_json::to_value(&raw).expect("probe serializes");
+        value["idle_s"] = gap.into();
+        value["at_s"] = at_s.into();
+        value["query_status"] = query.into();
+        report.results.push(value);
+    }
+    Ok(())
+}
+
 /// One endpoint, ONE request: every message of the same response decoded by
 /// the columnar decoder (the one `query()` uses) and by the legacy decoder,
 /// compared exactly. Unlike [`check`], the two sides see identical bytes, so
@@ -2302,6 +2362,7 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::Workload(options) => (&options.common, "workload"),
         Command::SplitProbe(options) => (&options.common, "split-probe"),
         Command::OptionChecks(options) => (&options.common, "option-checks"),
+        Command::IdleReconnect(options) => (&options.common, "idle-reconnect"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -2368,6 +2429,7 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::Sizes(options) => sizes(options, &client, &mut report).await,
         Command::Workload(options) => workload(options, &client, &mut report).await,
         Command::SplitProbe(options) => split_probe(options, &client, &mut report).await,
+        Command::IdleReconnect(options) => idle_reconnect(options, &client, &mut report).await,
         Command::OptionChecks(options) => {
             // Flat files through the capped client, as in the PRO map.
             match connect_with_limit(client.session(), FLAT_FILE_PROBE_LIMIT).await {
@@ -2897,6 +2959,33 @@ mod tests {
             (Some(1), Some(50), Some(false))
         );
         assert_eq!(first["values_equal"], true);
+    }
+
+    #[tokio::test]
+    async fn idle_reconnect_records_both_paths_after_each_gap() {
+        let (wire_table, _) = fixture::table(fixture::Shape::Prices, 3);
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire_table, true))],
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let args = IdleReconnectArgs {
+            common: entitlement_args(&[], 5).common,
+            gaps: vec![0, 0],
+        };
+        let mut report = Report::default();
+        idle_reconnect(&args, &client, &mut report).await.unwrap();
+        // The first request plus one per gap.
+        assert_eq!(report.results.len(), 3);
+        assert!(
+            report
+                .results
+                .iter()
+                .all(|r| r["query_status"] == "OK" && r["status"] == "OK")
+        );
+        assert_eq!(report.results[2]["idle_s"], 0);
+        // query() and the raw stub each sent every request.
+        assert_eq!(server.requests.lock().unwrap().len(), 6);
     }
 
     #[tokio::test]

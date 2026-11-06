@@ -2,7 +2,7 @@
 //! most two levels deep, strings without escapes, numbers, booleans and
 //! null. Anything else is refused (`None`) rather than guessed. Prices keep
 //! their decimal digits exactly.
-use crate::event::{Contract, Kind, Price, Quote, Right, Root, Status};
+use crate::event::{Contract, Kind, Price, Quote, Response, Right, Root, Status, TypeName};
 
 struct Cursor<'a> {
     bytes: &'a [u8],
@@ -158,6 +158,8 @@ fn price(text: &str) -> Option<Price> {
 pub fn parse(text: &str) -> Option<Kind> {
     let mut kind_type: Option<&str> = None;
     let mut status = Status::Other;
+    let mut response: Option<&str> = None;
+    let mut req_id: Option<i64> = None;
     let (mut root, mut expiration, mut strike, mut right) = (None, None, None, None);
     let mut quote = Quote::default();
     let mut quote_fields = 0u16;
@@ -168,6 +170,8 @@ pub fn parse(text: &str) -> Option<Kind> {
     cursor.object(1, "", &mut |path, key, value| {
         match (path, key, value) {
             ("header", "type", Value::Str(t)) => kind_type = Some(t),
+            ("header", "response", Value::Str(r)) => response = Some(r),
+            ("header", "req_id", Value::Num(n)) => req_id = Some(integer(n)?),
             ("header", "status", Value::Str(s)) => {
                 status = match s {
                     "CONNECTED" => Status::Connected,
@@ -244,7 +248,20 @@ pub fn parse(text: &str) -> Option<Kind> {
             })
         }
         "STATUS" => Some(Kind::Heartbeat { status }),
-        _ => Some(Kind::Other { status }),
+        "REQ_RESPONSE" => Some(Kind::Response {
+            id: req_id?,
+            response: match response? {
+                "SUBSCRIBED" => Response::Subscribed,
+                "MAX_STREAMS_REACHED" => Response::MaxStreamsReached,
+                "INVALID_PERMS" => Response::InvalidPerms,
+                "ERROR" => Response::Error,
+                _ => Response::Other,
+            },
+        }),
+        other => Some(Kind::Other {
+            status,
+            kind: TypeName::new(other),
+        }),
     }
 }
 
@@ -312,9 +329,36 @@ mod tests {
                 r#"{"header":{"type":"TRADE","status":"CONNECTED"},"trade":{"price":1.5,"ok":true,"x":null}}"#
             ),
             Some(Kind::Other {
-                status: Status::Connected
+                status: Status::Connected,
+                kind: TypeName::new("TRADE")
             })
         );
+    }
+
+    #[test]
+    fn stream_request_answers_and_other_type_names() {
+        // The answer to a stream request, as the vendor documents it.
+        for (code, response) in [
+            ("SUBSCRIBED", Response::Subscribed),
+            ("MAX_STREAMS_REACHED", Response::MaxStreamsReached),
+            ("INVALID_PERMS", Response::InvalidPerms),
+            ("ERROR", Response::Error),
+            ("SOMETHING_NEW", Response::Other),
+        ] {
+            let text =
+                format!(r#"{{"header":{{"type":"REQ_RESPONSE","response":"{code}","req_id":3}}}}"#);
+            assert_eq!(parse(&text), Some(Kind::Response { id: 3, response }));
+        }
+        assert_eq!(
+            parse(r#"{"header":{"type":"REQ_RESPONSE","response":"SUBSCRIBED"}}"#),
+            None
+        );
+        // A type name that is not a short upper-case word is kept empty.
+        let Some(Kind::Other { kind, .. }) = parse(r#"{"header":{"type":"some value 123"}}"#)
+        else {
+            panic!("not other")
+        };
+        assert_eq!(kind.as_str(), "");
     }
 
     #[test]

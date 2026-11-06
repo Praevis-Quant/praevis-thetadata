@@ -72,6 +72,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Diagnostics for the login-conflict probe's two open findings**
+  (`w10-conflict-001`).
+  - **Stream parser:** decodes the Terminal's `REQ_RESPONSE`
+    (`SUBSCRIBED`, `MAX_STREAMS_REACHED`, `INVALID_PERMS`, `ERROR`, and the
+    request id), and keeps the type name of other messages.
+  - **`login_conflict_probe --no-login`:** watches a subscription alone, and
+    logs every non-quote message and the first quote, with times.
+  - **`live_p0 idle-reconnect`:** sends the same request after growing idle
+    gaps, through `query()` and the raw stub. The server's status text stays
+    in the private report only.
 - **W10 latency harness** (`praevis-thetadata-stream` example `latency`,
   manual, `live-tests`).
   - **What it does:** subscribes to quotes for a contract file and records
