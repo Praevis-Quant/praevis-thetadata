@@ -72,6 +72,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **W10 latency harness** (`praevis-thetadata-stream` example `latency`,
+  manual, `live-tests`).
+  - **What it does:** subscribes to quotes for a contract file and records
+    added latency, from frame read to consumer, at p50, p90, p99, p99.9 and
+    max in a preallocated histogram.
+  - **Also records:** quotes per second, drops, heartbeat gaps,
+    allocations per frame and process CPU.
+  - **No login:** the Terminal holds the credentials.
 - **Step G recorded: the three approved option flat files to Parquet.**
   - **Results:** open interest (2.0M rows, 1.7 s), EOD (2.0M rows, 3.9 s)
     and trade/quote (13.8M rows, 38.1 s, 297.8 MB of Parquet against the

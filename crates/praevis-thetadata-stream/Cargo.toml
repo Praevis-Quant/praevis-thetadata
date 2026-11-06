@@ -25,6 +25,10 @@ live-tests = []
 name = "login_conflict_probe"
 required-features = ["live-tests"]
 
+[[example]]
+name = "latency"
+required-features = ["live-tests"]
+
 [dev-dependencies]
 # The probe logs in the historical (gRPC) client while the stream is open.
 praevis-thetadata-client.workspace = true
