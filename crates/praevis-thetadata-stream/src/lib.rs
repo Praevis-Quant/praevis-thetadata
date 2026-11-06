@@ -20,7 +20,7 @@
 mod event;
 mod parse;
 
-pub use event::{Contract, Event, Kind, Price, Quote, Right, Root, Status};
+pub use event::{Contract, Event, Kind, Price, Quote, Response, Right, Root, Status, TypeName};
 pub use parse::parse;
 
 use std::net::TcpStream;

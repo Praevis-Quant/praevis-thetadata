@@ -21,7 +21,7 @@ use praevis_thetadata_client::endpoints::StockHistoryEod;
 use praevis_thetadata_client::{
     AuthClient, AuthConfig, ClientConfig, Credentials, Environment, NaiveDate, ThetaClient,
 };
-use praevis_thetadata_stream::{Contract, Kind, Options, Right, Root, Status, Stream};
+use praevis_thetadata_stream::{Contract, Kind, Options, Response, Right, Root, Status, Stream};
 use std::io::{Read, Write};
 use std::time::{Duration, Instant};
 
@@ -29,7 +29,8 @@ use std::time::{Duration, Instant};
 struct Cli {
     #[arg(long, required = true)]
     confirm_live: bool,
-    #[arg(long, required = true)]
+    /// Read THETADATA_API_KEY for our login (not needed with --no-login).
+    #[arg(long, required_unless_present = "no_login")]
     api_key_env: bool,
     #[arg(long)]
     run_id: String,
@@ -53,6 +54,17 @@ struct Cli {
     terminal_rest: String,
     #[arg(long, default_value = "/v3/option/list/expirations?symbol=SPY")]
     rest_path: String,
+    /// Skip our gRPC login: watch the subscription alone (time to the
+    /// first quote, and every non-quote message with its time).
+    #[arg(long)]
+    no_login: bool,
+}
+
+/// Non-quote messages and the first quote, with times since the start.
+#[derive(Default)]
+struct Log {
+    messages: Vec<serde_json::Value>,
+    first_quote_ms: Option<u128>,
 }
 
 /// The HTTP status code of one GET, or the I/O error kind. Reads only the
@@ -96,6 +108,7 @@ fn watch(
     start: Instant,
     label: &str,
     out: &mut Vec<serde_json::Value>,
+    log: &mut Log,
 ) -> bool {
     let end = Instant::now() + length;
     while Instant::now() < end {
@@ -109,7 +122,11 @@ fn watch(
                 continue;
             };
             match event.kind {
-                Kind::Quote { .. } => bucket.quotes += 1,
+                Kind::Quote { .. } => {
+                    bucket.quotes += 1;
+                    log.first_quote_ms
+                        .get_or_insert_with(|| event.received.duration_since(start).as_millis());
+                }
                 Kind::Heartbeat { status } => {
                     bucket.heartbeats += 1;
                     match status {
@@ -118,7 +135,27 @@ fn watch(
                         Status::Other => bucket.other_status += 1,
                     }
                 }
-                Kind::Other { .. } => bucket.others += 1,
+                Kind::Response { id, response } => {
+                    bucket.others += 1;
+                    let code = match response {
+                        Response::Subscribed => "SUBSCRIBED",
+                        Response::MaxStreamsReached => "MAX_STREAMS_REACHED",
+                        Response::InvalidPerms => "INVALID_PERMS",
+                        Response::Error => "ERROR",
+                        Response::Other => "OTHER",
+                    };
+                    log.messages.push(serde_json::json!({
+                        "t_ms": event.received.duration_since(start).as_millis(),
+                        "type": "REQ_RESPONSE", "req_id": id, "response": code,
+                    }));
+                }
+                Kind::Other { kind, .. } => {
+                    bucket.others += 1;
+                    log.messages.push(serde_json::json!({
+                        "t_ms": event.received.duration_since(start).as_millis(),
+                        "type": kind.as_str(),
+                    }));
+                }
                 Kind::Disconnected => {
                     ended = true;
                     break;
@@ -166,7 +203,7 @@ async fn grpc_request(client: &ThetaClient) -> String {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> std::process::ExitCode {
     let cli = Cli::parse();
-    if !cli.confirm_live || !cli.api_key_env || std::env::var_os("CI").is_some() {
+    if !cli.confirm_live || !(cli.api_key_env || cli.no_login) || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
         return std::process::ExitCode::FAILURE;
     }
@@ -204,6 +241,7 @@ async fn main() -> std::process::ExitCode {
     };
     let start = Instant::now();
     let mut timeline = Vec::new();
+    let mut log = Log::default();
     let rest_before = rest_status(&cli.terminal_rest, &cli.rest_path);
     eprintln!("Terminal REST before: {rest_before}");
     let stream = match Stream::connect(Options::default()) {
@@ -223,14 +261,20 @@ async fn main() -> std::process::ExitCode {
         start,
         "before",
         &mut timeline,
+        &mut log,
     );
-    // Our login: the step under test.
+    // Our login: the step under test (skipped with --no-login).
     let login_at_s = start.elapsed().as_secs();
-    let key = std::env::var("THETADATA_API_KEY").unwrap_or_default();
+    let key = if cli.no_login {
+        String::new()
+    } else {
+        std::env::var("THETADATA_API_KEY").unwrap_or_default()
+    };
     let session = match AuthClient::new(AuthConfig {
         environment: Environment::Prod,
         ..Default::default()
     }) {
+        Ok(_) if cli.no_login => None,
         Ok(auth) => auth
             .authenticate(&Credentials::api_key(key.trim()))
             .await
@@ -252,6 +296,7 @@ async fn main() -> std::process::ExitCode {
                 Err(_) => (identity, "ConnectionFailed".into(), None),
             }
         }
+        None if cli.no_login => ([String::new(), String::new()], "NotRun".into(), None),
         None => ([String::new(), String::new()], "LoginFailed".into(), None),
     };
     eprintln!("our login at {login_at_s}s; first gRPC request: {grpc_first}");
@@ -262,6 +307,7 @@ async fn main() -> std::process::ExitCode {
             start,
             "after",
             &mut timeline,
+            &mut log,
         );
     let rest_after = rest_status(&cli.terminal_rest, &cli.rest_path);
     let grpc_second = match &client {
@@ -282,6 +328,9 @@ async fn main() -> std::process::ExitCode {
         "stream_ended_before_login": ended_before,
         "stream_ended_after_login": ended_after,
         "timeline": timeline,
+        "no_login": cli.no_login,
+        "first_quote_ms": log.first_quote_ms,
+        "messages": log.messages,
         "stats": {
             "frames": stats.frames, "quotes": stats.quotes, "heartbeats": stats.heartbeats,
             "others": stats.others, "unparsed": stats.unparsed, "dropped": stats.dropped,
