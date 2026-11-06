@@ -16,6 +16,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **The stream crate's zero-allocation test counts only its own thread.**
+  - **The defect:** the counter was process-wide, so it also caught libtest's
+    main thread allocating while the test ran. That failed CI once on
+    unchanged code (4 allocations). On one core, 34 of 1,000 runs saw 2
+    such allocations, none from the measuring thread.
+  - **The fix:** a thread-local flag around the measured window. The
+    zero-allocation assertion is unchanged.
+  - **Checks:** a self-check confirms the counter sees this thread's
+    allocations, and a mutation (one allocation in `parse`) fails with
+    10,000.
 - **Parquet output keeps memory flat: no min/max statistics on decimal
   columns by default.**
   - **The cause:** the `parquet` writer (60.1) holds each row group's
