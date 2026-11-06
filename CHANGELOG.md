@@ -72,6 +72,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **W10 findings recorded** (ADR-0018).
+  - **Session:** our historical login ends the Terminal's REST session
+    (200 to 478), but its live stream survives (24,135 quotes, no drops).
+  - **The `Internal` on a later gRPC request stays unexplained.** An idle
+    connection is ruled out (`w10-idle-001`: all OK after up to 180 s idle).
+  - **The 150 s wait for the first quote is pending** the `--no-login`
+    probe.
 - **Diagnostics for the login-conflict probe's two open findings**
   (`w10-conflict-001`).
   - **Stream parser:** decodes the Terminal's `REQ_RESPONSE`

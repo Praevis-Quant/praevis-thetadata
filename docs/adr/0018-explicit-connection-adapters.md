@@ -102,6 +102,44 @@ REST adapter and JAR supervision above stay unimplemented.
   It records only counts, codes and states. It runs during market hours, so
   quotes flow.
 
+## W10 findings so far (2026-11-06)
+
+**Login-conflict probe** (`w10-conflict-001`, main 7b5d7b2, Windows, options
+PRO, live market, 15:02-15:06 UTC; SPY 20261106 742 C). The strike was taken
+from the Terminal's own REST snapshot, so there was no extra login.
+- **Our login ends the Terminal's historical session.** Its REST answered
+  **200 before and 478 after**, and stayed at 478 until the user restarted
+  the Terminal. This matches the one-historical-session rule
+  (`opt-session-001`).
+- **The Terminal's live stream survives our login.** It delivered 24,135
+  quotes after it, with no drops, no unparsed frames and no heartbeat gaps,
+  and every heartbeat reported connected. **So running the Terminal and our
+  historical client together breaks the Terminal's REST, but not its
+  stream.**
+- **Unexplained: our second gRPC request returned `Remote(Internal)`,** not
+  the `Unauthenticated` an ended session gives (`SessionEnded`). That request
+  came about 120 s after the first.
+  - **Same RPC:** the second request was the same AAPL stock EOD request
+    through `query()` as the first.
+  - **Not an idle connection** (`w10-idle-001`, main c79fc0f, 15:29-15:36
+    UTC, with the Terminal running and its REST at 478): one login, then the
+    same request after 0, 30, 60, 120 and 180 s idle. All OK, through
+    `query()` and the raw stub, with no status text.
+  - **What differed in the failing run:** the Terminal's stream was
+    actively delivering quotes on the same account.
+  - **Status:** that, or a one-off server error, are both open. It stays
+    unexplained, with no fix, until evidence appears.
+- **Pending: quotes started about 150 s after the subscribe,** then ran at
+  about 700-1,000 per second, so the contract was not quiet. The probe had
+  discarded the types of the 3 non-quote messages, and has since been
+  extended (#106). `login_conflict_probe --no-login` on a restarted Terminal
+  will record the Terminal's answer to the subscribe and the time to the
+  first quote.
+
+**For users, until the delay is explained:** run either the Terminal's REST
+or our historical client on an account, not both. The Terminal's stream can
+run alongside our client.
+
 ## Alternatives
 
 Requiring Terminal for every user would add Java/startup/configuration costs to
