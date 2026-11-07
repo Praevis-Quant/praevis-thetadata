@@ -92,6 +92,8 @@ pub struct Stats {
     pub dropped: u64,
     /// Heartbeats that arrived more than 2 s after the previous one.
     pub heartbeat_gaps: u64,
+    /// The longest interval between two heartbeats, in milliseconds.
+    pub heartbeat_max_interval_ms: u64,
 }
 
 #[derive(Default)]
@@ -104,6 +106,7 @@ struct Counters {
     unparsed: AtomicU64,
     dropped: AtomicU64,
     heartbeat_gaps: AtomicU64,
+    heartbeat_max_interval_ms: AtomicU64,
 }
 impl Counters {
     fn snapshot(&self) -> Stats {
@@ -117,6 +120,7 @@ impl Counters {
             unparsed: get(&self.unparsed),
             dropped: get(&self.dropped),
             heartbeat_gaps: get(&self.heartbeat_gaps),
+            heartbeat_max_interval_ms: get(&self.heartbeat_max_interval_ms),
         }
     }
 }
@@ -347,8 +351,14 @@ fn read(
             Kind::Quote { .. } => &counters.quotes,
             Kind::Trade { .. } => &counters.trades,
             Kind::Heartbeat { .. } => {
-                if last_heartbeat.is_some_and(|t| received.duration_since(t) > HEARTBEAT_GAP) {
-                    counters.heartbeat_gaps.fetch_add(1, Ordering::Relaxed);
+                if let Some(last) = last_heartbeat {
+                    let interval = received.duration_since(last);
+                    if interval > HEARTBEAT_GAP {
+                        counters.heartbeat_gaps.fetch_add(1, Ordering::Relaxed);
+                    }
+                    counters
+                        .heartbeat_max_interval_ms
+                        .fetch_max(interval.as_millis() as u64, Ordering::Relaxed);
                 }
                 last_heartbeat = Some(received);
                 &counters.heartbeats
