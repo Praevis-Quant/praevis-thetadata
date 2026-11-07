@@ -16,6 +16,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **The decimal-statistics default now cites the upstream bug.** The `parquet`
+  memory growth behind it is apache/arrow-rs#12027, fixed by #12028. The fix
+  is merged but not in a release; 60.1.0 is still the latest. The sink
+  documentation, the READMEs and the options-phase record now say so. A
+  ROADMAP item covers what to do once a release includes the fix: bump
+  `parquet`, re-run the 140M-row memory check, and, if memory stays flat,
+  re-enable Decimal128 statistics by default and drop the workaround. We do
+  not switch to a git dependency in the meantime.
 - **The stream crate's zero-allocation test counts only its own thread.**
   - **The defect:** the counter was process-wide, so it also caught libtest's
     main thread allocating while the test ran. That failed CI once on

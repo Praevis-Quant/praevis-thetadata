@@ -38,7 +38,10 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   otherwise hold each row group's decimal statistics as slices of whole
   batches until the file closes. Every other column keeps its statistics.
   `ParquetOptions::decimal_statistics` opts in, at a memory cost that grows
-  with the file.
+  with the file. This works around an upstream bug
+  ([apache/arrow-rs#12027](https://github.com/apache/arrow-rs/issues/12027),
+  fixed by [#12028](https://github.com/apache/arrow-rs/pull/12028) but not
+  yet released).
 - **Jobs and scheduling** (`ThetaClient::job`, `SchedulerPolicy`, unreleased P1
   work): a request is split by date within the vendor's limits (EOD at 366
   days, intraday history per day), and the parts are merged in order.
