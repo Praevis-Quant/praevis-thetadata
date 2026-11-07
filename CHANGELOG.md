@@ -14,6 +14,20 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Fixed
+
+- **Closing or dropping a `Stream` now unsubscribes what it subscribed.**
+  - **The defect:** before, it only closed the socket. The Terminal's
+    subscriptions are shared by all its clients, and it does not document
+    dropping them when a socket closes, so they could keep arriving on the
+    next connection.
+  - **Where it showed:** the W10 10-contract latency runs received about
+    25k quotes/s, the rate of 1,000 contracts. Leftover subscriptions are
+    the likely cause; this is not yet verified on the Terminal.
+  - **The fix:** the stream tracks its quote and full-trade subscriptions,
+    and on close sends `add:false` for each before the close frame.
+    Loopback tests cover `close` and drop, and both fail without the fix.
+
 ### Changed
 
 - **The decimal-statistics default now cites the upstream bug.** The `parquet`
@@ -24,6 +38,10 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   `parquet`, re-run the 140M-row memory check, and, if memory stays flat,
   re-enable Decimal128 statistics by default and drop the workaround. We do
   not switch to a git dependency in the meantime.
+- **The latency harness reports the contracts it actually saw:**
+  `contracts_seen`, `contracts_seen_unsubscribed` and `quotes_unsubscribed`,
+  so a run's real rate and contract set are visible. CI now runs the
+  real-time harness's offline unit tests.
 - **The stream crate's zero-allocation test counts only its own thread.**
   - **The defect:** the counter was process-wide, so it also caught libtest's
     main thread allocating while the test ran. That failed CI once on
