@@ -72,6 +72,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **W10 record updated.**
+  - **Restart:** a Terminal restart restores its REST session after our
+    login ended it (verified, 200 within 15 s).
+  - **Dev feed:** replays 2025-04-28, and a full-trade-stream subscribe
+    delivered its first event in 1.5 s.
 - **W10 findings recorded** (ADR-0018).
   - **Session:** our historical login ends the Terminal's REST session
     (200 to 478), but its live stream survives (24,135 quotes, no drops).
