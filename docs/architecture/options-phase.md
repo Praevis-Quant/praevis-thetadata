@@ -247,6 +247,21 @@ default, with an explicit opt-in. Offline after the fix:
 `parquet` 60.1.0 (2026-10-28) is the newest release, so no upstream fix
 exists yet. The rerun of M1-M3, plus M4 (a whole day), is the live check.
 
+**Upstream status (checked 2026-11-07):**
+- **Reported and fixed:** the bug is
+  [apache/arrow-rs#12027](https://github.com/apache/arrow-rs/issues/12027),
+  fixed by [apache/arrow-rs#12028](https://github.com/apache/arrow-rs/pull/12028)
+  (merged to main b1614b8 on 2026-11-03).
+- **Not released:** 60.1.0 is still the latest.
+- **Repro:** the Coordinator checked it independently with a standalone repro:
+  - With statistics on, 60.1.0 holds about 1 MiB per decimal column per row
+    group.
+  - Only precision above 18 is affected. Precision 18 or less is stored as
+    INT64. Our prices are precision 38.
+  - Git main 8330865 stays flat.
+- **What we do:** we wait for a release and do not switch to a git
+  dependency ([ROADMAP](../ROADMAP.md)).
+
 **Rerun after the fix** (2026-11-05, main f520b09, Windows, PRO; all OK):
 
 | Workload | Rows | Rows per part (average) | Parquet delta | Frame delta |

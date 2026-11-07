@@ -98,6 +98,22 @@ preserve source validation and lifecycle semantics and benchmark adapter bypass.
 Explore bounded aggregation/windowing, export adapters and caching only with
 separate consumer requirements, state budgets and provenance/invalidation rules.
 
+**Re-enable Decimal128 Parquet statistics after the upstream fix ships.**
+`ParquetSink` writes no decimal min/max statistics by default. This works
+around an upstream bug: `parquet` 60.1 retains whole batches through those
+statistics ([apache/arrow-rs#12027](https://github.com/apache/arrow-rs/issues/12027)).
+The fix, [apache/arrow-rs#12028](https://github.com/apache/arrow-rs/pull/12028),
+is merged but not yet released
+([record](architecture/options-phase.md#memory-bound-under-w5-planned)).
+
+When a `parquet` release containing #12028 ships (60.1.1 or 61):
+1. Bump `parquet`.
+2. Re-run the 140M-row Parquet memory check (`examples/job_memory.rs`).
+3. If memory stays flat, re-enable Decimal128 statistics by default and drop
+   the workaround.
+
+Do not switch to a git dependency in the meantime.
+
 ## Initial crates.io presence
 
 Done: `0.1.0-alpha.1` was published on 2026-11-02 UTC

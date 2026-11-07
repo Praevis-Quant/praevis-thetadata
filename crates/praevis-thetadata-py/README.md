@@ -42,7 +42,11 @@ client.to_parquet("stock_history_eod", "aapl.parquet", symbol="AAPL",
 `to_parquet` keeps memory flat however large the file. Decimal (price)
 columns get no min/max statistics; every other column does.
 `decimal_statistics=True` writes them for price pushdown in readers, at a
-memory cost that grows with the file.
+memory cost that grows with the file. The default works around an upstream
+`parquet` bug
+([apache/arrow-rs#12027](https://github.com/apache/arrow-rs/issues/12027),
+fixed by [#12028](https://github.com/apache/arrow-rs/pull/12028) but not yet
+released).
 
 Parameter names are the vendor package's. `pt.describe(...)` shows the wire
 query without sending it, and how many date parts `plan` makes. With `plan`

@@ -22,6 +22,12 @@
 //! in 65,536-row batches, measured by `examples/job_memory.rs` in the client
 //! crate). Statistics stay on every
 //! other column, so time and integer filters keep their pushdown.
+//!
+//! This is an upstream bug, reported as apache/arrow-rs#12027 and fixed by
+//! apache/arrow-rs#12028 (merged 2026-11-03, not in a release yet). It
+//! affects decimals with precision above 18; ours are precision 38
+//! ([`crate::PRICE_PRECISION`]). Once a `parquet` release contains the fix,
+//! the default is to be re-measured and statistics re-enabled (ROADMAP).
 use arrow_array::{ArrayRef, RecordBatch, new_null_array};
 use arrow_schema::{DataType, Field, Schema, SchemaRef};
 use parquet::arrow::ArrowWriter;
@@ -47,7 +53,8 @@ pub struct ParquetOptions {
     /// `false`). Enables readers' pushdown on prices, at a memory cost that
     /// grows with the file: up to 2 × 16 bytes × batch rows per decimal
     /// column per row group, held until [`ParquetSink::finish`] (see the
-    /// module documentation).
+    /// module documentation; upstream apache/arrow-rs#12027, fixed by
+    /// #12028 but not yet released).
     pub decimal_statistics: bool,
 }
 impl Default for ParquetOptions {
