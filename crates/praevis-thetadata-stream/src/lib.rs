@@ -20,7 +20,9 @@
 mod event;
 mod parse;
 
-pub use event::{Contract, Event, Kind, Price, Quote, Response, Right, Root, Status, TypeName};
+pub use event::{
+    Contract, Event, Kind, Price, Quote, Response, Right, Root, Status, Trade, TypeName,
+};
 pub use parse::parse;
 
 use std::net::TcpStream;
@@ -81,6 +83,7 @@ pub enum StreamError {
 pub struct Stats {
     pub frames: u64,
     pub quotes: u64,
+    pub trades: u64,
     pub heartbeats: u64,
     pub others: u64,
     /// Text frames this slice could not parse exactly.
@@ -95,6 +98,7 @@ pub struct Stats {
 struct Counters {
     frames: AtomicU64,
     quotes: AtomicU64,
+    trades: AtomicU64,
     heartbeats: AtomicU64,
     others: AtomicU64,
     unparsed: AtomicU64,
@@ -107,6 +111,7 @@ impl Counters {
         Stats {
             frames: get(&self.frames),
             quotes: get(&self.quotes),
+            trades: get(&self.trades),
             heartbeats: get(&self.heartbeats),
             others: get(&self.others),
             unparsed: get(&self.unparsed),
@@ -207,6 +212,35 @@ impl Stream {
             .map_err(|_| StreamError::Closed)?
             .push(text);
         Ok(id)
+    }
+
+    /// Start (`add`) or stop the full trade stream: every US option trade
+    /// on OPRA, each preceded by a quote and an OHLC message for its
+    /// contract (options PRO only, as the vendor documents). Returns the
+    /// request id.
+    fn full_trades(&self, add: bool) -> Result<u64, StreamError> {
+        if self.reader.as_ref().is_none_or(JoinHandle::is_finished) {
+            return Err(StreamError::Closed);
+        }
+        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let text = format!(
+            r#"{{"msg_type":"STREAM_BULK","sec_type":"OPTION","req_type":"TRADE","add":{add},"id":{id}}}"#
+        );
+        self.outgoing
+            .lock()
+            .map_err(|_| StreamError::Closed)?
+            .push(text);
+        Ok(id)
+    }
+
+    /// Start the full trade stream; returns the request id.
+    pub fn subscribe_full_trades(&self) -> Result<u64, StreamError> {
+        self.full_trades(true)
+    }
+
+    /// Stop the full trade stream; returns the request id.
+    pub fn unsubscribe_full_trades(&self) -> Result<u64, StreamError> {
+        self.full_trades(false)
     }
 
     /// Start quote events for `contract`; returns the request id.
@@ -311,6 +345,7 @@ fn read(
         };
         match kind {
             Kind::Quote { .. } => &counters.quotes,
+            Kind::Trade { .. } => &counters.trades,
             Kind::Heartbeat { .. } => {
                 if last_heartbeat.is_some_and(|t| received.duration_since(t) > HEARTBEAT_GAP) {
                     counters.heartbeat_gaps.fetch_add(1, Ordering::Relaxed);

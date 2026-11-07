@@ -29,6 +29,10 @@ required-features = ["live-tests"]
 name = "latency"
 required-features = ["live-tests"]
 
+[[example]]
+name = "discover_contracts"
+required-features = ["live-tests"]
+
 [dev-dependencies]
 # The probe logs in the historical (gRPC) client while the stream is open.
 praevis-thetadata-client.workspace = true

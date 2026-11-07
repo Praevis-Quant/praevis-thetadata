@@ -149,6 +149,9 @@ fn watch(
                         "type": "REQ_RESPONSE", "req_id": id, "response": code,
                     }));
                 }
+                // Trades only arrive on the full trade stream, which this
+                // probe does not subscribe to.
+                Kind::Trade { .. } => bucket.others += 1,
                 Kind::Other { kind, .. } => {
                     bucket.others += 1;
                     log.messages.push(serde_json::json!({
