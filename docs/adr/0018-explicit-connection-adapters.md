@@ -109,9 +109,9 @@ PRO, live market, 15:02-15:06 UTC; SPY 20261106 742 C). The strike was taken
 from the Terminal's own REST snapshot, so there was no extra login.
 - **Our login ends the Terminal's historical session.** Its REST answered
   **200 before and 478 after**. It was still 478 at the end of the run and
-  later (`w10-idle-001`). A Terminal restart should restore it; that is not
-  yet verified. This matches the one-historical-session rule
-  (`opt-session-001`).
+  later (`w10-idle-001`). **A Terminal restart restores it (verified
+  2026-11-07):** REST answered 200 again within 15 s of the restart. This
+  matches the one-historical-session rule (`opt-session-001`).
 - **The Terminal's live stream survives our login.** It delivered 24,135
   quotes after it, with no drops, no unparsed frames and no heartbeat gaps,
   and every heartbeat reported connected. **So running the Terminal and our
@@ -136,6 +136,21 @@ from the Terminal's own REST snapshot, so there was no extra login.
   extended (#106). `login_conflict_probe --no-login` on a restarted Terminal
   will record the Terminal's answer to the subscribe and the time to the
   first quote.
+
+**Dev feed observations (2026-11-07, Saturday).** The Terminal was
+restarted with `fpss_region = "fpss_dev_hosts"`; the live configuration is
+backed up as `config.toml.bak-live-20261107`. The Coordinator read the full
+trade stream for 20 s (a local script, no login):
+- **Replay day:** the dev feed replays **2025-04-28**, with 1,923 contracts
+  active.
+- **Subscribe timing:** the subscribe was answered `SUBSCRIBED` for request
+  id 1, and also for id -1. The **first contract event arrived 1.5 s after
+  subscribing.** A bulk subscribe on dev therefore delivers within seconds.
+  Whether a single-contract subscribe on the live feed can wait 150 s is
+  still open, for the live `--no-login` run on Monday.
+- **Message types seen:** QUOTE (13,606), OHLC (5,384), TRADE (5,384),
+  STATUS, STATE and REQ_RESPONSE. OHLC and STATE are new to this crate,
+  which counts them as other types.
 
 **For users, until the delay is explained:** run either the Terminal's REST
 or our historical client on an account, not both. The Terminal's stream can
