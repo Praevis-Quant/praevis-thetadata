@@ -88,6 +88,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **Not yet explained:** a max of about 4 ms on Windows, and 1.07 cores at
     25k quotes/s.
   - **Not yet run:** the live market.
+- **Latency diagnostics** (W10).
+  - **Harness:** reports the 20 slowest events with their times, to tell
+    periodic stalls from random ones. A measurement-only `--consumer spin`
+    option isolates the cost of waking a sleeping consumer.
+  - **Stream:** `Stats::heartbeat_max_interval_ms` shows how far apart the
+    Terminal spaces heartbeats under load.
 - **W10 record updated.**
   - **Restart:** a Terminal restart restores its REST session after our
     login ended it (verified, 200 within 15 s).

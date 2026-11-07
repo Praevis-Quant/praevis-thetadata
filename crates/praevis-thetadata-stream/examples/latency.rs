@@ -54,6 +54,54 @@ struct Cli {
     /// A label for the report, for example `dev` or `live`.
     #[arg(long, default_value = "dev")]
     feed: String,
+    /// `sleep`: block in `recv_timeout` between events (a normal consumer).
+    /// `spin`: poll `try_recv` in a loop, using a core, to measure what
+    /// waking a sleeping consumer costs. A measurement option only.
+    #[arg(long, default_value = "sleep", value_parser = ["sleep", "spin"])]
+    consumer: String,
+}
+
+/// The slowest events and when they happened, to tell periodic stalls (a
+/// GC, a timer) from random ones. Fixed size; recording never allocates.
+struct Slowest {
+    /// (latency ns, ms since the start), smallest latency first once full.
+    events: [(u64, u64); 20],
+    len: usize,
+}
+impl Slowest {
+    fn new() -> Self {
+        Self {
+            events: [(0, 0); 20],
+            len: 0,
+        }
+    }
+    fn record(&mut self, ns: u64, at_ms: u64) {
+        if self.len < self.events.len() {
+            self.events[self.len] = (ns, at_ms);
+            self.len += 1;
+            return;
+        }
+        // Replace the smallest if this one is slower.
+        let (index, smallest) = self
+            .events
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, (ns, _))| *ns)
+            .map(|(i, e)| (i, e.0))
+            .unwrap_or((0, 0));
+        if ns > smallest {
+            self.events[index] = (ns, at_ms);
+        }
+    }
+    /// Slowest first: (latency µs, ms since the start).
+    fn sorted(&self) -> Vec<(f64, u64)> {
+        let mut out: Vec<(f64, u64)> = self.events[..self.len]
+            .iter()
+            .map(|(ns, at)| (*ns as f64 / 1_000.0, *at))
+            .collect();
+        out.sort_by(|a, b| b.0.total_cmp(&a.0));
+        out
+    }
 }
 
 /// Latency histogram: 1 µs buckets to 10 ms, then 1 ms buckets to 1 s, then
@@ -229,6 +277,8 @@ fn main() -> std::process::ExitCode {
         }
     }
     let mut histogram = Histogram::new();
+    let mut slowest = Slowest::new();
+    let spin = cli.consumer == "spin";
     let (cpu_start, allocations_start, frames_start) = (
         cpu_time(),
         ALLOCATIONS.load(Ordering::Relaxed),
@@ -238,13 +288,24 @@ fn main() -> std::process::ExitCode {
     let end = start + Duration::from_secs(cli.seconds);
     let mut ended = false;
     while Instant::now() < end {
-        let Some(event) = stream.recv_timeout(end.saturating_duration_since(Instant::now())) else {
+        let next = if spin {
+            stream.try_recv()
+        } else {
+            stream.recv_timeout(end.saturating_duration_since(Instant::now()))
+        };
+        let Some(event) = next else {
+            if spin {
+                std::hint::spin_loop();
+            }
             continue;
         };
         // The user callback would run here; the measurement is the hand-off.
         let ns = event.received.elapsed().as_nanos() as u64;
         match event.kind {
-            Kind::Quote { .. } => histogram.record(ns),
+            Kind::Quote { .. } => {
+                histogram.record(ns);
+                slowest.record(ns, start.elapsed().as_millis() as u64);
+            }
             Kind::Disconnected => {
                 ended = true;
                 break;
@@ -277,10 +338,13 @@ fn main() -> std::process::ExitCode {
             "note": "bucket upper edges: 1 µs to 10 ms, then 1 ms",
         },
         "target_p99_us": 50,
+        "consumer": cli.consumer,
+        "slowest_us_at_ms": slowest.sorted(),
         "stats": {
             "frames": stats.frames, "quotes": stats.quotes, "heartbeats": stats.heartbeats,
             "others": stats.others, "unparsed": stats.unparsed, "dropped": stats.dropped,
             "heartbeat_gaps": stats.heartbeat_gaps,
+            "heartbeat_max_interval_ms": stats.heartbeat_max_interval_ms,
         },
         "allocations_per_frame": if frames > 0 { Some(allocations as f64 / frames as f64) } else { None },
         "cpu_s": cpu.map(|c| c.as_secs_f64()),
@@ -325,6 +389,18 @@ mod tests {
         assert_eq!(h.count, 1_002);
         assert_eq!(h.max_ns, 2_000_000_000);
         assert_eq!(Histogram::new().quantile_us(0.99), None);
+    }
+
+    #[test]
+    fn the_slowest_events_are_kept_with_their_times() {
+        let mut slowest = Slowest::new();
+        for i in 0..1_000u64 {
+            slowest.record(i * 1_000, i);
+        }
+        let top = slowest.sorted();
+        assert_eq!(top.len(), 20);
+        assert_eq!(top[0], (999.0, 999));
+        assert_eq!(top[19], (980.0, 980));
     }
 
     #[test]
