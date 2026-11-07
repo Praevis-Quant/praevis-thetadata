@@ -114,6 +114,13 @@ When a `parquet` release containing #12028 ships (60.1.1 or 61):
 
 Do not switch to a git dependency in the meantime.
 
+**Consumer wait strategy for the real-time stream (deferred 2026-11-07).**
+An opt-in spin or spin-then-park wait for `Stream::recv*` could remove the
+consumer's wake-up from the stream latency, at the cost of CPU. The user
+deferred it; sleeping stays the only and default behaviour. The problem,
+options, costs, proposed API, gates and decision record are in
+[consumer wait strategy](performance/consumer-wait-strategy.md).
+
 ## Initial crates.io presence
 
 Done: `0.1.0-alpha.1` was published on 2026-11-02 UTC

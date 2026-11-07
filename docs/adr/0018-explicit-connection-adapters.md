@@ -229,6 +229,10 @@ semantics are proven. Benchmark each delivery path separately; a vendor gateway
 performance claim does not demonstrate lower latency for our Rust consumers.
 REST/JAR/WebSocket work remains planned, not implemented by this ADR.
 
+An opt-in consumer wait strategy (spinning instead of sleeping) for the
+WebSocket stream was deferred by the user on 2026-11-07; see
+[consumer wait strategy](../performance/consumer-wait-strategy.md).
+
 See [connection inventory, diagram and sources](../connections.md),
 [subscription verification](../subscription-testing.md), and
 [library boundaries](0013-library-boundaries.md).

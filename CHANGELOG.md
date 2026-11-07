@@ -102,6 +102,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     option isolates the cost of waking a sleeping consumer.
   - **Stream:** `Stats::heartbeat_max_interval_ms` shows how far apart the
     Terminal spaces heartbeats under load.
+- **Consumer wait strategy for the real-time stream: deferred, with a full
+  write-up.** [docs/performance/consumer-wait-strategy.md](docs/performance/consumer-wait-strategy.md)
+  records the problem (the consumer's wake-up dominates the tail at low
+  quote rates), the options and their CPU costs, what spinning cannot fix,
+  a proposed opt-in `WaitStrategy` API, the gates before shipping, and the
+  user's 2026-11-07 decision to keep sleeping as the only behaviour. Linked
+  from the ROADMAP and ADR-0018. It includes the Windows sleep-against-spin
+  runs (one each): p99 7 µs spinning against 31-34 µs sleeping, for about
+  half a core, with no better max.
 - **W10 record updated.**
   - **Restart:** a Terminal restart restores its REST session after our
     login ended it (verified, 200 within 15 s).
