@@ -186,7 +186,8 @@ consumer. All exit 0, none ended, 0 dropped, 0 unparsed, 0 heartbeat gaps.
   the 813 µs p99.9 at 10 contracts comes from. Power states at low load are
   a likely contributor, not measured.
 - **A spinning consumer removes the wake-up** (p50 1.0 µs), at the cost of
-  a core. Offering it is a design decision, not made here.
+  a core. The user deferred offering it on 2026-11-07
+  ([consumer wait strategy](../performance/consumer-wait-strategy.md)).
 
 **The roughly 4 ms max: not explained.**
 - It is about 4 ms at every load on Windows, and 18-24 µs on Linux
@@ -195,6 +196,8 @@ consumer. All exit 0, none ended, 0 dropped, 0 unparsed, 0 heartbeat gaps.
   scheduling slice, for example by the Terminal's JVM on the same machine.
 - **Not measured:** the next step is to record the times of the slowest
   events, to see whether they are periodic (a GC or timer) or random.
+  Done in the sleep-against-spin runs below: one backlog per run, and the
+  consumer stopped taking events.
 
 **CPU of 1.07 cores at 25k quotes/s: not spinning.** The consumer blocks in
 `recv_timeout` and the reader in a socket read. That is about 42 µs of CPU
@@ -209,6 +212,38 @@ Windows. It is not profiled.
 - Under load it spaces heartbeats more widely than its "about every second".
   They are a liveness signal, not a clock. Recording the longest interval
   would make this visible.
+
+**Sleeping against spinning on Windows (2026-11-07).** These are
+observations from one run each, not a verified result. Main 461f17a, dev
+feed, `latency --consumer sleep|spin`, 120 s each, runs
+`w10-dev-{10,1000}-{sleep,spin}-001`. Latencies are in µs.
+
+| Contracts | Consumer | Quotes/s | p50 | p90 | p99 | p99.9 | Max | CPU (cores) | Dropped | Heartbeat gaps |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 10 | sleep | 24,965 | 15 | 20 | 31 | 228 | 4,903 | 1.01 | 0 | 0 |
+| 10 | spin | 24,002 | 3 | 4 | 7 | 103 | 13,579 | 1.53 | 0 | 0 |
+| 1,000 | sleep | 24,976 | 16 | 22 | 34 | 103 | 3,069 | 1.08 | 0 | 45 (longest 3,286 ms) |
+| 1,000 | spin | 23,462 | 3 | 4 | 7 | 41 | 3,677 | 1.57 | 0 | 0 |
+
+- **Spinning cuts the p50 and the p99 about 5×** (to 3 and 7 µs), for
+  about half a core more.
+- **It does not improve the max.** In every run the 20 slowest events
+  arrived in the same millisecond, with falling latencies; for example,
+  13.6 down to 12.1 ms at 66,104 ms in the 10-contract spin run. The reader
+  kept stamping and queueing frames while the consumer took nothing for
+  about 12-13 ms. So the max is our consumer thread being descheduled, even
+  while spinning. It is not upstream, which is outside this measurement.
+  Pinning or priority might help; that is untested.
+- **Heartbeat gaps:** 45 in the 1,000-contract sleep run only. They are
+  unexplained; the reader counts them before the consumer, so they are most
+  likely on the Terminal or feed side.
+- **Caveat: the 10-contract runs ran at about 25k quotes/s,** like 1,000
+  contracts, not at the 1.7k/s of the earlier 10-contract runs. The harness
+  counts every quote received, so the Terminal delivered more than the 10
+  subscribed contracts; why is not known. **The low-rate case is not yet
+  measured** against spinning.
+- **Decision:** unchanged. The user's deferral stands, with `Sleep` the only
+  behaviour ([consumer wait strategy](../performance/consumer-wait-strategy.md)).
 
 **For users, until the delay is explained:** run either the Terminal's REST
 or our historical client on an account, not both. The Terminal's stream can

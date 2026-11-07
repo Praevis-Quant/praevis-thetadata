@@ -38,13 +38,66 @@ So parsing plus the hand-off cost about 1 µs, and the wake-up about 4 µs
 on Linux. On Windows the wake-up is much slower and more variable, which is
 where the 813 µs p99.9 at 10 contracts comes from.
 
-### Measured on Windows (pending)
+### Measured on Windows: sleeping against spinning (2026-11-07)
 
-> **PLACEHOLDER: to be filled in from the sleep-against-spin comparison
-> after #111 merges.** The runs are 10 and 1,000 contracts on the dev feed,
-> `latency --consumer sleep` and `--consumer spin`, 120 s each. For each
-> run, record p50, p99, p99.9, max, the 20 slowest events and their times,
-> CPU (cores), drops and the longest heartbeat interval.
+These are observations from one run each, not a verified result. Main
+461f17a, Windows 11 x86_64 on the Ryzen 7 2700, dev feed replaying
+2025-04-28, `latency --consumer sleep|spin`, 120 s each. The run IDs are
+`w10-dev-{10,1000}-{sleep,spin}-001`, and the artifacts are local only.
+Latencies are in µs.
+
+| Contracts | Consumer | Quotes | Quotes/s | p50 | p90 | p99 | p99.9 | Max | CPU (cores) | Dropped | Heartbeat gaps |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 10 | sleep | 2,995,751 | 24,965 | 15 | 20 | 31 | 228 | 4,903 | 1.01 | 0 | 0 |
+| 10 | spin | 2,880,261 | 24,002 | **3** | 4 | **7** | 103 | 13,579 | 1.53 | 0 | 0 |
+| 1,000 | sleep | 2,997,128 | 24,976 | 16 | 22 | 34 | 103 | 3,069 | 1.08 | 0 | 45 (longest interval 3,286 ms) |
+| 1,000 | spin | 2,815,473 | 23,462 | **3** | 4 | **7** | 41 | 3,677 | 1.57 | 0 | 0 |
+
+Allocations per frame were 0.000005 at 10 contracts and 0.00033 at 1,000,
+in both modes.
+
+**What it shows:**
+1. **Spinning cuts the median and the p99 about 5×.** The p50 fell from
+   15-16 µs to 3 µs, and the p99 from 31-34 µs to 7 µs, at both sizes. The
+   p99.9 fell too, from 228 to 103 µs and from 103 to 41 µs.
+2. **It costs about half a core.** Process CPU rose from 1.01-1.08 cores to
+   1.53-1.57.
+3. **It does not improve the max.** In every run the 20 slowest events were
+   received in the same millisecond, with latencies falling in order. In
+   the 10-contract spin run, for example, they ran from 13.6 ms down to
+   12.1 ms, all received at 66,104 ms.
+
+   Each latency runs from the reader's stamp to the consumer receiving the
+   event. So the reader kept stamping and queueing frames for about 1.5 ms
+   while **the consumer took nothing for about 12-13 ms**, then drained the
+   backlog at once. The stall is between the queue and the consumer. That
+   means our consumer thread did not run: it was preempted or descheduled
+   even while spinning. It is not upstream; upstream delay happens before
+   the stamp and is outside this measurement. Spinning does not prevent
+   it. Pinning or priority might, which is untested.
+4. **Heartbeat gaps:** the 1,000-contract sleep run saw 45, with a longest
+   interval of 3.3 s; the other three runs saw none. This is unexplained.
+   Gaps are counted at the reader, before the consumer, so the consumer's
+   mode should not affect them, and it is most likely on the Terminal or
+   feed side.
+5. **Throughput is set by the feed:** about 24-25k quotes/s in every run.
+   The spin runs measured 4-6% fewer quotes, with 0 dropped and 0 gaps. That
+   is consistent with the replay's pacing varying, not with loss.
+
+**Caveat: the 10-contract runs were not at a low rate.** They received
+about 25k quotes/s, the same as 1,000 contracts, where the earlier
+10-contract runs received 1.7k/s (the table above). The harness counts
+every quote it receives, not only the subscribed contracts, so in these
+runs the Terminal delivered quotes for more than the 10 subscribed. The
+cause is not known; earlier subscriptions persisting in the Terminal are
+one possibility, which is unverified. So the **low-rate case**, where
+waking the consumer costs the most, is **not yet measured on Windows**
+against spinning.
+
+**Conclusion:** the data supports the deferral as written. Spinning is a
+large win at the median and the p99, for about half a core. It is worth
+offering later as an opt-in wait strategy. It does not fix the max. Per the
+user's decision it stays on the ROADMAP only, with no library change.
 
 ## The mechanism today
 
@@ -73,10 +126,12 @@ where the 813 µs p99.9 at 10 contracts comes from.
 
 ### What spinning cannot fix
 
-- **The roughly 4 ms max** seen at every load on Windows. That is the thread
-  losing its core (preemption, for example by the Terminal's JVM), not a
-  wake-up. Only pinning and priority, with a free core, could address it;
-  #111's slowest-event times will show whether it is periodic.
+- **The max of 3-5 ms, and once 13.6 ms,** seen at every load on Windows.
+  The slowest events arrive as one backlog: the consumer stops taking events
+  for several milliseconds, then drains the queue. This happened while
+  spinning too, so the thread is losing its core, not waking slowly. Only
+  pinning and priority, with a free core, could address it, and that is
+  untested.
 - **Everything upstream:** the vendor feed, the Terminal's Java process, its
   JSON encoding and the local WebSocket. Events carry no send time, so that
   delay cannot even be measured from our side.
@@ -106,7 +161,8 @@ pub enum WaitStrategy {
 ### Gates before shipping
 
 1. **Measured on Windows and Linux**, at 10, 100 and 1,000 contracts, on the
-   dev feed and then live. Each variant against `Sleep`, reporting p50,
+   dev feed and then live. Confirm that the 10-contract runs really run at a
+   low rate (see the caveat above). Each variant against `Sleep`, reporting p50,
    p99, p99.9, max, CPU and drops. The same harness and decision rules as
    other performance changes (benchmark policy, interleaved rounds).
 2. **No backfire:** with more spinning consumers than free cores, latency
@@ -124,3 +180,4 @@ pub enum WaitStrategy {
 | Date | Decision |
 | --- | --- |
 | 2026-11-07 | **Deferred by the user.** No spinning or spin-then-park in the library now; `Sleep` stays the only and default behaviour. The p99 ≤ 50 µs target is met at 100 contracts or more on the dev feed (38 and 35 µs). The latency harness keeps `--consumer spin` as a measurement option only, not a user feature |
+| 2026-11-07 | **The Windows comparison supports the deferral.** Spinning gave a p99 of 7 µs against 31-34 µs, for about half a core more, and no better max (one run each, at about 25k quotes/s). It stays ROADMAP-only. The low-rate comparison is still to be measured |
