@@ -30,6 +30,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **W10 low-rate sleep-against-spin runs recorded** (consumer wait strategy
+  and ADR-0018), one run each, after a Terminal restart and with #114:
+  - **Result:** at about 670 quotes/s, spinning cut the p99 from 37 to
+    10 µs, for a full core against 0.027 cores, with a worse p99.9 and max.
+  - **Correction:** the earlier 10-contract runs are now marked as
+    inflated by leftover Terminal subscriptions.
+  - **Status:** the deferral stands.
 - **The decimal-statistics default now cites the upstream bug.** The `parquet`
   memory growth behind it is apache/arrow-rs#12027, fixed by #12028. The fix
   is merged but not in a release; 60.1.0 is still the latest. The sink

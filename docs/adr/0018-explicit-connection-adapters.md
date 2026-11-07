@@ -237,11 +237,24 @@ feed, `latency --consumer sleep|spin`, 120 s each, runs
 - **Heartbeat gaps:** 45 in the 1,000-contract sleep run only. They are
   unexplained; the reader counts them before the consumer, so they are most
   likely on the Terminal or feed side.
-- **Caveat: the 10-contract runs ran at about 25k quotes/s,** like 1,000
-  contracts, not at the 1.7k/s of the earlier 10-contract runs. The harness
-  counts every quote received, so the Terminal delivered more than the 10
-  subscribed contracts; why is not known. **The low-rate case is not yet
-  measured** against spinning.
+- **These 10-contract runs were inflated by leftover Terminal
+  subscriptions, fixed in #114.** They ran at about 25k quotes/s, like
+  1,000 contracts, not at the 1.7k/s of the earlier 10-contract runs. Closing
+  a stream used to leave its subscriptions in the Terminal, so these runs
+  also received quotes for contracts from earlier runs. The 1,000-contract
+  pair may have included leftovers too. Its rate matched the earlier
+  1,000-contract run, so it stands as a high-rate data point.
+- **Low-rate re-run** (main 4c7d30d with #114, after a Terminal restart,
+  runs `w10-dev-10-{sleep,spin}-002`, one each):
+  - **The run really was low-rate:** 8 of the 10 subscribed contracts
+    quoted, and no quotes came from unsubscribed contracts.
+  - **Sleeping:** 673 quotes/s. p50 17, p99 37, p99.9 60, max 256 µs.
+    0.027 cores.
+  - **Spinning:** 669 quotes/s. p50 3, p99 10, p99.9 148, max 1,618 µs.
+    1.01 cores.
+  - **What it shows:** spinning cut the p50 about 5.7× and the p99 about
+    3.7×, for about 38× the CPU, and its p99.9 and max were worse.
+  - **Sleeping met the p99 ≤ 50 µs target at this rate.**
 - **Decision:** unchanged. The user's deferral stands, with `Sleep` the only
   behaviour ([consumer wait strategy](../performance/consumer-wait-strategy.md)).
 

@@ -44,7 +44,9 @@ These are observations from one run each, not a verified result. Main
 461f17a, Windows 11 x86_64 on the Ryzen 7 2700, dev feed replaying
 2025-04-28, `latency --consumer sleep|spin`, 120 s each. The run IDs are
 `w10-dev-{10,1000}-{sleep,spin}-001`, and the artifacts are local only.
-Latencies are in µs.
+Latencies are in µs. **These runs were inflated by leftover Terminal
+subscriptions** (see the caveat below, fixed in #114); the low-rate re-run
+follows.
 
 | Contracts | Consumer | Quotes | Quotes/s | p50 | p90 | p99 | p99.9 | Max | CPU (cores) | Dropped | Heartbeat gaps |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -84,20 +86,57 @@ in both modes.
    The spin runs measured 4-6% fewer quotes, with 0 dropped and 0 gaps. That
    is consistent with the replay's pacing varying, not with loss.
 
-**Caveat: the 10-contract runs were not at a low rate.** They received
-about 25k quotes/s, the same as 1,000 contracts, where the earlier
-10-contract runs received 1.7k/s (the table above). The harness counts
-every quote it receives, not only the subscribed contracts, so in these
-runs the Terminal delivered quotes for more than the 10 subscribed. The
-cause is not known; earlier subscriptions persisting in the Terminal are
-one possibility, which is unverified. So the **low-rate case**, where
-waking the consumer costs the most, is **not yet measured on Windows**
-against spinning.
+**Caveat: these runs were inflated by leftover Terminal subscriptions,
+fixed in #114.**
+- **What happened:** the 10-contract runs received about 25k quotes/s,
+  the rate of 1,000 contracts. Closing a stream used to leave its
+  subscriptions in the Terminal, so these runs also received quotes for
+  contracts from earlier runs.
+- **How it was confirmed:** the re-run below, after a Terminal restart and
+  with #114, saw no quotes from unsubscribed contracts.
+- **What still stands:** the 1,000-contract pair may also have included
+  leftovers. Its rate matched the earlier 1,000-contract run (25,259/s), so
+  it stands as a high-rate data point.
 
-**Conclusion:** the data supports the deferral as written. Spinning is a
-large win at the median and the p99, for about half a core. It is worth
-offering later as an opt-in wait strategy. It does not fix the max. Per the
-user's decision it stays on the ROADMAP only, with no library change.
+### Low-rate re-run (2026-11-07)
+
+Again one run each, not a verified result. Main 4c7d30d (with #114), after
+a Terminal restart, same host and feed, 10 contracts, 120 s each. Runs
+`w10-dev-10-{sleep,spin}-002`. Of the 10 subscribed contracts, 8 sent
+quotes. That is expected for thin contracts on the replay day. No quotes
+came from unsubscribed contracts (`contracts_seen_unsubscribed` and
+`quotes_unsubscribed` both 0). Latencies are in µs.
+
+| Consumer | Quotes | Quotes/s | p50 | p90 | p99 | p99.9 | Max | CPU (cores) | Dropped | Heartbeat gaps |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| sleep | 80,814 | 673 | 17 | 27 | 37 | 60 | 256 | 0.027 | 0 | 0 |
+| spin | 80,257 | 669 | **3** | 6 | **10** | 148 | 1,618 | **1.01** | 0 | 0 |
+
+1. **Spinning still cuts the median and the p99 at a low rate:** the p50
+   fell about 5.7×, from 17 to 3 µs, and the p99 about 3.7×, from 37 to
+   10 µs.
+2. **It costs a full core, against 0.027 cores for sleeping: about 38×
+   the CPU.** While the stream is open, the spinner burns a core whether
+   or not quotes arrive. This is the strongest argument for keeping it
+   opt-in only.
+3. **The tail was worse spinning:** p99.9 148 against 60 µs, and max 1,618
+   against 256 µs. A thread that never yields is more likely to be
+   preempted mid-spin, and when it is, the events wait. That fits the
+   backfire risk in the options table. It is one run, but it is the
+   opposite of what spinning is for.
+4. **Sleeping met the p99 ≤ 50 µs target at a low rate** (37 µs), and with
+   a tighter tail than the inflated -001 runs.
+
+**Conclusion:** the data supports the deferral as written.
+- **The benefit:** spinning is a large win at the median and the p99, at
+  both low and high rates.
+- **The cost:** about half a core at 25k quotes/s, and a full core at a low
+  rate, where sleeping uses almost nothing.
+- **What it does not fix:** the max, and at a low rate it worsened the
+  p99.9 and the max.
+
+It is worth offering later as an opt-in wait strategy. Per the user's
+decision it stays on the ROADMAP only, with no library change.
 
 ## The mechanism today
 
@@ -161,8 +200,10 @@ pub enum WaitStrategy {
 ### Gates before shipping
 
 1. **Measured on Windows and Linux**, at 10, 100 and 1,000 contracts, on the
-   dev feed and then live. Confirm that the 10-contract runs really run at a
-   low rate (see the caveat above). Each variant against `Sleep`, reporting p50,
+   dev feed and then live. Each run must show that it ran at the intended
+   rate (`contracts_seen`, `quotes_unsubscribed` 0, after a Terminal
+   restart). **The low-rate case on the dev feed is met by the
+   `w10-dev-10-*-002` runs**; Linux, 100 contracts and live remain. Each variant against `Sleep`, reporting p50,
    p99, p99.9, max, CPU and drops. The same harness and decision rules as
    other performance changes (benchmark policy, interleaved rounds).
 2. **No backfire:** with more spinning consumers than free cores, latency
@@ -181,3 +222,4 @@ pub enum WaitStrategy {
 | --- | --- |
 | 2026-11-07 | **Deferred by the user.** No spinning or spin-then-park in the library now; `Sleep` stays the only and default behaviour. The p99 ≤ 50 µs target is met at 100 contracts or more on the dev feed (38 and 35 µs). The latency harness keeps `--consumer spin` as a measurement option only, not a user feature |
 | 2026-11-07 | **The Windows comparison supports the deferral.** Spinning gave a p99 of 7 µs against 31-34 µs, for about half a core more, and no better max (one run each, at about 25k quotes/s). It stays ROADMAP-only. The low-rate comparison is still to be measured |
+| 2026-11-07 | **The low-rate re-run confirms it.** At about 670 quotes/s, spinning cut the p99 from 37 to 10 µs, for a full core against 0.027 cores, and its p99.9 and max were worse (one run each). It stays ROADMAP-only and opt-in if ever offered. The -001 10-contract runs were inflated by leftover Terminal subscriptions, fixed in #114 |
