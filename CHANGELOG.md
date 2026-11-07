@@ -72,6 +72,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Full trade stream and contract discovery** (`praevis-thetadata-stream`).
+  - **Trades:** `Kind::Trade` (contract plus exact trade fields, from the
+    vendor's documented example), `subscribe_full_trades` /
+    `unsubscribe_full_trades`, and a `trades` counter.
+  - **`discover_contracts`** (manual, no login): writes the top 10, 100 and
+    1,000 contracts by trade count in the latency harness's format, with
+    the trade date in each header. This is the replay day on the dev feed.
 - **W10 record updated.**
   - **Restart:** a Terminal restart restores its REST session after our
     login ended it (verified, 200 within 15 s).

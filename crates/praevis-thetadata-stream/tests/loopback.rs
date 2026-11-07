@@ -181,3 +181,30 @@ fn only_a_local_ws_url_is_accepted() {
         Err(StreamError::Connect(_))
     ));
 }
+
+#[test]
+fn the_full_trade_stream_request_and_trade_events() {
+    let trade = r#"{"header":{"status":"CONNECTED","type":"TRADE"},"contract":{"security_type":"OPTION","root":"QQQ","expiration":20231110,"strike":360000,"right":"P"},"trade":{"ms_of_day":49531278,"sequence":-563040482,"size":5,"condition":18,"price":1.06,"exchange":65,"date":20231103}}"#;
+    let (url, requests) = server(vec![trade.into()], 2);
+    let stream = Stream::connect(Options {
+        url,
+        ..Default::default()
+    })
+    .unwrap();
+    assert_eq!(stream.subscribe_full_trades().unwrap(), 0);
+    assert_eq!(stream.unsubscribe_full_trades().unwrap(), 1);
+    let sent: Vec<String> = (0..2)
+        .map(|_| requests.recv_timeout(Duration::from_secs(5)).unwrap())
+        .collect();
+    assert_eq!(
+        sent[0],
+        r#"{"msg_type":"STREAM_BULK","sec_type":"OPTION","req_type":"TRADE","add":true,"id":0}"#
+    );
+    assert!(sent[1].contains(r#""add":false,"id":1"#));
+    let event = stream.recv_timeout(Duration::from_secs(5)).unwrap();
+    let Kind::Trade { contract, trade } = event.kind else {
+        panic!("{:?}", event.kind)
+    };
+    assert_eq!((contract.root.as_str(), trade.size), ("QQQ", 5));
+    assert_eq!(stream.close().trades, 1);
+}

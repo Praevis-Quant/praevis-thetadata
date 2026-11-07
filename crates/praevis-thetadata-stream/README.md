@@ -17,8 +17,18 @@ see the ADR-0018 design note).
   detected. Heartbeat gaps over 2 s are counted.
 - **Disconnects:** a disconnect ends the stream with `Kind::Disconnected`.
   There is no automatic reconnect.
-- **Scope of this slice:** option quotes. Other message types are counted
-  but not decoded.
+- **Scope of this slice:**
+  - option quotes per contract;
+  - the full trade stream (`subscribe_full_trades`, options PRO);
+  - the Terminal's answers to stream requests (`REQ_RESPONSE`).
+
+  Other message types (OHLC, STATE) are counted with their type name but not
+  decoded.
+- **Contract discovery:** the `discover_contracts` example reads the full
+  trade stream for a while and writes the most-traded contracts in the
+  latency harness's format, with the trade date seen. The dev feed replays
+  a past day the vendor does not name, so this is how you find contracts
+  that trade on it.
 
 ```rust,no_run
 use praevis_thetadata_stream::{Contract, Kind, Options, Right, Root, Stream};

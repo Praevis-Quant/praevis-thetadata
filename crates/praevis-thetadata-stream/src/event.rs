@@ -81,6 +81,19 @@ pub struct Quote {
     pub date: u32,
 }
 
+/// One trade (`type` TRADE), from the full trade stream.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct Trade {
+    pub ms_of_day: i64,
+    pub sequence: i64,
+    pub size: i64,
+    pub condition: i64,
+    pub price: Price,
+    pub exchange: i64,
+    /// `yyyymmdd`.
+    pub date: u32,
+}
+
 /// The `header.status` of a message.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Status {
@@ -146,6 +159,11 @@ pub enum Kind {
     /// A heartbeat (`type` STATUS), about one a second.
     Heartbeat {
         status: Status,
+    },
+    /// A trade (`type` TRADE).
+    Trade {
+        contract: Contract,
+        trade: Trade,
     },
     /// The answer to stream request `id` (`type` REQ_RESPONSE).
     Response {

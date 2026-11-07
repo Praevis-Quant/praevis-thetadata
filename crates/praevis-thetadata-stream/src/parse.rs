@@ -2,7 +2,7 @@
 //! most two levels deep, strings without escapes, numbers, booleans and
 //! null. Anything else is refused (`None`) rather than guessed. Prices keep
 //! their decimal digits exactly.
-use crate::event::{Contract, Kind, Price, Quote, Response, Right, Root, Status, TypeName};
+use crate::event::{Contract, Kind, Price, Quote, Response, Right, Root, Status, Trade, TypeName};
 
 struct Cursor<'a> {
     bytes: &'a [u8],
@@ -163,6 +163,8 @@ pub fn parse(text: &str) -> Option<Kind> {
     let (mut root, mut expiration, mut strike, mut right) = (None, None, None, None);
     let mut quote = Quote::default();
     let mut quote_fields = 0u16;
+    let mut trade = Trade::default();
+    let mut trade_fields = 0u8;
     let mut cursor = Cursor {
         bytes: text.as_bytes(),
         at: 0,
@@ -190,6 +192,29 @@ pub fn parse(text: &str) -> Option<Kind> {
                     "P" => Right::Put,
                     _ => return None,
                 })
+            }
+            ("trade", key, Value::Num(n)) => {
+                let (slot, bit): (&mut i64, u8) = match key {
+                    "ms_of_day" => (&mut trade.ms_of_day, 1),
+                    "sequence" => (&mut trade.sequence, 2),
+                    "size" => (&mut trade.size, 4),
+                    "condition" => (&mut trade.condition, 8),
+                    "exchange" => (&mut trade.exchange, 16),
+                    "price" => {
+                        trade.price = price(n)?;
+                        trade_fields |= 32;
+                        return Some(());
+                    }
+                    "date" => {
+                        trade.date = u32::try_from(integer(n)?).ok()?;
+                        trade_fields |= 64;
+                        return Some(());
+                    }
+                    // Unknown numeric trade fields are ignored.
+                    _ => return Some(()),
+                };
+                *slot = integer(n)?;
+                trade_fields |= bit;
             }
             ("quote", key, Value::Num(n)) => {
                 let slot: Option<(&mut i64, u16)> = match key {
@@ -245,6 +270,21 @@ pub fn parse(text: &str) -> Option<Kind> {
                     right: right?,
                 },
                 quote,
+            })
+        }
+        "TRADE" => {
+            // Every documented trade field must be present.
+            if trade_fields != 0x7f {
+                return None;
+            }
+            Some(Kind::Trade {
+                contract: Contract {
+                    root: root?,
+                    expiration: expiration?,
+                    strike: strike?,
+                    right: right?,
+                },
+                trade,
             })
         }
         "STATUS" => Some(Kind::Heartbeat { status }),
@@ -326,13 +366,49 @@ mod tests {
         );
         assert_eq!(
             parse(
-                r#"{"header":{"type":"TRADE","status":"CONNECTED"},"trade":{"price":1.5,"ok":true,"x":null}}"#
+                r#"{"header":{"type":"OHLC","status":"CONNECTED"},"ohlc":{"open":1.5,"ok":true,"x":null}}"#
             ),
             Some(Kind::Other {
                 status: Status::Connected,
-                kind: TypeName::new("TRADE")
+                kind: TypeName::new("OHLC")
             })
         );
+    }
+
+    /// The vendor's documented trade example (Streaming / US Options / Full
+    /// Trade Stream), field for field.
+    const TRADE: &str = r#"{"header":{"status":"CONNECTED","type":"TRADE"},"contract":{"security_type":"OPTION","root":"QQQ","expiration":20231110,"strike":360000,"right":"P"},"trade":{"ms_of_day":49531278,"sequence":-563040482,"size":5,"condition":18,"price":1.06,"exchange":65,"date":20231103}}"#;
+
+    #[test]
+    fn the_documented_trade_parses_exactly() {
+        let Some(Kind::Trade { contract, trade }) = parse(TRADE) else {
+            panic!("not a trade");
+        };
+        assert_eq!(contract.root.as_str(), "QQQ");
+        assert_eq!(
+            (contract.expiration, contract.strike, contract.right),
+            (20231110, 360_000, Right::Put)
+        );
+        assert_eq!(
+            (
+                trade.ms_of_day,
+                trade.sequence,
+                trade.size,
+                trade.condition,
+                trade.exchange,
+                trade.date
+            ),
+            (49_531_278, -563_040_482, 5, 18, 65, 20231103)
+        );
+        assert_eq!(
+            trade.price,
+            Price {
+                mantissa: 106,
+                scale: 2
+            }
+        );
+        // A trade missing a documented field is refused.
+        assert_eq!(parse(&TRADE.replacen(r#""size":5,"#, "", 1)), None);
     }
 
     #[test]
