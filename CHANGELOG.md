@@ -79,6 +79,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **`discover_contracts`** (manual, no login): writes the top 10, 100 and
     1,000 contracts by trade count in the latency harness's format, with
     the trade date in each header. This is the replay day on the dev feed.
+- **W10 dev-feed latency recorded** (ADR-0018). The p99 ≤ 50 µs target:
+  - **Met** at 100 and 1,000 contracts (38 and 35 µs, up to 25k quotes/s, 0
+    dropped).
+  - **Not reliably met at 10:** 50 and 57 µs, because a sleeping consumer
+    pays a thread wake-up per quote, and Windows wake-ups are slow and
+    variable.
+  - **Not yet explained:** a max of about 4 ms on Windows, and 1.07 cores at
+    25k quotes/s.
+  - **Not yet run:** the live market.
 - **W10 record updated.**
   - **Restart:** a Terminal restart restores its REST session after our
     login ended it (verified, 200 within 15 s).

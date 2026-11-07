@@ -152,6 +152,64 @@ trade stream for 20 s (a local script, no login):
   STATUS, STATE and REQ_RESPONSE. OHLC and STATE are new to this crate,
   which counts them as other types.
 
+**W10 latency on the dev feed (2026-11-07).** Main 1affbaf, Windows on
+the Ryzen 7 2700, the Terminal on the dev feed (replaying 2025-04-28), the
+most-traded contracts. Added latency is measured from the frame read to the
+consumer. All exit 0, none ended, 0 dropped, 0 unparsed, 0 heartbeat gaps.
+
+| Run | Contracts | Quotes/s | p50 | p90 | p99 | p99.9 | Max | CPU (cores) | Allocations per frame |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `w10-dev-check-001` (30 s) | 10 | 1,761 | 18 µs | 30 µs | **57 µs** | 359 µs | 3.6 ms | 0.11 | 0.0003 |
+| `w10-dev-10-001` | 10 | 1,682 | 16 µs | 26 µs | **50 µs** | 813 µs | 3.6 ms | 0.09 | 0.0001 |
+| `w10-dev-100-001` | 100 | 10,047 | 16 µs | 23 µs | **38 µs** | 254 µs | 4.2 ms | 0.41 | 0.0001 |
+| `w10-dev-1000-001` | 1,000 | 25,259 | 16 µs | 23 µs | **35 µs** | 117 µs | 4.1 ms | 1.07 | 0.0003 |
+
+**The p99 ≤ 50 µs target, on the dev feed only:**
+- **Met** at 100 and 1,000 contracts (38 and 35 µs).
+- **Not reliably met at 10:** 50 µs in one run and 57 µs in the other.
+- **Resolution is good enough:** the histogram has 1 µs buckets to 10 ms,
+  and each quantile is reported as its bucket's upper edge, which is
+  conservative. "50" means the p99 sample was between 49 and 50 µs. That
+  meets the target by the letter, but one run does not make it robust. The
+  live-market runs remain.
+
+**Why fewer contracts give a worse tail: waking the consumer.**
+- **The mechanism:** the consumer blocks in `recv_timeout` between events.
+  At 1.7k quotes/s it is usually asleep when a quote arrives, so most
+  quotes pay a thread wake-up. At 25k/s it usually finds the next event
+  already queued.
+- **Loopback reproduction** (Linux aarch64, a local server at fixed rates,
+  the same consumer): parsing plus the hand-off cost about 1 µs; waking a
+  sleeping consumer adds about 4 µs (p50 4.9 µs asleep against 1.0 µs
+  spinning, at 1.7k/s). The Linux tails stay small (p99.9 ≤ 10 µs).
+- **Windows wake-ups are much slower and more variable,** which is where
+  the 813 µs p99.9 at 10 contracts comes from. Power states at low load are
+  a likely contributor, not measured.
+- **A spinning consumer removes the wake-up** (p50 1.0 µs), at the cost of
+  a core. Offering it is a design decision, not made here.
+
+**The roughly 4 ms max: not explained.**
+- It is about 4 ms at every load on Windows, and 18-24 µs on Linux
+  loopback.
+- **Consistent with:** the consumer thread being preempted for one
+  scheduling slice, for example by the Terminal's JVM on the same machine.
+- **Not measured:** the next step is to record the times of the slowest
+  events, to see whether they are periodic (a GC or timer) or random.
+
+**CPU of 1.07 cores at 25k quotes/s: not spinning.** The consumer blocks in
+`recv_timeout` and the reader in a socket read. That is about 42 µs of CPU
+per quote, against about 10 µs per quote on Linux loopback (0.24 cores at
+25k/s). The likely cost is a wake-up and a socket read per message on
+Windows. It is not profiled.
+
+**Heartbeats: 90 in 120 s at 1,000 contracts, with no gap counted.**
+- Our reader counts every heartbeat frame before the queue, and nothing was
+  dropped or unparsed. So the Terminal sent 90: one about every 1.33 s, with
+  none more than 2 s apart.
+- Under load it spaces heartbeats more widely than its "about every second".
+  They are a liveness signal, not a clock. Recording the longest interval
+  would make this visible.
+
 **For users, until the delay is explained:** run either the Terminal's REST
 or our historical client on an account, not both. The Terminal's stream can
 run alongside our client.
