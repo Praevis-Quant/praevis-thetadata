@@ -11,6 +11,10 @@
 //!   the p99 ≤ 50 µs target. The Terminal's own delay is not measurable:
 //!   events carry no send time;
 //! - events per second, drops, heartbeat gaps and unparsed frames;
+//! - **contracts seen:** how many distinct contracts sent quotes, and how
+//!   many quotes came for contracts not in `--contracts` (for example,
+//!   subscriptions another client left in the Terminal). A run is only as
+//!   low-rate as what actually arrives;
 //! - **allocations per frame** in the whole process (a counting allocator):
 //!   the parse and hand-off allocate nothing, so this is `tungstenite`'s
 //!   per-frame buffer and anything else;
@@ -20,8 +24,12 @@
 use clap::Parser;
 use praevis_thetadata_stream::{Contract, Kind, Options, Right, Root, Stream};
 use std::alloc::{GlobalAlloc, Layout, System};
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
+
+/// Distinct contracts the run can count without allocating.
+const SEEN_CAPACITY: usize = 1 << 16;
 
 struct Counting;
 static ALLOCATIONS: AtomicU64 = AtomicU64::new(0);
@@ -59,6 +67,35 @@ struct Cli {
     /// waking a sleeping consumer costs. A measurement option only.
     #[arg(long, default_value = "sleep", value_parser = ["sleep", "spin"])]
     consumer: String,
+}
+
+/// Which contracts sent quotes, and how many quotes came for contracts
+/// that were not subscribed.
+struct Seen {
+    subscribed: HashSet<Contract>,
+    /// Preallocated: up to [`SEEN_CAPACITY`] contracts, recording never
+    /// allocates.
+    contracts: HashSet<Contract>,
+    unsubscribed_quotes: u64,
+}
+
+impl Seen {
+    fn new(subscribed: &[Contract]) -> Self {
+        Self {
+            subscribed: subscribed.iter().copied().collect(),
+            contracts: HashSet::with_capacity(SEEN_CAPACITY),
+            unsubscribed_quotes: 0,
+        }
+    }
+    fn record(&mut self, contract: Contract) {
+        self.contracts.insert(contract);
+        if !self.subscribed.contains(&contract) {
+            self.unsubscribed_quotes += 1;
+        }
+    }
+    fn unsubscribed_contracts(&self) -> usize {
+        self.contracts.difference(&self.subscribed).count()
+    }
 }
 
 /// The slowest events and when they happened, to tell periodic stalls (a
@@ -278,6 +315,7 @@ fn main() -> std::process::ExitCode {
     }
     let mut histogram = Histogram::new();
     let mut slowest = Slowest::new();
+    let mut seen = Seen::new(&list);
     let spin = cli.consumer == "spin";
     let (cpu_start, allocations_start, frames_start) = (
         cpu_time(),
@@ -302,9 +340,10 @@ fn main() -> std::process::ExitCode {
         // The user callback would run here; the measurement is the hand-off.
         let ns = event.received.elapsed().as_nanos() as u64;
         match event.kind {
-            Kind::Quote { .. } => {
+            Kind::Quote { contract, .. } => {
                 histogram.record(ns);
                 slowest.record(ns, start.elapsed().as_millis() as u64);
+                seen.record(contract);
             }
             Kind::Disconnected => {
                 ended = true;
@@ -328,6 +367,9 @@ fn main() -> std::process::ExitCode {
         "feed": cli.feed,
         "host": {"os": std::env::consts::OS, "arch": std::env::consts::ARCH},
         "contracts": list.len(),
+        "contracts_seen": seen.contracts.len(),
+        "contracts_seen_unsubscribed": seen.unsubscribed_contracts(),
+        "quotes_unsubscribed": seen.unsubscribed_quotes,
         "seconds": elapsed.as_secs_f64(),
         "stream_ended": ended,
         "quotes_measured": histogram.count,
@@ -351,9 +393,11 @@ fn main() -> std::process::ExitCode {
         "cpu_share_of_one_core": cpu.map(|c| c.as_secs_f64() / elapsed.as_secs_f64()),
     });
     eprintln!(
-        "{} quotes from {} contracts in {:.0} s: p50 {:?} µs, p99 {:?} µs, p99.9 {:?} µs, max {:.0} µs; dropped {}, gaps {}",
+        "{} quotes from {} contracts seen ({} subscribed; {} quotes from others) in {:.0} s: p50 {:?} µs, p99 {:?} µs, p99.9 {:?} µs, max {:.0} µs; dropped {}, gaps {}",
         histogram.count,
+        seen.contracts.len(),
         list.len(),
+        seen.unsubscribed_quotes,
         elapsed.as_secs_f64(),
         q(0.5),
         q(0.99),
@@ -389,6 +433,23 @@ mod tests {
         assert_eq!(h.count, 1_002);
         assert_eq!(h.max_ns, 2_000_000_000);
         assert_eq!(Histogram::new().quantile_us(0.99), None);
+    }
+
+    #[test]
+    fn quotes_for_unsubscribed_contracts_are_counted_apart() {
+        let contract = |strike| Contract {
+            root: Root::new("SPY").unwrap(),
+            expiration: 20250428,
+            strike,
+            right: Right::Call,
+        };
+        let mut seen = Seen::new(&[contract(1), contract(2)]);
+        for strike in [1, 1, 3, 3, 3, 4] {
+            seen.record(contract(strike));
+        }
+        assert_eq!(seen.contracts.len(), 3);
+        assert_eq!(seen.unsubscribed_contracts(), 2);
+        assert_eq!(seen.unsubscribed_quotes, 4);
     }
 
     #[test]

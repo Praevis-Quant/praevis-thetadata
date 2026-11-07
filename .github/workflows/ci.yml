@@ -44,6 +44,8 @@ jobs:
         run: cargo test --workspace --locked
       - name: Live runner offline tests (loopback fixture only; never contacts the service)
         run: cargo test --locked -p praevis-thetadata-client --features live-tests --example live_p0
+      - name: Real-time harness offline tests (unit tests only; never connects)
+        run: cargo test --locked -p praevis-thetadata-stream --features live-tests --examples
       - name: Auth feature boundary (default in-memory, optional native store)
         shell: bash
         run: |

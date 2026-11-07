@@ -17,6 +17,10 @@ see the ADR-0018 design note).
   detected. Heartbeat gaps over 2 s are counted.
 - **Disconnects:** a disconnect ends the stream with `Kind::Disconnected`.
   There is no automatic reconnect.
+- **Closing cleans up:** `close()` or dropping the stream first unsubscribes
+  everything still subscribed, then closes the socket. The Terminal's
+  subscriptions are shared by all its clients, so this keeps a finished
+  program's subscriptions from reaching the next one.
 - **Scope of this slice:**
   - option quotes per contract;
   - the full trade stream (`subscribe_full_trades`, options PRO);

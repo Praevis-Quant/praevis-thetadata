@@ -16,6 +16,13 @@
 //! closed socket ends the stream with [`Kind::Disconnected`]; there is no
 //! automatic reconnect.
 //!
+//! Closing or dropping a [`Stream`] first unsubscribes everything it still
+//! has subscribed, then closes the socket. The Terminal's subscriptions are
+//! shared by every client, and it does not document dropping them when a
+//! socket closes, so without this they could keep arriving on the next
+//! connection. The requests are sent before the close frame, without
+//! waiting for the Terminal's responses.
+//!
 //! This crate never starts, stops or reconfigures the Terminal.
 mod event;
 mod parse;
@@ -25,6 +32,7 @@ pub use event::{
 };
 pub use parse::parse;
 
+use std::collections::HashSet;
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, SyncSender, TrySendError};
@@ -130,6 +138,9 @@ pub struct Stream {
     events: Receiver<Event>,
     outgoing: Arc<Mutex<Vec<String>>>,
     next_id: AtomicU64,
+    /// Contracts with quotes subscribed, to unsubscribe on close.
+    quotes: Mutex<HashSet<Contract>>,
+    full_trades: AtomicBool,
     counters: Arc<Counters>,
     stop: Arc<AtomicBool>,
     reader: Option<JoinHandle<()>>,
@@ -189,6 +200,8 @@ impl Stream {
             events,
             outgoing,
             next_id: AtomicU64::new(0),
+            quotes: Mutex::new(HashSet::new()),
+            full_trades: AtomicBool::new(false),
             counters,
             stop,
             reader: Some(reader),
@@ -199,6 +212,19 @@ impl Stream {
         if self.reader.as_ref().is_none_or(JoinHandle::is_finished) {
             return Err(StreamError::Closed);
         }
+        let id = self.send_quotes(contract, add)?;
+        if let Ok(mut quotes) = self.quotes.lock() {
+            if add {
+                quotes.insert(*contract);
+            } else {
+                quotes.remove(contract);
+            }
+        }
+        Ok(id)
+    }
+
+    /// Queue a quote request for the reader to send.
+    fn send_quotes(&self, contract: &Contract, add: bool) -> Result<u64, StreamError> {
         // A new id per request, as the vendor asks.
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let right = match contract.right {
@@ -226,6 +252,12 @@ impl Stream {
         if self.reader.as_ref().is_none_or(JoinHandle::is_finished) {
             return Err(StreamError::Closed);
         }
+        let id = self.send_full_trades(add)?;
+        self.full_trades.store(add, Ordering::Relaxed);
+        Ok(id)
+    }
+
+    fn send_full_trades(&self, add: bool) -> Result<u64, StreamError> {
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let text = format!(
             r#"{{"msg_type":"STREAM_BULK","sec_type":"OPTION","req_type":"TRADE","add":{add},"id":{id}}}"#
@@ -272,13 +304,28 @@ impl Stream {
         self.counters.snapshot()
     }
 
-    /// Close the socket and wait for the reader thread.
+    /// Unsubscribe everything still subscribed, close the socket and wait
+    /// for the reader thread.
     pub fn close(mut self) -> Stats {
         self.shutdown();
         self.counters.snapshot()
     }
 
     fn shutdown(&mut self) {
+        if self.reader.as_ref().is_some_and(|r| !r.is_finished()) {
+            if self.full_trades.swap(false, Ordering::Relaxed) {
+                let _ = self.send_full_trades(false);
+            }
+            let quotes = self
+                .quotes
+                .lock()
+                .map(|mut q| q.drain().collect::<Vec<_>>())
+                .unwrap_or_default();
+            for contract in &quotes {
+                let _ = self.send_quotes(contract, false);
+            }
+        }
+        // The reader sends queued requests before it closes the socket.
         self.stop.store(true, Ordering::Relaxed);
         if let Some(reader) = self.reader.take() {
             let _ = reader.join();
@@ -304,11 +351,9 @@ fn read(
     let mut last_heartbeat: Option<Instant> = None;
     let mut pending: Vec<String> = Vec::new();
     loop {
-        if stop.load(Ordering::Relaxed) {
-            let _ = socket.close(None);
-            let _ = socket.flush();
-            return;
-        }
+        // Read the flag before draining, so requests queued before a stop
+        // (the unsubscribes on close) are sent before the close frame.
+        let stopping = stop.load(Ordering::Relaxed);
         if let Ok(mut queue) = outgoing.lock() {
             std::mem::swap(&mut *queue, &mut pending);
         }
@@ -317,6 +362,11 @@ fn read(
                 let _ = sender.try_send(disconnected());
                 return;
             }
+        }
+        if stopping {
+            let _ = socket.close(None);
+            let _ = socket.flush();
+            return;
         }
         let frame = match socket.read() {
             Ok(frame) => frame,

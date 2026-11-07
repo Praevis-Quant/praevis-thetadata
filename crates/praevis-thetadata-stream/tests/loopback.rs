@@ -208,3 +208,90 @@ fn the_full_trade_stream_request_and_trade_events() {
     assert_eq!((contract.root.as_str(), trade.size), ("QQQ", 5));
     assert_eq!(stream.close().trades, 1);
 }
+
+/// A server that records every request until the client's close frame,
+/// then reports "CLOSE".
+fn recording_server() -> (String, mpsc::Receiver<String>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("ws://{}/v1/events", listener.local_addr().unwrap());
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let (tcp, _) = listener.accept().unwrap();
+        let mut socket = tungstenite::accept(tcp).unwrap();
+        loop {
+            match socket.read() {
+                Ok(Message::Text(text)) => tx.send(text.as_str().to_owned()).unwrap(),
+                Ok(Message::Close(_)) => {
+                    tx.send("CLOSE".into()).unwrap();
+                    while socket.read().is_ok() {}
+                    return;
+                }
+                Ok(_) => {}
+                Err(_) => return,
+            }
+        }
+    });
+    (url, rx)
+}
+
+/// Every request the server saw, up to and including "CLOSE".
+fn requests_until_close(rx: &mpsc::Receiver<String>) -> Vec<String> {
+    let mut seen = Vec::new();
+    while let Ok(text) = rx.recv_timeout(Duration::from_secs(5)) {
+        let end = text == "CLOSE";
+        seen.push(text);
+        if end {
+            return seen;
+        }
+    }
+    panic!("no close frame; saw {seen:?}");
+}
+
+fn subscribe_and_end(close: bool) -> Vec<String> {
+    let (url, requests) = recording_server();
+    let stream = Stream::connect(Options {
+        url,
+        ..Default::default()
+    })
+    .unwrap();
+    let qqq = Contract {
+        root: Root::new("QQQ").unwrap(),
+        ..spy()
+    };
+    stream.subscribe_quotes(&spy()).unwrap(); // id 0, still subscribed
+    stream.subscribe_quotes(&qqq).unwrap(); // id 1
+    stream.unsubscribe_quotes(&qqq).unwrap(); // id 2, so not again on close
+    stream.subscribe_full_trades().unwrap(); // id 3, still subscribed
+    if close {
+        stream.close();
+    } else {
+        drop(stream);
+    }
+    requests_until_close(&requests)
+}
+
+fn assert_unsubscribed_before_close(seen: &[String]) {
+    assert_eq!(seen.len(), 7, "{seen:?}");
+    let ending = &seen[4..6];
+    let trades = ending
+        .iter()
+        .filter(|t| t.contains(r#""msg_type":"STREAM_BULK""#) && t.contains(r#""add":false"#))
+        .count();
+    let spy = ending
+        .iter()
+        .filter(|t| t.contains(r#""root":"SPY""#) && t.contains(r#""add":false"#))
+        .count();
+    assert_eq!((trades, spy), (1, 1), "{seen:?}");
+    assert!(!ending.iter().any(|t| t.contains("QQQ")), "{seen:?}");
+    assert_eq!(seen[6], "CLOSE");
+}
+
+#[test]
+fn close_unsubscribes_what_is_still_subscribed() {
+    assert_unsubscribed_before_close(&subscribe_and_end(true));
+}
+
+#[test]
+fn drop_unsubscribes_what_is_still_subscribed() {
+    assert_unsubscribed_before_close(&subscribe_and_end(false));
+}
