@@ -17,6 +17,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **`live_p0 sizes` reports each request's largest encoded message and a
+  size histogram** (item 8, PR 0; manual, never CI). It shows how large the
+  messages that `query()`/`job()` streams assemble really are.
+- **Item 8's record is extended for the query path.** There, a stream
+  reads without a job slot, so option 2a removes idle retention and one
+  copy, but N streams can still assemble N max-size messages at once. The
+  record also holds the user's 2026-11-08 plan:
+  - PRs 0, 1, 3 and 4 proceed;
+  - byte credits are held until real messages reach the tens of MiB.
 - **Alpha.3 publication recorded**
   ([record](docs/crates-io-release-plan.md#publication-record-010-alpha3)).
   It covers:
