@@ -157,6 +157,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Thread-priority options in the latency harness** (W10 experiment,
+  user-approved 2026-11-07; harness only, no library change).
+  - **`--consumer-priority`** `normal|above-normal|highest|time-critical`:
+    Windows `SetThreadPriority`. Linux supports `normal` only and refuses
+    the rest.
+  - **`--consumer-affinity <core>`:** `SetThreadAffinityMask` or
+    `sched_setaffinity`.
+  - **`--process-priority high`:** Windows only.
+  - **Report:** `consumer_scheduling` records the values read back from
+    the OS. A setting that cannot be applied fails the run before it
+    connects. No new dependencies: kernel32 and glibc are called directly.
 - **The stock, index, calendar and interest-rate checks** (manual; one run
   approved by the user on 2026-11-07).
   - **Rust:** `live_p0 entitlements --set stock-index-rate` sends each of

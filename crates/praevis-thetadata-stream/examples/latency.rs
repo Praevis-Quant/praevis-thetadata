@@ -20,6 +20,14 @@
 //!   per-frame buffer and anything else;
 //! - **process CPU** time and its share of one core.
 //!
+//! The thread-priority experiment (user, 2026-11-07) sets this consumer
+//! thread's scheduling: `--consumer-priority` (Windows `SetThreadPriority`;
+//! on Linux only `normal`, since raising it needs `CAP_SYS_NICE`),
+//! `--consumer-affinity <core>` (`SetThreadAffinityMask` or
+//! `sched_setaffinity`) and `--process-priority high` (Windows
+//! `HIGH_PRIORITY_CLASS`). The library's reader thread is not changed. The
+//! report records what was applied, as read back from the OS.
+//!
 //! Counts and times only: no prices. The report goes under `artifacts/w10/`.
 use clap::Parser;
 use praevis_thetadata_stream::{Contract, Kind, Options, Right, Root, Stream};
@@ -67,6 +75,215 @@ struct Cli {
     /// waking a sleeping consumer costs. A measurement option only.
     #[arg(long, default_value = "sleep", value_parser = ["sleep", "spin"])]
     consumer: String,
+    /// The consumer thread's priority (Windows; Linux: `normal` only).
+    #[arg(long, value_enum, default_value_t = ThreadPriority::Normal)]
+    consumer_priority: ThreadPriority,
+    /// Pin the consumer thread to this core (0-based).
+    #[arg(long)]
+    consumer_affinity: Option<usize>,
+    /// The process priority class (Windows: `high` is `HIGH_PRIORITY_CLASS`).
+    #[arg(long, value_enum, default_value_t = ProcessPriority::Normal)]
+    process_priority: ProcessPriority,
+}
+
+/// The consumer thread's scheduling, for the thread-priority experiment
+/// (user, 2026-11-07). Harness only: the library's API does not change,
+/// consistent with the deferred wait-strategy decision. It applies to this
+/// thread (the consumer) and, for `--process-priority`, the process; the
+/// library's reader thread keeps its defaults.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+enum ThreadPriority {
+    Normal,
+    AboveNormal,
+    Highest,
+    TimeCritical,
+}
+
+impl ThreadPriority {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::AboveNormal => "above-normal",
+            Self::Highest => "highest",
+            Self::TimeCritical => "time-critical",
+        }
+    }
+    /// The Windows `THREAD_PRIORITY_*` value.
+    fn windows_value(self) -> i32 {
+        match self {
+            Self::Normal => 0,
+            Self::AboveNormal => 1,
+            Self::Highest => 2,
+            Self::TimeCritical => 15,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+enum ProcessPriority {
+    Normal,
+    High,
+}
+
+/// What was applied, read back from the OS where it can be, for the report.
+#[derive(Debug, Default, PartialEq)]
+struct Scheduling {
+    /// The thread priority value the OS reports after setting it.
+    thread_priority_value: Option<i32>,
+    /// The core the consumer is pinned to.
+    affinity_core: Option<usize>,
+    /// The process priority class the OS reports after setting it.
+    process_priority_class: Option<u32>,
+}
+
+#[cfg(windows)]
+mod os {
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetCurrentThread() -> isize;
+        fn SetThreadPriority(thread: isize, priority: i32) -> i32;
+        fn GetThreadPriority(thread: isize) -> i32;
+        fn SetThreadAffinityMask(thread: isize, mask: usize) -> usize;
+        fn GetCurrentProcess() -> isize;
+        fn SetPriorityClass(process: isize, class: u32) -> i32;
+        fn GetPriorityClass(process: isize) -> u32;
+    }
+    const HIGH_PRIORITY_CLASS: u32 = 0x80;
+    const NORMAL_PRIORITY_CLASS: u32 = 0x20;
+
+    pub fn thread_priority(value: i32) -> Result<i32, String> {
+        // The pseudo-handle of the calling thread; it needs no closing.
+        let thread = unsafe { GetCurrentThread() };
+        if unsafe { SetThreadPriority(thread, value) } == 0 {
+            return Err(format!(
+                "SetThreadPriority failed: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+        Ok(unsafe { GetThreadPriority(thread) })
+    }
+
+    pub fn pin(core: usize) -> Result<(), String> {
+        let previous = unsafe { SetThreadAffinityMask(GetCurrentThread(), 1usize << core) };
+        if previous == 0 {
+            return Err(format!(
+                "SetThreadAffinityMask failed: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn process_priority(high: bool) -> Result<u32, String> {
+        let class = if high {
+            HIGH_PRIORITY_CLASS
+        } else {
+            NORMAL_PRIORITY_CLASS
+        };
+        let process = unsafe { GetCurrentProcess() };
+        if unsafe { SetPriorityClass(process, class) } == 0 {
+            return Err(format!(
+                "SetPriorityClass failed: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+        Ok(unsafe { GetPriorityClass(process) })
+    }
+}
+
+#[cfg(target_os = "linux")]
+mod os {
+    /// glibc's `cpu_set_t`: 1024 bits.
+    const SET_BYTES: usize = 128;
+    unsafe extern "C" {
+        fn sched_setaffinity(pid: i32, size: usize, mask: *const u8) -> i32;
+        fn sched_getaffinity(pid: i32, size: usize, mask: *mut u8) -> i32;
+    }
+
+    /// Only `normal` (0): raising a thread's priority on Linux needs
+    /// `CAP_SYS_NICE` or a real-time policy, so it is not implemented here.
+    pub fn thread_priority(value: i32) -> Result<i32, String> {
+        if value == 0 {
+            Ok(0)
+        } else {
+            Err("raising thread priority is not implemented on Linux (needs CAP_SYS_NICE)".into())
+        }
+    }
+
+    pub fn pin(core: usize) -> Result<(), String> {
+        let mut set = [0u8; SET_BYTES];
+        set[core / 8] |= 1 << (core % 8);
+        // pid 0: the calling thread.
+        if unsafe { sched_setaffinity(0, SET_BYTES, set.as_ptr()) } != 0 {
+            return Err(format!(
+                "sched_setaffinity failed: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+        let mut now = [0u8; SET_BYTES];
+        if unsafe { sched_getaffinity(0, SET_BYTES, now.as_mut_ptr()) } != 0 || now != set {
+            return Err("sched_getaffinity does not show the pinned core".into());
+        }
+        Ok(())
+    }
+
+    pub fn process_priority(high: bool) -> Result<u32, String> {
+        if high {
+            Err("a high process priority is not implemented on Linux".into())
+        } else {
+            Ok(0)
+        }
+    }
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
+mod os {
+    pub fn thread_priority(value: i32) -> Result<i32, String> {
+        if value == 0 {
+            Ok(0)
+        } else {
+            Err("thread priority is not implemented on this OS".into())
+        }
+    }
+    pub fn pin(_core: usize) -> Result<(), String> {
+        Err("affinity is not implemented on this OS".into())
+    }
+    pub fn process_priority(high: bool) -> Result<u32, String> {
+        if high {
+            Err("process priority is not implemented on this OS".into())
+        } else {
+            Ok(0)
+        }
+    }
+}
+
+/// Apply the requested scheduling to the calling (consumer) thread. Defaults
+/// change nothing. A setting that cannot be applied fails the run before it
+/// connects, rather than measuring something else.
+fn apply_scheduling(
+    priority: ThreadPriority,
+    core: Option<usize>,
+    process: ProcessPriority,
+) -> Result<Scheduling, String> {
+    let mut applied = Scheduling::default();
+    if process == ProcessPriority::High {
+        applied.process_priority_class = Some(os::process_priority(true)?);
+    }
+    if priority != ThreadPriority::Normal {
+        applied.thread_priority_value = Some(os::thread_priority(priority.windows_value())?);
+    }
+    if let Some(core) = core {
+        let cores = std::thread::available_parallelism().map_or(1, |n| n.get());
+        if core >= cores.min(64) {
+            return Err(format!(
+                "--consumer-affinity {core}: this machine has cores 0-{}",
+                cores.min(64) - 1
+            ));
+        }
+        os::pin(core)?;
+        applied.affinity_core = Some(core);
+    }
+    Ok(applied)
 }
 
 /// Which contracts sent quotes, and how many quotes came for contracts
@@ -297,6 +514,18 @@ fn main() -> std::process::ExitCode {
             return std::process::ExitCode::FAILURE;
         }
     };
+    // Before connecting, on this (the consumer) thread.
+    let scheduling = match apply_scheduling(
+        cli.consumer_priority,
+        cli.consumer_affinity,
+        cli.process_priority,
+    ) {
+        Ok(applied) => applied,
+        Err(message) => {
+            eprintln!("{message}");
+            return std::process::ExitCode::FAILURE;
+        }
+    };
     let stream = match Stream::connect(Options {
         capacity: cli.capacity,
         ..Default::default()
@@ -381,6 +610,17 @@ fn main() -> std::process::ExitCode {
         },
         "target_p99_us": 50,
         "consumer": cli.consumer,
+        "consumer_scheduling": {
+            "priority": cli.consumer_priority.name(),
+            "priority_value": scheduling.thread_priority_value,
+            "affinity_core": scheduling.affinity_core,
+            "process_priority": match cli.process_priority {
+                ProcessPriority::Normal => "normal",
+                ProcessPriority::High => "high",
+            },
+            "process_priority_class": scheduling.process_priority_class,
+            "reader_thread": "unchanged",
+        },
         "slowest_us_at_ms": slowest.sorted(),
         "stats": {
             "frames": stats.frames, "quotes": stats.quotes, "heartbeats": stats.heartbeats,
@@ -418,6 +658,91 @@ fn main() -> std::process::ExitCode {
 
 #[cfg(test)]
 mod tests {
+    // Each test runs on its own thread, so changing that thread's
+    // scheduling affects nothing else.
+
+    #[test]
+    fn defaults_change_nothing() {
+        let applied = std::thread::spawn(|| {
+            super::apply_scheduling(
+                super::ThreadPriority::Normal,
+                None,
+                super::ProcessPriority::Normal,
+            )
+        })
+        .join()
+        .unwrap();
+        assert_eq!(applied, Ok(super::Scheduling::default()));
+    }
+
+    #[test]
+    fn the_consumer_can_be_pinned_to_a_core_and_a_missing_core_is_refused() {
+        std::thread::spawn(|| {
+            let applied = super::apply_scheduling(
+                super::ThreadPriority::Normal,
+                Some(0),
+                super::ProcessPriority::Normal,
+            )
+            .unwrap();
+            assert_eq!(applied.affinity_core, Some(0));
+            assert!(
+                super::apply_scheduling(
+                    super::ThreadPriority::Normal,
+                    Some(64),
+                    super::ProcessPriority::Normal
+                )
+                .is_err()
+            );
+        })
+        .join()
+        .unwrap();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_applies_each_thread_priority_and_reads_it_back() {
+        use super::ThreadPriority::*;
+        for priority in [AboveNormal, Highest, TimeCritical] {
+            let applied = std::thread::spawn(move || {
+                super::apply_scheduling(priority, None, super::ProcessPriority::Normal)
+            })
+            .join()
+            .unwrap()
+            .unwrap();
+            assert_eq!(
+                applied.thread_priority_value,
+                Some(priority.windows_value()),
+                "{priority:?}"
+            );
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_refuses_to_raise_thread_or_process_priority() {
+        std::thread::spawn(|| {
+            for priority in [
+                super::ThreadPriority::Highest,
+                super::ThreadPriority::TimeCritical,
+            ] {
+                assert!(
+                    super::apply_scheduling(priority, None, super::ProcessPriority::Normal)
+                        .is_err()
+                );
+            }
+            assert!(
+                super::apply_scheduling(
+                    super::ThreadPriority::Normal,
+                    None,
+                    super::ProcessPriority::High
+                )
+                .is_err()
+            );
+        })
+        .join()
+        .unwrap();
+    }
+
     use super::*;
 
     #[test]
