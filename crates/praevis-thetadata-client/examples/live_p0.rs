@@ -30,6 +30,15 @@
 //!   through a second client on the same session with a 1 MiB message limit,
 //!   reading one message: a larger first message is refused from its length
 //!   prefix (`OverProbeLimit`), so a probe never pulls bulk data.
+//!   `--set stock-index-rate` (one run approved by the user on 2026-11-07;
+//!   re-running needs approval) covers every stock, index, calendar and
+//!   interest-rate RPC with a vendor wrapper (30): each once, paced and
+//!   sequential, through ONE response decoded both ways (the columnar and
+//!   legacy decoders, compared value by value), read for at most
+//!   `--max-messages`. Calendar requests run for several dates and years.
+//!   The flat files are bounded probes, as above. The private report keeps
+//!   the server's status text, for a person to classify the tier, and the
+//!   calendar requests' decoded rows (calendar data, not market prices).
 //! * `sizes`: the options workloads (W4-W6 in `workloads.json`), one paced
 //!   request at a time through the typed requests, counting rows (decoded)
 //!   and bytes. A request is dropped as soon as it passes `--max-rows`
@@ -228,10 +237,13 @@ struct EntitlementsArgs {
     only: Vec<String>,
     /// `free`: the FREE map (one request per family). `options-pro`: every
     /// option RPC, once, on the PRO account (approved 2026-11-04).
-    #[arg(long, default_value = "free", value_parser = ["free", "options-pro"])]
+    /// `stock-index-rate`: every stock, index, calendar and interest-rate
+    /// RPC with a vendor wrapper, values compared on the same response
+    /// (approved 2026-11-07).
+    #[arg(long, default_value = "free", value_parser = ["free", "options-pro", "stock-index-rate"])]
     set: String,
     /// A date among the 7 most recent calendar days, for the flat files
-    /// (`options-pro` only).
+    /// (`options-pro` and `stock-index-rate`).
     #[arg(long)]
     flat_file_date: Option<String>,
 }
@@ -892,6 +904,12 @@ struct EntitlementRun<'a> {
     /// With `check`: decode ONE response both ways (`check_same`). Flat
     /// files then read at most `max_messages` through the capped client.
     same_response: bool,
+    /// With `same_response`: also cap the other requests at this many
+    /// messages (`None`: the whole response).
+    cap: Option<u32>,
+    /// A label for the next result (for example, a calendar date), so
+    /// repeated requests to one RPC can be told apart.
+    label: Option<String>,
 }
 impl EntitlementRun<'_> {
     async fn run<E: Endpoint + Clone + Send + Sync + 'static>(
@@ -902,8 +920,21 @@ impl EntitlementRun<'_> {
             return Ok(());
         }
         if self.check && self.same_response {
-            let limit = self.flat_files.then_some(self.max_messages);
-            let result = check_same(self.client, request, &mut self.pacer, limit).await;
+            let limit = if self.flat_files {
+                Some(self.max_messages)
+            } else {
+                self.cap
+            };
+            let mut result = check_same(self.client, request, &mut self.pacer, limit).await;
+            // A first flat-file message over the probe's limit is refused
+            // from its length prefix: accepted, but nothing bulk was read.
+            if self.flat_files && result["status"] == "OutOfRange" && result["messages"].is_null() {
+                result["status"] = "OverProbeLimit".into();
+                result["status_text"] = serde_json::Value::Null;
+            }
+            if let Some(label) = self.label.take() {
+                result["label"] = label.into();
+            }
             let status = result["status"].as_str().unwrap_or("").to_owned();
             let stop = ends_entitlement_run(&status).then_some(Stop(status));
             self.report.results.push(result);
@@ -968,6 +999,23 @@ async fn entitlements(
         };
         return option_entitlements(&set, client, flat_files, report).await;
     }
+    if options.set == "stock-index-rate" {
+        let flat = date(
+            options
+                .flat_file_date
+                .as_deref()
+                .ok_or_else(|| Stop("MissingFlatFileDate".into()))?,
+        );
+        let flat_files = flat_files.ok_or_else(|| Stop("MissingFlatFileClient".into()))?;
+        let set = StockIndexRateSet {
+            min_interval: options.common.min_interval,
+            only: &options.only,
+            max_messages: options.max_messages,
+            day,
+            flat,
+        };
+        return stock_index_rate(&set, client, flat_files, report).await;
+    }
     let mut r = EntitlementRun {
         client,
         report,
@@ -980,6 +1028,8 @@ async fn entitlements(
         flat_files: false,
         check: false,
         same_response: false,
+        cap: None,
+        label: None,
     };
     // Controls first: both returned rows on FREE in P0.
     r.run(typed::StockHistoryEod::new("AAPL", day, day)).await?;
@@ -1142,6 +1192,8 @@ async fn option_entitlements(
         flat_files: false,
         check: set.check,
         same_response: set.same_response,
+        cap: None,
+        label: None,
     };
     macro_rules! snapshot {
         ($($t:ident),+) => {$(
@@ -1264,6 +1316,149 @@ async fn option_entitlements(
     if set.include_quote_flat_file {
         r.run(typed::OptionFlatFileQuote::new(flat)).await?;
     }
+    Ok(())
+}
+
+/// The stock, index, calendar and interest-rate set (one run approved by the
+/// user on 2026-11-07): every RPC of those products with a vendor wrapper.
+struct StockIndexRateSet<'a> {
+    min_interval: f64,
+    only: &'a [String],
+    /// Messages read per request before the stream is dropped.
+    max_messages: u32,
+    /// History and at-time requests: this trading day.
+    day: NaiveDate,
+    /// Flat files: a past day within the vendor's 7-day window.
+    flat: NaiveDate,
+}
+
+/// The calendar requests: a normal weekday, a weekend day, a full holiday and
+/// an early close, then two whole years.
+const CALENDAR_DATES: [(&str, &str); 4] = [
+    ("2025-11-05", "weekday"),
+    ("2025-11-08", "weekend"),
+    ("2025-12-25", "holiday"),
+    ("2025-11-28", "early close"),
+];
+const CALENDAR_YEARS: [&str; 2] = ["2025", "2026"];
+
+/// Each RPC once (calendar requests per date and year), as narrow as the
+/// request allows: AAPL and SPX, one day, tick requests over one minute and
+/// interval requests over five, every response capped at `max_messages`.
+/// ONE response per request is decoded both ways and compared, so a refusal
+/// is recorded with its status text for a person to classify, and an
+/// entitled response is value-checked. Flat files come last, through
+/// `flat_files` (the 1 MiB message limit), one message each.
+async fn stock_index_rate(
+    set: &StockIndexRateSet<'_>,
+    client: &ThetaClient,
+    flat_files: &ThetaClient,
+    report: &mut Report,
+) -> Result<(), Stop> {
+    let (day, flat) = (set.day, set.flat);
+    let mut r = EntitlementRun {
+        client,
+        report,
+        pacer: Pacer {
+            interval: Duration::from_secs_f64(set.min_interval),
+            last: None,
+        },
+        only: set.only,
+        max_messages: set.max_messages,
+        flat_files: false,
+        check: true,
+        same_response: true,
+        cap: Some(set.max_messages),
+        label: None,
+    };
+    // Stock.
+    r.run(typed::StockListSymbols::new()).await?;
+    r.run(typed::StockListDates::new("trade", "AAPL")).await?;
+    r.run(typed::StockSnapshotOhlc::new("AAPL")).await?;
+    r.run(typed::StockSnapshotTrade::new("AAPL")).await?;
+    r.run(typed::StockSnapshotQuote::new("AAPL")).await?;
+    r.run(typed::StockSnapshotMarketValue::new("AAPL")).await?;
+    r.run(typed::StockHistoryEod::new("AAPL", day, day)).await?;
+    r.run(
+        typed::StockHistoryOhlc::new("AAPL")
+            .date(day)
+            .interval("1m")
+            .start_time("10:00:00")
+            .end_time("10:05:00"),
+    )
+    .await?;
+    r.run(
+        typed::StockHistoryTrade::new("AAPL")
+            .date(day)
+            .start_time("10:00:00")
+            .end_time("10:01:00"),
+    )
+    .await?;
+    r.run(
+        typed::StockHistoryQuote::new("AAPL")
+            .date(day)
+            .interval("1m")
+            .start_time("10:00:00")
+            .end_time("10:05:00"),
+    )
+    .await?;
+    r.run(
+        typed::StockHistoryTradeQuote::new("AAPL")
+            .date(day)
+            .start_time("10:00:00")
+            .end_time("10:01:00"),
+    )
+    .await?;
+    r.run(typed::StockAtTimeTrade::new("AAPL", day, day, "10:00:00"))
+        .await?;
+    r.run(typed::StockAtTimeQuote::new("AAPL", day, day, "10:00:00"))
+        .await?;
+    // Index.
+    r.run(typed::IndexListSymbols::new()).await?;
+    r.run(typed::IndexListDates::new("SPX")).await?;
+    r.run(typed::IndexSnapshotOhlc::new("SPX")).await?;
+    r.run(typed::IndexSnapshotPrice::new("SPX")).await?;
+    r.run(typed::IndexSnapshotMarketValue::new("SPX")).await?;
+    r.run(typed::IndexHistoryEod::new("SPX", day, day)).await?;
+    r.run(
+        typed::IndexHistoryOhlc::new("SPX", day, day)
+            .interval("1m")
+            .start_time("10:00:00")
+            .end_time("10:05:00"),
+    )
+    .await?;
+    r.run(
+        typed::IndexHistoryPrice::new("SPX")
+            .date(day)
+            .interval("1m")
+            .start_time("10:00:00")
+            .end_time("10:05:00"),
+    )
+    .await?;
+    r.run(typed::IndexAtTimePrice::new("SPX", day, day, "10:00:00"))
+        .await?;
+    // Calendar.
+    r.run(typed::CalendarOpenToday::new()).await?;
+    for (text, kind) in CALENDAR_DATES {
+        r.label = Some(format!("{text} ({kind})"));
+        r.run(typed::CalendarOnDate::new(date(text))).await?;
+    }
+    for year in CALENDAR_YEARS {
+        r.label = Some(year.into());
+        r.run(typed::CalendarYear::new(year)).await?;
+    }
+    // Interest rate.
+    r.run(typed::InterestRateHistoryEod::new("SOFR", day, day))
+        .await?;
+    // Flat files: bounded probes, one message of at most 1 MiB, values
+    // compared on that message.
+    r.client = flat_files;
+    r.max_messages = 1;
+    r.flat_files = true;
+    r.run(typed::IndexFlatFileEod::new(flat)).await?;
+    r.run(typed::StockFlatFileEod::new(flat)).await?;
+    r.run(typed::StockFlatFileTradeQuote::new(flat)).await?;
+    r.run(typed::StockFlatFileQuote::new(flat)).await?;
     Ok(())
 }
 
@@ -2039,6 +2234,29 @@ fn arrow_rows(batches: &[praevis_thetadata_client::arrow_array::RecordBatch]) ->
     out
 }
 
+/// One decoded value as JSON, for the calendar rows: prices as exact decimal
+/// text (scale 10), never floats.
+fn exact_json(value: &Exact) -> serde_json::Value {
+    match value {
+        Exact::Null => serde_json::Value::Null,
+        Exact::Text(v) | Exact::Timestamp(v) => v.clone().into(),
+        Exact::Integer(v) => (*v).into(),
+        Exact::Boolean(v) => (*v).into(),
+        Exact::Price(v) => {
+            let sign = if *v < 0 { "-" } else { "" };
+            let digits = v.unsigned_abs();
+            let (whole, fraction) = (digits / 10u128.pow(10), digits % 10u128.pow(10));
+            let fraction = format!("{fraction:010}");
+            let fraction = fraction.trim_end_matches('0');
+            if fraction.is_empty() {
+                format!("{sign}{whole}").into()
+            } else {
+                format!("{sign}{whole}.{fraction}").into()
+            }
+        }
+    }
+}
+
 /// The request through `query()` (the path that returned `Internal` in
 /// `w10-conflict-001`): `OK` or our error variant.
 async fn query_status(client: &ThetaClient) -> String {
@@ -2125,6 +2343,9 @@ where
         Ok(captured) => captured,
         Err(status) => {
             out["status"] = status_name(status.code()).into();
+            // Private report only: a person classifies it (for example, the
+            // tier a refusal names); never committed or interpreted here.
+            out["status_text"] = status_text(&status).into();
             eprintln!("{:<45} {}", E::RPC, out["status"].as_str().unwrap_or("?"));
             return out;
         }
@@ -2160,6 +2381,15 @@ where
             out["rows"] = ours.len().into();
             out["legacy_rows"] = theirs.len().into();
             out["values_equal"] = (ours == theirs).into();
+            // Calendar data is not market prices, and the user asked to see
+            // it: keep the decoded rows, in the private report only.
+            if E::RPC.starts_with("GetCalendar") {
+                out["calendar_rows"] = ours
+                    .iter()
+                    .map(|row| row.iter().map(exact_json).collect::<Vec<_>>())
+                    .collect::<Vec<_>>()
+                    .into();
+            }
             out["differing_rows"] = (differing + ours.len().abs_diff(theirs.len())).into();
             out["columns"] = batches
                 .first()
@@ -2409,7 +2639,7 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::Limits(options) => limits(options, &client, &mut report).await,
         Command::Entitlements(options) => {
             // The same session (no second login), with a small message limit.
-            let flat_files = if options.set == "options-pro" {
+            let flat_files = if options.set != "free" {
                 match connect_with_limit(client.session(), FLAT_FILE_PROBE_LIMIT).await {
                     Ok(flat_files) => Some(flat_files),
                     Err(_) => {
@@ -2912,6 +3142,114 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn the_stock_index_rate_set_checks_every_wrapper_once_and_keeps_calendar_rows() {
+        // Calendar RPCs answer with a small table; everything else is refused
+        // with a text naming a tier, like a tier-denied endpoint.
+        let (calendar, _) = fixture::table(fixture::Shape::Prices, 3);
+        let handler: fixture::Handler = std::sync::Arc::new(move |rpc: &str, _| {
+            if rpc.contains("Calendar") {
+                Ok(vec![fixture::response(&calendar, true)])
+            } else {
+                Err(tonic::Status::permission_denied(
+                    "synthetic: VALUE required",
+                ))
+            }
+        });
+        let server = fixture::Fixture::start(fixture::Script {
+            other: Some(handler),
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let flat_files = fixture_client_with_limit(&server, FLAT_FILE_PROBE_LIMIT).await;
+        let set = StockIndexRateSet {
+            min_interval: 0.0,
+            only: &[],
+            max_messages: 5,
+            day: date("2024-06-14"),
+            flat: date("2026-11-04"),
+        };
+        let mut report = Report::default();
+        stock_index_rate(&set, &client, &flat_files, &mut report)
+            .await
+            .unwrap();
+        // Every stock, index, calendar and interest-rate RPC with a vendor
+        // wrapper, and nothing else.
+        let expected: std::collections::BTreeSet<&str> = typed::ALL
+            .iter()
+            .filter(|e| e.python_name.is_some() && !e.rpc.starts_with("GetOption"))
+            .map(|e| e.rpc)
+            .collect();
+        assert_eq!(expected.len(), 30);
+        let seen: std::collections::BTreeSet<&str> = report
+            .results
+            .iter()
+            .map(|r| r["rpc"].as_str().unwrap())
+            .collect();
+        assert_eq!(seen, expected);
+        // Once each, except the calendar's 4 dates and 2 years.
+        assert_eq!(report.results.len(), 30 + 3 + 1);
+        let count = |rpc: &str| report.results.iter().filter(|r| r["rpc"] == rpc).count();
+        assert_eq!(
+            (count("GetCalendarOnDate"), count("GetCalendarYear")),
+            (4, 2)
+        );
+        for result in &report.results {
+            let rpc = result["rpc"].as_str().unwrap();
+            if rpc.starts_with("GetCalendar") {
+                // Decoded both ways, equal, and the rows kept.
+                assert_eq!(result["values_equal"], true, "{rpc}");
+                assert_eq!(
+                    result["calendar_rows"].as_array().unwrap().len(),
+                    3,
+                    "{rpc}"
+                );
+            } else if rpc == "GetStockHistoryEod" {
+                // The fixture serves stock EOD itself: an entitled response
+                // is value-checked, and its rows are not kept.
+                assert_eq!(result["values_equal"], true);
+                assert!(result.get("calendar_rows").is_none());
+            } else {
+                // A refusal keeps its text for a person to classify; no rows.
+                assert_eq!(result["status"], "PermissionDenied", "{rpc}");
+                assert_eq!(result["status_text"], "synthetic: VALUE required", "{rpc}");
+                assert!(result.get("calendar_rows").is_none(), "{rpc}");
+            }
+        }
+        // Repeated calendar requests are labelled.
+        let labels: Vec<&str> = report
+            .results
+            .iter()
+            .filter_map(|r| r["label"].as_str())
+            .collect();
+        assert_eq!(
+            labels,
+            [
+                "2025-11-05 (weekday)",
+                "2025-11-08 (weekend)",
+                "2025-12-25 (holiday)",
+                "2025-11-28 (early close)",
+                "2025",
+                "2026"
+            ]
+        );
+        // Flat files come last.
+        let last: Vec<&str> = report.results[report.results.len() - 4..]
+            .iter()
+            .map(|r| r["rpc"].as_str().unwrap())
+            .collect();
+        assert!(last.iter().all(|rpc| rpc.contains("FlatFile")), "{last:?}");
+    }
+
+    #[test]
+    fn calendar_prices_are_exact_decimal_text() {
+        assert_eq!(exact_json(&Exact::Price(12_500_000_000)), "1.25");
+        assert_eq!(exact_json(&Exact::Price(-30_000_000_000)), "-3");
+        assert_eq!(exact_json(&Exact::Price(1)), "0.0000000001");
+        assert_eq!(exact_json(&Exact::Integer(7)), 7);
+        assert_eq!(exact_json(&Exact::Null), serde_json::Value::Null);
+    }
+
+    #[tokio::test]
     async fn the_same_response_is_decoded_both_ways_and_compared() {
         let (wire_table, _) = fixture::table(fixture::Shape::Prices, 50);
         let server = fixture::Fixture::start(fixture::Script {
@@ -3017,6 +3355,8 @@ mod tests {
                 flat_files: true,
                 check: false,
                 same_response: false,
+                cap: None,
+                label: None,
             };
             run.run(typed::StockHistoryEod::new(
                 "AAPL",

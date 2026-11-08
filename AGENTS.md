@@ -163,7 +163,18 @@ options PRO map was approved by the user on 2026-11-04, as one run:** their
 go-ahead to finish the option portion on PRO covers one run of
 `live_p0 entitlements --set options-pro`, which sends every option RPC once
 (not one per family), with the same pacing, stop rules and privacy rules. Any
-further run needs approval again.
+further run needs approval again. **The stock, index, calendar and
+interest-rate run was approved by the user on 2026-11-07, as one run:**
+`live_p0 entitlements --set stock-index-rate` sends each of those 30 RPCs
+once (the calendar per date and year), paced and sequential.
+- **Same rules:** the same stop and privacy rules apply. The private report
+  also keeps the calendar responses' decoded rows: calendar data, not market
+  prices, which the user asked to see.
+- **Flat files:** its four flat files (index EOD, and stock EOD, trade-quote
+  and quote) are bounded probes only, covered by this approval.
+- **Python side:** `bench/p1/stock_index_rate_checks.py` sends the same
+  requests through the Python package.
+- **Re-running** either side needs approval again.
 
 **Flat files: probes are bounded, and full downloads are approved one file
 at a time.**

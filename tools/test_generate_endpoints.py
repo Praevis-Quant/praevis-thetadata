@@ -73,6 +73,38 @@ class OutputTests(unittest.TestCase):
         self.assertEqual(gen.VENDOR_OUT.read_text(encoding="utf-8"), aliases)
         self.assertEqual(aliases.count('        return self._vendor("'), 81)
 
+    def test_the_subscription_required_follows_the_evidence_only(self):
+        def run(cls, code, tier=None, **extra):
+            entry = {"class": cls, "code": code, "run": "r1", **extra}
+            return {**entry, "tier": tier} if tier else entry
+        free_ok, pro_ok = run("entitled", "OK"), run("entitled", "OK")
+        cases = [
+            # A tier the service named wins, with the RPC's product.
+            ("GetStockHistoryOhlc", {"free": run("tier-denied", "PermissionDenied", "VALUE")}, "stocks VALUE"),
+            ("GetOptionHistoryQuote", {"free": run("tier-denied", "PermissionDenied", "VALUE"), "pro": pro_ok},
+             "options VALUE"),
+            ("GetCalendarOnDate", {"free": run("tier-denied", "PermissionDenied", "VALUE")},
+             "VALUE (product not named)"),
+            # Entitled on a FREE tier of the product: FREE.
+            ("GetStockHistoryEod", {"free": free_ok}, "stocks FREE"),
+            # Stocks and indices are FREE on the PRO account too.
+            ("GetIndexHistoryEod", {"pro": pro_ok}, "indices FREE"),
+            ("GetInterestRateHistoryEod", {"free": free_ok}, "FREE"),
+            # Entitled only with options PRO: the lowest tier is not known.
+            ("GetOptionSnapshotOhlc", {"pro": pro_ok}, "unknown (entitled on options PRO)"),
+            ("GetCalendarYear", {"pro": pro_ok}, "unknown (entitled on the PRO account)"),
+            # Refused without a named tier, uncertain, disagreeing or unprobed: unknown.
+            ("GetStockFlatFileEod", {"free": run("tier-denied", "PermissionDenied")}, "unknown"),
+            ("GetStockListDates", {"free": run("entitled", "OK", uncertain=True)}, "unknown"),
+            ("GetStockHistoryQuote", {"free": run("tier-denied", "PermissionDenied", "VALUE"),
+                                      "pro": run("tier-denied", "PermissionDenied", "STANDARD")},
+             "unknown (runs disagree)"),
+            ("GetStockAtTimeTrade", {}, "unknown"),
+        ]
+        for rpc, status, expected in cases:
+            with self.subTest(rpc):
+                self.assertEqual(gen.required_tier(rpc, status), expected)
+
     def test_status_entries_must_name_real_rpcs(self):
         with tempfile.TemporaryDirectory() as directory:
             status = Path(directory) / "status.json"

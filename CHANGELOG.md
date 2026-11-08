@@ -105,6 +105,26 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **The stock, index, calendar and interest-rate checks** (manual; one run
+  approved by the user on 2026-11-07).
+  - **Rust:** `live_p0 entitlements --set stock-index-rate` sends each of
+    the 30 RPCs with a vendor wrapper in those products once, paced and
+    sequential. One response per request is decoded both ways (columnar
+    and legacy) and compared. A refusal keeps the server's status text in
+    the private report, for a person to classify the tier.
+  - **Calendar:** `calendar_open_today`, `calendar_on_date` (a weekday, a
+    weekend, 2025-12-25 and the 2025-11-28 early close) and `calendar_year`
+    (2025 and 2026), with their decoded rows kept in the private report.
+  - **Flat files:** the four flat files are bounded probes.
+  - **Python:** `bench/p1/stock_index_rate_checks.py` runs the same
+    requests through the Python package.
+- **Endpoint coverage shows the subscription each wrapper requires.**
+  - **The rule:** the tier the service named when refusing, or FREE where a
+    FREE tier of that product was entitled. Anything else is unknown; it is
+    never inferred from the family.
+  - **Summary:** a table counts the wrappers per product and tier.
+  - **Relabelled:** the options PRO columns are now "PRO account" (options
+    PRO; stocks and indices FREE).
 - **Full trade stream and contract discovery** (`praevis-thetadata-stream`).
   - **Trades:** `Kind::Trade` (contract plus exact trade fields, from the
     vendor's documented example), `subscribe_full_trades` /
