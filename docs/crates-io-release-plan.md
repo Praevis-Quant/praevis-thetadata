@@ -5,6 +5,50 @@ Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 approval. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
 
+## Alpha.3 publication checklist and order (prepared 2026-11-08)
+
+Not executed. It runs only after the user explicitly approves publication.
+The user runs `cargo publish` locally, with the token never in argv or
+logs. Scope: [alpha.3 scope record](releases.md#alpha3-scope-record-2026-11-08).
+
+**Before publishing:**
+1. The version-bump PR is merged, with Verify and the packaging rehearsal
+   green on Windows and Linux. The rehearsal packages all seven crates,
+   stages them in the order below, builds the external consumers and builds
+   the abi3 wheels with a smoke import (step c).
+2. **Archive review:** the per-package file lists and hashes from the
+   rehearsal. Check the LICENSE and NOTICE copies (plus `LICENSE.upstream`
+   in proto), and that there are no `artifacts/`, captures, `.env` files,
+   keys or report files.
+3. The maintainer's final local review on the merged bump commit; then the
+   user's explicit approval.
+
+**Publish, in dependency order,** each step waiting until the index serves
+the previous crates:
+
+| Wave | Crates | Depends on |
+| ---: | --- | --- |
+| 1 | `praevis-thetadata-proto`, `praevis-thetadata-core`, `praevis-thetadata-auth` | — |
+| 2 | `praevis-thetadata-arrow` (**new**) | core, proto |
+| 3 | `praevis-thetadata-client` | auth, arrow, core, proto |
+| 4 | `praevis-thetadata-cli`, `praevis-thetadata-stream` (**new**) | auth; none (the client is only a stream dev-dependency) |
+
+`praevis-thetadata-py` is **not** published (`publish = false`).
+
+**After publishing:**
+1. Annotated tag `v0.1.0-alpha.3` on the published commit.
+2. A GitHub release from the prepared draft (step d), with the Windows and
+   Linux abi3 wheels from the rehearsal attached as assets. **Not on PyPI.**
+3. **Checks on Windows and Linux:**
+   - `cargo install praevis-thetadata-cli --version 0.1.0-alpha.3 --locked`
+     prints the version;
+   - the crates.io-only consumers build;
+   - the downloaded `.crate` hashes match the registry;
+   - docs.rs builds, including the two new crates;
+   - `pip install` of the attached wheel imports.
+4. Record all of this in a "Publication record: 0.1.0-alpha.3" section
+   here, and date the CHANGELOG section.
+
 ## Publication record: 0.1.0-alpha.2
 
 The Coordinator published from a clean `main` at `47ef74e7cd11` (#37) on Windows,

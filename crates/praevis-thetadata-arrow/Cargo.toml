@@ -5,11 +5,11 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-# Not published yet: publication is a release decision (P1 design §9; the
-# alpha.3 release is on hold).
-publish = false
+# Published from alpha.3 (user decision 2026-11-07): the client depends on it.
+publish.workspace = true
 description = "Exact Arrow columns from ThetaData gRPC responses for the independent praevis-thetadata clients"
 readme = "README.md"
+documentation = "https://docs.rs/praevis-thetadata-arrow"
 keywords = ["thetadata", "arrow", "market-data", "finance"]
 categories = ["finance", "encoding"]
 

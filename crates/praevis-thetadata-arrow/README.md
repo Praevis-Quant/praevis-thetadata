@@ -6,8 +6,12 @@ praevis-thetadata clients (P1 PR 3 of the
 
 > **Independent and experimental.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. It is not published yet, and its
-> API may change before it is.
+> identifies the service it interoperates with. `0.1.0-alpha.3` is an early
+> experimental prerelease, and its API may change between alphas.
+
+```toml
+praevis-thetadata-arrow = "=0.1.0-alpha.3"
+```
 
 ## What it does
 

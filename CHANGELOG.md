@@ -14,6 +14,25 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] - pending (the date is set at publication)
+
+Not yet published: it needs the user's explicit approval. Scope and the
+publish set: [alpha.3 scope record](docs/releases.md#alpha3-scope-record-2026-11-08).
+The Python package's wheels go on the GitHub release, not PyPI.
+
+### Release
+
+- **Version `0.1.0-alpha.3`** across the workspace.
+- **Two new published crates:** `praevis-thetadata-arrow` (the client
+  depends on it) and `praevis-thetadata-stream` (experimental). Both get
+  `documentation` links. The stream crate also gets LICENSE and NOTICE
+  copies, keywords, categories and an `examples/` exclusion, and joins the
+  repository's package-file check.
+- **The client's description** now matches its surface: typed requests for
+  every RPC, Arrow query and job streams, the scheduler and Parquet.
+- **The ROADMAP's CLI description follow-up is closed.** The fix had
+  already shipped with alpha.2.
+
 ### Fixed
 
 - **A column that is null throughout a response keeps its type when the

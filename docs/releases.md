@@ -148,15 +148,15 @@ windows, streaming decode, zero-copy, and admission reservation.
 Published in dependency order, each at `0.1.0-alpha.3`. Names checked on
 crates.io on 2026-11-08: the two new names are free.
 
-| Order | Crate | crates.io | Packaging status (fixed in step b) |
+| Order | Crate | crates.io | Packaging status (step b) |
 | ---: | --- | --- | --- |
 | 1 | `praevis-thetadata-proto` | published (alpha.2) | ready |
 | 2 | `praevis-thetadata-core` | published (alpha.2) | ready |
 | 3 | `praevis-thetadata-auth` | published (alpha.2) | ready |
-| 4 | `praevis-thetadata-arrow` | **new**, name free | `publish = false` to be lifted (the client depends on it, so it must publish); add `documentation`; LICENSE, NOTICE and README present |
-| 5 | `praevis-thetadata-client` | published (alpha.2) | ready; description to update for the new surface |
-| 6 | `praevis-thetadata-cli` | published (alpha.2) | ready; description wording fix (open since alpha.1) |
-| 7 | `praevis-thetadata-stream` | **new**, name free | `publish = false` to be lifted; add LICENSE and NOTICE copies, `documentation`, keywords and categories, and add it to the repository's package-file check. No internal dependencies (the client is a dev-dependency only), so it can publish last |
+| 4 | `praevis-thetadata-arrow` | **new**, name free | **Done:** `publish = false` lifted (the client depends on it); `documentation` added; LICENSE, NOTICE and README present |
+| 5 | `praevis-thetadata-client` | published (alpha.2) | **Done:** description updated for the new surface |
+| 6 | `praevis-thetadata-cli` | published (alpha.2) | ready. The description fix already shipped with alpha.2 (crates.io shows "in-memory login, with opt-in (auth --save) ... storage") |
+| 7 | `praevis-thetadata-stream` | **new**, name free | **Done:** `publish = false` lifted; LICENSE and NOTICE copies, `documentation`, keywords, categories and an `examples/` exclusion added; in the package-file check. No internal dependencies (the client is a dev-dependency only), so it publishes last |
 | — | `praevis-thetadata-py` | **stays unpublished** (`publish = false`) | Built as abi3 wheels in CI; attached to the GitHub release |
 
 Steps:

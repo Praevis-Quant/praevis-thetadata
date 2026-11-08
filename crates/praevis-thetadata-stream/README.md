@@ -1,8 +1,13 @@
 # praevis-thetadata-stream
 
 Real-time option events from an **operator-run Theta Terminal v3**, through
-its local WebSocket (`ws://127.0.0.1:25520/v1/events`). Unreleased (W10;
-see the ADR-0018 design note).
+its local WebSocket (`ws://127.0.0.1:25520/v1/events`). New in
+`0.1.0-alpha.3`, **experimental** (W10; see the ADR-0018 design note). It is
+an independent, unofficial project, not affiliated with Theta Data Inc.
+
+```toml
+praevis-thetadata-stream = "=0.1.0-alpha.3"
+```
 
 - **Official path only:** it connects to the Terminal you run, on this
   machine, and never to the vendor's feed servers directly. It never starts,
