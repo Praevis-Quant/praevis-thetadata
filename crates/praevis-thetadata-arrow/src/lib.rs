@@ -5,6 +5,22 @@
 //! previous one, unknown fields are skipped), like the client's bounded
 //! decoder. The client's differential corpus checks both against the legacy
 //! decoder.
+/// `with_<field>` setters for a `#[non_exhaustive]` configuration struct: build
+/// one with `Default::default()` (or its constructor) and chain the setters.
+macro_rules! with_setters {
+    ($ty:ty { $($setter:ident => $field:ident: $t:ty),* $(,)? }) => {
+        impl $ty {
+            $(
+                #[doc = concat!("Set `", stringify!($field), "`.")]
+                #[must_use]
+                pub fn $setter(mut self, value: $t) -> Self {
+                    self.$field = value;
+                    self
+                }
+            )*
+        }
+    };
+}
 /// The arrow-rs crates whose types this API returns.
 pub use arrow_array;
 pub use arrow_schema;
@@ -37,6 +53,7 @@ pub const UTC: &str = "UTC";
 
 /// Per-message limits, plus a bound on what one decoder buffers.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct Limits {
     pub encoded_bytes: usize,
     pub decompressed_bytes: usize,
@@ -64,6 +81,7 @@ impl Default for Limits {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[non_exhaustive]
 pub enum DecodeError {
     /// Malformed protobuf, ZSTD or UTF-8, or an invalid price scale, time
     /// zone or out-of-range timestamp.
@@ -108,6 +126,7 @@ enum Cell<'a> {
 /// A column's value kind on the wire, as observed for an endpoint. Each maps
 /// to exactly the Arrow type the decoder gives that kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ColumnKind {
     /// `text`: `Utf8`.
     Text,
@@ -860,3 +879,14 @@ fn data_value(mut bytes: &[u8], text_limit: usize) -> Result<Cell<'_>, DecodeErr
         }
     })
 }
+
+with_setters!(Limits {
+    with_encoded_bytes => encoded_bytes: usize,
+    with_decompressed_bytes => decompressed_bytes: usize,
+    with_headers => headers: usize,
+    with_header_bytes => header_bytes: usize,
+    with_text_bytes => text_bytes: usize,
+    with_rows_per_message => rows_per_message: usize,
+    with_buffered_bytes => buffered_bytes: usize,
+    with_zstd_window_log => zstd_window_log: u32,
+});

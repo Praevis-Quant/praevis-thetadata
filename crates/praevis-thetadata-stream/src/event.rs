@@ -67,6 +67,7 @@ impl Price {
 
 /// A national best bid and offer update.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub struct Quote {
     pub ms_of_day: i64,
     pub bid_size: i64,
@@ -83,6 +84,7 @@ pub struct Quote {
 
 /// One trade (`type` TRADE), from the full trade stream.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub struct Trade {
     pub ms_of_day: i64,
     pub sequence: i64,
@@ -96,6 +98,7 @@ pub struct Trade {
 
 /// The `header.status` of a message.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Status {
     Connected,
     Disconnected,
@@ -105,6 +108,7 @@ pub enum Status {
 /// The Terminal's answer to a stream request (`type` REQ_RESPONSE), as the
 /// vendor documents it ("Verify Stream Requests").
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Response {
     /// Accepted. It does not confirm the contract exists: data flows only if
     /// it does.
@@ -151,6 +155,7 @@ impl std::fmt::Debug for TypeName {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Kind {
     Quote {
         contract: Contract,
@@ -182,6 +187,7 @@ pub enum Kind {
 
 /// One event and when its frame was read.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct Event {
     pub kind: Kind,
     /// When the reader thread had the whole frame, before parsing.

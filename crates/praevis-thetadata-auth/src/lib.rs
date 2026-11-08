@@ -18,6 +18,22 @@
 //! enhancement: enable the `native-store` feature for `SessionStore`
 //! (Windows Credential Manager and Linux Secret Service).
 
+/// `with_<field>` setters for a `#[non_exhaustive]` configuration struct: build
+/// one with `Default::default()` (or its constructor) and chain the setters.
+macro_rules! with_setters {
+    ($ty:ty { $($setter:ident => $field:ident: $t:ty),* $(,)? }) => {
+        impl $ty {
+            $(
+                #[doc = concat!("Set `", stringify!($field), "`.")]
+                #[must_use]
+                pub fn $setter(mut self, value: $t) -> Self {
+                    self.$field = value;
+                    self
+                }
+            )*
+        }
+    };
+}
 #[cfg(feature = "native-store")]
 mod store;
 #[cfg(feature = "native-store")]
@@ -31,6 +47,7 @@ pub const DEFAULT_AUTH_URL: &str = "https://nexus-api.thetadata.us/identity/term
 const TERMINAL_KEY: &str = "cf58ada4-4175-11f0-860f-1e2e95c79e64";
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum AuthError {
     #[error("invalid authentication configuration: {0}")]
     Config(&'static str),
@@ -48,6 +65,7 @@ pub enum AuthError {
 
 /// Debug always redacts credentials. No implicit environment or file discovery.
 #[derive(Clone)]
+#[non_exhaustive]
 pub enum Credentials {
     ApiKey(String),
     EmailPassword { email: String, password: String },
@@ -96,6 +114,7 @@ impl std::fmt::Debug for Credentials {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum Environment {
     #[serde(rename = "PROD")]
     Prod,
@@ -104,6 +123,7 @@ pub enum Environment {
 }
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct AuthConfig {
     pub environment: Environment,
     pub auth_url: String,
@@ -128,6 +148,7 @@ impl Default for AuthConfig {
 /// Subscription payloads remain JSON because the bundled protocol does not define their shape.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct User {
     pub email: String,
     #[serde(default)]
@@ -271,3 +292,11 @@ impl AuthClient {
 
 #[cfg(test)]
 mod tests;
+
+with_setters!(AuthConfig {
+    with_environment => environment: Environment,
+    with_auth_url => auth_url: String,
+    with_connect_timeout => connect_timeout: Duration,
+    with_request_timeout => request_timeout: Duration,
+    with_allow_insecure => allow_insecure: bool,
+});

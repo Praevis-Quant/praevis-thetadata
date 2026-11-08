@@ -361,20 +361,13 @@ fn loopback(name: &str, messages: Vec<ResponseData>, samples: usize) -> Vec<Resu
             ..Default::default()
         });
         let client = ThetaClient::with_session(
-            ClientConfig {
-                endpoint: Some(fixture.endpoint.clone()),
-                allow_insecure: true,
-                ..Default::default()
-            },
+            ClientConfig::default().with_endpoint(Some(fixture.endpoint.clone())).with_allow_insecure(true),
             support::session().await,
         )
         .await
         .unwrap()
         // Measure transport and decoding, not the per-minute request limit.
-        .with_scheduler(praevis_thetadata_client::SchedulerPolicy {
-            per_minute: None,
-            ..Default::default()
-        })
+        .with_scheduler(praevis_thetadata_client::SchedulerPolicy::default().with_per_minute(None))
         .unwrap();
         let day = chrono_day();
         let mut results = Vec::new();
@@ -402,10 +395,8 @@ fn loopback(name: &str, messages: Vec<ResponseData>, samples: usize) -> Vec<Resu
                 } else if engine == "query-parquet" {
                     // Request to closed file: decoding plus ZSTD level-1 Parquet.
                     let request = endpoints::StockHistoryEod::new("SYNTHETIC", day, day);
-                    let options = praevis_thetadata_client::ParquetOptions {
-                        overwrite: true,
-                        ..Default::default()
-                    };
+                    let options =
+                        praevis_thetadata_client::ParquetOptions::default().with_overwrite(true);
                     let stream = client.query(&request).await.unwrap();
                     rows = stream.to_parquet(&out, options).await.unwrap().rows;
                     first_at = Some(started.elapsed());

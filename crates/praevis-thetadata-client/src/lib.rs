@@ -1,6 +1,22 @@
 #![doc = include_str!("../README.md")]
 //!
 //! Async batch streaming for ThetaData's direct gRPC API.
+/// `with_<field>` setters for a `#[non_exhaustive]` configuration struct: build
+/// one with `Default::default()` (or its constructor) and chain the setters.
+macro_rules! with_setters {
+    ($ty:ty { $($setter:ident => $field:ident: $t:ty),* $(,)? }) => {
+        impl $ty {
+            $(
+                #[doc = concat!("Set `", stringify!($field), "`.")]
+                #[must_use]
+                pub fn $setter(mut self, value: $t) -> Self {
+                    self.$field = value;
+                    self
+                }
+            )*
+        }
+    };
+}
 mod bounded;
 #[cfg(test)]
 mod corpus;
@@ -43,6 +59,7 @@ use std::time::Duration;
 use tonic::transport::{Channel, ClientTlsConfig, Endpoint};
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     #[error("invalid configuration: {0}")]
     Config(&'static str),
@@ -81,6 +98,7 @@ impl From<tonic::Status> for Error {
 }
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ClientConfig {
     /// None chooses the session environment's default MDDS host.
     pub endpoint: Option<String>,
@@ -162,6 +180,9 @@ impl ThetaClient {
         let host = match session.environment() {
             Environment::Prod => "mdds-01.thetadata.us",
             Environment::Stage => "mdds-stage.thetadata.us",
+            // `Environment` is non-exhaustive: a newer auth crate could name an
+            // environment this client has no host for.
+            _ => return Err(Error::Config("no market-data host for this environment")),
         };
         let url = config
             .endpoint
@@ -395,3 +416,25 @@ mod tls_tests {
         }
     }
 }
+
+with_setters!(ClientConfig {
+    with_endpoint => endpoint: Option<String>,
+    with_allow_insecure => allow_insecure: bool,
+    with_connect_timeout => connect_timeout: Duration,
+    with_request_timeout => request_timeout: Duration,
+    with_idle_timeout => idle_timeout: Duration,
+    with_max_batch_bytes => max_batch_bytes: usize,
+});
+
+// Here rather than in bounded.rs, which some examples compile on its own.
+with_setters!(bounded::DecodeLimits {
+    with_encoded_bytes => encoded_bytes: usize,
+    with_decompressed_bytes => decompressed_bytes: usize,
+    with_headers => headers: usize,
+    with_rows => rows: usize,
+    with_cells => cells: usize,
+    with_text_bytes => text_bytes: usize,
+    with_header_bytes => header_bytes: usize,
+    with_allocated_bytes => allocated_bytes: usize,
+    with_zstd_window_log => zstd_window_log: u32,
+});

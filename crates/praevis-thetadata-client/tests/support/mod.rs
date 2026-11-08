@@ -192,11 +192,11 @@ pub async fn session_with_user(user: &str) -> (Session, Arc<std::sync::atomic::A
             drop(socket);
         }
     });
-    let client = AuthClient::new(AuthConfig {
-        auth_url: endpoint,
-        allow_insecure: true,
-        ..Default::default()
-    })
+    let client = AuthClient::new(
+        AuthConfig::default()
+            .with_auth_url(endpoint)
+            .with_allow_insecure(true),
+    )
     .unwrap();
     let result = client
         .authenticate(&Credentials::api_key("synthetic-key"))

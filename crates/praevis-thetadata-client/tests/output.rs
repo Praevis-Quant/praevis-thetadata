@@ -38,19 +38,14 @@ fn two_rows() -> wire::ResponseData {
 }
 async fn connect(fixture: &Fixture) -> ThetaClient {
     ThetaClient::with_session(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true),
         support::session().await,
     )
     .await
     .unwrap()
-    .with_scheduler(SchedulerPolicy {
-        per_minute: None,
-        ..Default::default()
-    })
+    .with_scheduler(SchedulerPolicy::default().with_per_minute(None))
     .unwrap()
 }
 fn dir(name: &str) -> PathBuf {

@@ -5,6 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 const SERVICE: &str = "praevis.thetadata.auth.v1";
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum StoreError {
     #[error("profile must be 1..=64 ASCII letters, digits, hyphens, or underscores")]
     InvalidProfile,

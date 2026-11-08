@@ -293,14 +293,13 @@ pub fn write_report(directory: &Path, name: &str, value: &impl Serialize) -> Res
     write_private(&directory.join(name), &bytes, name != "manifest.json")
 }
 fn config(endpoint: Option<String>) -> ClientConfig {
-    ClientConfig {
-        allow_insecure: endpoint.is_some(), // Only our freshly bound loopback fixture supplies this.
-        endpoint,
-        request_timeout: Duration::from_secs(120),
-        idle_timeout: Duration::from_secs(30),
-        max_batch_bytes: MAX_FRAME,
-        ..Default::default()
-    }
+    ClientConfig::default()
+        // Only our freshly bound loopback fixture supplies an endpoint.
+        .with_allow_insecure(endpoint.is_some())
+        .with_endpoint(endpoint)
+        .with_request_timeout(Duration::from_secs(120))
+        .with_idle_timeout(Duration::from_secs(30))
+        .with_max_batch_bytes(MAX_FRAME)
 }
 
 pub async fn capture(evidence: &mut Capture, directory: &Path, session: Session) -> Result<()> {
@@ -436,6 +435,8 @@ impl Accumulator {
                     Value::Price(_) => "price",
                     Value::Boolean(_) => "boolean",
                     Value::Timestamp(_) => "timestamp",
+                    // `Value` is non-exhaustive.
+                    _ => "other",
                 };
                 *self.kinds.entry(kind.into()).or_default() += 1;
             }

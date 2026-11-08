@@ -8,6 +8,7 @@ mod batch;
 pub use batch::{BatchValue, DataBatch, TimeZone, Timestamp};
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum DataError {
     #[error("invalid price scale {0}; expected 0..=19")]
     PriceScale(i32),
@@ -141,6 +142,7 @@ pub fn timestamp(epoch_ms: u64, zone: i32) -> Result<String, DataError> {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "type", content = "value", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum Value {
     Null,
     Text(String),

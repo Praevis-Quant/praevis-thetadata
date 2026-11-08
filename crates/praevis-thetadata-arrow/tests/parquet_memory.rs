@@ -61,13 +61,11 @@ fn growth(decimal_statistics: bool, path: &std::path::Path) -> f64 {
     let batch = batch();
     let mut sink = ParquetSink::create(
         path,
-        ParquetOptions {
-            // One batch per row group: many row groups, quickly.
-            row_group_rows: BATCH_ROWS,
-            overwrite: true,
-            decimal_statistics,
-            ..Default::default()
-        },
+        // One batch per row group: many row groups, quickly.
+        ParquetOptions::default()
+            .with_row_group_rows(BATCH_ROWS)
+            .with_overwrite(true)
+            .with_decimal_statistics(decimal_statistics),
     )
     .unwrap();
     let mut at_20 = 0;

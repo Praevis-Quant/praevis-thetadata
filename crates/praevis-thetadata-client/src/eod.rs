@@ -13,6 +13,7 @@ use tokio::{
 /// Safe categories: never retain a remote message, payload, identity or URL.
 /// Shared by the stock EOD streams and the generic query streams.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[non_exhaustive]
 pub enum QueryError {
     #[error("invalid query input")]
     Input,
@@ -86,6 +87,7 @@ impl StockEodRequest {
 
 /// Shared by clones of a client, independent of the raw helper settings.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct EodPolicy {
     pub decode: DecodeLimits,
     pub concurrent_jobs: usize,
@@ -1278,3 +1280,11 @@ mod tests {
         assert_eq!(probe.polls(), 1);
     }
 }
+
+with_setters!(EodPolicy {
+    with_decode => decode: DecodeLimits,
+    with_concurrent_jobs => concurrent_jobs: usize,
+    with_shared_bytes => shared_bytes: usize,
+    with_concurrent_streams => concurrent_streams: usize,
+    with_inline_bytes => inline_bytes: usize,
+});

@@ -39,6 +39,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ParquetOptions {
     /// ZSTD level (1-22), or `None` for uncompressed pages. Default 1.
     pub zstd_level: Option<i32>,
@@ -71,6 +72,7 @@ impl Default for ParquetOptions {
 
 /// Local output failures. No path or library message is kept.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[non_exhaustive]
 pub enum SinkError {
     #[error("the target file exists")]
     Exists,
@@ -88,6 +90,7 @@ pub enum SinkError {
 
 /// What was written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ParquetSummary {
     pub rows: usize,
     pub row_groups: usize,
@@ -309,3 +312,11 @@ impl Drop for ParquetSink {
         }
     }
 }
+
+with_setters!(ParquetOptions {
+    with_zstd_level => zstd_level: Option<i32>,
+    with_row_group_rows => row_group_rows: usize,
+    with_pending_bytes => pending_bytes: usize,
+    with_overwrite => overwrite: bool,
+    with_decimal_statistics => decimal_statistics: bool,
+});

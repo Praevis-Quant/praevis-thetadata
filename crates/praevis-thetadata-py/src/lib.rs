@@ -80,6 +80,8 @@ fn kind(error: QueryError) -> &'static str {
         QueryError::Schema => "schema",
         QueryError::Unsupported => "unsupported",
         QueryError::Resource(_) => "resource",
+        // `QueryError` is non-exhaustive: a newer client error kind.
+        _ => "other",
     }
 }
 /// `QueryFailed(kind, detail, grpc_code)`: the gRPC code name (for example
@@ -100,6 +102,8 @@ fn output_error(error: ParquetOutputError) -> PyErr {
     match error {
         ParquetOutputError::Query(error) => query_error(error),
         ParquetOutputError::Sink(error) => OutputFailed::new_err(("output", error.to_string())),
+        // `ParquetOutputError` is non-exhaustive.
+        error => OutputFailed::new_err(("output", error.to_string())),
     }
 }
 
@@ -284,19 +288,14 @@ impl Client {
                 .filter(|d| !d.is_zero())
                 .ok_or_else(|| PyValueError::new_err(format!("{name}: positive seconds")))
         };
-        let config = ClientConfig {
-            request_timeout: seconds("request_timeout", request_timeout)?,
-            idle_timeout: seconds("idle_timeout", idle_timeout)?,
-            ..Default::default()
-        };
+        let config = ClientConfig::default()
+            .with_request_timeout(seconds("request_timeout", request_timeout)?)
+            .with_idle_timeout(seconds("idle_timeout", idle_timeout)?);
 
         let inner = py.detach(move || {
             runtime().block_on(async move {
-                let auth = AuthClient::new(AuthConfig {
-                    environment,
-                    ..Default::default()
-                })
-                .map_err(|_| query_error(QueryError::Configuration))?;
+                let auth = AuthClient::new(AuthConfig::default().with_environment(environment))
+                    .map_err(|_| query_error(QueryError::Configuration))?;
                 // The key is never logged or echoed in errors.
                 let session = auth.authenticate(&credentials).await.map_err(|_| {
                     QueryFailed::new_err(("authentication", "authentication failed"))
@@ -384,12 +383,10 @@ impl Client {
             client: &self.inner,
             plan,
             path,
-            options: ParquetOptions {
-                zstd_level,
-                overwrite,
-                decimal_statistics,
-                ..Default::default()
-            },
+            options: ParquetOptions::default()
+                .with_zstd_level(zstd_level)
+                .with_overwrite(overwrite)
+                .with_decimal_statistics(decimal_statistics),
         };
         generated::dispatch(endpoint, Kwargs::new(kwargs), runner)
     }
@@ -584,16 +581,15 @@ fn scheduler_policy(
     retries: u32,
 ) -> SchedulerPolicy {
     let base = SchedulerPolicy::for_tier(tier);
-    SchedulerPolicy {
-        concurrency: concurrency.unwrap_or(base.concurrency),
-        per_minute: match per_minute {
-            None => base.per_minute,
-            Some(0) => None,
-            Some(limit) => Some(limit),
-        },
-        retries,
-        ..base
-    }
+    let per_minute = match per_minute {
+        None => base.per_minute,
+        Some(0) => None,
+        Some(limit) => Some(limit),
+    };
+    base.clone()
+        .with_concurrency(concurrency.unwrap_or(base.concurrency))
+        .with_per_minute(per_minute)
+        .with_retries(retries)
 }
 
 /// Test seam for `scheduler_policy`: `(concurrency, per_minute)` for a tier

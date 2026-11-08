@@ -335,6 +335,7 @@ def emit_wrapper(w: Wrapper, request: str, query: str) -> str:
            "/// Required arguments are constructor parameters, in vendor order; optional",
            "/// ones start at the vendor defaults and are set with the builder methods.",
            "#[derive(Clone, Debug, PartialEq)]",
+           "#[non_exhaustive]",
            f"pub struct {w.struct} {{"]
     for p in w.params:
         note = f"vendor default `{p.vendor_default}`" if p.vendor_default is not None else "required"
@@ -484,10 +485,22 @@ def emit_unwrapped(rpc: dict, request: str, query: str, fields: list[ProtoField]
     out = [f"/// RPC `{rpc['name']}`: in the descriptor only, with no vendor wrapper or",
            "/// documentation. Fields mirror the request message one to one. **Unstable.**",
            "#[derive(Clone, Debug, Default, PartialEq)]",
+           "#[non_exhaustive]",
            f"pub struct {struct} {{"]
     for f in fields:
         out.append(f"    pub {ident(f.name)}: {f.rust_type},")
     out.append("}")
+    # Non-exhaustive, so built with `Default` and these setters.
+    if fields:
+        out.append(f"impl {struct} {{")
+        for f in fields:
+            out += [f"    /// Set `{ident(f.name)}`.",
+                    "    #[must_use]",
+                    f"    pub fn {ident(f.name)}(mut self, value: {f.rust_type}) -> Self {{",
+                    f"        self.{ident(f.name)} = value;",
+                    "        self",
+                    "    }"]
+        out.append("}")
     body = [f"query.{ident(f.name)} = self.{ident(f.name)}.clone();" for f in fields]
     out += emit_endpoint_impl(struct, rpc["name"], "None", "Stability::Unstable", "", request, query, body)
     return "\n".join(out)

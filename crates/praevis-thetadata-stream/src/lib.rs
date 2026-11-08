@@ -24,6 +24,22 @@
 //! waiting for the Terminal's responses.
 //!
 //! This crate never starts, stops or reconfigures the Terminal.
+/// `with_<field>` setters for a `#[non_exhaustive]` configuration struct: build
+/// one with `Default::default()` (or its constructor) and chain the setters.
+macro_rules! with_setters {
+    ($ty:ty { $($setter:ident => $field:ident: $t:ty),* $(,)? }) => {
+        impl $ty {
+            $(
+                #[doc = concat!("Set `", stringify!($field), "`.")]
+                #[must_use]
+                pub fn $setter(mut self, value: $t) -> Self {
+                    self.$field = value;
+                    self
+                }
+            )*
+        }
+    };
+}
 mod event;
 mod parse;
 
@@ -46,6 +62,7 @@ pub const DEFAULT_URL: &str = "ws://127.0.0.1:25520/v1/events";
 
 /// What the reader does when the caller's queue is full.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Overflow {
     /// Drop the newest event and count it (the default: never back up the
     /// Terminal).
@@ -55,6 +72,7 @@ pub enum Overflow {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct Options {
     /// A `ws://` URL on this machine (default [`DEFAULT_URL`]).
     pub url: String,
@@ -73,6 +91,7 @@ impl Default for Options {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum StreamError {
     #[error("only a ws:// URL on 127.0.0.1 or localhost is allowed")]
     Url,
@@ -88,6 +107,7 @@ pub enum StreamError {
 
 /// Counters since the stream opened. Every measurement reports them.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Stats {
     pub frames: u64,
     pub quotes: u64,
@@ -441,3 +461,9 @@ fn disconnected() -> Event {
         received: Instant::now(),
     }
 }
+
+with_setters!(Options {
+    with_url => url: String,
+    with_capacity => capacity: usize,
+    with_overflow => overflow: Overflow,
+});

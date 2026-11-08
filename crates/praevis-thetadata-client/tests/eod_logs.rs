@@ -95,11 +95,9 @@ async fn dependency_logs_never_contain_secrets() {
         ..Default::default()
     });
     let client = ThetaClient::with_eod_policy(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true),
         session,
         EodPolicy::default(),
     )

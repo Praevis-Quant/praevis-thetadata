@@ -30,11 +30,9 @@ fn two_rows() -> wire::ResponseData {
 }
 async fn connect(fixture: &Fixture, policy: SchedulerPolicy) -> ThetaClient {
     ThetaClient::with_session(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true),
         support::session().await,
     )
     .await
@@ -44,18 +42,12 @@ async fn connect(fixture: &Fixture, policy: SchedulerPolicy) -> ThetaClient {
 }
 /// 8 at a time with no per-minute limit, like PRO.
 fn parallel() -> SchedulerPolicy {
-    SchedulerPolicy {
-        concurrency: 8,
-        per_minute: None,
-        ..fast()
-    }
+    fast().with_concurrency(8).with_per_minute(None)
 }
 fn fast() -> SchedulerPolicy {
-    SchedulerPolicy {
-        backoff: Duration::from_millis(5),
-        max_backoff: Duration::from_millis(20),
-        ..Default::default()
-    }
+    SchedulerPolicy::default()
+        .with_backoff(Duration::from_millis(5))
+        .with_max_backoff(Duration::from_millis(20))
 }
 
 #[test]
@@ -208,10 +200,10 @@ async fn one_slot_holds_until_the_stream_ends_and_dropping_a_job_releases_it() {
 #[tokio::test]
 async fn the_default_scheduler_follows_the_account_tier() {
     let fixture = Fixture::start(Script::default());
-    let config = || ClientConfig {
-        endpoint: Some(fixture.endpoint.clone()),
-        allow_insecure: true,
-        ..Default::default()
+    let config = || {
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true)
     };
     // The observed PRO account: options 3, stocks and indices 0.
     let pro = support::session_with_user(
@@ -392,10 +384,7 @@ async fn other_quote_shapes_and_query_are_never_split() {
     // One request at a time: never split (slower than the single request).
     let serial = client
         .clone()
-        .with_scheduler(SchedulerPolicy {
-            concurrency: 1,
-            ..fast()
-        })
+        .with_scheduler(fast().with_concurrency(1))
         .unwrap();
     assert_eq!(serial.job(&base()).await.unwrap().parts(), 1);
     // No strikes listed: the job sends the request unsplit.
@@ -415,15 +404,7 @@ async fn a_slow_first_part_does_not_hold_the_other_slots() {
         delay_requests: vec![1],
         ..Default::default()
     });
-    let client = connect(
-        &fixture,
-        SchedulerPolicy {
-            concurrency: 2,
-            per_minute: None,
-            ..fast()
-        },
-    )
-    .await;
+    let client = connect(&fixture, fast().with_concurrency(2).with_per_minute(None)).await;
     let eod = endpoints::StockHistoryEod::new("AAPL", day("2015-01-01"), day("2024-12-31"));
     let job = client.job(&eod).await.unwrap();
     assert_eq!(job.parts(), 10);

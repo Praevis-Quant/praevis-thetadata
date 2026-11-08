@@ -5,12 +5,10 @@ use support::{Fixture, Script, Shape};
 
 async fn client(fixture: &Fixture) -> ThetaClient {
     ThetaClient::with_session(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            idle_timeout: Duration::from_secs(5),
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true)
+            .with_idle_timeout(Duration::from_secs(5)),
         support::session().await,
     )
     .await
@@ -152,22 +150,17 @@ async fn idle_timeout_and_explicit_insecure_opt_in() {
     let session = support::session().await;
     assert!(matches!(
         ThetaClient::with_session(
-            ClientConfig {
-                endpoint: Some(fixture.endpoint.clone()),
-                ..Default::default()
-            },
+            ClientConfig::default().with_endpoint(Some(fixture.endpoint.clone())),
             session
         )
         .await,
         Err(Error::Config(_))
     ));
     let client = ThetaClient::with_session(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            idle_timeout: Duration::from_millis(20),
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true)
+            .with_idle_timeout(Duration::from_millis(20)),
         support::session().await,
     )
     .await

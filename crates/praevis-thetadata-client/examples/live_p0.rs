@@ -852,6 +852,7 @@ async fn probe<E: Endpoint>(client: &ThetaClient, request: &E, max_messages: u32
         stability: match E::STABILITY {
             typed::Stability::VendorWrapper => "vendor_wrapper",
             typed::Stability::Unstable => "unstable",
+            _ => "other",
         },
         status: String::new(),
         status_text: None,
@@ -1147,11 +1148,12 @@ async fn entitlements(
         .await?;
     // Unstable: in the descriptor, with no vendor wrapper.
     r.run(typed::FutureListSymbols::default()).await?;
-    r.run(typed::CorporateActionSplit {
-        symbol: "AAPL".into(),
-        start_date: "2024-01-01".into(),
-        end_date: "2024-12-31".into(),
-    })
+    r.run(
+        typed::CorporateActionSplit::default()
+            .symbol("AAPL".into())
+            .start_date("2024-01-01".into())
+            .end_date("2024-12-31".into()),
+    )
     .await?;
     Ok(())
 }
@@ -2216,6 +2218,7 @@ fn legacy_rows(table: &praevis_thetadata_core::Table) -> Vec<Vec<Exact>> {
                         Exact::Price(i128::from(p.mantissa) * 10i128.pow((p.exponent + 10) as u32))
                     }
                     Value::Timestamp(v) => Exact::Timestamp(v.clone()),
+                    other => Exact::Text(format!("unknown value kind {other:?}")),
                 })
                 .collect()
         })
@@ -2756,11 +2759,9 @@ async fn connect(session: Session) -> Result<ThetaClient, EodError> {
 
 async fn connect_with_limit(session: Session, limit: usize) -> Result<ThetaClient, EodError> {
     ThetaClient::with_eod_policy(
-        ClientConfig {
-            request_timeout: Duration::from_secs(120),
-            max_batch_bytes: limit,
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_request_timeout(Duration::from_secs(120))
+            .with_max_batch_bytes(limit),
         session,
         EodPolicy::default(),
     )
@@ -2772,11 +2773,8 @@ async fn login() -> Result<Session, &'static str> {
     if key.trim().is_empty() || key.trim().chars().any(char::is_control) {
         return Err("THETADATA_API_KEY is invalid");
     }
-    let auth = AuthClient::new(AuthConfig {
-        environment: Environment::Prod,
-        ..Default::default()
-    })
-    .map_err(|_| "authentication configuration")?;
+    let auth = AuthClient::new(AuthConfig::default().with_environment(Environment::Prod))
+        .map_err(|_| "authentication configuration")?;
     auth.authenticate(&Credentials::api_key(key.trim()))
         .await
         .map_err(|_| "authentication failed")
@@ -2803,11 +2801,9 @@ mod tests {
             ..Default::default()
         });
         let client = ThetaClient::with_eod_policy(
-            ClientConfig {
-                endpoint: Some(server.endpoint.clone()),
-                allow_insecure: true,
-                ..Default::default()
-            },
+            ClientConfig::default()
+                .with_endpoint(Some(server.endpoint.clone()))
+                .with_allow_insecure(true),
             fixture::session().await,
             EodPolicy::default(),
         )
@@ -2846,11 +2842,9 @@ mod tests {
             ..Default::default()
         });
         let client = ThetaClient::with_eod_policy(
-            ClientConfig {
-                endpoint: Some(server.endpoint.clone()),
-                allow_insecure: true,
-                ..Default::default()
-            },
+            ClientConfig::default()
+                .with_endpoint(Some(server.endpoint.clone()))
+                .with_allow_insecure(true),
             fixture::session().await,
             EodPolicy::default(),
         )
@@ -2868,12 +2862,10 @@ mod tests {
 
     async fn fixture_client_with_limit(server: &fixture::Fixture, limit: usize) -> ThetaClient {
         ThetaClient::with_eod_policy(
-            ClientConfig {
-                endpoint: Some(server.endpoint.clone()),
-                allow_insecure: true,
-                max_batch_bytes: limit,
-                ..Default::default()
-            },
+            ClientConfig::default()
+                .with_endpoint(Some(server.endpoint.clone()))
+                .with_allow_insecure(true)
+                .with_max_batch_bytes(limit),
             fixture::session().await,
             EodPolicy::default(),
         )

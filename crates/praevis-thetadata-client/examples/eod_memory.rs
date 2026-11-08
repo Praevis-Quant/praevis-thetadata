@@ -448,11 +448,9 @@ fn measure(
         .build()?;
     runtime.block_on(async {
         let client = ThetaClient::with_eod_policy(
-            ClientConfig {
-                endpoint: Some(endpoint),
-                allow_insecure: true,
-                ..Default::default()
-            },
+            ClientConfig::default()
+                .with_endpoint(Some(endpoint))
+                .with_allow_insecure(true),
             support::session().await,
             policy,
         )
@@ -830,11 +828,9 @@ fn measure_bound(endpoint: String, scenario: &str) -> Result<(), Failure> {
         .build()?;
     runtime.block_on(async {
         let client = ThetaClient::with_eod_policy(
-            ClientConfig {
-                endpoint: Some(endpoint),
-                allow_insecure: true,
-                ..Default::default()
-            },
+            ClientConfig::default()
+                .with_endpoint(Some(endpoint))
+                .with_allow_insecure(true),
             support::session().await,
             EodPolicy::default(),
         )

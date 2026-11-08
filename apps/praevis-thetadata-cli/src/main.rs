@@ -210,12 +210,10 @@ fn run(cli: Cli) -> Result<ExitCode> {
         };
     }
     let credentials = credentials(&args)?;
-    let mut config = AuthConfig {
-        environment,
-        request_timeout: Duration::from_secs(args.timeout),
-        allow_insecure: args.insecure,
-        ..Default::default()
-    };
+    let mut config = AuthConfig::default()
+        .with_environment(environment)
+        .with_request_timeout(Duration::from_secs(args.timeout))
+        .with_allow_insecure(args.insecure);
     if let Some(url) = args.auth_url {
         config.auth_url = url;
     }
@@ -347,6 +345,8 @@ mod tests {
                     format!("file:{email}")
                 }
                 Credentials::EmailPassword { email, .. } => format!("pair:{email}"),
+                // `Credentials` is non-exhaustive; the selector only builds these two.
+                _ => unreachable!("an unknown credential kind"),
             })
             .map_err(|error| error.to_string())
     }
