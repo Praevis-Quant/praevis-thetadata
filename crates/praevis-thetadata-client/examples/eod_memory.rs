@@ -17,7 +17,12 @@
 //!
 //! ```text
 //! cargo run --release -p praevis-thetadata-client --example eod_memory -- run
+//! cargo run --release -p praevis-thetadata-client --example eod_memory -- bound
 //! ```
+//!
+//! `bound` (item 8, PR 3) checks the query path after option 2a: 8 `query()`
+//! streams of 24 and 64 MiB messages, drained at once (`overlap`) and stalled
+//! after one batch (`stall`). It exits non-zero if a bound is exceeded.
 //!
 //! Experiment modes of `measure` (item 8 investigation): `PRAEVIS_SITES=1`
 //! attributes the live allocations of at least 1 MiB at the peak to source
@@ -762,6 +767,202 @@ fn run() -> Result<(), Failure> {
     Ok(())
 }
 
+/// Item 8, PR 3: the query-path bound (after option 2a), on 8 streams of
+/// large messages. Two scenarios, each in a fresh child process against a
+/// child server:
+/// - `overlap`: 8 `query()` streams drained at once. Peak Rust heap growth
+///   must stay within the accounted budget + streams × encoded_bytes + the
+///   connection window + a fixed margin.
+/// - `stall`: 8 streams each deliver one batch, which is dropped, and are then
+///   not read while the server has more to send. What stays live must be
+///   nothing message-sized: at most each stream's HTTP/2 window plus a margin.
+const BOUND_STREAMS: usize = 8;
+const BOUND_MARGIN: usize = 32 << 20;
+const STALL_MARGIN_PER_STREAM: usize = 1 << 20;
+/// `eod::STREAM_WINDOW` and the connection window the client configures.
+const STREAM_WINDOW: usize = 2 << 20;
+
+/// A message of about `mib` MiB: `mib` text cells of just under 1 MiB, so
+/// that 64 is the largest message the default 64 MiB limit admits.
+fn bound_table(mib: usize) -> wire::DataTable {
+    use wire::{DataValue, DataValueList, data_value::DataType};
+    let text = "T".repeat(DecodeLimits::default().text_bytes - 64);
+    wire::DataTable {
+        headers: (0..8).map(|n| format!("synthetic_{n}")).collect(),
+        data_table: (0..mib / 8)
+            .map(|_| DataValueList {
+                values: (0..8)
+                    .map(|_| DataValue {
+                        data_type: Some(DataType::Text(text.clone())),
+                    })
+                    .collect(),
+            })
+            .collect(),
+    }
+}
+
+fn serve_bound(mib: usize, messages: usize) {
+    let response = support::response(&bound_table(mib), false);
+    let fixture = support::Fixture::start(support::Script {
+        messages: vec![Ok(response); messages],
+        ..Default::default()
+    });
+    println!("ENDPOINT {}", fixture.endpoint);
+    std::io::stdout().flush().unwrap();
+    let mut sink = Vec::new();
+    let _ = std::io::stdin().read_to_end(&mut sink);
+    drop(fixture);
+}
+
+fn bound_request() -> praevis_thetadata_client::endpoints::StockHistoryEod {
+    praevis_thetadata_client::endpoints::StockHistoryEod::new(
+        "SYNTHETIC",
+        NaiveDate::from_ymd_opt(2026, 1, 15).unwrap(),
+        NaiveDate::from_ymd_opt(2026, 1, 16).unwrap(),
+    )
+}
+
+/// Child process: one scenario; prints `BOUND <batches> <growth bytes>`.
+fn measure_bound(endpoint: String, scenario: &str) -> Result<(), Failure> {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()?;
+    runtime.block_on(async {
+        let client = ThetaClient::with_eod_policy(
+            ClientConfig {
+                endpoint: Some(endpoint),
+                allow_insecure: true,
+                ..Default::default()
+            },
+            support::session().await,
+            EodPolicy::default(),
+        )
+        .await?
+        // PRO's limits, so the 8 streams really run at once.
+        .with_scheduler(praevis_thetadata_client::SchedulerPolicy::for_tier(
+            praevis_thetadata_client::Tier::Pro,
+        ))?;
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        let live = LIVE.load(Ordering::Relaxed);
+        PEAK.store(live, Ordering::Relaxed);
+        match scenario {
+            "overlap" => {
+                let mut tasks = tokio::task::JoinSet::new();
+                for _ in 0..BOUND_STREAMS {
+                    let client = client.clone();
+                    tasks.spawn(async move {
+                        let mut stream = client.query(&bound_request()).await?;
+                        let mut batches = 0usize;
+                        while stream.next_batch().await?.is_some() {
+                            batches += 1;
+                        }
+                        Ok::<_, Failure>(batches)
+                    });
+                }
+                let mut batches = 0;
+                while let Some(result) = tasks.join_next().await {
+                    batches += result??;
+                }
+                let growth = PEAK.load(Ordering::Relaxed).saturating_sub(live);
+                println!("BOUND {batches} {growth}");
+            }
+            "stall" => {
+                let mut streams = Vec::new();
+                for _ in 0..BOUND_STREAMS {
+                    let mut stream = client.query(&bound_request()).await?;
+                    // One delivered batch, dropped at once.
+                    drop(stream.next_batch().await?);
+                    streams.push(stream);
+                }
+                // The streams are now idle: not read, while the server has more
+                // to send. Let the transport settle, then see what stays live.
+                tokio::time::sleep(Duration::from_millis(500)).await;
+                let growth = LIVE.load(Ordering::Relaxed).saturating_sub(live);
+                println!("BOUND {} {growth}", streams.len());
+                drop(streams);
+            }
+            other => return Err(format!("unknown scenario {other}").into()),
+        }
+        Ok::<_, Failure>(())
+    })
+}
+
+/// The `bound` command: both scenarios at 24 and 64 MiB. Fails if a bound is
+/// exceeded.
+fn bound() -> Result<(), Failure> {
+    let exe = std::env::current_exe()?;
+    let policy = EodPolicy::default();
+    let encoded = policy.decode.encoded_bytes + 1024;
+    let connection = (policy.concurrent_streams + 1) * STREAM_WINDOW;
+    let overlap_bound = policy.shared_bytes + BOUND_STREAMS * encoded + connection + BOUND_MARGIN;
+    let stall_bound = BOUND_STREAMS * (STREAM_WINDOW + STALL_MARGIN_PER_STREAM);
+    println!(
+        "# Query-path memory bound (item 8, PR 3), {} {}\n",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    );
+    println!(
+        "{BOUND_STREAMS} streams. Overlap bound: shared budget {} + {BOUND_STREAMS} × encoded {} + connection window {} + margin {} = **{:.1} MiB**. Stall bound: {BOUND_STREAMS} × (stream window {} + {}) = **{:.1} MiB** (nothing message-sized).\n",
+        mib(policy.shared_bytes),
+        mib(encoded),
+        mib(connection),
+        mib(BOUND_MARGIN),
+        mib(overlap_bound),
+        mib(STREAM_WINDOW),
+        mib(STALL_MARGIN_PER_STREAM),
+        mib(stall_bound),
+    );
+    println!("| Message | Scenario | Batches | Rust heap growth (MiB) | Bound (MiB) | Holds |");
+    println!("| ---: | --- | ---: | ---: | ---: | --- |");
+    let mut failed = false;
+    for mib_size in [24usize, 64] {
+        for (scenario, limit) in [("overlap", overlap_bound), ("stall", stall_bound)] {
+            // The stall scenario needs more to send after the first batch.
+            let messages = if scenario == "stall" { 4 } else { 3 };
+            let mut server = Command::new(&exe)
+                .args(["serve-bound", &mib_size.to_string(), &messages.to_string()])
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()?;
+            let mut line = String::new();
+            BufReader::new(server.stdout.take().unwrap()).read_line(&mut line)?;
+            let endpoint = line
+                .trim()
+                .strip_prefix("ENDPOINT ")
+                .ok_or("server did not report an endpoint")?
+                .to_owned();
+            let output = Command::new(&exe)
+                .args(["measure-bound", &endpoint, scenario])
+                .stderr(Stdio::inherit())
+                .output()?;
+            drop(server.stdin.take());
+            server.wait()?;
+            let stdout = String::from_utf8(output.stdout)?;
+            let fields: Vec<usize> = stdout
+                .lines()
+                .find_map(|l| l.strip_prefix("BOUND "))
+                .ok_or("bound measurement failed")?
+                .split(' ')
+                .map(str::parse)
+                .collect::<Result<_, _>>()?;
+            let holds = fields[1] <= limit;
+            failed |= !holds;
+            println!(
+                "| {mib_size} MiB | {scenario} | {} | {:.1} | {:.1} | {} |",
+                fields[0],
+                mib(fields[1]),
+                mib(limit),
+                if holds { "yes" } else { "**NO**" }
+            );
+        }
+    }
+    if failed {
+        return Err("a query-path memory bound was exceeded".into());
+    }
+    Ok(())
+}
+
 fn main() -> Result<(), Failure> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
@@ -787,7 +988,13 @@ fn main() -> Result<(), Failure> {
                 policy,
             )
         }
+        Some("serve-bound") => {
+            serve_bound(args[1].parse()?, args[2].parse()?);
+            Ok(())
+        }
+        Some("measure-bound") => measure_bound(args[1].clone(), &args[2]),
+        Some("bound") => bound(),
         Some("run") | None => run(),
-        Some(other) => Err(format!("unknown command {other}; use `run`").into()),
+        Some(other) => Err(format!("unknown command {other}; use `run` or `bound`").into()),
     }
 }
