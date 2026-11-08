@@ -62,11 +62,24 @@ class StagingRegistryTests(unittest.TestCase):
         self.assertEqual((entry["vers"], entry["rust_version"]), ("0.1.0-alpha.3", "1.88"))
         json.dumps(entry)
 
+    def test_every_published_crate_is_staged_once_in_dependency_order(self):
+        order = [name for wave in staging.WAVES for name in wave]
+        self.assertEqual(len(order), len(set(order)))
+        self.assertEqual(set(order), {
+            "praevis-thetadata-auth", "praevis-thetadata-core", "praevis-thetadata-proto",
+            "praevis-thetadata-arrow", "praevis-thetadata-client", "praevis-thetadata-cli",
+            "praevis-thetadata-stream"})
+        before = lambda a, b: order.index(a) < order.index(b)  # noqa: E731
+        self.assertTrue(before("praevis-thetadata-arrow", "praevis-thetadata-client"))
+        self.assertTrue(before("praevis-thetadata-client", "praevis-thetadata-stream"))
+        self.assertNotIn("praevis-thetadata-py", order)
+
     def test_inspection_requires_license_files_and_rejects_secrets_and_artifacts(self):
         with tempfile.TemporaryDirectory() as directory:
             ok = staging.inspect(crate(directory, "praevis-thetadata-core", MANIFEST.replace("client", "core")))
             self.assertIn("NOTICE", ok["files"])
-            for bad in [("creds.txt", "x"), (".env", "x"), ("artifacts/live/a.json", "x"), ("x.whl", "x")]:
+            for bad in [("creds.txt", "x"), (".env", "x"), ("artifacts/live/a.json", "x"), ("x.whl", "x"),
+                        ("tests/cert.pem", "x"), ("server.key", "x"), ("id_ed25519", "x")]:
                 with self.subTest(bad=bad[0]), self.assertRaises(SystemExit):
                     staging.inspect(crate(directory, "praevis-thetadata-core", MANIFEST, [bad]))
             with self.assertRaises(SystemExit):  # proto must carry the upstream license

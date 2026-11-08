@@ -8,9 +8,9 @@ Nothing is uploaded and no registry token is read. Steps:
    file:// downloads. Dependencies on our packages stay in this registry, and
    third-party dependencies point to crates.io, exactly as a crates.io index
    entry would record them.
-3. Package wave 2 (arrow), then wave 3 (client, cli), resolving earlier waves'
-   packages from the staging registry through `[patch.crates-io]`, and stage
-   those archives too.
+3. Package wave 2 (arrow), wave 3 (client, cli) and wave 4 (stream),
+   resolving earlier waves' packages from the staging registry through
+   `[patch.crates-io]`, and stage those archives too.
 4. Inspect every archive: file lists, SHA-256, required license files and
    forbidden inputs.
 5. Copy consumer crates (tools/release-consumers) to a temporary directory
@@ -39,17 +39,22 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["package"]["version"]
-# The arrow crate (publish = false until a release decision) depends on core and
-# proto, and the client depends on it, so it is staged in a wave between them.
+# The publication order (docs/crates-io-release-plan.md). The arrow crate depends
+# on core and proto, and the client depends on it, so it is staged in a wave
+# between them. The stream crate has no internal dependencies, but its packaged
+# lockfile resolves its dev-dependency on the client, so it comes last.
 WAVES = [["praevis-thetadata-auth", "praevis-thetadata-core", "praevis-thetadata-proto"],
          ["praevis-thetadata-arrow"],
-         ["praevis-thetadata-client", "praevis-thetadata-cli"]]
+         ["praevis-thetadata-client", "praevis-thetadata-cli"],
+         ["praevis-thetadata-stream"]]
 OURS = {name for wave in WAVES for name in wave}
 CRATES_IO_INDEX = "https://github.com/rust-lang/crates.io-index"
 REGISTRY = "praevis-staging"
 REQUIRED = {"LICENSE", "NOTICE", "README.md", "Cargo.toml"}
 FORBIDDEN_PARTS = {"artifacts", "target", ".git"}
-FORBIDDEN_NAMES = {"creds.txt", ".env"}
+FORBIDDEN_NAMES = {"creds.txt", ".env", "id_rsa", "id_ed25519"}
+# Keys, certificates and credential stores never belong in an archive.
+FORBIDDEN_SUFFIXES = (".whl", ".credentials", ".zip", ".pem", ".key", ".p12", ".pfx", ".crt")
 CONSUMERS = ROOT / "tools/release-consumers"
 # ADR-0020: default auth (and therefore the client) must not pull native credential stores.
 NO_NATIVE_STORE = {"auth-consumer", "client-consumer"}
@@ -140,7 +145,7 @@ def inspect(archive):
     if manifest["package"]["name"] == "praevis-thetadata-proto" and "LICENSE.upstream" not in names:
         problems.append("LICENSE.upstream")
     forbidden = [n for n in names if FORBIDDEN_PARTS & set(Path(n).parts) or Path(n).name in FORBIDDEN_NAMES
-                 or Path(n).name.startswith(".env") or n.endswith((".whl", ".credentials", ".zip"))]
+                 or Path(n).name.startswith(".env") or n.endswith(FORBIDDEN_SUFFIXES)]
     if problems or forbidden:
         sys.exit(f"{Path(archive).name}: missing {problems}, forbidden {forbidden}")
     return {"archive": Path(archive).name, "sha256": hashlib.sha256(Path(archive).read_bytes()).hexdigest(),
