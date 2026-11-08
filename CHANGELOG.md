@@ -15,6 +15,21 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Added
+
+- **`Price::numeric_cmp` and `Price::numeric_eq`** (deferred item 5, for the
+  beta.1 freeze). They compare prices by value, exactly, whatever their
+  exponents: `123.45` and `123.4500` are numerically equal.
+  - **Sorting:** `prices.sort_by(Price::numeric_cmp)`.
+  - **How:** at a common exponent in `u128`, or, when the exponents are 10
+    or more apart, by magnitude, since an `i32` mantissa has at most 10
+    digits. So there's no overflow for any exponents.
+  - **Unchanged:** `==` stays representational, and `Price` deliberately
+    does not implement `Ord`, which would disagree with `Eq`.
+  - **Tests:** exact and extreme cases, and 20,000 pseudo-random wire-range
+    pairs checked against an independent scaling oracle. Moving the
+    shortcut's boundary fails them.
+
 ### Changed
 
 - **Breaking (pre-beta.1): per-call request options** (API change 4 of 5).
