@@ -53,6 +53,9 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     an error, never a silent overwrite.
   - **Exclusion:** `stream_raw` stays on plain tonic and is documented as
     excluded.
+  - **New `frame_alloc` example** (offline microbenchmark): a fresh
+    exact-capacity buffer per message against one reused buffer, to test
+    whether 2a's large-message cost comes from first-touch page faults.
 - **Alpha.3 publication recorded**
   ([record](docs/crates-io-release-plan.md#publication-record-010-alpha3)).
   It covers:
