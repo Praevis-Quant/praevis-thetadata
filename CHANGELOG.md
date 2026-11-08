@@ -32,6 +32,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     text. Other endpoints follow as their observed schemas are recorded;
     unregistered endpoints are unchanged.
   - **Recorded in:** an addendum to ADR-0009.
+- **56 more endpoints register their observed column kinds.**
+  - **Source:** the private Rust reports `opt-checks-001`, `opt-same-001`
+    (options PRO) and `p1-checks-001` (FREE). Names and Arrow types only,
+    each RPC citing its runs. There were no conflicts across runs and no
+    all-null columns.
+  - **Total:** 59 RPCs, with the calendar.
+  - **Recorded as observed:** the option flat files carry `strike` and
+    prices as text and `expiration` and `date` as numbers, unlike the query
+    endpoints.
 - **Closing or dropping a `Stream` now unsubscribes what it subscribed.**
   - **The defect:** before, it only closed the socket. The Terminal's
     subscriptions are shared by all its clients, and it does not document
