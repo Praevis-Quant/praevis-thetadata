@@ -81,31 +81,49 @@ Options are done. What remains:
 The option quote flat file (above) is the one option RPC left. It is gated
 on the user's go-ahead because of its size, not blocked.
 
-## Many workloads in one process (1000 concurrent workloads)
+## Out of scope: a shared data service for many consumers
 
-**Ahead of the beta.1 API freeze, because the fixes may change the API.**
-The user's target use case (2026-11-08) is 1,000 of the licensee's own
-workloads in one process.
+**Not part of this project** (user correction, 2026-11-08). This project
+replaces the official ThetaData Python package: one program's client,
+with no target of many concurrent workloads in one process. **No load
+tests are planned here.**
 
-The concerns below come **from reading the code, untested**. No design is
-selected, and load tests are to be discussed with the user first. Nothing
-is implemented now.
+**A future, separate project** may build a persistent shared data service
+on this library. Several services would read from it, or tap a stream at
+the same time, without pulling more data from the vendor. **That project
+would own:**
+- scheduling across consumers;
+- a read-ahead budget shared across jobs;
+- fairness between consumers;
+- how deadlines run while requests wait in a queue;
+- session handling.
+
+**The licence limits any such service to the licensee's own use.**
+ThetaData's subscriber agreement permits "internal personal use" only
+(Section 1(a) and Exhibit A), and forbids redistributing data or derived
+works (Section 8(e)) and sharing credentials. A shared service must
+therefore serve only the licensee and never other people
+([performance plan, H.2](architecture/performance-plan.md#h2-license-and-vendor-terms)).
+
+**What this library does today, for that project to start from.** These
+observations come **from reading the code and are untested**:
 1. **A paused consumer holds its scheduler slot** from open to the end of
-   its stream (`query.rs`, around line 117). Eight slow consumers can
-   stall every other workload at PRO's 8 slots.
+   its stream (`query.rs`, around line 117). At PRO's 8 slots, eight slow
+   consumers stall everything else.
 2. **The read-ahead is per job,** with no budget shared across jobs. Each
    job's configured worst case is 4 × concurrency parts × 2 batches × 8 MiB
    (32 × 2 × 8 MiB = 512 MiB at PRO), so many concurrent jobs multiply it.
 3. **There is no fairness between jobs.** Admission is one semaphore, and
    one job with a deep read-ahead can take every slot.
 4. **Queued requests' deadlines run while they wait.** The deadline is
-   fixed before admission, so time spent queued for a slot counts against
-   the request.
-5. **One session serves all workloads.** A single login, and a single
-   point of failure if it ends (`SessionEnded`).
+   fixed before admission, so time spent queued counts against the request.
+5. **One session serves everything.** A single login, and a single point of
+   failure if it ends (`SessionEnded`).
+6. **Many open streams can each assemble a message at once** (item 8 on
+   the query path: up to streams × `encoded_bytes`).
 
-These interact with item 8 (transport buffering): many open streams can
-each assemble a message at once.
+Item 8 (transport buffering) stays a beta.1 gate on its own merits, not
+for this use case.
 
 ## Real-time stream (W10): what remains
 

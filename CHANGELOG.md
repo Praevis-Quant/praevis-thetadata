@@ -17,6 +17,18 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **ROADMAP: the "many workloads in one process" section is now marked
+  out of scope** (user correction, 2026-11-08).
+  - **Why:** this project replaces the official Python package. A future,
+    separate shared data service built on this library would own
+    cross-consumer scheduling, a shared read-ahead budget, fairness,
+    deadlines while queued, and sessions.
+  - **The licence:** any such service is for the licensee's own use only
+    (Section 1(a), Exhibit A and Section 8(e)).
+  - **Kept:** the code-reading observations, still marked untested. No load
+    tests are planned.
+  - **Also corrected:** the 1,000-workload target is removed from the item
+    8 record. Item 8 stays a beta.1 gate on its own merits.
 - **`live_p0 sizes` reports each request's largest encoded message and a
   size histogram** (item 8, PR 0; manual, never CI). It shows how large the
   messages that `query()`/`job()` streams assemble really are.
