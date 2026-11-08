@@ -848,5 +848,8 @@
       "run": "opt-pro-entitlements-001",
       "uncertain": true
     }
+  },
+  "GetStockFlatFileQuote": {
+    "gated": true
   }
 }

@@ -16,6 +16,7 @@ import common  # noqa: E402
 import compare  # noqa: E402
 import live_checks  # noqa: E402
 import option_checks  # noqa: E402
+import stock_index_rate_checks  # noqa: E402
 import options_memory  # noqa: E402
 import options_ours  # noqa: E402
 
@@ -169,6 +170,39 @@ class Runners(unittest.TestCase):
                 query, parts = pt.describe(method, **kwargs)
                 self.assertEqual(parts, 1)
                 self.assertTrue(query)
+
+    def test_stock_index_rate_checks_cover_every_other_method_but_flat_files(self):
+        import datetime as dt
+
+        names = [vendor for vendor, _ in pt.endpoints()
+                 if vendor and not vendor.startswith("option_") and "flat_file" not in vendor]
+        checks = stock_index_rate_checks.requests(dt.date(2024, 6, 14))
+        self.assertEqual(sorted({m for m, _, _ in checks}), sorted(names))
+        self.assertEqual(len(names), 26)
+        # The calendar's 4 dates and 2 years make 30 requests, each labelled.
+        self.assertEqual(len(checks), 30)
+        labels = [label for m, _, label in checks if m in ("calendar_on_date", "calendar_year")]
+        self.assertEqual(labels, ["2025-11-05 (weekday)", "2025-11-08 (weekend)", "2025-12-25 (holiday)",
+                                  "2025-11-28 (early close)", "2025", "2026"])
+        for method, kwargs, _ in checks:
+            with self.subTest(method):
+                query, parts = pt.describe(method, **kwargs)
+                self.assertEqual(parts, 1)
+                self.assertTrue(query)
+
+    def test_calendar_rows_are_json_safe_and_exact(self):
+        import datetime as dt
+        import decimal
+
+        import pyarrow
+
+        table = pyarrow.table({"date": [dt.date(2025, 12, 25)], "open": [None],
+                               "price": pyarrow.array([decimal.Decimal("1.25")], pyarrow.decimal128(38, 10)),
+                               "is_open": [False], "n": [3]})
+        rows = stock_index_rate_checks.rows_as_json(table)
+        self.assertEqual(rows, [{"date": "2025-12-25", "open": None, "price": "1.2500000000",
+                                 "is_open": False, "n": 3}])
+        json.dumps(rows)
 
 
 if __name__ == "__main__":
