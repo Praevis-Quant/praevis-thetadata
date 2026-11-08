@@ -84,7 +84,64 @@ and the stock EOD slice until beta.1 freezes an API.
 | 5 | Numeric comparison/ordering helper for `Price` | **Pushed to beta.1.** It is a public API decision, so it belongs with the API freeze; alpha.3 does not change `Price` |
 | 6 | Desktop A/A tolerances | **Done** 2026-11-03 (1.05/0.95, [record](performance/eod-desktop-aa-results.md)) |
 | 7 | Deterministic schema-lease/job-permit release order | **Done** 2026-11-03 ([results](performance/eod-lease-order-results.md)) |
-| 8 (proposed) | Transport buffering outside the shared budget | **Not in alpha.3.** The root cause is known (tonic's per-RPC decode buffer) and option 2a is recommended, but the design decision is still open. It stays a `0.1.0` gate. Until then, only the client's own accounted allocations are described as bounded |
+| 8 | Transport buffering outside the shared budget | **Decision needed from the user** (below). On 2026-11-03 the user made alpha.3 wait on this item. Until it is resolved, only the client's own accounted allocations are described as bounded |
+
+### Item 8: decision needed
+
+**The 2026-11-03 decision.** The user made alpha.3 wait on item 8, and asked
+for the root cause and design alternatives rather than a cap: HTTP/2
+windows, streaming decode, zero-copy, and admission reservation.
+
+**The root cause and alternatives**
+([record](performance/eod-transport-buffering.md)):
+- **Root cause:** tonic's per-RPC decode buffer keeps about one encoded
+  message per open stream for the stream's lifetime.
+- **Alternatives measured:**
+  - **1, smaller windows:** no effect on the buffer.
+  - **3, zero-copy payload:** no peak change.
+  - **4, admission reservation:** it bounds memory by lowering concurrency.
+  - **2b, streaming decode:** not prototyped, high complexity.
+  - **2a, our own message framing:** recommended. Peak 128 MiB against 501
+    MiB at 16 streams of 24 MiB messages, in about 60 lines, with no public
+    API change. The benchmark gate was neutral (Linux 11-17% faster on
+    large messages, Windows up to about 8% slower in some cases).
+- **Status:** 2a stayed on hold under the performance plan, to be absorbed
+  into the columnar path.
+
+**What was learned since:**
+- **Not absorbed yet.** The new `query()`/`job()` path still receives
+  through `tonic::Streaming` with our codec, so tonic's buffer is still
+  there: up to one message of at most `encoded_bytes` (64 MiB by default)
+  per open stream.
+- **The W5 memory record was incomplete.** Its stated worst case (the
+  read-ahead, decoders, stream windows and one row group) left out this
+  term. At PRO's 8 streams that is up to 8 × 64 MiB = 512 MiB more in the
+  worst case. The record is corrected in this PR.
+- **The observed heap includes it:** the W5 runs' counting allocator saw
+  everything, and peaked at 103-182 MiB over 7 live runs of up to 26.6M
+  rows. Real messages are far below the 64 MiB limit.
+- **Unrelated memory problems were separate root causes:**
+  - The Parquet growth was the parquet 60.1 decimal-statistics bug
+    (arrow-rs#12027), not transport. It is worked around by default.
+  - The read-ahead is bounded by configuration.
+
+**The options for alpha.3:**
+
+| Option | What | Cost | Effect on the bound |
+| --- | --- | --- | --- |
+| **A. Ship alpha.3 with item 8 open, moved to beta.1** | Keep "only accounted allocations are bounded" everywhere, document the per-stream message term next to every ceiling, and resolve it before the beta.1 API freeze | none now | The stated ceilings stay accounted-only, with the tonic term named explicitly |
+| **B. Hold alpha.3 for option 2a** | Implement 2a in the `query()` and EOD paths (from `exp/transport-own-framing`), add a bound test, and run the before/after benchmark protocol and the memory runner on Windows and Linux | about 2 PRs plus a benchmark cycle; alpha.3 waits for the results | Memory bounded by configuration, including transport, pending the bound test |
+| **C. Hold alpha.3 for 2b** | Streaming decode into the Arrow builders | high; a new incremental parser over adversarial input | As B, minus about one message per active job |
+
+**Recommendation: A.**
+- **Why ship now:** alpha.3 is an experimental prerelease. The gap is now
+  documented precisely, with the wording kept, and real messages are
+  small. Whether 2a still costs up to 8% on Windows should be measured on
+  the new path without blocking the release.
+- **When to choose B instead:** if you want alpha.3 to claim a
+  configuration-bounded total for the query path.
+
+**This is the user's decision.** Alpha.3 does not publish until it is made.
 
 ### Crates and the publish set
 

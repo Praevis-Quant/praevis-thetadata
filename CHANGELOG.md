@@ -63,6 +63,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - a disposition for each deferred item;
   - the publish set in dependency order, with the two new crates (arrow,
     stream) and the unpublished Python crate.
+- **Item 8 (transport buffering) is put to the user as a decision for
+  alpha.3.** The user made alpha.3 wait on it on 2026-11-03.
+  - **What was found:** the new query path still keeps tonic's
+    per-stream message buffer.
+  - **Correction:** the W5 memory record's stated worst case omitted that
+    term (up to 8 × 64 MiB at PRO), and is corrected.
+  - **The options:** ship with it open and move it to beta.1 (recommended),
+    or hold alpha.3 for option 2a or 2b.
 - **The roadmap reflects where the project stands.** It now opens with the
   current state:
   - all 81 vendor wrappers exist as generated Rust requests and same-name
