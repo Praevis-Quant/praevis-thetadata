@@ -276,3 +276,75 @@ fn close_unsubscribes_what_is_still_subscribed() {
 fn drop_unsubscribes_what_is_still_subscribed() {
     assert_unsubscribed_before_close(&subscribe_and_end(false));
 }
+
+// The handles' thread-safety, checked at compile time.
+const _: () = {
+    const fn send_sync<T: Send + Sync>() {}
+    const fn send<T: Send>() {}
+    const fn clone<T: Clone>() {}
+    send_sync::<praevis_thetadata_stream::StreamControl>();
+    clone::<praevis_thetadata_stream::StreamControl>();
+    send::<praevis_thetadata_stream::StreamEvents>();
+    send::<Stream>();
+};
+
+#[test]
+fn one_thread_subscribes_while_another_waits_for_events() {
+    // The server waits for the subscription, then sends a quote.
+    let (url, requests) = server(vec![QUOTE.into()], 1);
+    let (control, events) = Stream::connect(Options::default().with_url(url))
+        .unwrap()
+        .split();
+    let consumer = std::thread::spawn(move || {
+        // Blocks here, before anything is subscribed.
+        let event = events.recv_timeout(Duration::from_secs(10));
+        (event.map(|e| e.kind), events)
+    });
+    std::thread::sleep(Duration::from_millis(100));
+    let other = control.clone();
+    std::thread::spawn(move || other.subscribe_quotes(&spy()).unwrap())
+        .join()
+        .unwrap();
+    let sent = requests.recv_timeout(Duration::from_secs(5)).unwrap();
+    assert!(sent.contains(r#""add":true"#), "{sent}");
+    let (kind, events) = consumer.join().unwrap();
+    assert!(matches!(kind, Some(Kind::Quote { .. })), "{kind:?}");
+    assert_eq!(control.stats().quotes, 1);
+    drop(events);
+}
+
+#[test]
+fn dropping_the_events_closes_the_stream_and_unsubscribes_first() {
+    let (url, requests) = recording_server();
+    let (control, events) = Stream::connect(Options::default().with_url(url))
+        .unwrap()
+        .split();
+    control.subscribe_quotes(&spy()).unwrap();
+    // The consumer goes away while the control handle lives on.
+    drop(events);
+    let seen = requests_until_close(&requests);
+    assert_eq!(seen.len(), 3, "{seen:?}");
+    assert!(seen[1].contains(r#""add":false"#) && seen[1].contains("SPY"));
+    assert_eq!(seen[2], "CLOSE");
+    // The stream is closed for every handle; closing again is harmless.
+    assert!(matches!(
+        control.subscribe_quotes(&spy()),
+        Err(StreamError::Closed)
+    ));
+    let _ = control.close();
+}
+
+#[test]
+fn closing_through_a_control_handle_unsubscribes_before_the_close_frame() {
+    let (url, requests) = recording_server();
+    let (control, _events) = Stream::connect(Options::default().with_url(url))
+        .unwrap()
+        .split();
+    control.subscribe_full_trades().unwrap();
+    let closer = control.clone();
+    std::thread::spawn(move || closer.close()).join().unwrap();
+    let seen = requests_until_close(&requests);
+    assert_eq!(seen.len(), 3, "{seen:?}");
+    assert!(seen[1].contains("STREAM_BULK") && seen[1].contains(r#""add":false"#));
+    assert_eq!(seen[2], "CLOSE");
+}
