@@ -166,8 +166,9 @@ bypass. Use the
 dependency costs before extracting further crates.
 
 **crates.io follow-ups:**
-- add a backup crates.io owner;
-- fix the CLI package description wording at the next release.
+- add a backup crates.io owner.
+
+(The CLI description fix shipped with alpha.2.)
 
 **Python package before a first publish:**
 - packaging and wheels;

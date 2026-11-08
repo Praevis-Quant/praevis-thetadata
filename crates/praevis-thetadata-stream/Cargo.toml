@@ -5,10 +5,15 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-# Not published: the real-time slice is unreleased (W10, ADR-0018 note).
-publish = false
-description = "Real-time option events from an operator-run Theta Terminal's local WebSocket, parsed without allocation"
+# Published from alpha.3 (user decision 2026-11-07), experimental.
+publish.workspace = true
+description = "Experimental: real-time option events from an operator-run Theta Terminal's local WebSocket, parsed without allocation (independent, unofficial)"
 readme = "README.md"
+documentation = "https://docs.rs/praevis-thetadata-stream"
+keywords = ["thetadata", "websocket", "market-data", "options", "real-time"]
+categories = ["finance", "network-programming"]
+# The examples are manual live tools that need the client and a Terminal.
+exclude = ["examples/"]
 
 [dependencies]
 # Approved by the user on 2026-11-05 (the WebSocket client, real-time path
