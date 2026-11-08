@@ -1,13 +1,88 @@
 # crates.io prerelease plan
 
 Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
-(2026-11-01 US time) and `0.1.0-alpha.2` on 2026-11-03 UTC, each after owner
-approval. The plan below is retained as the preparation record. Publishing
+(2026-11-01 US time), `0.1.0-alpha.2` on 2026-11-03 UTC and `0.1.0-alpha.3`
+on 2026-11-08, each after owner approval. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
+
+## Publication record: 0.1.0-alpha.3
+
+**Published 2026-11-08,** approved by the user the same day (decision A on
+item 8: published with it open). The owner ran `cargo publish` locally on
+Windows from clean `main` at
+`7402533404ad7fb91be751d9320910f802ada055` (#124). The token was never in
+argv or logs.
+
+**Order:** proto, core, auth, arrow, client, cli, stream. Each upload exited
+0, and cargo waited for the index before the next. All seven registry
+checksums match the local `.crate` files. None is yanked. The publisher is
+`joey-huckabee`.
+
+| Crate | `.crate` SHA-256 (registry = local = downloaded) |
+| --- | --- |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.0-alpha.3) | `2aa08851c418e7798d16b4e76cee5518fdf9440dfd27a34bca6dfe46a2b29295` |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.0-alpha.3) | `d87d79e9cddaf302b1636c13a6796d09b8b5217dceadf69137f97c83ad0f5033` |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.0-alpha.3) | `dca696c193f1f4d089346883f39746bb5065e207cddf3c41c475db78a6cbced0` |
+| [`praevis-thetadata-arrow`](https://crates.io/crates/praevis-thetadata-arrow/0.1.0-alpha.3) (**new**) | `56504d88baeb343ca2858c71df3c82ed1e12b80467d41fcf5d95eceb8b5fde64` |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.0-alpha.3) | `9d84a8e68dcc8746ec18da56a3ea7a011f10c7b95fd5a8d1f453e97826b04597` |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.0-alpha.3) | `7d0c2f2fbc5d7546b34c7f98535f731c6451408407c279ead5f4d561e09cdb86` |
+| [`praevis-thetadata-stream`](https://crates.io/crates/praevis-thetadata-stream/0.1.0-alpha.3) (**new**) | `81c730c5fe178bd6997f0aa1055e68373a167055ba2bc9a4fd036ad0710561c6` |
+
+`praevis-thetadata-py` is not published.
+
+**Tag and release:**
+- **Tag:** annotated `v0.1.0-alpha.3`, tag object `8f457308db47`, pointing
+  to `7402533`.
+- **Release:** the
+  [GitHub pre-release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-alpha.3),
+  its body taken from the [release draft](release-draft-0.1.0-alpha.3.md).
+- **Not on PyPI.**
+- **Assets:** the wheels from CI run 42450063300 on `7402533`, a run that
+  passed and smoke-imported each wheel in a clean environment:
+
+| Asset | SHA-256 |
+| --- | --- |
+| `praevis_thetadata-0.1.0a3-cp310-abi3-manylinux_2_28_x86_64.whl` | `a0ee5f5a827052b80c1144dcae7ffb31c1cc18d26a6ffc840656383e3d199c06` |
+| `praevis_thetadata-0.1.0a3-cp310-abi3-win_amd64.whl` | `e3251ab30c2389adecf126d6c8ce634b2c5a1315b8ff9d0ca555df8c0ce6bd0e` |
+
+**Post-publication checks, Windows (owner):**
+- `cargo install praevis-thetadata-cli --version 0.1.0-alpha.3 --locked`
+  printed `praevis-thetadata 0.1.0-alpha.3`.
+- `pip install` of the win_amd64 wheel from the release URL into a clean
+  venv imported it: `__version__` `0.1.0-alpha.3`, 81 vendor-named methods.
+
+**Post-publication checks, Linux (the agent's sandbox, aarch64, 2026-11-08):**
+- **The CLI:** `cargo install praevis-thetadata-cli --version 0.1.0-alpha.3
+  --locked` from crates.io built and printed `praevis-thetadata
+  0.1.0-alpha.3`.
+- **The crates:** all seven `.crate` files downloaded from crates.io match
+  the SHA-256 values above and the crates.io index, and none is yanked.
+- **Crates.io-only consumers:** copies of `tools/release-consumers` with
+  the staging registry removed built and ran:
+  - `proto` (100 RPCs), `core`, `auth`, `auth-store` (native store) and
+    `client`;
+  - the new **`arrow`** (an exact decimal and a typed all-null column) and
+    **`stream`** (a parsed quote).
+
+  The default `auth` and `client` pull no keyring or D-Bus packages.
+- **The Linux wheel was not installed:** the sandbox is aarch64 and the
+  wheel is x86_64. It was verified instead:
+  - the release asset matches its SHA-256 and is byte-identical to the CI
+    artifact of run 42450063300, which installed and imported this exact
+    file in a clean environment;
+  - its tag is `cp310-abi3-manylinux_2_28_x86_64` (version `0.1.0a3`,
+    Python ≥ 3.10);
+  - its native library needs at most `GLIBC_2.28` and links only libc,
+    libm, libpthread, libdl and libgcc_s;
+  - it holds no files beyond the package, metadata, licenses and SBOM.
+
+**docs.rs:** proto, core, auth, arrow, client and stream built. The CLI has
+no documentation build, which is expected: it is a binary-only crate (no
+library), as in alpha.2.
 
 ## Alpha.3 publication checklist and order (prepared 2026-11-08)
 
-Not executed. It runs only after the user explicitly approves publication.
+**Executed 2026-11-08** (record above). Kept as the preparation record.
 The user runs `cargo publish` locally, with the token never in argv or
 logs. Scope: [alpha.3 scope record](releases.md#alpha3-scope-record-2026-11-08).
 

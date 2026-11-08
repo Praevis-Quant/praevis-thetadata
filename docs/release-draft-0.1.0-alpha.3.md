@@ -1,10 +1,10 @@
-# GitHub release draft: v0.1.0-alpha.3 (not published)
+# GitHub release draft: v0.1.0-alpha.3 (published)
 
-Status: **draft text only.** Nothing is published, tagged or created on
-GitHub. After the user approves publication and the crates are on
-crates.io (see the [publication checklist](crates-io-release-plan.md#alpha3-publication-checklist-and-order-prepared-2026-11-08)),
-the owner creates the release from this text on the `v0.1.0-alpha.3` tag
-and attaches the two wheels from the CI run of the published commit.
+Status: **published 2026-11-08** as the
+[v0.1.0-alpha.3 pre-release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-alpha.3),
+its body taken from this text, with the two wheels from CI run 42450063300
+on `7402533` ([publication record](crates-io-release-plan.md#publication-record-010-alpha3)).
+The text below is kept as drafted.
 
 **To fill in at publication:**
 - the date;
