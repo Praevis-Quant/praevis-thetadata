@@ -362,6 +362,13 @@ path** (`job()` to Parquet, the Rust heap):
 
   Peaks reach this only if one request stalls long enough for every other
   open part to fill.
+- **Correction (2026-11-08): one term was missing.** tonic's per-RPC decode
+  buffer keeps up to one encoded message per open stream (item 8, at most
+  `encoded_bytes`, 64 MiB by default). That is up to 8 × 64 MiB = 512 MiB
+  more in the worst case at PRO. The observed peaks above include it,
+  because the counting allocator sees it, and real messages are far smaller.
+  It is outside our accounting until item 8 is resolved
+  ([decision](../releases.md#item-8-decision-needed)).
 - **Not bounded:**
   - Parquet footer metadata, about **13 KB per row group**, held until the
     file closes. It grows with the file (about 0.1 MiB per million rows at
