@@ -361,6 +361,31 @@ Every item must be reviewed before the auth/EOD API is frozen at `0.1.0-beta.1`.
 
 - [ ] **`Price` numeric comparison/ordering helper** (deferred item 5). Add or
       reject it explicitly; equality stays representational, with per-value scale.
+- [x] **Room to grow without breaking (user-approved API change 1 of 5,
+      2026-11-08).** The rules:
+      - **Enums are `#[non_exhaustive]`:** every public error, kind, status and
+        policy enum (`QueryError`, `DecodeError`, `SinkError`, `AuthError`,
+        `StoreError`, `DataError`, `StreamError`, `Kind`, `Status`, `Response`,
+        `Overflow`, `Tier`, `Split`, `Stability`, `Expiration`, `TimeOfDay`,
+        `ColumnKind`, `Credentials`, `Environment`, `Value`, `BatchValue`,
+        `TimeZone`, `Error` and `ParquetOutputError`).
+      - **Output structs are `#[non_exhaustive]`:** `User`, `ParquetSummary`,
+        `Stats`, `Quote`, `Trade`, `Event` and `EndpointInfo`.
+      - **Configuration structs are `#[non_exhaustive]` with one `with_<field>`
+        setter per field:** `ClientConfig`, `BatchPolicy`, `EodPolicy`,
+        `SchedulerPolicy`, `DecodeLimits`, `ParquetOptions`, `Limits`,
+        `AuthConfig` and the stream's `Options`. Build them with
+        `Type::default().with_x(…)`. Assigning a field after `default()` also
+        still works.
+      - **All 100 generated requests are `#[non_exhaustive]`.** Wrapper
+        requests already had `new` and builders; descriptor-only requests now
+        get one setter per field.
+      - **Deliberately left plain:**
+        - `Right` (an option is only ever a call or a put);
+        - the value types `Contract`, `Root` and both `Price` types, whose
+          shape is fixed by what they are;
+        - `Table`, the complete legacy shape;
+        - structs with only private fields, which are already closed.
 - [ ] Accept or revise the applicable proposed ADRs.
 - [ ] Requirement-to-test/evidence review of the declared surface.
 - [ ] Partial-result and cancellation consumer examples.

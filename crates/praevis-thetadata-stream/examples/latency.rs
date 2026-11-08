@@ -526,10 +526,7 @@ fn main() -> std::process::ExitCode {
             return std::process::ExitCode::FAILURE;
         }
     };
-    let stream = match Stream::connect(Options {
-        capacity: cli.capacity,
-        ..Default::default()
-    }) {
+    let stream = match Stream::connect(Options::default().with_capacity(cli.capacity)) {
         Ok(stream) => stream,
         Err(error) => {
             eprintln!("stream: {error}");

@@ -8,6 +8,7 @@ use chrono::NaiveDate;
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockListSymbols {
 }
 impl StockListSymbols {
@@ -48,6 +49,7 @@ impl Endpoint for StockListSymbols {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockListDates {
     /// `request_type: str` (required).
     pub request_type: String,
@@ -96,6 +98,7 @@ impl Endpoint for StockListDates {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockSnapshotOhlc {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -175,6 +178,7 @@ impl Endpoint for StockSnapshotOhlc {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockSnapshotTrade {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -254,6 +258,7 @@ impl Endpoint for StockSnapshotTrade {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockSnapshotQuote {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -333,6 +338,7 @@ impl Endpoint for StockSnapshotQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockSnapshotMarketValue {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -412,6 +418,7 @@ impl Endpoint for StockSnapshotMarketValue {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockHistoryEod {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -475,6 +482,7 @@ impl Endpoint for StockHistoryEod {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockHistoryOhlc {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -614,6 +622,7 @@ impl Endpoint for StockHistoryOhlc {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockHistoryTrade {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -743,6 +752,7 @@ impl Endpoint for StockHistoryTrade {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockHistoryQuote {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -882,6 +892,7 @@ impl Endpoint for StockHistoryQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockHistoryTradeQuote {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -1035,6 +1046,7 @@ impl Endpoint for StockHistoryTradeQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockAtTimeTrade {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -1113,6 +1125,7 @@ impl Endpoint for StockAtTimeTrade {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockAtTimeQuote {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -1191,6 +1204,7 @@ impl Endpoint for StockAtTimeQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionListSymbols {
 }
 impl OptionListSymbols {
@@ -1231,6 +1245,7 @@ impl Endpoint for OptionListSymbols {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionListDates {
     /// `request_type: str` (required).
     pub request_type: String,
@@ -1301,6 +1316,7 @@ impl Endpoint for OptionListDates {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionListExpirations {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -1345,6 +1361,7 @@ impl Endpoint for OptionListExpirations {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionListStrikes {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -1393,6 +1410,7 @@ impl Endpoint for OptionListStrikes {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionListContracts {
     /// `request_type: str` (required).
     pub request_type: String,
@@ -1465,6 +1483,7 @@ impl Endpoint for OptionListContracts {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotOhlc {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -1579,6 +1598,7 @@ impl Endpoint for OptionSnapshotOhlc {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotTrade {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -1681,6 +1701,7 @@ impl Endpoint for OptionSnapshotTrade {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotQuote {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -1795,6 +1816,7 @@ impl Endpoint for OptionSnapshotQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotOpenInterest {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -1909,6 +1931,7 @@ impl Endpoint for OptionSnapshotOpenInterest {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotMarketValue {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -2023,6 +2046,7 @@ impl Endpoint for OptionSnapshotMarketValue {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotGreeksImpliedVolatility {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -2221,6 +2245,7 @@ impl Endpoint for OptionSnapshotGreeksImpliedVolatility {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotGreeksAll {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -2419,6 +2444,7 @@ impl Endpoint for OptionSnapshotGreeksAll {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotBinomialGreeksAll {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -2653,6 +2679,7 @@ impl Endpoint for OptionSnapshotBinomialGreeksAll {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotGreeksFirstOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -2851,6 +2878,7 @@ impl Endpoint for OptionSnapshotGreeksFirstOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotBinomialGreeksFirstOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -3085,6 +3113,7 @@ impl Endpoint for OptionSnapshotBinomialGreeksFirstOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotGreeksSecondOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -3283,6 +3312,7 @@ impl Endpoint for OptionSnapshotGreeksSecondOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotBinomialGreeksSecondOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -3517,6 +3547,7 @@ impl Endpoint for OptionSnapshotBinomialGreeksSecondOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotGreeksThirdOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -3715,6 +3746,7 @@ impl Endpoint for OptionSnapshotGreeksThirdOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionSnapshotBinomialGreeksThirdOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -3949,6 +3981,7 @@ impl Endpoint for OptionSnapshotBinomialGreeksThirdOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryEod {
     /// `start_date: datetime.date` (required).
     pub start_date: NaiveDate,
@@ -4058,6 +4091,7 @@ impl Endpoint for OptionHistoryEod {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryOhlc {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -4220,6 +4254,7 @@ impl Endpoint for OptionHistoryOhlc {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryTrade {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -4384,6 +4419,7 @@ impl Endpoint for OptionHistoryTrade {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryQuote {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -4558,6 +4594,7 @@ impl Endpoint for OptionHistoryQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryTradeQuote {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -4746,6 +4783,7 @@ impl Endpoint for OptionHistoryTradeQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryOpenInterest {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -4886,6 +4924,7 @@ impl Endpoint for OptionHistoryOpenInterest {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryGreeksEod {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -5079,6 +5118,7 @@ impl Endpoint for OptionHistoryGreeksEod {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryBinomialGreeksEod {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -5308,6 +5348,7 @@ impl Endpoint for OptionHistoryBinomialGreeksEod {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryGreeksAll {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -5530,6 +5571,7 @@ impl Endpoint for OptionHistoryGreeksAll {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryBinomialGreeksAll {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -5788,6 +5830,7 @@ impl Endpoint for OptionHistoryBinomialGreeksAll {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryTradeGreeksAll {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -6024,6 +6067,7 @@ impl Endpoint for OptionHistoryTradeGreeksAll {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryBinomialTradeGreeksAll {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -6284,6 +6328,7 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksAll {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryGreeksFirstOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -6506,6 +6551,7 @@ impl Endpoint for OptionHistoryGreeksFirstOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryBinomialGreeksFirstOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -6764,6 +6810,7 @@ impl Endpoint for OptionHistoryBinomialGreeksFirstOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryTradeGreeksFirstOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -7000,6 +7047,7 @@ impl Endpoint for OptionHistoryTradeGreeksFirstOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryBinomialTradeGreeksFirstOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -7260,6 +7308,7 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksFirstOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryGreeksSecondOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -7482,6 +7531,7 @@ impl Endpoint for OptionHistoryGreeksSecondOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryBinomialGreeksSecondOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -7740,6 +7790,7 @@ impl Endpoint for OptionHistoryBinomialGreeksSecondOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryTradeGreeksSecondOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -7976,6 +8027,7 @@ impl Endpoint for OptionHistoryTradeGreeksSecondOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryBinomialTradeGreeksSecondOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -8236,6 +8288,7 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksSecondOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryGreeksThirdOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -8458,6 +8511,7 @@ impl Endpoint for OptionHistoryGreeksThirdOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryBinomialGreeksThirdOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -8716,6 +8770,7 @@ impl Endpoint for OptionHistoryBinomialGreeksThirdOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryTradeGreeksThirdOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -8952,6 +9007,7 @@ impl Endpoint for OptionHistoryTradeGreeksThirdOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryBinomialTradeGreeksThirdOrder {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -9212,6 +9268,7 @@ impl Endpoint for OptionHistoryBinomialTradeGreeksThirdOrder {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryGreeksImpliedVolatility {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -9434,6 +9491,7 @@ impl Endpoint for OptionHistoryGreeksImpliedVolatility {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionHistoryTradeGreeksImpliedVolatility {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -9670,6 +9728,7 @@ impl Endpoint for OptionHistoryTradeGreeksImpliedVolatility {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionAtTimeTrade {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -9783,6 +9842,7 @@ impl Endpoint for OptionAtTimeTrade {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionAtTimeQuote {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -9896,6 +9956,7 @@ impl Endpoint for OptionAtTimeQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexListSymbols {
 }
 impl IndexListSymbols {
@@ -9936,6 +9997,7 @@ impl Endpoint for IndexListSymbols {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexListDates {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -9979,6 +10041,7 @@ impl Endpoint for IndexListDates {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexSnapshotOhlc {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -10046,6 +10109,7 @@ impl Endpoint for IndexSnapshotOhlc {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexSnapshotPrice {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -10113,6 +10177,7 @@ impl Endpoint for IndexSnapshotPrice {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexSnapshotMarketValue {
     /// `symbol: Union[List[str], str]` (required).
     pub symbol: Symbols,
@@ -10180,6 +10245,7 @@ impl Endpoint for IndexSnapshotMarketValue {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexHistoryEod {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -10243,6 +10309,7 @@ impl Endpoint for IndexHistoryEod {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexHistoryOhlc {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -10339,6 +10406,7 @@ impl Endpoint for IndexHistoryOhlc {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexHistoryPrice {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -10466,6 +10534,7 @@ impl Endpoint for IndexHistoryPrice {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexAtTimePrice {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -10532,6 +10601,7 @@ impl Endpoint for IndexAtTimePrice {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct CalendarOpenToday {
 }
 impl CalendarOpenToday {
@@ -10572,6 +10642,7 @@ impl Endpoint for CalendarOpenToday {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct CalendarOnDate {
     /// `date: datetime.date` (required).
     pub date: NaiveDate,
@@ -10616,6 +10687,7 @@ impl Endpoint for CalendarOnDate {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct CalendarYear {
     /// `year: str` (required).
     pub year: String,
@@ -10660,6 +10732,7 @@ impl Endpoint for CalendarYear {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct InterestRateHistoryEod {
     /// `symbol: str` (required).
     pub symbol: String,
@@ -10721,10 +10794,31 @@ impl Endpoint for InterestRateHistoryEod {
 /// RPC `GetCorporateActionDividend`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct CorporateActionDividend {
     pub symbol: String,
     pub start_date: String,
     pub end_date: String,
+}
+impl CorporateActionDividend {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: String) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: String) -> Self {
+        self.end_date = value;
+        self
+    }
 }
 impl Endpoint for CorporateActionDividend {
     const RPC: &'static str = "GetCorporateActionDividend";
@@ -10758,10 +10852,31 @@ impl Endpoint for CorporateActionDividend {
 /// RPC `GetCorporateActionSplit`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct CorporateActionSplit {
     pub symbol: String,
     pub start_date: String,
     pub end_date: String,
+}
+impl CorporateActionSplit {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: String) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: String) -> Self {
+        self.end_date = value;
+        self
+    }
 }
 impl Endpoint for CorporateActionSplit {
     const RPC: &'static str = "GetCorporateActionSplit";
@@ -10797,6 +10912,7 @@ impl Endpoint for CorporateActionSplit {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionFlatFileTradeQuote {
     /// `date: datetime.date` (required).
     pub date: NaiveDate,
@@ -10841,6 +10957,7 @@ impl Endpoint for OptionFlatFileTradeQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionFlatFileEod {
     /// `date: datetime.date` (required).
     pub date: NaiveDate,
@@ -10885,6 +11002,7 @@ impl Endpoint for OptionFlatFileEod {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionFlatFileOpenInterest {
     /// `date: datetime.date` (required).
     pub date: NaiveDate,
@@ -10929,6 +11047,7 @@ impl Endpoint for OptionFlatFileOpenInterest {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct OptionFlatFileQuote {
     /// `date: datetime.date` (required).
     pub date: NaiveDate,
@@ -10972,6 +11091,7 @@ impl Endpoint for OptionFlatFileQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockFlatFileTradeQuote {
     /// `date: datetime.date` (required).
     pub date: NaiveDate,
@@ -11015,6 +11135,7 @@ impl Endpoint for StockFlatFileTradeQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockFlatFileEod {
     /// `date: datetime.date` (required).
     pub date: NaiveDate,
@@ -11058,6 +11179,7 @@ impl Endpoint for StockFlatFileEod {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct StockFlatFileQuote {
     /// `date: datetime.date` (required).
     pub date: NaiveDate,
@@ -11101,6 +11223,7 @@ impl Endpoint for StockFlatFileQuote {
 /// Required arguments are constructor parameters, in vendor order; optional
 /// ones start at the vendor defaults and are set with the builder methods.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct IndexFlatFileEod {
     /// `date: datetime.date` (required).
     pub date: NaiveDate,
@@ -11142,8 +11265,17 @@ impl Endpoint for IndexFlatFileEod {
 /// RPC `GetFutureListSymbols`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureListSymbols {
     pub r#type: Option<String>,
+}
+impl FutureListSymbols {
+    /// Set `r#type`.
+    #[must_use]
+    pub fn r#type(mut self, value: Option<String>) -> Self {
+        self.r#type = value;
+        self
+    }
 }
 impl Endpoint for FutureListSymbols {
     const RPC: &'static str = "GetFutureListSymbols";
@@ -11175,9 +11307,24 @@ impl Endpoint for FutureListSymbols {
 /// RPC `GetFutureListDates`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureListDates {
     pub request_type: String,
     pub symbol: Vec<String>,
+}
+impl FutureListDates {
+    /// Set `request_type`.
+    #[must_use]
+    pub fn request_type(mut self, value: String) -> Self {
+        self.request_type = value;
+        self
+    }
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: Vec<String>) -> Self {
+        self.symbol = value;
+        self
+    }
 }
 impl Endpoint for FutureListDates {
     const RPC: &'static str = "GetFutureListDates";
@@ -11210,6 +11357,7 @@ impl Endpoint for FutureListDates {
 /// RPC `GetFutureHistoryTrade`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureHistoryTrade {
     pub symbol: String,
     pub date: Option<String>,
@@ -11218,6 +11366,50 @@ pub struct FutureHistoryTrade {
     pub end_time: Option<String>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
+}
+impl FutureHistoryTrade {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `date`.
+    #[must_use]
+    pub fn date(mut self, value: Option<String>) -> Self {
+        self.date = value;
+        self
+    }
+    /// Set `date_type`.
+    #[must_use]
+    pub fn date_type(mut self, value: Option<String>) -> Self {
+        self.date_type = value;
+        self
+    }
+    /// Set `start_time`.
+    #[must_use]
+    pub fn start_time(mut self, value: Option<String>) -> Self {
+        self.start_time = value;
+        self
+    }
+    /// Set `end_time`.
+    #[must_use]
+    pub fn end_time(mut self, value: Option<String>) -> Self {
+        self.end_time = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: Option<String>) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: Option<String>) -> Self {
+        self.end_date = value;
+        self
+    }
 }
 impl Endpoint for FutureHistoryTrade {
     const RPC: &'static str = "GetFutureHistoryTrade";
@@ -11255,6 +11447,7 @@ impl Endpoint for FutureHistoryTrade {
 /// RPC `GetFutureHistoryBbo`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureHistoryBbo {
     pub symbol: String,
     pub date: Option<String>,
@@ -11264,6 +11457,56 @@ pub struct FutureHistoryBbo {
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     pub interval: Option<String>,
+}
+impl FutureHistoryBbo {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `date`.
+    #[must_use]
+    pub fn date(mut self, value: Option<String>) -> Self {
+        self.date = value;
+        self
+    }
+    /// Set `date_type`.
+    #[must_use]
+    pub fn date_type(mut self, value: Option<String>) -> Self {
+        self.date_type = value;
+        self
+    }
+    /// Set `start_time`.
+    #[must_use]
+    pub fn start_time(mut self, value: Option<String>) -> Self {
+        self.start_time = value;
+        self
+    }
+    /// Set `end_time`.
+    #[must_use]
+    pub fn end_time(mut self, value: Option<String>) -> Self {
+        self.end_time = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: Option<String>) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: Option<String>) -> Self {
+        self.end_date = value;
+        self
+    }
+    /// Set `interval`.
+    #[must_use]
+    pub fn interval(mut self, value: Option<String>) -> Self {
+        self.interval = value;
+        self
+    }
 }
 impl Endpoint for FutureHistoryBbo {
     const RPC: &'static str = "GetFutureHistoryBbo";
@@ -11302,6 +11545,7 @@ impl Endpoint for FutureHistoryBbo {
 /// RPC `GetFutureHistoryTradeBbo`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureHistoryTradeBbo {
     pub symbol: String,
     pub date: Option<String>,
@@ -11311,6 +11555,56 @@ pub struct FutureHistoryTradeBbo {
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     pub exclusive: Option<bool>,
+}
+impl FutureHistoryTradeBbo {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `date`.
+    #[must_use]
+    pub fn date(mut self, value: Option<String>) -> Self {
+        self.date = value;
+        self
+    }
+    /// Set `date_type`.
+    #[must_use]
+    pub fn date_type(mut self, value: Option<String>) -> Self {
+        self.date_type = value;
+        self
+    }
+    /// Set `start_time`.
+    #[must_use]
+    pub fn start_time(mut self, value: Option<String>) -> Self {
+        self.start_time = value;
+        self
+    }
+    /// Set `end_time`.
+    #[must_use]
+    pub fn end_time(mut self, value: Option<String>) -> Self {
+        self.end_time = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: Option<String>) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: Option<String>) -> Self {
+        self.end_date = value;
+        self
+    }
+    /// Set `exclusive`.
+    #[must_use]
+    pub fn exclusive(mut self, value: Option<bool>) -> Self {
+        self.exclusive = value;
+        self
+    }
 }
 impl Endpoint for FutureHistoryTradeBbo {
     const RPC: &'static str = "GetFutureHistoryTradeBbo";
@@ -11349,6 +11643,7 @@ impl Endpoint for FutureHistoryTradeBbo {
 /// RPC `GetFutureHistoryOhlc`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureHistoryOhlc {
     pub symbol: String,
     pub date: Option<String>,
@@ -11358,6 +11653,56 @@ pub struct FutureHistoryOhlc {
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     pub interval: Option<String>,
+}
+impl FutureHistoryOhlc {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `date`.
+    #[must_use]
+    pub fn date(mut self, value: Option<String>) -> Self {
+        self.date = value;
+        self
+    }
+    /// Set `date_type`.
+    #[must_use]
+    pub fn date_type(mut self, value: Option<String>) -> Self {
+        self.date_type = value;
+        self
+    }
+    /// Set `start_time`.
+    #[must_use]
+    pub fn start_time(mut self, value: Option<String>) -> Self {
+        self.start_time = value;
+        self
+    }
+    /// Set `end_time`.
+    #[must_use]
+    pub fn end_time(mut self, value: Option<String>) -> Self {
+        self.end_time = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: Option<String>) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: Option<String>) -> Self {
+        self.end_date = value;
+        self
+    }
+    /// Set `interval`.
+    #[must_use]
+    pub fn interval(mut self, value: Option<String>) -> Self {
+        self.interval = value;
+        self
+    }
 }
 impl Endpoint for FutureHistoryOhlc {
     const RPC: &'static str = "GetFutureHistoryOhlc";
@@ -11396,10 +11741,31 @@ impl Endpoint for FutureHistoryOhlc {
 /// RPC `GetFutureHistoryEod`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureHistoryEod {
     pub symbol: String,
     pub start_date: String,
     pub end_date: String,
+}
+impl FutureHistoryEod {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: String) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: String) -> Self {
+        self.end_date = value;
+        self
+    }
 }
 impl Endpoint for FutureHistoryEod {
     const RPC: &'static str = "GetFutureHistoryEod";
@@ -11433,10 +11799,31 @@ impl Endpoint for FutureHistoryEod {
 /// RPC `GetFutureHistorySettlement`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureHistorySettlement {
     pub symbol: String,
     pub start_date: String,
     pub end_date: String,
+}
+impl FutureHistorySettlement {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: String) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: String) -> Self {
+        self.end_date = value;
+        self
+    }
 }
 impl Endpoint for FutureHistorySettlement {
     const RPC: &'static str = "GetFutureHistorySettlement";
@@ -11470,11 +11857,38 @@ impl Endpoint for FutureHistorySettlement {
 /// RPC `GetFutureAtTimeTrade`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureAtTimeTrade {
     pub symbol: String,
     pub start_date: String,
     pub end_date: String,
     pub time_of_day: String,
+}
+impl FutureAtTimeTrade {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: String) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: String) -> Self {
+        self.end_date = value;
+        self
+    }
+    /// Set `time_of_day`.
+    #[must_use]
+    pub fn time_of_day(mut self, value: String) -> Self {
+        self.time_of_day = value;
+        self
+    }
 }
 impl Endpoint for FutureAtTimeTrade {
     const RPC: &'static str = "GetFutureAtTimeTrade";
@@ -11509,11 +11923,38 @@ impl Endpoint for FutureAtTimeTrade {
 /// RPC `GetFutureAtTimeBbo`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureAtTimeBbo {
     pub symbol: String,
     pub start_date: String,
     pub end_date: String,
     pub time_of_day: String,
+}
+impl FutureAtTimeBbo {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: String) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `start_date`.
+    #[must_use]
+    pub fn start_date(mut self, value: String) -> Self {
+        self.start_date = value;
+        self
+    }
+    /// Set `end_date`.
+    #[must_use]
+    pub fn end_date(mut self, value: String) -> Self {
+        self.end_date = value;
+        self
+    }
+    /// Set `time_of_day`.
+    #[must_use]
+    pub fn time_of_day(mut self, value: String) -> Self {
+        self.time_of_day = value;
+        self
+    }
 }
 impl Endpoint for FutureAtTimeBbo {
     const RPC: &'static str = "GetFutureAtTimeBbo";
@@ -11548,9 +11989,24 @@ impl Endpoint for FutureAtTimeBbo {
 /// RPC `GetFutureSnapshotBbo`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureSnapshotBbo {
     pub symbol: Vec<String>,
     pub min_time: Option<String>,
+}
+impl FutureSnapshotBbo {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: Vec<String>) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `min_time`.
+    #[must_use]
+    pub fn min_time(mut self, value: Option<String>) -> Self {
+        self.min_time = value;
+        self
+    }
 }
 impl Endpoint for FutureSnapshotBbo {
     const RPC: &'static str = "GetFutureSnapshotBbo";
@@ -11583,9 +12039,24 @@ impl Endpoint for FutureSnapshotBbo {
 /// RPC `GetFutureSnapshotTrade`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureSnapshotTrade {
     pub symbol: Vec<String>,
     pub min_time: Option<String>,
+}
+impl FutureSnapshotTrade {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: Vec<String>) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `min_time`.
+    #[must_use]
+    pub fn min_time(mut self, value: Option<String>) -> Self {
+        self.min_time = value;
+        self
+    }
 }
 impl Endpoint for FutureSnapshotTrade {
     const RPC: &'static str = "GetFutureSnapshotTrade";
@@ -11618,9 +12089,24 @@ impl Endpoint for FutureSnapshotTrade {
 /// RPC `GetFutureSnapshotOhlc`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureSnapshotOhlc {
     pub symbol: Vec<String>,
     pub min_time: Option<String>,
+}
+impl FutureSnapshotOhlc {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: Vec<String>) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `min_time`.
+    #[must_use]
+    pub fn min_time(mut self, value: Option<String>) -> Self {
+        self.min_time = value;
+        self
+    }
 }
 impl Endpoint for FutureSnapshotOhlc {
     const RPC: &'static str = "GetFutureSnapshotOhlc";
@@ -11653,9 +12139,24 @@ impl Endpoint for FutureSnapshotOhlc {
 /// RPC `GetFutureSnapshotMarketValue`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureSnapshotMarketValue {
     pub symbol: Vec<String>,
     pub min_time: Option<String>,
+}
+impl FutureSnapshotMarketValue {
+    /// Set `symbol`.
+    #[must_use]
+    pub fn symbol(mut self, value: Vec<String>) -> Self {
+        self.symbol = value;
+        self
+    }
+    /// Set `min_time`.
+    #[must_use]
+    pub fn min_time(mut self, value: Option<String>) -> Self {
+        self.min_time = value;
+        self
+    }
 }
 impl Endpoint for FutureSnapshotMarketValue {
     const RPC: &'static str = "GetFutureSnapshotMarketValue";
@@ -11688,8 +12189,17 @@ impl Endpoint for FutureSnapshotMarketValue {
 /// RPC `GetFutureFlatFileTradeBbo`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureFlatFileTradeBbo {
     pub date: String,
+}
+impl FutureFlatFileTradeBbo {
+    /// Set `date`.
+    #[must_use]
+    pub fn date(mut self, value: String) -> Self {
+        self.date = value;
+        self
+    }
 }
 impl Endpoint for FutureFlatFileTradeBbo {
     const RPC: &'static str = "GetFutureFlatFileTradeBbo";
@@ -11721,8 +12231,17 @@ impl Endpoint for FutureFlatFileTradeBbo {
 /// RPC `GetFutureFlatFileEod`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureFlatFileEod {
     pub date: String,
+}
+impl FutureFlatFileEod {
+    /// Set `date`.
+    #[must_use]
+    pub fn date(mut self, value: String) -> Self {
+        self.date = value;
+        self
+    }
 }
 impl Endpoint for FutureFlatFileEod {
     const RPC: &'static str = "GetFutureFlatFileEod";
@@ -11754,8 +12273,17 @@ impl Endpoint for FutureFlatFileEod {
 /// RPC `GetFutureFlatFileBbo`: in the descriptor only, with no vendor wrapper or
 /// documentation. Fields mirror the request message one to one. **Unstable.**
 #[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct FutureFlatFileBbo {
     pub date: String,
+}
+impl FutureFlatFileBbo {
+    /// Set `date`.
+    #[must_use]
+    pub fn date(mut self, value: String) -> Self {
+        self.date = value;
+        self
+    }
 }
 impl Endpoint for FutureFlatFileBbo {
     const RPC: &'static str = "GetFutureFlatFileBbo";

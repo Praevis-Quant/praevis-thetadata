@@ -17,6 +17,21 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Breaking (pre-beta.1): the public API can now grow without breaking
+  callers** (user-approved, 2026-11-08).
+  - **Enums:** every public error, kind, status and policy enum is
+    `#[non_exhaustive]`, so matches need a fallback arm.
+  - **Output structs:** these are `#[non_exhaustive]` too.
+  - **Configuration structs:** these are `#[non_exhaustive]` with one
+    `with_<field>` setter per field (`ClientConfig::default().with_endpoint(…)`).
+    Struct literals with `..Default::default()` no longer compile outside
+    the crate. Assigning a field after `default()` still works.
+  - **Generated requests:** all 100 are `#[non_exhaustive]`, and the
+    descriptor-only ones gain field setters.
+  - **Unchanged:** `Right`, `Contract`, `Root`, both `Price` types and
+    `Table`.
+  - **ROADMAP:** the out-of-scope shared-service section now lists the
+    possible additive API and the limits by design.
 - **ROADMAP: the "many workloads in one process" section is now marked
   out of scope** (user correction, 2026-11-08).
   - **Why:** this project replaces the official Python package. A future,

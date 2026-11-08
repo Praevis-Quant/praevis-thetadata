@@ -23,6 +23,7 @@ use tokio::{
 /// When a stream emits a batch. The first rows are emitted as soon as their
 /// message arrives, so time to first row is the service's first-message time.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct BatchPolicy {
     /// Emit when this many rows are buffered (default 65,536).
     pub rows: usize,
@@ -62,6 +63,8 @@ fn map_decode(error: DecodeError) -> QueryError {
         DecodeError::Resource(name) => QueryError::Resource(name),
         DecodeError::BufferFull => QueryError::Resource("buffered bytes"),
         DecodeError::Configuration => QueryError::Configuration,
+        // `DecodeError` is non-exhaustive; an unknown failure is a decode error.
+        _ => QueryError::Decode,
     }
 }
 
@@ -97,23 +100,25 @@ impl ThetaClient {
             .ok_or(QueryError::Configuration)?;
         let pool = self.eod_pool.clone();
         let decode = &pool.policy.decode;
-        let decoder = ColumnarDecoder::new(Limits {
-            encoded_bytes: decode.encoded_bytes,
-            decompressed_bytes: decode.decompressed_bytes,
-            headers: decode.headers,
-            header_bytes: decode.header_bytes,
-            text_bytes: decode.text_bytes,
-            rows_per_message: decode.rows,
+        let limits = Limits::default()
+            .with_encoded_bytes(decode.encoded_bytes)
+            .with_decompressed_bytes(decode.decompressed_bytes)
+            .with_headers(decode.headers)
+            .with_header_bytes(decode.header_bytes)
+            .with_text_bytes(decode.text_bytes)
+            .with_rows_per_message(decode.rows)
             // Room for a full batch plus one more message.
-            buffered_bytes: batch
-                .bytes
-                .saturating_add(decode.decompressed_bytes.saturating_mul(2)),
-            zstd_window_log: decode.zstd_window_log,
-        })
-        .map_err(map_decode)?
-        // Observed column kinds keep a column typed when a response leaves it
-        // entirely null (ADR-0009 addendum).
-        .with_column_kinds(E::COLUMNS);
+            .with_buffered_bytes(
+                batch
+                    .bytes
+                    .saturating_add(decode.decompressed_bytes.saturating_mul(2)),
+            )
+            .with_zstd_window_log(decode.zstd_window_log);
+        let decoder = ColumnarDecoder::new(limits)
+            .map_err(map_decode)?
+            // Observed column kinds keep a column typed when a response leaves it
+            // entirely null (ADR-0009 addendum).
+            .with_column_kinds(E::COLUMNS);
         // Admission and retry (P1 PR 4b): a scheduler slot is held from open
         // to the end of the stream. Only RESOURCE_EXHAUSTED and UNAVAILABLE
         // at open are retried; nothing has been delivered yet, so a retry
@@ -450,3 +455,10 @@ pub fn unify(batches: Vec<RecordBatch>) -> Vec<RecordBatch> {
         })
         .collect()
 }
+
+with_setters!(BatchPolicy {
+    with_rows => rows: usize,
+    with_bytes => bytes: usize,
+    with_latency => latency: Duration,
+    with_inline_bytes => inline_bytes: usize,
+});

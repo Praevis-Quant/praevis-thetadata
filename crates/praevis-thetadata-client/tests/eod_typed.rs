@@ -15,13 +15,11 @@ fn request() -> StockEodRequest {
 }
 async fn client(fixture: &Fixture, policy: EodPolicy, timeout: Duration) -> ThetaClient {
     ThetaClient::with_eod_policy(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            request_timeout: timeout,
-            idle_timeout: Duration::from_secs(2),
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true)
+            .with_request_timeout(timeout)
+            .with_idle_timeout(Duration::from_secs(2)),
         support::session().await,
         policy,
     )
@@ -205,12 +203,10 @@ async fn schema_empty_partial_not_found_and_idle_classification() {
         ..Default::default()
     });
     let client = ThetaClient::with_eod_policy(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            idle_timeout: Duration::from_millis(20),
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true)
+            .with_idle_timeout(Duration::from_millis(20)),
         support::session().await,
         EodPolicy::default(),
     )
@@ -252,36 +248,25 @@ async fn invalid_policy_and_duration_fail_before_connecting() {
     let session = support::session().await;
     for (policy, request_timeout) in [
         (
-            EodPolicy {
-                inline_bytes: 4097,
-                ..Default::default()
-            },
+            EodPolicy::default().with_inline_bytes(4097),
             Duration::from_secs(5),
         ),
         (
-            EodPolicy {
-                concurrent_jobs: 0,
-                ..Default::default()
-            },
+            EodPolicy::default().with_concurrent_jobs(0),
             Duration::from_secs(5),
         ),
         (
-            EodPolicy {
-                shared_bytes: 1,
-                ..Default::default()
-            },
+            EodPolicy::default().with_shared_bytes(1),
             Duration::from_secs(5),
         ),
         (EodPolicy::default(), Duration::ZERO),
         (EodPolicy::default(), Duration::MAX),
     ] {
         let result = ThetaClient::with_eod_policy(
-            ClientConfig {
-                endpoint: Some(format!("http://{}", listener.local_addr().unwrap())),
-                allow_insecure: true,
-                request_timeout,
-                ..Default::default()
-            },
+            ClientConfig::default()
+                .with_endpoint(Some(format!("http://{}", listener.local_addr().unwrap())))
+                .with_allow_insecure(true)
+                .with_request_timeout(request_timeout),
             session.clone(),
             policy,
         )

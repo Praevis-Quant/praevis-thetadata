@@ -48,12 +48,10 @@ fn table(value: DataType) -> wire::DataTable {
 }
 async fn client(fixture: &Fixture, policy: EodPolicy) -> ThetaClient {
     ThetaClient::with_eod_policy(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            request_timeout: Duration::from_secs(10),
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true)
+            .with_request_timeout(Duration::from_secs(10)),
         support::session().await,
         policy,
     )
@@ -590,12 +588,10 @@ async fn typed_queries_never_authenticate_again() {
         ..Default::default()
     });
     let client = ThetaClient::with_eod_policy(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            request_timeout: Duration::from_secs(10),
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true)
+            .with_request_timeout(Duration::from_secs(10)),
         session,
         EodPolicy::default(),
     )
@@ -611,11 +607,9 @@ async fn typed_queries_never_authenticate_again() {
         ..Default::default()
     });
     let failing_client = ThetaClient::with_eod_policy(
-        ClientConfig {
-            endpoint: Some(failing.endpoint.clone()),
-            allow_insecure: true,
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(failing.endpoint.clone()))
+            .with_allow_insecure(true),
         client.session(),
         EodPolicy::default(),
     )
@@ -655,11 +649,9 @@ async fn credential_bearing_endpoint_urls_are_rejected_without_echo() {
         "http://127.0.0.1:9/?token=SENTINEL",
         "http://127.0.0.1:9/#SENTINEL",
     ] {
-        let config = ClientConfig {
-            endpoint: Some(url.into()),
-            allow_insecure: true,
-            ..Default::default()
-        };
+        let config = ClientConfig::default()
+            .with_endpoint(Some(url.into()))
+            .with_allow_insecure(true);
         let typed =
             ThetaClient::with_eod_policy(config.clone(), session.clone(), EodPolicy::default())
                 .await
@@ -683,11 +675,9 @@ async fn credential_bearing_endpoint_urls_are_rejected_without_echo() {
 async fn all_duration_and_policy_configuration_failures_precede_connection() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let session = support::session().await;
-    let config = ClientConfig {
-        endpoint: Some(format!("http://{}", listener.local_addr().unwrap())),
-        allow_insecure: true,
-        ..Default::default()
-    };
+    let config = ClientConfig::default()
+        .with_endpoint(Some(format!("http://{}", listener.local_addr().unwrap())))
+        .with_allow_insecure(true);
     let mut policies = Vec::new();
     for field in 0..8 {
         let mut p = EodPolicy::default();
@@ -770,11 +760,9 @@ async fn stalled_tls_connection_is_bounded_and_diagnostics_are_safe() {
     let result = tokio::time::timeout(
         Duration::from_secs(3),
         ThetaClient::with_eod_policy(
-            ClientConfig {
-                endpoint: Some(endpoint),
-                connect_timeout: Duration::from_millis(50),
-                ..Default::default()
-            },
+            ClientConfig::default()
+                .with_endpoint(Some(endpoint))
+                .with_connect_timeout(Duration::from_millis(50)),
             session,
             EodPolicy::default(),
         ),
@@ -799,21 +787,19 @@ async fn idle_deadline_and_pending_cancellation_match_before_and_after_delivery(
                     ..Default::default()
                 });
                 let client = ThetaClient::with_eod_policy(
-                    ClientConfig {
-                        endpoint: Some(fixture.endpoint.clone()),
-                        allow_insecure: true,
-                        idle_timeout: if mode == 0 {
+                    ClientConfig::default()
+                        .with_endpoint(Some(fixture.endpoint.clone()))
+                        .with_allow_insecure(true)
+                        .with_idle_timeout(if mode == 0 {
                             Duration::from_millis(100)
                         } else {
                             Duration::from_secs(5)
-                        },
-                        request_timeout: if mode == 1 {
+                        })
+                        .with_request_timeout(if mode == 1 {
                             Duration::from_millis(250)
                         } else {
                             Duration::from_secs(5)
-                        },
-                        ..Default::default()
-                    },
+                        }),
                     support::session().await,
                     EodPolicy::default(),
                 )

@@ -30,16 +30,15 @@ use prost::Message;
 use std::collections::BTreeMap;
 
 fn columnar_limits(limits: &DecodeLimits) -> columnar::Limits {
-    columnar::Limits {
-        encoded_bytes: limits.encoded_bytes,
-        decompressed_bytes: limits.decompressed_bytes,
-        headers: limits.headers,
-        header_bytes: limits.header_bytes,
-        text_bytes: limits.text_bytes,
-        rows_per_message: limits.rows,
-        buffered_bytes: limits.allocated_bytes,
-        zstd_window_log: limits.zstd_window_log,
-    }
+    columnar::Limits::default()
+        .with_encoded_bytes(limits.encoded_bytes)
+        .with_decompressed_bytes(limits.decompressed_bytes)
+        .with_headers(limits.headers)
+        .with_header_bytes(limits.header_bytes)
+        .with_text_bytes(limits.text_bytes)
+        .with_rows_per_message(limits.rows)
+        .with_buffered_bytes(limits.allocated_bytes)
+        .with_zstd_window_log(limits.zstd_window_log)
 }
 
 /// A comparable cell: prices as Decimal128(38, 10) unscaled values (the legacy
@@ -70,6 +69,7 @@ fn legacy_exact(table: &Table) -> (Vec<String>, Vec<Vec<Exact>>) {
                         Exact::Price(i128::from(p.mantissa) * 10i128.pow((p.exponent + 10) as u32))
                     }
                     Value::Timestamp(v) => Exact::Timestamp(v.clone()),
+                    other => panic!("a value kind the corpus does not know: {other:?}"),
                 })
                 .collect()
         })

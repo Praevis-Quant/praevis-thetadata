@@ -59,11 +59,10 @@ fn request() -> Result<StockEodRequest, EodError> {
 
 async fn client_for(fixture: &support::Fixture, session: Session) -> ThetaClient {
     ThetaClient::with_session(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true, // loopback synthetic server only
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            // Loopback synthetic server only.
+            .with_allow_insecure(true),
         session,
     )
     .await

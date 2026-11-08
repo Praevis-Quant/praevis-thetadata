@@ -54,11 +54,7 @@ fn requests_events_and_counters() {
         HEARTBEAT.into(),
     ];
     let (url, requests) = server(frames, 2);
-    let stream = Stream::connect(Options {
-        url,
-        ..Default::default()
-    })
-    .unwrap();
+    let stream = Stream::connect(Options::default().with_url(url)).unwrap();
     assert_eq!(stream.subscribe_quotes(&spy()).unwrap(), 0);
     assert_eq!(stream.unsubscribe_quotes(&spy()).unwrap(), 1);
     let sent: Vec<String> = (0..2)
@@ -105,11 +101,12 @@ fn requests_events_and_counters() {
 fn a_full_queue_drops_the_newest_and_counts_by_default() {
     let frames: Vec<String> = (0..20).map(|_| QUOTE.to_owned()).collect();
     let (url, _) = server(frames.clone(), 0);
-    let stream = Stream::connect(Options {
-        url,
-        capacity: 3,
-        overflow: Overflow::DropNewest,
-    })
+    let stream = Stream::connect(
+        Options::default()
+            .with_url(url)
+            .with_capacity(3)
+            .with_overflow(Overflow::DropNewest),
+    )
     .unwrap();
     // Read nothing until the reader has seen all 20 (polled: a slow CI
     // runner must not decide the result).
@@ -129,11 +126,12 @@ fn a_full_queue_drops_the_newest_and_counts_by_default() {
     assert_eq!(received, 3);
     // Block (tests only) delivers every event.
     let (url, _) = server(frames, 0);
-    let stream = Stream::connect(Options {
-        url,
-        capacity: 3,
-        overflow: Overflow::Block,
-    })
+    let stream = Stream::connect(
+        Options::default()
+            .with_url(url)
+            .with_capacity(3)
+            .with_overflow(Overflow::Block),
+    )
     .unwrap();
     std::thread::sleep(Duration::from_millis(300));
     let mut received = 0;
@@ -153,18 +151,12 @@ fn only_a_local_ws_url_is_accepted() {
         "http://127.0.0.1:25520/v1/events",
     ] {
         assert!(matches!(
-            Stream::connect(Options {
-                url: url.into(),
-                ..Default::default()
-            }),
+            Stream::connect(Options::default().with_url(url.into())),
             Err(StreamError::Url)
         ));
     }
     assert!(matches!(
-        Stream::connect(Options {
-            capacity: 0,
-            ..Default::default()
-        }),
+        Stream::connect(Options::default().with_capacity(0)),
         Err(StreamError::Configuration)
     ));
     // Nothing listening: a connection error, not a hang.
@@ -174,10 +166,7 @@ fn only_a_local_ws_url_is_accepted() {
         .unwrap()
         .port();
     assert!(matches!(
-        Stream::connect(Options {
-            url: format!("ws://127.0.0.1:{port}/v1/events"),
-            ..Default::default()
-        }),
+        Stream::connect(Options::default().with_url(format!("ws://127.0.0.1:{port}/v1/events"))),
         Err(StreamError::Connect(_))
     ));
 }
@@ -186,11 +175,7 @@ fn only_a_local_ws_url_is_accepted() {
 fn the_full_trade_stream_request_and_trade_events() {
     let trade = r#"{"header":{"status":"CONNECTED","type":"TRADE"},"contract":{"security_type":"OPTION","root":"QQQ","expiration":20231110,"strike":360000,"right":"P"},"trade":{"ms_of_day":49531278,"sequence":-563040482,"size":5,"condition":18,"price":1.06,"exchange":65,"date":20231103}}"#;
     let (url, requests) = server(vec![trade.into()], 2);
-    let stream = Stream::connect(Options {
-        url,
-        ..Default::default()
-    })
-    .unwrap();
+    let stream = Stream::connect(Options::default().with_url(url)).unwrap();
     assert_eq!(stream.subscribe_full_trades().unwrap(), 0);
     assert_eq!(stream.unsubscribe_full_trades().unwrap(), 1);
     let sent: Vec<String> = (0..2)
@@ -249,11 +234,7 @@ fn requests_until_close(rx: &mpsc::Receiver<String>) -> Vec<String> {
 
 fn subscribe_and_end(close: bool) -> Vec<String> {
     let (url, requests) = recording_server();
-    let stream = Stream::connect(Options {
-        url,
-        ..Default::default()
-    })
-    .unwrap();
+    let stream = Stream::connect(Options::default().with_url(url)).unwrap();
     let qqq = Contract {
         root: Root::new("QQQ").unwrap(),
         ..spy()

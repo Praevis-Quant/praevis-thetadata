@@ -4,9 +4,7 @@
 use arrow_array::{ArrayRef, Int64Array, RecordBatch, new_null_array};
 use arrow_schema::DataType;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
-use praevis_thetadata_arrow::{
-    ColumnarDecoder, Limits, ParquetOptions, ParquetSink, ParquetSummary, SinkError,
-};
+use praevis_thetadata_arrow::{ColumnarDecoder, Limits, ParquetOptions, ParquetSink, SinkError};
 use praevis_thetadata_proto::endpoints::{
     CompressionDescription, DataTable, DataValue, DataValueList, Price, ResponseData,
     ZonedDateTime, data_value::DataType as Wire,
@@ -118,14 +116,9 @@ fn exact_types_round_trip_through_zstd_and_uncompressed_files() {
         let dir = Dir::new();
         let path = dir.file("out.parquet");
         let original = decoded(300);
-        let mut sink = ParquetSink::create(
-            &path,
-            ParquetOptions {
-                zstd_level,
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        let mut sink =
+            ParquetSink::create(&path, ParquetOptions::default().with_zstd_level(zstd_level))
+                .unwrap();
         sink.write(&original).unwrap();
         let summary = sink.finish().unwrap();
         assert_eq!((summary.rows, summary.row_groups), (300, 1));
@@ -156,10 +149,7 @@ fn exact_types_round_trip_through_zstd_and_uncompressed_files() {
 fn batches_stream_into_bounded_row_groups() {
     let dir = Dir::new();
     let path = dir.file("groups.parquet");
-    let options = ParquetOptions {
-        row_group_rows: 250,
-        ..Default::default()
-    };
+    let options = ParquetOptions::default().with_row_group_rows(250);
     let mut sink = ParquetSink::create(&path, options).unwrap();
     for _ in 0..10 {
         sink.write(&decoded(100)).unwrap();
@@ -212,10 +202,7 @@ fn a_column_written_as_null_cannot_be_typed_later() {
     let dir = Dir::new();
     let path = dir.file("capped.parquet");
     // A tiny hold-back cap fixes the schema at once, with b as Null.
-    let options = ParquetOptions {
-        pending_bytes: 1,
-        ..Default::default()
-    };
+    let options = ParquetOptions::default().with_pending_bytes(1);
     let mut sink = ParquetSink::create(&path, options).unwrap();
     sink.write(&batch(vec![
         int_or_null("a", Some(1), 2),
@@ -257,14 +244,8 @@ fn files_are_never_overwritten_by_accident_or_left_partial() {
         ParquetSink::create(&path, ParquetOptions::default()).err(),
         Some(SinkError::Exists)
     );
-    let mut sink = ParquetSink::create(
-        &path,
-        ParquetOptions {
-            overwrite: true,
-            ..Default::default()
-        },
-    )
-    .unwrap();
+    let mut sink =
+        ParquetSink::create(&path, ParquetOptions::default().with_overwrite(true)).unwrap();
     sink.write(&decoded(3)).unwrap();
     // Until finish, the old file is untouched.
     assert_eq!(std::fs::read(&path).unwrap(), b"keep");
@@ -288,25 +269,13 @@ fn files_are_never_overwritten_by_accident_or_left_partial() {
     // No batch at all: no file.
     let none = dir.file("none.parquet");
     let sink = ParquetSink::create(&none, ParquetOptions::default()).unwrap();
-    assert_eq!(
-        sink.finish(),
-        Ok(ParquetSummary {
-            rows: 0,
-            row_groups: 0,
-            bytes: 0
-        })
-    );
+    let summary = sink.finish().unwrap();
+    assert_eq!((summary.rows, summary.row_groups, summary.bytes), (0, 0, 0));
     assert!(!none.exists());
     assert_eq!(dir.names(), ["t.parquet"]);
     for bad in [
-        ParquetOptions {
-            row_group_rows: 0,
-            ..Default::default()
-        },
-        ParquetOptions {
-            zstd_level: Some(99),
-            ..Default::default()
-        },
+        ParquetOptions::default().with_row_group_rows(0),
+        ParquetOptions::default().with_zstd_level(Some(99)),
     ] {
         assert_eq!(
             ParquetSink::create(dir.file("x.parquet"), bad).err(),

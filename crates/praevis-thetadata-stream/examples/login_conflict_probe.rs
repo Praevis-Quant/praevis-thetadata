@@ -133,6 +133,7 @@ fn watch(
                         Status::Connected => bucket.connected += 1,
                         Status::Disconnected => bucket.disconnected += 1,
                         Status::Other => bucket.other_status += 1,
+                        _ => bucket.other_status += 1,
                     }
                 }
                 Kind::Response { id, response } => {
@@ -143,6 +144,7 @@ fn watch(
                         Response::InvalidPerms => "INVALID_PERMS",
                         Response::Error => "ERROR",
                         Response::Other => "OTHER",
+                        _ => "OTHER",
                     };
                     log.messages.push(serde_json::json!({
                         "t_ms": event.received.duration_since(start).as_millis(),
@@ -163,6 +165,8 @@ fn watch(
                     ended = true;
                     break;
                 }
+                // `Kind` is non-exhaustive: count a newer kind as other.
+                _ => bucket.others += 1,
             }
         }
         out.push(serde_json::json!({
@@ -273,10 +277,7 @@ async fn main() -> std::process::ExitCode {
     } else {
         std::env::var("THETADATA_API_KEY").unwrap_or_default()
     };
-    let session = match AuthClient::new(AuthConfig {
-        environment: Environment::Prod,
-        ..Default::default()
-    }) {
+    let session = match AuthClient::new(AuthConfig::default().with_environment(Environment::Prod)) {
         Ok(_) if cli.no_login => None,
         Ok(auth) => auth
             .authenticate(&Credentials::api_key(key.trim()))

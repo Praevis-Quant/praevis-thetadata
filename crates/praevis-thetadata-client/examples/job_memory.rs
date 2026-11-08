@@ -157,11 +157,9 @@ async fn main() {
             PEAK.store(before, Ordering::Relaxed);
             let mut sink = praevis_thetadata_arrow::ParquetSink::create(
                 &path,
-                ParquetOptions {
-                    overwrite: true,
-                    decimal_statistics: decimal_statistics(),
-                    ..Default::default()
-                },
+                ParquetOptions::default()
+                    .with_overwrite(true)
+                    .with_decimal_statistics(decimal_statistics()),
             )
             .unwrap();
             let mut written = 0;
@@ -205,23 +203,23 @@ async fn main() {
             .read_line(&mut endpoint)
             .unwrap();
         let client = ThetaClient::with_session(
-            ClientConfig {
-                endpoint: Some(endpoint.trim().to_owned()),
-                allow_insecure: true,
-                ..Default::default()
-            },
+            ClientConfig::default()
+                .with_endpoint(Some(endpoint.trim().to_owned()))
+                .with_allow_insecure(true),
             support::session().await,
         )
         .await
         .unwrap()
-        .with_scheduler(SchedulerPolicy {
-            concurrency: std::env::var("JOB_MEMORY_CONCURRENCY")
-                .ok()
-                .and_then(|c| c.parse().ok())
-                .unwrap_or(8),
-            per_minute: None,
-            ..Default::default()
-        })
+        .with_scheduler(
+            SchedulerPolicy::default()
+                .with_concurrency(
+                    std::env::var("JOB_MEMORY_CONCURRENCY")
+                        .ok()
+                        .and_then(|c| c.parse().ok())
+                        .unwrap_or(8),
+                )
+                .with_per_minute(None),
+        )
         .unwrap();
         let request = OptionHistoryQuote::new("SPY", "2024-06-21")
             .date(chrono::NaiveDate::from_ymd_opt(2024, 6, 14).unwrap())
@@ -235,11 +233,9 @@ async fn main() {
         let summary = job
             .to_parquet(
                 &path,
-                ParquetOptions {
-                    overwrite: true,
-                    decimal_statistics: decimal_statistics(),
-                    ..Default::default()
-                },
+                ParquetOptions::default()
+                    .with_overwrite(true)
+                    .with_decimal_statistics(decimal_statistics()),
             )
             .await
             .unwrap();

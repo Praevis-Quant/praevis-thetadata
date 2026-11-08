@@ -8,7 +8,7 @@
 //! harness's own thread: on a busy runner, libtest's main thread allocates
 //! while the test runs (34 of 1,000 single-core runs saw 2 such allocations,
 //! none from the measuring thread), which failed CI once on unchanged code.
-use praevis_thetadata_stream::{Event, Kind, parse};
+use praevis_thetadata_stream::{Kind, parse};
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -48,24 +48,19 @@ fn allocations_in(work: impl FnOnce()) -> usize {
 
 #[test]
 fn parsing_and_queueing_do_not_allocate() {
-    let (sender, receiver) = std::sync::mpsc::sync_channel::<Event>(1024);
+    // What the reader queues: the parsed kind and its arrival time, as an
+    // `Event` holds them (`Event` is non-exhaustive, so built only in-crate).
+    let (sender, receiver) = std::sync::mpsc::sync_channel::<(Kind, Instant)>(1024);
     // Warm up the channel and the parser once.
-    let event = Event {
-        kind: parse(QUOTE).unwrap(),
-        received: Instant::now(),
-    };
-    sender.try_send(event).unwrap();
+    sender
+        .try_send((parse(QUOTE).unwrap(), Instant::now()))
+        .unwrap();
     receiver.try_recv().unwrap();
     let hot_path = allocations_in(|| {
         for _ in 0..10_000 {
             let kind = parse(QUOTE).unwrap();
             assert!(matches!(kind, Kind::Quote { .. }));
-            sender
-                .try_send(Event {
-                    kind,
-                    received: Instant::now(),
-                })
-                .unwrap();
+            sender.try_send((kind, Instant::now())).unwrap();
             receiver.try_recv().unwrap();
         }
     });

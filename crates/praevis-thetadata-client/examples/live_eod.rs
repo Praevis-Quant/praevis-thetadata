@@ -206,14 +206,13 @@ async fn authenticate(
         Credentials::from_file_contents(std::str::from_utf8(&bytes).map_err(|_| "credential file")?)
             .map_err(|_| "credential file")?
     };
-    let auth = AuthClient::new(AuthConfig {
-        environment: if environment == "PROD" {
+    let auth = AuthClient::new(
+        AuthConfig::default().with_environment(if environment == "PROD" {
             Environment::Prod
         } else {
             Environment::Stage
-        },
-        ..Default::default()
-    })
+        }),
+    )
     .map_err(|_| "authentication configuration")?;
     auth.authenticate(&credentials).await.map_err(|error| {
         if let praevis_thetadata_auth::AuthError::Rejected(status) = error {

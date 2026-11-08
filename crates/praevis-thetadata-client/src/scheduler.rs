@@ -11,6 +11,7 @@ use tokio::{
 
 /// A subscription tier, ordered from FREE to PRO.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub enum Tier {
     Free,
     Value,
@@ -76,6 +77,7 @@ impl Tier {
 /// serving 3 at once and no limit at 40 per minute; those are available only
 /// as an explicit choice ([`SchedulerPolicy::free_observed`]).
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct SchedulerPolicy {
     /// Concurrent requests (1..=64). A request holds its slot until its
     /// stream ends, fails or is cancelled.
@@ -328,11 +330,16 @@ mod tests {
         ] {
             assert_eq!(Tier::from_subscription(&value), tier, "{value}");
         }
-        let user = |stock, options, indices| praevis_thetadata_auth::User {
-            email: String::new(),
-            stock_subscription: stock,
-            options_subscription: options,
-            indices_subscription: indices,
+        // `User` is non-exhaustive: build it the way the auth crate does, from
+        // the login response's JSON.
+        let user = |stock, options, indices| -> praevis_thetadata_auth::User {
+            serde_json::from_value(json!({
+                "email": "",
+                "stockSubscription": stock,
+                "optionsSubscription": options,
+                "indicesSubscription": indices,
+            }))
+            .unwrap()
         };
         // The observed account: options PRO, stocks and indices FREE.
         assert_eq!(
@@ -357,3 +364,11 @@ mod tests {
         assert_eq!(limits(Tier::Pro), (8, None));
     }
 }
+
+with_setters!(SchedulerPolicy {
+    with_concurrency => concurrency: usize,
+    with_per_minute => per_minute: Option<u32>,
+    with_retries => retries: u32,
+    with_backoff => backoff: Duration,
+    with_max_backoff => max_backoff: Duration,
+});

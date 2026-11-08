@@ -11,6 +11,7 @@ use std::path::Path;
 /// A query failure or a local output failure. Either way, nothing is left at
 /// the target path: the file appears only when the whole stream is written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[non_exhaustive]
 pub enum ParquetOutputError {
     #[error(transparent)]
     Query(#[from] QueryError),

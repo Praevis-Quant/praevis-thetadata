@@ -88,6 +88,7 @@ fn expected_output(table: &Table, engine: Engine) -> Output {
                     .unwrap(),
                 )
             }
+            other => panic!("a value kind this benchmark does not know: {other:?}"),
         })
         .collect();
     Output::Numeric(DataBatch::new(table.headers.clone().into(), cells, table.rows.len()).unwrap())
@@ -576,23 +577,17 @@ fn run(
             });
             let client = runtime.block_on(async {
                 ThetaClient::with_eod_policy(
-                    ClientConfig {
-                        endpoint: Some(fixture.endpoint.clone()),
-                        allow_insecure: true,
-                        ..Default::default()
-                    },
+                    ClientConfig::default()
+                        .with_endpoint(Some(fixture.endpoint.clone()))
+                        .with_allow_insecure(true),
                     support::session().await,
-                    praevis_thetadata_client::EodPolicy {
-                        inline_bytes: if matches!(
-                            engine,
-                            Engine::TableOffload | Engine::NumericOffload
-                        ) {
+                    praevis_thetadata_client::EodPolicy::default().with_inline_bytes(
+                        if matches!(engine, Engine::TableOffload | Engine::NumericOffload) {
                             0
                         } else {
                             4096
                         },
-                        ..Default::default()
-                    },
+                    ),
                 )
                 .await
             })?;

@@ -134,11 +134,10 @@ fn greeks_defaults_send_truthy_values_only() {
 
 #[test]
 fn unstable_requests_copy_their_fields() {
-    let request = endpoints::FutureHistoryEod {
-        symbol: "ES".into(),
-        start_date: "2024-01-02".into(),
-        end_date: "2024-01-05".into(),
-    };
+    let request = endpoints::FutureHistoryEod::default()
+        .symbol("ES".into())
+        .start_date("2024-01-02".into())
+        .end_date("2024-01-05".into());
     assert_eq!(
         <endpoints::FutureHistoryEod as Endpoint>::STABILITY,
         Stability::Unstable
@@ -165,11 +164,9 @@ async fn stream_raw_dispatches_the_typed_request_to_its_rpc() {
         ..Default::default()
     });
     let client = ThetaClient::with_session(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true),
         support::session().await,
     )
     .await

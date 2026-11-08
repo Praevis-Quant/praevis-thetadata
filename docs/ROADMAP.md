@@ -122,6 +122,21 @@ observations come **from reading the code and are untested**:
 6. **Many open streams can each assemble a message at once** (item 8 on
    the query path: up to streams × `encoded_bytes`).
 
+**Possible additive API for that project.** These are not part of this
+work, and none would change existing calls:
+- dispatch of a request by its RPC or vendor name, from data;
+- a cache key per request;
+- the per-strike split as a public planner;
+- part-level results from a job;
+- scheduler metrics;
+- stream reconnect;
+- stock and index streaming.
+
+**Limits by design:**
+- the stream reads a Terminal on the same machine only;
+- one session per account;
+- `QueryError` carries `tonic::Code` for remote statuses, accepted for now.
+
 Item 8 (transport buffering) stays a beta.1 gate on its own merits, not
 for this use case.
 

@@ -436,16 +436,15 @@ fn unsupported_inputs_are_classified() {
 
 #[test]
 fn limits_bound_every_message_and_the_buffer() {
-    let small = Limits {
-        encoded_bytes: 4096,
-        decompressed_bytes: 4096,
-        headers: 2,
-        header_bytes: 4,
-        text_bytes: 4,
-        rows_per_message: 3,
-        buffered_bytes: 4096,
-        zstd_window_log: 20,
-    };
+    let small = Limits::default()
+        .with_encoded_bytes(4096)
+        .with_decompressed_bytes(4096)
+        .with_headers(2)
+        .with_header_bytes(4)
+        .with_text_bytes(4)
+        .with_rows_per_message(3)
+        .with_buffered_bytes(4096)
+        .with_zstd_window_log(20);
     let row = |v: &str| vec![text(v)];
     let cases: Vec<(ResponseData, &str)> = vec![
         (
@@ -488,10 +487,7 @@ fn limits_bound_every_message_and_the_buffer() {
     window
         .set_parameter(zstd::zstd_safe::CParameter::WindowLog(24))
         .unwrap();
-    let mut large = Limits {
-        decompressed_bytes: 64 << 20,
-        ..small.clone()
-    };
+    let mut large = small.clone().with_decompressed_bytes(64 << 20);
     large.encoded_bytes = 64 << 20;
     let wide = ResponseData {
         compressed_data: window.compress(&vec![7u8; 20 << 20]).unwrap(),
@@ -505,10 +501,7 @@ fn limits_bound_every_message_and_the_buffer() {
     );
 
     // A full buffer appends nothing and does not poison: flush and retry.
-    let tight = Limits {
-        buffered_bytes: 80,
-        ..small
-    };
+    let tight = small.with_buffered_bytes(80);
     let mut decoder = ColumnarDecoder::new(tight).unwrap();
     let message = response(&table(&["a"], vec![row("x"), row("y")]), false);
     assert_eq!(decoder.push(&message), Ok(2));
@@ -518,18 +511,9 @@ fn limits_bound_every_message_and_the_buffer() {
     assert!(decoder.buffered_bytes() > 0 && decoder.buffered_bytes() <= 80);
 
     for bad in [
-        Limits {
-            rows_per_message: 0,
-            ..Limits::default()
-        },
-        Limits {
-            zstd_window_log: 9,
-            ..Limits::default()
-        },
-        Limits {
-            zstd_window_log: 28,
-            ..Limits::default()
-        },
+        Limits::default().with_rows_per_message(0),
+        Limits::default().with_zstd_window_log(9),
+        Limits::default().with_zstd_window_log(28),
     ] {
         assert_eq!(
             ColumnarDecoder::new(bad).unwrap_err(),

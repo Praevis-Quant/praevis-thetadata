@@ -31,6 +31,7 @@ pub use generated::*;
 
 /// How settled an endpoint's request contract is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Stability {
     /// Mirrors a public wrapper of the vendor Python package.
     VendorWrapper,
@@ -40,6 +41,7 @@ pub enum Stability {
 
 /// Registry entry for one generated endpoint.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct EndpointInfo {
     pub rpc: &'static str,
     pub python_name: Option<&'static str>,
@@ -53,6 +55,7 @@ pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// How `job()` may split a request into smaller requests by date.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Split {
     /// Sent as one request.
     Whole,
@@ -126,6 +129,7 @@ impl ThetaClient {
 
 /// A date or a vendor wildcard/string, as accepted by `_fmt_if_date`.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Expiration {
     Date(NaiveDate),
     /// Passed through unchanged, for example `*` for every expiration.
@@ -158,6 +162,7 @@ impl Expiration {
 
 /// A time of day or a vendor time string, as accepted by `_fmt_time`.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TimeOfDay {
     Time(NaiveTime),
     /// Passed through unchanged, for example the default `09:30:00`.

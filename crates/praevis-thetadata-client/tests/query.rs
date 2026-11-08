@@ -52,11 +52,9 @@ fn two_rows(start: i64) -> wire::ResponseData {
 
 async fn connect(fixture: &Fixture, config: ClientConfig) -> ThetaClient {
     ThetaClient::with_session(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            ..config
-        },
+        config
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true),
         support::session().await,
     )
     .await
@@ -103,11 +101,9 @@ async fn row_threshold_and_offloaded_decoding_split_batches_identically() {
     for inline_bytes in [64 << 10, 0] {
         let fixture = Fixture::start(script((0..4).map(|i| Ok(two_rows(i * 2))).collect()));
         let client = connect(&fixture, ClientConfig::default()).await;
-        let policy = BatchPolicy {
-            rows: 3,
-            inline_bytes,
-            ..Default::default()
-        };
+        let policy = BatchPolicy::default()
+            .with_rows(3)
+            .with_inline_bytes(inline_bytes);
         let mut stream = client.query_with(&request(), policy).await.unwrap();
         assert_eq!(
             sizes(&mut stream).await,
@@ -185,10 +181,7 @@ async fn opening_errors_keep_the_stock_eod_classes() {
     }
     let fixture = Fixture::start(script(vec![]));
     let client = connect(&fixture, ClientConfig::default()).await;
-    let invalid = BatchPolicy {
-        rows: 0,
-        ..Default::default()
-    };
+    let invalid = BatchPolicy::default().with_rows(0);
     assert_eq!(
         client.query_with(&request(), invalid).await.err(),
         Some(QueryError::Configuration)
@@ -202,10 +195,7 @@ async fn idle_timeout_and_cancellation_are_terminal() {
         pause_before: Some((1, Duration::from_secs(5))),
         ..Default::default()
     });
-    let config = ClientConfig {
-        idle_timeout: Duration::from_millis(200),
-        ..Default::default()
-    };
+    let config = ClientConfig::default().with_idle_timeout(Duration::from_millis(200));
     let client = connect(&fixture, config).await;
     let mut stream = client.query(&request()).await.unwrap();
     assert_eq!(sizes(&mut stream).await, (vec![2], Err(QueryError::Idle)));

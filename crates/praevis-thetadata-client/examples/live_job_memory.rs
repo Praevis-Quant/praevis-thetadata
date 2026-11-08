@@ -184,10 +184,7 @@ where
     let mut sink = tokio::task::spawn_blocking(move || {
         praevis_thetadata_arrow::ParquetSink::create(
             path,
-            ParquetOptions {
-                overwrite: true,
-                ..Default::default()
-            },
+            ParquetOptions::default().with_overwrite(true),
         )
     })
     .await
@@ -302,10 +299,7 @@ async fn main() -> std::process::ExitCode {
             return std::process::ExitCode::FAILURE;
         }
     };
-    let session = match AuthClient::new(AuthConfig {
-        environment: Environment::Prod,
-        ..Default::default()
-    }) {
+    let session = match AuthClient::new(AuthConfig::default().with_environment(Environment::Prod)) {
         Ok(auth) => match auth.authenticate(&Credentials::api_key(key.trim())).await {
             Ok(s) => s,
             Err(_) => {
@@ -323,10 +317,8 @@ async fn main() -> std::process::ExitCode {
         session.session_id().to_owned(),
         session.user().email.clone(),
     ];
-    let config = ClientConfig {
-        request_timeout: std::time::Duration::from_secs(cli.request_timeout_s),
-        ..Default::default()
-    };
+    let config = ClientConfig::default()
+        .with_request_timeout(std::time::Duration::from_secs(cli.request_timeout_s));
     let client = match ThetaClient::with_session(config, session).await {
         Ok(c) => c,
         Err(_) => {

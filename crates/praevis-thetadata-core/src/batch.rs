@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TimeZone {
     NewYork,
     Utc,
@@ -47,6 +48,7 @@ impl Timestamp {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum BatchValue {
     Null,
     Text(String),

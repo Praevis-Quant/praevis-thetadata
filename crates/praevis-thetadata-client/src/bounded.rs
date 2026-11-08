@@ -11,6 +11,7 @@ use std::{mem::size_of, sync::Arc};
 
 /// Finite per-batch limits. The accounted budget is requested storage, not RSS.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct DecodeLimits {
     pub encoded_bytes: usize,
     pub decompressed_bytes: usize,

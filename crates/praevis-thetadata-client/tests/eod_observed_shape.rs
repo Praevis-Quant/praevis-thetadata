@@ -134,11 +134,9 @@ async fn observed_column_shape_preserves_exact_values_across_three_interfaces() 
         ..Default::default()
     });
     let client = ThetaClient::with_session(
-        ClientConfig {
-            endpoint: Some(fixture.endpoint.clone()),
-            allow_insecure: true,
-            ..Default::default()
-        },
+        ClientConfig::default()
+            .with_endpoint(Some(fixture.endpoint.clone()))
+            .with_allow_insecure(true),
         support::session().await,
     )
     .await
