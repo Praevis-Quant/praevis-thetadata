@@ -368,7 +368,8 @@ path** (`job()` to Parquet, the Rust heap):
   more in the worst case at PRO. The observed peaks above include it,
   because the counting allocator sees it, and real messages are far smaller.
   It is outside our accounting until item 8 is resolved
-  ([decision](../releases.md#item-8-decision-needed)).
+  ([decision A](../releases.md#item-8-decision-a-user-2026-11-08): open
+  in alpha.3, a gate for beta.1 / 0.1.0).
 - **Not bounded:**
   - Parquet footer metadata, about **13 KB per row group**, held until the
     file closes. It grows with the file (about 0.1 MiB per million rows at

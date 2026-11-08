@@ -9,7 +9,6 @@ and attaches the two wheels from the CI run of the published commit.
 **To fill in at publication:**
 - the date;
 - the commit;
-- the decision on [item 8](releases.md#item-8-decision-needed);
 - the exact wheel file names from the CI artifacts `wheel-ubuntu-latest`
   and `wheel-windows-latest`.
 
@@ -82,7 +81,7 @@ use: `pip install polars pyarrow`, or `pandas pyarrow`.
   [endpoint coverage](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.0-alpha.3/docs/endpoints/coverage.md).
 - **Memory:** only the client's own accounted allocations are bounded. The
   transport keeps up to one message per open stream outside that budget
-  ([item 8](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.0-alpha.3/docs/releases.md#item-8-decision-needed)).
+  ([item 8](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.0-alpha.3/docs/releases.md#item-8-decision-a-user-2026-11-08)).
 - **Real time** needs your own Theta Terminal. Its latency was measured
   on the Terminal's dev feed only. Running the Terminal's REST API and our
   historical client on one account at the same time ends the Terminal's

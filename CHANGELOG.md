@@ -106,6 +106,9 @@ The Python package's wheels go on the GitHub release, not PyPI.
     term (up to 8 × 64 MiB at PRO), and is corrected.
   - **The options:** ship with it open and move it to beta.1 (recommended),
     or hold alpha.3 for option 2a or 2b.
+  - **Decided (user, 2026-11-08): A.** Alpha.3 ships with item 8 open,
+    and it stays a gate for beta.1 / 0.1.0, with "only accounted
+    allocations are bounded".
 - **The roadmap reflects where the project stands.** It now opens with the
   current state:
   - all 81 vendor wrappers exist as generated Rust requests and same-name
