@@ -43,7 +43,9 @@
 //!   calendar requests' decoded rows (calendar data, not market prices).
 //! * `sizes`: the options workloads (W4-W6 in `workloads.json`), one paced
 //!   request at a time through the typed requests, counting rows (decoded)
-//!   and bytes. A request is dropped as soon as it passes `--max-rows`
+//!   and bytes, and recording each request's largest encoded message and a
+//!   histogram of message sizes (item 8: how large the messages that
+//!   `query()`/`job()` streams assemble really are). A request is dropped as soon as it passes `--max-rows`
 //!   (default 1M, the vendor's sizing guide), so a run never pulls more than
 //!   about that much per request. Sizes the workloads before any baseline.
 //! * `session`: the session probe (approved 2026-11-04): a second login, then
@@ -1630,6 +1632,23 @@ struct Size {
     rows: u64,
     /// Dropped after passing `max_rows`: the request is larger than that.
     over_max_rows: bool,
+    /// The largest encoded gRPC message (`ResponseData`), in bytes: what a
+    /// stream assembles in full before it can be decoded (item 8).
+    max_message_bytes: u64,
+    /// Messages by encoded size, upper bounds in `MESSAGE_SIZE_BUCKETS`.
+    message_size_histogram: [u64; MESSAGE_SIZE_BUCKETS.len() + 1],
+}
+
+/// Upper bounds of the message-size histogram: 64 KiB, 256 KiB, 1, 4, 16 and
+/// 64 MiB (the default `encoded_bytes`); the last bucket is anything larger.
+const MESSAGE_SIZE_BUCKETS: [u64; 6] = [64 << 10, 256 << 10, 1 << 20, 4 << 20, 16 << 20, 64 << 20];
+
+/// The histogram bucket of a message of `bytes` encoded bytes.
+fn message_size_bucket(bytes: u64) -> usize {
+    MESSAGE_SIZE_BUCKETS
+        .iter()
+        .position(|&limit| bytes <= limit)
+        .unwrap_or(MESSAGE_SIZE_BUCKETS.len())
 }
 
 async fn size<E: Endpoint>(client: &ThetaClient, request: E, max_rows: u64) -> Size {
@@ -1651,7 +1670,10 @@ async fn size<E: Endpoint>(client: &ThetaClient, request: E, max_rows: u64) -> S
                 out.first_message_ns = Some(start.elapsed().as_nanos());
             }
             out.messages += 1;
-            out.bytes += message.encoded_len() as u64;
+            let encoded = message.encoded_len() as u64;
+            out.bytes += encoded;
+            out.max_message_bytes = out.max_message_bytes.max(encoded);
+            out.message_size_histogram[message_size_bucket(encoded)] += 1;
             match decoder.push(&message) {
                 Ok(rows) => out.rows += rows as u64,
                 Err(_) => return Ok(Some("DecodeError")),
@@ -2136,10 +2158,11 @@ async fn sizes(options: &SizesArgs, client: &ThetaClient, report: &mut Report) -
             pacer.wait().await;
             let result = size_request(client, method, request, options.max_rows).await?;
             eprintln!(
-                "{id}[{index}] {:<16} rows {:>9} messages {:>8} {:.1} s{}",
+                "{id}[{index}] {:<16} rows {:>9} messages {:>8} max message {:>6.2} MiB {:.1} s{}",
                 result.status,
                 result.rows,
                 result.messages,
+                result.max_message_bytes as f64 / (1 << 20) as f64,
                 result.total_ns as f64 / 1e9,
                 if result.over_max_rows {
                     " (over max rows)"
@@ -3266,6 +3289,51 @@ mod tests {
             .map(|r| r["rpc"].as_str().unwrap())
             .collect();
         assert!(last.iter().all(|rpc| rpc.contains("FlatFile")), "{last:?}");
+    }
+
+    #[tokio::test]
+    async fn sizes_record_the_largest_message_and_a_histogram() {
+        // Three messages of different sizes: the maximum is the largest
+        // encoded message, and each lands in its bucket.
+        let (small, _) = fixture::table(fixture::Shape::Prices, 10);
+        let (large, _) = fixture::table(fixture::Shape::Prices, 20_000);
+        let messages = [
+            fixture::response(&small, false),
+            fixture::response(&large, false),
+            fixture::response(&small, false),
+        ];
+        let largest = messages
+            .iter()
+            .map(|m| m.encoded_len() as u64)
+            .max()
+            .unwrap();
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: messages.iter().cloned().map(Ok).collect(),
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let request = typed::StockHistoryEod::new("AAPL", date("2024-06-14"), date("2024-06-14"));
+        let result = size(&client, request, 1_000_000).await;
+        assert_eq!(result.status, "OK");
+        assert_eq!(result.messages, 3);
+        assert_eq!(result.max_message_bytes, largest);
+        assert_eq!(result.message_size_histogram.iter().sum::<u64>(), 3);
+        assert_eq!(
+            result.message_size_histogram[message_size_bucket(largest)],
+            1
+        );
+    }
+
+    #[test]
+    fn message_sizes_fall_in_the_right_bucket() {
+        let bucket = message_size_bucket;
+        assert_eq!(bucket(0), 0);
+        assert_eq!(bucket(64 << 10), 0);
+        assert_eq!(bucket((64 << 10) + 1), 1);
+        assert_eq!(bucket(1 << 20), 2);
+        assert_eq!(bucket(10 << 20), 4);
+        assert_eq!(bucket(64 << 20), 5);
+        assert_eq!(bucket((64 << 20) + 1), 6);
     }
 
     #[test]

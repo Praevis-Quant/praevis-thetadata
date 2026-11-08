@@ -198,6 +198,41 @@ round. That Windows cost is unexplained so far; an implementation should
 profile it, for example per-chunk `extend_from_slice` against a single
 reserve-and-copy.
 
+## Addendum (2026-11-08): the query path, and the plan
+
+**The bound above was measured on the EOD path, and the query path differs.**
+On the EOD path a stream reads only while it holds a job slot, so 2a leaves
+message-sized memory only inside a job.
+- **On `query()`/`job()`, a stream reads without a slot.**
+  `QueryStream::next_inner` awaits `inner.message()` without one, and takes
+  a job slot (`pool.jobs`) only to decode a large frame on the blocking
+  pool.
+- **The effect:** every open stream assembles its next message
+  independently.
+- **What 2a still gives here:** it removes the idle retention (nothing
+  message-sized stays after delivery) and one copy (tonic's buffer into the
+  owned frame).
+- **What it does not:** with N open streams, N max-size messages can still
+  be assembled at once. Without further work the query-path worst case stays
+  **streams × `encoded_bytes`** (8 × 64 MiB at PRO's 8 streams).
+
+**Decision (user, 2026-11-08, after a risk review).** The target use case
+is 1,000 of the licensee's own workloads in one process. Four PRs proceed,
+in this order:
+
+| PR | What |
+| ---: | --- |
+| 0 | Tooling: the largest encoded message per request for the W5c and W6c shapes (`live_p0 sizes`), bounded, with no flat files |
+| 1 | 2a on both callers (`query()` and the EOD stream), with a one-message parked slot. Full D-B benchmark, and the Windows large-message cost profiled. `stream_raw` stays on plain tonic |
+| 3 | A bound test on the query path: 8 streams, 24 and 64 MiB messages, overlapping and with a stalled consumer, Windows and Linux |
+| 4 | Docs: close item 8 with the honest bound, tested and documented |
+
+**Held: byte credits (PR 2).** That is a shared byte budget for messages
+being assembled, which would bound the concurrent term. **The trigger to
+revisit it:** if PR 0's real maxima reach the tens of MiB.
+
+**`encoded_bytes` is not lowered.**
+
 ## Recommendation
 
 **Adopt option 2a** (own message framing in the body layer), optionally with
