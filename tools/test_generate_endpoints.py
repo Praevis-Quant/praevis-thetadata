@@ -117,6 +117,31 @@ class OutputTests(unittest.TestCase):
                 with self.subTest(entry=entry), self.assertRaises(gen.GenerationError):
                     gen.generate(status_path=status)
 
+    def test_registered_column_kinds_are_names_and_kinds_only(self):
+        ok = {"columns": [["type", "text"], ["open", "text"]], "runs": ["cal-local-001"]}
+        with tempfile.TemporaryDirectory() as directory:
+            schemas = Path(directory) / "schemas.json"
+            schemas.write_text(json.dumps({"GetCalendarOnDate": ok}))
+            rust, doc = gen.generate(schemas_path=schemas)
+            self.assertIn('const COLUMNS: &\'static [(&\'static str, ColumnKind)] = '
+                          '&[("type", ColumnKind::Text), ("open", ColumnKind::Text)];', rust)
+            self.assertIn("generic (`query`); column kinds registered (cal-local-001)", doc)
+            self.assertEqual(rust.count("const COLUMNS"), 1)
+            bad = [
+                {"GetNoSuchRpc": ok},                                          # unknown RPC
+                {"GetCalendarOnDate": {**ok, "values": ["09:30:00"]}},         # anything else
+                {"GetCalendarOnDate": {**ok, "runs": []}},                     # no evidence
+                {"GetCalendarOnDate": {**ok, "runs": ["a b"]}},                # not a run id
+                {"GetCalendarOnDate": {**ok, "columns": [["open", "time"]]}},  # unknown kind
+                {"GetCalendarOnDate": {**ok, "columns": [["open", "text"], ["open", "text"]]}},
+                {"GetCalendarOnDate": {**ok, "columns": [["09:30:00", "text"]]}},  # not a name
+                {"GetCalendarOnDate": {**ok, "columns": [["open"]]}},
+            ]
+            for entry in bad:
+                schemas.write_text(json.dumps(entry))
+                with self.subTest(entry=entry), self.assertRaises(gen.GenerationError):
+                    gen.generate(schemas_path=schemas)
+
     def test_status_entries_must_name_real_rpcs(self):
         with tempfile.TemporaryDirectory() as directory:
             status = Path(directory) / "status.json"

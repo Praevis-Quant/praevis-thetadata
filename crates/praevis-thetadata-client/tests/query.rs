@@ -255,3 +255,49 @@ async fn collect_gives_null_columns_their_final_type() {
     }
     assert!(batches[0].column(1).is_null(0));
 }
+
+#[tokio::test]
+async fn calendar_results_share_one_schema_whether_the_day_is_open_or_closed() {
+    // A closed day's open and close are null_value on the wire; an open day's
+    // are text. Separate requests must still give one schema (cal-local-001).
+    let handler: support::Handler = std::sync::Arc::new(|rpc: &str, request: Vec<u8>| {
+        assert_eq!(rpc, "GetCalendarOnDate");
+        let text = |v: &str| Some(Wire::Text(v.into()));
+        let closed = request.windows(10).any(|w| w == b"2025-12-25");
+        let row = if closed {
+            vec![
+                text("full_close"),
+                Some(Wire::NullValue(0)),
+                Some(Wire::NullValue(0)),
+            ]
+        } else {
+            vec![text("open"), text("09:30:00"), text("16:00:00")]
+        };
+        Ok(vec![rows(&["type", "open", "close"], vec![row])])
+    });
+    let fixture = Fixture::start(Script {
+        other: Some(handler),
+        ..Default::default()
+    });
+    let client = connect(&fixture, ClientConfig::default()).await;
+    let day = |d| chrono::NaiveDate::from_ymd_opt(2025, 12, d).unwrap();
+    let mut schemas = Vec::new();
+    for date in [day(25), day(26)] {
+        let batches = client
+            .query(&endpoints::CalendarOnDate::new(date))
+            .await
+            .unwrap()
+            .collect()
+            .await
+            .unwrap();
+        assert_eq!(batches.len(), 1);
+        // The 25th really is the closed day: its open and close are null.
+        let nulls = usize::from(date == day(25));
+        assert_eq!(batches[0].column(1).null_count(), nulls);
+        schemas.push(batches[0].schema());
+    }
+    assert_eq!(schemas[0], schemas[1]);
+    for field in schemas[0].fields() {
+        assert_eq!(field.data_type(), &DataType::Utf8, "{}", field.name());
+    }
+}

@@ -19,6 +19,9 @@ options PRO map, every option RPC once, and the approved stock, index, calendar 
 interest-rate run. Only the classification and gRPC code are committed. A named tier
 is the tier the service said is required. *Gated* means a probe needs explicit
 approval (it could start the vendor's generation of a very large file).
+*Column kinds registered* means the result's column types come from
+[`schemas.json`](schemas.json), observed in the runs named, so a column that is null
+throughout a response keeps its type ([ADR-0009](../adr/0009-market-data-values-and-schema.md)).
 *Uncertain* marks a classification the evidence does not settle. Endpoints that
 were not probed are not inferred from their family.
 
@@ -110,9 +113,9 @@ Vendor wrappers by the subscription required:
 | `GetIndexHistoryOhlc` | `index_history_ohlc` | `endpoints::IndexHistoryOhlc` | vendor wrapper | generic (`query`) | not probed | not probed | not checked | unknown |
 | `GetIndexHistoryPrice` | `index_history_price` | `endpoints::IndexHistoryPrice` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed | not checked | indices VALUE |
 | `GetIndexAtTimePrice` | `index_at_time_price` | `endpoints::IndexAtTimePrice` | vendor wrapper | generic (`query`) | not probed | not probed | not checked | unknown |
-| `GetCalendarOpenToday` | `calendar_open_today` | `endpoints::CalendarOpenToday` | vendor wrapper | generic (`query`) | not probed | not probed | not checked | unknown |
-| `GetCalendarOnDate` | `calendar_on_date` | `endpoints::CalendarOnDate` | vendor wrapper | generic (`query`) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed | not checked | VALUE (product not named) |
-| `GetCalendarYear` | `calendar_year` | `endpoints::CalendarYear` | vendor wrapper | generic (`query`) | not probed | not probed | not checked | unknown |
+| `GetCalendarOpenToday` | `calendar_open_today` | `endpoints::CalendarOpenToday` | vendor wrapper | generic (`query`); column kinds registered (cal-local-001) | not probed | not probed | not checked | unknown |
+| `GetCalendarOnDate` | `calendar_on_date` | `endpoints::CalendarOnDate` | vendor wrapper | generic (`query`); column kinds registered (cal-local-001) | tier-denied: VALUE required (`PermissionDenied`, p1-entitlements-001) | not probed | not checked | VALUE (product not named) |
+| `GetCalendarYear` | `calendar_year` | `endpoints::CalendarYear` | vendor wrapper | generic (`query`); column kinds registered (cal-local-001) | not probed | not probed | not checked | unknown |
 | `GetInterestRateHistoryEod` | `interest_rate_history_eod` | `endpoints::InterestRateHistoryEod` | vendor wrapper | generic (`query`) | entitled (`OK`, p1-entitlements-001) | not probed | not checked | FREE |
 | `GetCorporateActionDividend` | — | `endpoints::CorporateActionDividend` | unstable | generic (`query`) | not probed | not probed | not checked | — |
 | `GetCorporateActionSplit` | — | `endpoints::CorporateActionSplit` | unstable | generic (`query`) | no-data (uncertain) (`NotFound`, p1-entitlements-001) | not probed | not checked | — |

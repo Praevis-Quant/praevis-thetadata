@@ -105,6 +105,42 @@ enum Cell<'a> {
     Boolean(bool),
 }
 
+/// A column's value kind on the wire, as observed for an endpoint. Each maps
+/// to exactly the Arrow type the decoder gives that kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ColumnKind {
+    /// `text`: `Utf8`.
+    Text,
+    /// `number`: `Int64`.
+    Integer,
+    /// `price`: `Decimal128(38, 10)`.
+    Price,
+    /// `boolean`: `Boolean`.
+    Boolean,
+    /// `timestamp` in zone 0: millisecond timestamp, `America/New_York`.
+    TimestampNewYork,
+    /// `timestamp` in zone 1: millisecond timestamp, `UTC`.
+    TimestampUtc,
+}
+
+impl ColumnKind {
+    /// The Arrow type a column of this kind decodes to.
+    pub fn data_type(self) -> DataType {
+        match self {
+            Self::Text => DataType::Utf8,
+            Self::Integer => DataType::Int64,
+            Self::Price => DataType::Decimal128(PRICE_PRECISION, PRICE_SCALE),
+            Self::Boolean => DataType::Boolean,
+            Self::TimestampNewYork => {
+                DataType::Timestamp(arrow_schema::TimeUnit::Millisecond, Some(NEW_YORK.into()))
+            }
+            Self::TimestampUtc => {
+                DataType::Timestamp(arrow_schema::TimeUnit::Millisecond, Some(UTC.into()))
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 enum Builder {
     /// No non-null value yet: only a null count.
@@ -133,6 +169,29 @@ const POW10: [i128; 20] = {
     table
 };
 
+impl Builder {
+    /// An empty builder of a known kind.
+    fn typed(kind: ColumnKind) -> Self {
+        match kind {
+            ColumnKind::Text => Self::Utf8(StringBuilder::new()),
+            ColumnKind::Integer => Self::Int64(Int64Builder::new()),
+            ColumnKind::Price => Self::Decimal(
+                Decimal128Builder::new()
+                    .with_precision_and_scale(PRICE_PRECISION, PRICE_SCALE)
+                    .expect("valid decimal type"),
+            ),
+            ColumnKind::Boolean => Self::Boolean(BooleanBuilder::new()),
+            ColumnKind::TimestampNewYork => Self::Timestamp(
+                TimestampMillisecondBuilder::new().with_timezone(NEW_YORK),
+                0,
+            ),
+            ColumnKind::TimestampUtc => {
+                Self::Timestamp(TimestampMillisecondBuilder::new().with_timezone(UTC), 1)
+            }
+        }
+    }
+}
+
 impl Column {
     fn append(&mut self, cell: Cell<'_>, index: usize, row: usize) -> Result<(), DecodeError> {
         let mismatch = DecodeError::ColumnType { column: index };
@@ -143,18 +202,18 @@ impl Column {
             }
             self.builder = match cell {
                 Cell::Null => unreachable!(),
-                Cell::Text(_) => Builder::Utf8(StringBuilder::new()),
-                Cell::Number(_) => Builder::Int64(Int64Builder::new()),
-                Cell::Price { .. } => Builder::Decimal(
-                    Decimal128Builder::new()
-                        .with_precision_and_scale(PRICE_PRECISION, PRICE_SCALE)
-                        .expect("valid decimal type"),
-                ),
-                Cell::Timestamp { zone, .. } => Builder::Timestamp(
-                    TimestampMillisecondBuilder::new().with_timezone(zone_name(zone)?),
-                    zone,
-                ),
-                Cell::Boolean(_) => Builder::Boolean(BooleanBuilder::new()),
+                Cell::Text(_) => Builder::typed(ColumnKind::Text),
+                Cell::Number(_) => Builder::typed(ColumnKind::Integer),
+                Cell::Price { .. } => Builder::typed(ColumnKind::Price),
+                Cell::Timestamp { zone, .. } => {
+                    zone_name(zone)?;
+                    Builder::typed(if zone == 0 {
+                        ColumnKind::TimestampNewYork
+                    } else {
+                        ColumnKind::TimestampUtc
+                    })
+                }
+                Cell::Boolean(_) => Builder::typed(ColumnKind::Boolean),
             };
             self.typed_at = row;
             self.append_nulls(nulls);
@@ -231,6 +290,8 @@ pub struct ColumnarDecoder {
     buffered: usize,
     /// Rows buffered before the message that failed.
     failed_at: Option<usize>,
+    /// Column kinds observed for this endpoint (see `with_column_kinds`).
+    kinds: &'static [(&'static str, ColumnKind)],
 }
 
 impl std::fmt::Debug for ColumnarDecoder {
@@ -281,7 +342,20 @@ impl ColumnarDecoder {
             rows: 0,
             buffered: 0,
             failed_at: None,
+            kinds: &[],
         })
+    }
+
+    /// The column kinds observed for this endpoint's responses. A column
+    /// named here starts with that type instead of waiting for its first
+    /// value, so a response in which it is entirely null still gets that
+    /// type rather than Arrow `Null`, and results from separate requests
+    /// share one schema. A value of another kind is a `ColumnType` error, as
+    /// for mixed kinds. Columns not named here, and names the response does
+    /// not carry, are unaffected: nothing is added or renamed.
+    pub fn with_column_kinds(mut self, kinds: &'static [(&'static str, ColumnKind)]) -> Self {
+        self.kinds = kinds;
+        self
     }
 
     /// Column names, once a message has carried headers.
@@ -493,10 +567,22 @@ impl ColumnarDecoder {
                 if sorted.windows(2).any(|pair| pair[0] == pair[1]) {
                     return Err(DecodeError::Schema);
                 }
-                self.columns = (0..names.len())
-                    .map(|_| Column {
-                        builder: Builder::Pending(self.rows),
-                        typed_at: 0,
+                let (kinds, rows) = (self.kinds, self.rows);
+                self.columns = names
+                    .iter()
+                    .map(|name| match kinds.iter().find(|(known, _)| known == name) {
+                        Some(&(_, kind)) => {
+                            let mut column = Column {
+                                builder: Builder::typed(kind),
+                                typed_at: 0,
+                            };
+                            column.append_nulls(rows);
+                            column
+                        }
+                        None => Column {
+                            builder: Builder::Pending(rows),
+                            typed_at: 0,
+                        },
                     })
                     .collect();
                 self.names = Some(names);
@@ -539,7 +625,8 @@ impl ColumnarDecoder {
     }
 
     /// The buffered rows as one batch, or `None` if there are none. Column
-    /// types persist to the next batch; a column with no value yet is `Null`.
+    /// types persist to the next batch; a column with no value yet is `Null`,
+    /// unless its kind was registered (`with_column_kinds`).
     pub fn flush(&mut self) -> Option<RecordBatch> {
         let names = self.names.as_ref()?;
         let rows = self.failed_at.unwrap_or(self.rows);

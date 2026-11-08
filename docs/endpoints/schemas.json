@@ -1,0 +1,14 @@
+{
+  "GetCalendarOpenToday": {
+    "columns": [["type", "text"], ["open", "text"], ["close", "text"]],
+    "runs": ["cal-local-001"]
+  },
+  "GetCalendarOnDate": {
+    "columns": [["type", "text"], ["open", "text"], ["close", "text"]],
+    "runs": ["cal-local-001"]
+  },
+  "GetCalendarYear": {
+    "columns": [["date", "text"], ["type", "text"], ["open", "text"], ["close", "text"]],
+    "runs": ["cal-local-001"]
+  }
+}

@@ -5,7 +5,7 @@ use arrow_array::cast::AsArray;
 use arrow_array::types::{Decimal128Type, Int64Type, TimestampMillisecondType};
 use arrow_array::{Array, RecordBatch};
 use arrow_schema::{DataType, TimeUnit};
-use praevis_thetadata_arrow::{ColumnarDecoder, DecodeError, Limits};
+use praevis_thetadata_arrow::{ColumnKind, ColumnarDecoder, DecodeError, Limits};
 use praevis_thetadata_proto::endpoints::{
     CompressionDescription, DataTable, DataValue, DataValueList, Price, ResponseData,
     ZonedDateTime, data_value::DataType as Wire,
@@ -565,4 +565,121 @@ fn compressed_framing_matches_plain_and_frames_concatenate() {
         .compressed_data
         .truncate(truncated.compressed_data.len() - 3);
     assert_eq!(decoder.push(&truncated), Err(DecodeError::Decode));
+}
+
+/// The calendar's observed columns (run `cal-local-001`), as the client
+/// registers them.
+const CALENDAR: &[(&str, ColumnKind)] = &[
+    ("type", ColumnKind::Text),
+    ("open", ColumnKind::Text),
+    ("close", ColumnKind::Text),
+];
+
+fn decode_with(kinds: &'static [(&'static str, ColumnKind)], t: &DataTable) -> RecordBatch {
+    let mut decoder = decoder().with_column_kinds(kinds);
+    decoder.push(&response(t, true)).unwrap();
+    decoder.flush().unwrap()
+}
+
+#[test]
+fn registered_kinds_keep_all_null_columns_typed_so_responses_share_a_schema() {
+    let headers = ["type", "open", "close"];
+    let closed = table(&headers, vec![vec![text("full_close"), null(), null()]]);
+    let open = table(
+        &headers,
+        vec![vec![text("open"), text("09:30:00"), text("16:00:00")]],
+    );
+    // Without registered kinds: a closed day's open/close are Arrow Null (the
+    // bug), so a closed and an open day do not share a schema.
+    assert_eq!(
+        decode(std::slice::from_ref(&closed))
+            .schema()
+            .field(1)
+            .data_type(),
+        &DataType::Null
+    );
+    // With them: Utf8 in both, nulls kept, one schema.
+    let (a, b) = (decode_with(CALENDAR, &closed), decode_with(CALENDAR, &open));
+    assert_eq!(a.schema(), b.schema());
+    for column in 0..3 {
+        assert_eq!(a.schema().field(column).data_type(), &DataType::Utf8);
+    }
+    assert_eq!((a.column(1).null_count(), a.column(2).null_count()), (1, 1));
+    assert_eq!(b.column(1).as_string::<i32>().value(0), "09:30:00");
+    // The open day's columns fit the closed day's schema as they are.
+    assert!(RecordBatch::try_new(a.schema(), b.columns().to_vec()).is_ok());
+}
+
+#[test]
+fn every_registered_kind_types_an_all_null_column_as_its_values_would() {
+    let kinds: &'static [(&'static str, ColumnKind)] = &[
+        ("t", ColumnKind::Text),
+        ("n", ColumnKind::Integer),
+        ("p", ColumnKind::Price),
+        ("b", ColumnKind::Boolean),
+        ("ny", ColumnKind::TimestampNewYork),
+        ("utc", ColumnKind::TimestampUtc),
+    ];
+    let headers = ["t", "n", "p", "b", "ny", "utc"];
+    let empty = decode_with(
+        kinds,
+        &table(&headers, vec![vec![null(); 6], vec![price(5, 0); 6]]),
+    );
+    let full = decode(&[table(
+        &headers,
+        vec![vec![
+            text("x"),
+            number(1),
+            price(125, 8),
+            Some(Wire::Boolean(true)),
+            time(1, 0),
+            time(1, 1),
+        ]],
+    )]);
+    // An all-null response gets exactly the types the values decode to.
+    assert_eq!(empty.schema(), full.schema());
+    for (index, (_, kind)) in kinds.iter().enumerate() {
+        assert_eq!(empty.schema().field(index).data_type(), &kind.data_type());
+        assert_eq!(empty.column(index).null_count(), 2);
+    }
+}
+
+#[test]
+fn a_value_of_another_kind_than_registered_is_a_type_error() {
+    let mut decoder = decoder().with_column_kinds(CALENDAR);
+    let wrong = table(
+        &["type", "open", "close"],
+        vec![vec![text("open"), number(930), null()]],
+    );
+    assert!(matches!(
+        decoder.push(&response(&wrong, true)),
+        Err(DecodeError::ColumnType { column: 1 })
+    ));
+}
+
+#[test]
+fn registered_kinds_add_and_rename_nothing() {
+    // Columns the response lacks are not invented; unregistered ones are
+    // typed from their values as before; header order is kept.
+    let batch = decode_with(
+        CALENDAR,
+        &table(
+            &["close", "extra", "spare"],
+            vec![vec![null(), number(1), null()]],
+        ),
+    );
+    let fields: Vec<_> = batch
+        .schema()
+        .fields()
+        .iter()
+        .map(|f| (f.name().clone(), f.data_type().clone()))
+        .collect();
+    assert_eq!(
+        fields,
+        [
+            ("close".to_string(), DataType::Utf8),
+            ("extra".to_string(), DataType::Int64),
+            ("spare".to_string(), DataType::Null),
+        ]
+    );
 }
