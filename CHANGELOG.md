@@ -26,6 +26,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   record also holds the user's 2026-11-08 plan:
   - PRs 0, 1, 3 and 4 proceed;
   - byte credits are held until real messages reach the tens of MiB.
+- **ROADMAP: "Many workloads in one process (1000 concurrent workloads)",**
+  ahead of the beta.1 API freeze. It lists five concerns found by reading
+  the code, untested:
+  - a paused consumer holds its slot;
+  - the read-ahead is per job, with no shared budget;
+  - there is no fairness between jobs;
+  - deadlines run while requests are queued;
+  - one session serves all workloads.
+
+  No design is selected, and load tests are to be discussed with the user
+  first.
 - **Alpha.3 publication recorded**
   ([record](docs/crates-io-release-plan.md#publication-record-010-alpha3)).
   It covers:

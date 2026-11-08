@@ -81,6 +81,32 @@ Options are done. What remains:
 The option quote flat file (above) is the one option RPC left. It is gated
 on the user's go-ahead because of its size, not blocked.
 
+## Many workloads in one process (1000 concurrent workloads)
+
+**Ahead of the beta.1 API freeze, because the fixes may change the API.**
+The user's target use case (2026-11-08) is 1,000 of the licensee's own
+workloads in one process.
+
+The concerns below come **from reading the code, untested**. No design is
+selected, and load tests are to be discussed with the user first. Nothing
+is implemented now.
+1. **A paused consumer holds its scheduler slot** from open to the end of
+   its stream (`query.rs`, around line 117). Eight slow consumers can
+   stall every other workload at PRO's 8 slots.
+2. **The read-ahead is per job,** with no budget shared across jobs. Each
+   job's configured worst case is 4 × concurrency parts × 2 batches × 8 MiB
+   (32 × 2 × 8 MiB = 512 MiB at PRO), so many concurrent jobs multiply it.
+3. **There is no fairness between jobs.** Admission is one semaphore, and
+   one job with a deep read-ahead can take every slot.
+4. **Queued requests' deadlines run while they wait.** The deadline is
+   fixed before admission, so time spent queued for a slot counts against
+   the request.
+5. **One session serves all workloads.** A single login, and a single
+   point of failure if it ends (`SessionEnded`).
+
+These interact with item 8 (transport buffering): many open streams can
+each assemble a message at once.
+
 ## Real-time stream (W10): what remains
 
 - **Live `--no-login` subscribe probe:** explain the roughly 150 s before
