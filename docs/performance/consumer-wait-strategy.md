@@ -168,9 +168,10 @@ decision it stays on the ROADMAP only, with no library change.
 - **The max of 3-5 ms, and once 13.6 ms,** seen at every load on Windows.
   The slowest events arrive as one backlog: the consumer stops taking events
   for several milliseconds, then drains the queue. This happened while
-  spinning too, so the thread is losing its core, not waking slowly. Only
-  pinning and priority, with a free core, could address it, and that is
-  untested.
+  spinning too, so the thread is losing its core, not waking slowly.
+  Raising the consumer's priority did not reliably change it, and pinning
+  made a sleeping consumer much worse (the thread-priority experiment
+  below, one run each).
 - **Everything upstream:** the vendor feed, the Terminal's Java process, its
   JSON encoding and the local WebSocket. Events carry no send time, so that
   delay cannot even be measured from our side.
@@ -191,9 +192,60 @@ measurement option only, with no library API change:
 The report records the values the OS reads back. The library's reader
 thread keeps its defaults.
 
-The planned runs: sleep and spin × {normal, highest, highest + pinned}, at
-10 and 1,000 contracts on the dev feed after a Terminal restart, 120 s
-each. The results go here.
+**Results (2026-11-08).** These are observations from one run each, not a
+verified result.
+- **Setup:** Windows 11 on the Ryzen 7 2700 (8 cores, 16 threads), the dev
+  feed after a Terminal restart, main with #120, 120 s each. The run IDs
+  are `w10-dev-{10,1000}-{sleep,spin}-{normal,highest,highest-pin6}-003`.
+- **What the OS read back:** priority 2 (highest) and core 6. The reader
+  thread was unchanged.
+- **Every run:** 0 dropped and 0 quotes from unsubscribed contracts. At
+  1,000 contracts, 978-987 contracts sent quotes.
+
+Latencies are in µs.
+
+| Contracts | Consumer | Scheduling | Quotes/s | p50 | p99 | p99.9 | Max | CPU (cores) | Heartbeat gaps |
+| ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 10 | sleep | normal | 772 | 16 | 35 | 61 | 6,033 | 0.03 | 0 |
+| 10 | sleep | highest | 822 | 16 | 34 | 108 | 1,307 | 0.03 | 0 |
+| 10 | sleep | highest + core 6 | 847 | 15 | 63 | **9,104** | **71,670** | 0.04 | 0 |
+| 10 | spin | normal | 1,004 | 3 | 7 | 18 | 275 | 1.02 | 0 |
+| 10 | spin | highest | 964 | 3 | 7 | 16 | 117 | 1.02 | 0 |
+| 10 | spin | highest + core 6 | 920 | 3 | 6 | 11 | 167 | 1.02 | 0 |
+| 1,000 | sleep | normal | 26,475 | 15 | 28 | 46 | 901 | 1.07 | 0 |
+| 1,000 | sleep | highest | 25,598 | 15 | 30 | 51 | 1,773 | 1.04 | 21 |
+| 1,000 | sleep | highest + core 6 | 26,232 | 15 | 43 | **2,446** | **15,810** | 1.08 | 2 |
+| 1,000 | spin | normal | 25,283 | 3 | 6 | 20 | 1,547 | 1.59 | 0 |
+| 1,000 | spin | highest | 25,162 | 3 | 6 | 20 | 510 | 1.54 | 0 |
+| 1,000 | spin | highest + core 6 | 24,725 | 3 | 6 | 18 | 1,433 | 1.58 | 0, then 1 |
+
+**What it shows:**
+1. **Pinning a sleeping consumer is harmful.** Its p99.9 rose to 9.1 ms and
+   2.4 ms, and its max to 72 ms and 16 ms. A pinned thread that wakes while
+   its core is busy cannot move to a free one; it waits. **Do not pin a
+   consumer that blocks.**
+2. **Priority alone did not reliably change the max.**
+   - It fell at 10 contracts: from 6.0 to 1.3 ms sleeping, and from 275 to
+     117 µs spinning.
+   - It rose at 1,000 contracts sleeping, from 0.9 to 1.8 ms.
+   - That is within the run-to-run variance of a single run. The p50 and
+     p99 did not change.
+3. **Spinning keeps a p50 of 3 µs and a p99 of 6-7 µs at every
+   priority.** Pinning a spinner did no harm but gained little.
+4. **The 1,000-contract rate is genuine:** about 25-26k quotes/s, with
+   978-987 contracts quoting and none unsubscribed. That confirms the
+   earlier 1,000-contract runs as a real high-rate point.
+5. **The max varies a lot from run to run.** At normal priority this batch
+   had lower maxima than earlier ones (10-contract spin: 275 µs here
+   against 1,618 µs in `-002`). A conclusion about priority would need
+   repeated, verified runs.
+
+**Conclusion:** there is no evidence that thread priority or affinity fixes
+the Windows max.
+- **Kept:** the harness options, for measurement.
+- **The library does not change.**
+- **The heartbeat gaps** (21 in the 1,000-contract sleep run at highest
+  priority) stay unexplained, on the Terminal or feed side.
 
 ## Proposed API (when picked up)
 
@@ -213,7 +265,9 @@ pub enum WaitStrategy {
   burns a core by accident. The documentation states the CPU cost next to
   each variant.
 - **Pinning and priority stay out of the library.** They are the caller's
-  thread and the caller's machine. The documentation can show how, per OS.
+  thread and the caller's machine. The documentation can show how, per OS,
+  and must warn: **do not pin a consumer that blocks** (a pinned sleeping
+  consumer reached a 72 ms max in the thread-priority experiment).
 
 ### Gates before shipping
 
@@ -240,4 +294,5 @@ pub enum WaitStrategy {
 | --- | --- |
 | 2026-11-07 | **Deferred by the user.** No spinning or spin-then-park in the library now; `Sleep` stays the only and default behaviour. The p99 ≤ 50 µs target is met at 100 contracts or more on the dev feed (38 and 35 µs). The latency harness keeps `--consumer spin` as a measurement option only, not a user feature |
 | 2026-11-07 | **The Windows comparison supports the deferral.** Spinning gave a p99 of 7 µs against 31-34 µs, for about half a core more, and no better max (one run each, at about 25k quotes/s). It stays ROADMAP-only. The low-rate comparison is still to be measured |
+| 2026-11-08 | **The thread-priority experiment changes nothing.** Raising the consumer's priority did not reliably change the max. Pinning a sleeping consumer was harmful (max 72 ms). Spinning stayed at a p99 of 6-7 µs at every setting. One run each. The harness options stay for measurement; there is no library change |
 | 2026-11-07 | **The low-rate re-run confirms it.** At about 670 quotes/s, spinning cut the p99 from 37 to 10 µs, for a full core against 0.027 cores, and its p99.9 and max were worse (one run each). It stays ROADMAP-only and opt-in if ever offered. The -001 10-contract runs were inflated by leftover Terminal subscriptions, fixed in #114 |
