@@ -449,7 +449,8 @@ def emit_endpoint_impl(struct, rpc, python, stability, description, request, que
         kinds = ", ".join(f'("{name}", ColumnKind::{COLUMN_KINDS[kind]})'
                           for name, kind in _COLUMNS[rpc]["columns"])
         columns = [f"    const COLUMNS: &'static [(&'static str, ColumnKind)] = &[{kinds}];"]
-    out = [f"impl Endpoint for {struct} {{",
+    out = [f"impl sealed::Sealed for {struct} {{}}",
+           f"impl Endpoint for {struct} {{",
            f'    const RPC: &\'static str = "{rpc}";',
            f'    const PATH: &\'static str = "/BetaEndpoints.BetaThetaTerminal/{rpc}";',
            f"    const PYTHON_NAME: Option<&'static str> = {python};",

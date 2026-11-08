@@ -17,6 +17,7 @@ impl StockListSymbols {
         }
     }
 }
+impl sealed::Sealed for StockListSymbols {}
 impl Endpoint for StockListSymbols {
     const RPC: &'static str = "GetStockListSymbols";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockListSymbols";
@@ -64,6 +65,7 @@ impl StockListDates {
         }
     }
 }
+impl sealed::Sealed for StockListDates {}
 impl Endpoint for StockListDates {
     const RPC: &'static str = "GetStockListDates";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockListDates";
@@ -131,6 +133,7 @@ impl StockSnapshotOhlc {
         self
     }
 }
+impl sealed::Sealed for StockSnapshotOhlc {}
 impl Endpoint for StockSnapshotOhlc {
     const RPC: &'static str = "GetStockSnapshotOhlc";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockSnapshotOhlc";
@@ -211,6 +214,7 @@ impl StockSnapshotTrade {
         self
     }
 }
+impl sealed::Sealed for StockSnapshotTrade {}
 impl Endpoint for StockSnapshotTrade {
     const RPC: &'static str = "GetStockSnapshotTrade";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockSnapshotTrade";
@@ -291,6 +295,7 @@ impl StockSnapshotQuote {
         self
     }
 }
+impl sealed::Sealed for StockSnapshotQuote {}
 impl Endpoint for StockSnapshotQuote {
     const RPC: &'static str = "GetStockSnapshotQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockSnapshotQuote";
@@ -371,6 +376,7 @@ impl StockSnapshotMarketValue {
         self
     }
 }
+impl sealed::Sealed for StockSnapshotMarketValue {}
 impl Endpoint for StockSnapshotMarketValue {
     const RPC: &'static str = "GetStockSnapshotMarketValue";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockSnapshotMarketValue";
@@ -436,6 +442,7 @@ impl StockHistoryEod {
         }
     }
 }
+impl sealed::Sealed for StockHistoryEod {}
 impl Endpoint for StockHistoryEod {
     const RPC: &'static str = "GetStockHistoryEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryEod";
@@ -543,6 +550,7 @@ impl StockHistoryOhlc {
         self
     }
 }
+impl sealed::Sealed for StockHistoryOhlc {}
 impl Endpoint for StockHistoryOhlc {
     const RPC: &'static str = "GetStockHistoryOhlc";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryOhlc";
@@ -676,6 +684,7 @@ impl StockHistoryTrade {
         self
     }
 }
+impl sealed::Sealed for StockHistoryTrade {}
 impl Endpoint for StockHistoryTrade {
     const RPC: &'static str = "GetStockHistoryTrade";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryTrade";
@@ -813,6 +822,7 @@ impl StockHistoryQuote {
         self
     }
 }
+impl sealed::Sealed for StockHistoryQuote {}
 impl Endpoint for StockHistoryQuote {
     const RPC: &'static str = "GetStockHistoryQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryQuote";
@@ -960,6 +970,7 @@ impl StockHistoryTradeQuote {
         self
     }
 }
+impl sealed::Sealed for StockHistoryTradeQuote {}
 impl Endpoint for StockHistoryTradeQuote {
     const RPC: &'static str = "GetStockHistoryTradeQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockHistoryTradeQuote";
@@ -1074,6 +1085,7 @@ impl StockAtTimeTrade {
         self
     }
 }
+impl sealed::Sealed for StockAtTimeTrade {}
 impl Endpoint for StockAtTimeTrade {
     const RPC: &'static str = "GetStockAtTimeTrade";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockAtTimeTrade";
@@ -1153,6 +1165,7 @@ impl StockAtTimeQuote {
         self
     }
 }
+impl sealed::Sealed for StockAtTimeQuote {}
 impl Endpoint for StockAtTimeQuote {
     const RPC: &'static str = "GetStockAtTimeQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockAtTimeQuote";
@@ -1213,6 +1226,7 @@ impl OptionListSymbols {
         }
     }
 }
+impl sealed::Sealed for OptionListSymbols {}
 impl Endpoint for OptionListSymbols {
     const RPC: &'static str = "GetOptionListSymbols";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListSymbols";
@@ -1277,6 +1291,7 @@ impl OptionListDates {
         self
     }
 }
+impl sealed::Sealed for OptionListDates {}
 impl Endpoint for OptionListDates {
     const RPC: &'static str = "GetOptionListDates";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListDates";
@@ -1328,6 +1343,7 @@ impl OptionListExpirations {
         }
     }
 }
+impl sealed::Sealed for OptionListExpirations {}
 impl Endpoint for OptionListExpirations {
     const RPC: &'static str = "GetOptionListExpirations";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListExpirations";
@@ -1376,6 +1392,7 @@ impl OptionListStrikes {
         }
     }
 }
+impl sealed::Sealed for OptionListStrikes {}
 impl Endpoint for OptionListStrikes {
     const RPC: &'static str = "GetOptionListStrikes";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListStrikes";
@@ -1439,6 +1456,7 @@ impl OptionListContracts {
         self
     }
 }
+impl sealed::Sealed for OptionListContracts {}
 impl Endpoint for OptionListContracts {
     const RPC: &'static str = "GetOptionListContracts";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionListContracts";
@@ -1540,6 +1558,7 @@ impl OptionSnapshotOhlc {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotOhlc {}
 impl Endpoint for OptionSnapshotOhlc {
     const RPC: &'static str = "GetOptionSnapshotOhlc";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotOhlc";
@@ -1648,6 +1667,7 @@ impl OptionSnapshotTrade {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotTrade {}
 impl Endpoint for OptionSnapshotTrade {
     const RPC: &'static str = "GetOptionSnapshotTrade";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotTrade";
@@ -1758,6 +1778,7 @@ impl OptionSnapshotQuote {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotQuote {}
 impl Endpoint for OptionSnapshotQuote {
     const RPC: &'static str = "GetOptionSnapshotQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotQuote";
@@ -1873,6 +1894,7 @@ impl OptionSnapshotOpenInterest {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotOpenInterest {}
 impl Endpoint for OptionSnapshotOpenInterest {
     const RPC: &'static str = "GetOptionSnapshotOpenInterest";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotOpenInterest";
@@ -1988,6 +2010,7 @@ impl OptionSnapshotMarketValue {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotMarketValue {}
 impl Endpoint for OptionSnapshotMarketValue {
     const RPC: &'static str = "GetOptionSnapshotMarketValue";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotMarketValue";
@@ -2152,6 +2175,7 @@ impl OptionSnapshotGreeksImpliedVolatility {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotGreeksImpliedVolatility {}
 impl Endpoint for OptionSnapshotGreeksImpliedVolatility {
     const RPC: &'static str = "GetOptionSnapshotGreeksImpliedVolatility";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksImpliedVolatility";
@@ -2351,6 +2375,7 @@ impl OptionSnapshotGreeksAll {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotGreeksAll {}
 impl Endpoint for OptionSnapshotGreeksAll {
     const RPC: &'static str = "GetOptionSnapshotGreeksAll";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksAll";
@@ -2571,6 +2596,7 @@ impl OptionSnapshotBinomialGreeksAll {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotBinomialGreeksAll {}
 impl Endpoint for OptionSnapshotBinomialGreeksAll {
     const RPC: &'static str = "GetOptionSnapshotBinomialGreeksAll";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotBinomialGreeksAll";
@@ -2785,6 +2811,7 @@ impl OptionSnapshotGreeksFirstOrder {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotGreeksFirstOrder {}
 impl Endpoint for OptionSnapshotGreeksFirstOrder {
     const RPC: &'static str = "GetOptionSnapshotGreeksFirstOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksFirstOrder";
@@ -3005,6 +3032,7 @@ impl OptionSnapshotBinomialGreeksFirstOrder {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotBinomialGreeksFirstOrder {}
 impl Endpoint for OptionSnapshotBinomialGreeksFirstOrder {
     const RPC: &'static str = "GetOptionSnapshotBinomialGreeksFirstOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotBinomialGreeksFirstOrder";
@@ -3219,6 +3247,7 @@ impl OptionSnapshotGreeksSecondOrder {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotGreeksSecondOrder {}
 impl Endpoint for OptionSnapshotGreeksSecondOrder {
     const RPC: &'static str = "GetOptionSnapshotGreeksSecondOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksSecondOrder";
@@ -3439,6 +3468,7 @@ impl OptionSnapshotBinomialGreeksSecondOrder {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotBinomialGreeksSecondOrder {}
 impl Endpoint for OptionSnapshotBinomialGreeksSecondOrder {
     const RPC: &'static str = "GetOptionSnapshotBinomialGreeksSecondOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotBinomialGreeksSecondOrder";
@@ -3653,6 +3683,7 @@ impl OptionSnapshotGreeksThirdOrder {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotGreeksThirdOrder {}
 impl Endpoint for OptionSnapshotGreeksThirdOrder {
     const RPC: &'static str = "GetOptionSnapshotGreeksThirdOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotGreeksThirdOrder";
@@ -3873,6 +3904,7 @@ impl OptionSnapshotBinomialGreeksThirdOrder {
         self
     }
 }
+impl sealed::Sealed for OptionSnapshotBinomialGreeksThirdOrder {}
 impl Endpoint for OptionSnapshotBinomialGreeksThirdOrder {
     const RPC: &'static str = "GetOptionSnapshotBinomialGreeksThirdOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionSnapshotBinomialGreeksThirdOrder";
@@ -4030,6 +4062,7 @@ impl OptionHistoryEod {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryEod {}
 impl Endpoint for OptionHistoryEod {
     const RPC: &'static str = "GetOptionHistoryEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryEod";
@@ -4169,6 +4202,7 @@ impl OptionHistoryOhlc {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryOhlc {}
 impl Endpoint for OptionHistoryOhlc {
     const RPC: &'static str = "GetOptionHistoryOhlc";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryOhlc";
@@ -4332,6 +4366,7 @@ impl OptionHistoryTrade {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryTrade {}
 impl Endpoint for OptionHistoryTrade {
     const RPC: &'static str = "GetOptionHistoryTrade";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTrade";
@@ -4504,6 +4539,7 @@ impl OptionHistoryQuote {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryQuote {}
 impl Endpoint for OptionHistoryQuote {
     const RPC: &'static str = "GetOptionHistoryQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryQuote";
@@ -4686,6 +4722,7 @@ impl OptionHistoryTradeQuote {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryTradeQuote {}
 impl Endpoint for OptionHistoryTradeQuote {
     const RPC: &'static str = "GetOptionHistoryTradeQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeQuote";
@@ -4847,6 +4884,7 @@ impl OptionHistoryOpenInterest {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryOpenInterest {}
 impl Endpoint for OptionHistoryOpenInterest {
     const RPC: &'static str = "GetOptionHistoryOpenInterest";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryOpenInterest";
@@ -5022,6 +5060,7 @@ impl OptionHistoryGreeksEod {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryGreeksEod {}
 impl Endpoint for OptionHistoryGreeksEod {
     const RPC: &'static str = "GetOptionHistoryGreeksEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksEod";
@@ -5237,6 +5276,7 @@ impl OptionHistoryBinomialGreeksEod {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryBinomialGreeksEod {}
 impl Endpoint for OptionHistoryBinomialGreeksEod {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksEod";
@@ -5461,6 +5501,7 @@ impl OptionHistoryGreeksAll {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryGreeksAll {}
 impl Endpoint for OptionHistoryGreeksAll {
     const RPC: &'static str = "GetOptionHistoryGreeksAll";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksAll";
@@ -5705,6 +5746,7 @@ impl OptionHistoryBinomialGreeksAll {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryBinomialGreeksAll {}
 impl Endpoint for OptionHistoryBinomialGreeksAll {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksAll";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksAll";
@@ -5950,6 +5992,7 @@ impl OptionHistoryTradeGreeksAll {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryTradeGreeksAll {}
 impl Endpoint for OptionHistoryTradeGreeksAll {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksAll";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksAll";
@@ -6201,6 +6244,7 @@ impl OptionHistoryBinomialTradeGreeksAll {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryBinomialTradeGreeksAll {}
 impl Endpoint for OptionHistoryBinomialTradeGreeksAll {
     const RPC: &'static str = "GetOptionHistoryBinomialTradeGreeksAll";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialTradeGreeksAll";
@@ -6441,6 +6485,7 @@ impl OptionHistoryGreeksFirstOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryGreeksFirstOrder {}
 impl Endpoint for OptionHistoryGreeksFirstOrder {
     const RPC: &'static str = "GetOptionHistoryGreeksFirstOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksFirstOrder";
@@ -6685,6 +6730,7 @@ impl OptionHistoryBinomialGreeksFirstOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryBinomialGreeksFirstOrder {}
 impl Endpoint for OptionHistoryBinomialGreeksFirstOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksFirstOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksFirstOrder";
@@ -6930,6 +6976,7 @@ impl OptionHistoryTradeGreeksFirstOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryTradeGreeksFirstOrder {}
 impl Endpoint for OptionHistoryTradeGreeksFirstOrder {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksFirstOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksFirstOrder";
@@ -7181,6 +7228,7 @@ impl OptionHistoryBinomialTradeGreeksFirstOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryBinomialTradeGreeksFirstOrder {}
 impl Endpoint for OptionHistoryBinomialTradeGreeksFirstOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialTradeGreeksFirstOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialTradeGreeksFirstOrder";
@@ -7421,6 +7469,7 @@ impl OptionHistoryGreeksSecondOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryGreeksSecondOrder {}
 impl Endpoint for OptionHistoryGreeksSecondOrder {
     const RPC: &'static str = "GetOptionHistoryGreeksSecondOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksSecondOrder";
@@ -7665,6 +7714,7 @@ impl OptionHistoryBinomialGreeksSecondOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryBinomialGreeksSecondOrder {}
 impl Endpoint for OptionHistoryBinomialGreeksSecondOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksSecondOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksSecondOrder";
@@ -7910,6 +7960,7 @@ impl OptionHistoryTradeGreeksSecondOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryTradeGreeksSecondOrder {}
 impl Endpoint for OptionHistoryTradeGreeksSecondOrder {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksSecondOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksSecondOrder";
@@ -8161,6 +8212,7 @@ impl OptionHistoryBinomialTradeGreeksSecondOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryBinomialTradeGreeksSecondOrder {}
 impl Endpoint for OptionHistoryBinomialTradeGreeksSecondOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialTradeGreeksSecondOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialTradeGreeksSecondOrder";
@@ -8401,6 +8453,7 @@ impl OptionHistoryGreeksThirdOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryGreeksThirdOrder {}
 impl Endpoint for OptionHistoryGreeksThirdOrder {
     const RPC: &'static str = "GetOptionHistoryGreeksThirdOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksThirdOrder";
@@ -8645,6 +8698,7 @@ impl OptionHistoryBinomialGreeksThirdOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryBinomialGreeksThirdOrder {}
 impl Endpoint for OptionHistoryBinomialGreeksThirdOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialGreeksThirdOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialGreeksThirdOrder";
@@ -8890,6 +8944,7 @@ impl OptionHistoryTradeGreeksThirdOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryTradeGreeksThirdOrder {}
 impl Endpoint for OptionHistoryTradeGreeksThirdOrder {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksThirdOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksThirdOrder";
@@ -9141,6 +9196,7 @@ impl OptionHistoryBinomialTradeGreeksThirdOrder {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryBinomialTradeGreeksThirdOrder {}
 impl Endpoint for OptionHistoryBinomialTradeGreeksThirdOrder {
     const RPC: &'static str = "GetOptionHistoryBinomialTradeGreeksThirdOrder";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryBinomialTradeGreeksThirdOrder";
@@ -9381,6 +9437,7 @@ impl OptionHistoryGreeksImpliedVolatility {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryGreeksImpliedVolatility {}
 impl Endpoint for OptionHistoryGreeksImpliedVolatility {
     const RPC: &'static str = "GetOptionHistoryGreeksImpliedVolatility";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryGreeksImpliedVolatility";
@@ -9611,6 +9668,7 @@ impl OptionHistoryTradeGreeksImpliedVolatility {
         self
     }
 }
+impl sealed::Sealed for OptionHistoryTradeGreeksImpliedVolatility {}
 impl Endpoint for OptionHistoryTradeGreeksImpliedVolatility {
     const RPC: &'static str = "GetOptionHistoryTradeGreeksImpliedVolatility";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionHistoryTradeGreeksImpliedVolatility";
@@ -9780,6 +9838,7 @@ impl OptionAtTimeTrade {
         self
     }
 }
+impl sealed::Sealed for OptionAtTimeTrade {}
 impl Endpoint for OptionAtTimeTrade {
     const RPC: &'static str = "GetOptionAtTimeTrade";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionAtTimeTrade";
@@ -9894,6 +9953,7 @@ impl OptionAtTimeQuote {
         self
     }
 }
+impl sealed::Sealed for OptionAtTimeQuote {}
 impl Endpoint for OptionAtTimeQuote {
     const RPC: &'static str = "GetOptionAtTimeQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionAtTimeQuote";
@@ -9965,6 +10025,7 @@ impl IndexListSymbols {
         }
     }
 }
+impl sealed::Sealed for IndexListSymbols {}
 impl Endpoint for IndexListSymbols {
     const RPC: &'static str = "GetIndexListSymbols";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexListSymbols";
@@ -10009,6 +10070,7 @@ impl IndexListDates {
         }
     }
 }
+impl sealed::Sealed for IndexListDates {}
 impl Endpoint for IndexListDates {
     const RPC: &'static str = "GetIndexListDates";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexListDates";
@@ -10067,6 +10129,7 @@ impl IndexSnapshotOhlc {
         self
     }
 }
+impl sealed::Sealed for IndexSnapshotOhlc {}
 impl Endpoint for IndexSnapshotOhlc {
     const RPC: &'static str = "GetIndexSnapshotOhlc";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexSnapshotOhlc";
@@ -10135,6 +10198,7 @@ impl IndexSnapshotPrice {
         self
     }
 }
+impl sealed::Sealed for IndexSnapshotPrice {}
 impl Endpoint for IndexSnapshotPrice {
     const RPC: &'static str = "GetIndexSnapshotPrice";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexSnapshotPrice";
@@ -10203,6 +10267,7 @@ impl IndexSnapshotMarketValue {
         self
     }
 }
+impl sealed::Sealed for IndexSnapshotMarketValue {}
 impl Endpoint for IndexSnapshotMarketValue {
     const RPC: &'static str = "GetIndexSnapshotMarketValue";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexSnapshotMarketValue";
@@ -10263,6 +10328,7 @@ impl IndexHistoryEod {
         }
     }
 }
+impl sealed::Sealed for IndexHistoryEod {}
 impl Endpoint for IndexHistoryEod {
     const RPC: &'static str = "GetIndexHistoryEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexHistoryEod";
@@ -10348,6 +10414,7 @@ impl IndexHistoryOhlc {
         self
     }
 }
+impl sealed::Sealed for IndexHistoryOhlc {}
 impl Endpoint for IndexHistoryOhlc {
     const RPC: &'static str = "GetIndexHistoryOhlc";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexHistoryOhlc";
@@ -10460,6 +10527,7 @@ impl IndexHistoryPrice {
         self
     }
 }
+impl sealed::Sealed for IndexHistoryPrice {}
 impl Endpoint for IndexHistoryPrice {
     const RPC: &'static str = "GetIndexHistoryPrice";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexHistoryPrice";
@@ -10555,6 +10623,7 @@ impl IndexAtTimePrice {
         }
     }
 }
+impl sealed::Sealed for IndexAtTimePrice {}
 impl Endpoint for IndexAtTimePrice {
     const RPC: &'static str = "GetIndexAtTimePrice";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexAtTimePrice";
@@ -10610,6 +10679,7 @@ impl CalendarOpenToday {
         }
     }
 }
+impl sealed::Sealed for CalendarOpenToday {}
 impl Endpoint for CalendarOpenToday {
     const RPC: &'static str = "GetCalendarOpenToday";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCalendarOpenToday";
@@ -10654,6 +10724,7 @@ impl CalendarOnDate {
         }
     }
 }
+impl sealed::Sealed for CalendarOnDate {}
 impl Endpoint for CalendarOnDate {
     const RPC: &'static str = "GetCalendarOnDate";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCalendarOnDate";
@@ -10699,6 +10770,7 @@ impl CalendarYear {
         }
     }
 }
+impl sealed::Sealed for CalendarYear {}
 impl Endpoint for CalendarYear {
     const RPC: &'static str = "GetCalendarYear";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCalendarYear";
@@ -10750,6 +10822,7 @@ impl InterestRateHistoryEod {
         }
     }
 }
+impl sealed::Sealed for InterestRateHistoryEod {}
 impl Endpoint for InterestRateHistoryEod {
     const RPC: &'static str = "GetInterestRateHistoryEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetInterestRateHistoryEod";
@@ -10820,6 +10893,7 @@ impl CorporateActionDividend {
         self
     }
 }
+impl sealed::Sealed for CorporateActionDividend {}
 impl Endpoint for CorporateActionDividend {
     const RPC: &'static str = "GetCorporateActionDividend";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCorporateActionDividend";
@@ -10878,6 +10952,7 @@ impl CorporateActionSplit {
         self
     }
 }
+impl sealed::Sealed for CorporateActionSplit {}
 impl Endpoint for CorporateActionSplit {
     const RPC: &'static str = "GetCorporateActionSplit";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCorporateActionSplit";
@@ -10924,6 +10999,7 @@ impl OptionFlatFileTradeQuote {
         }
     }
 }
+impl sealed::Sealed for OptionFlatFileTradeQuote {}
 impl Endpoint for OptionFlatFileTradeQuote {
     const RPC: &'static str = "GetOptionFlatFileTradeQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionFlatFileTradeQuote";
@@ -10969,6 +11045,7 @@ impl OptionFlatFileEod {
         }
     }
 }
+impl sealed::Sealed for OptionFlatFileEod {}
 impl Endpoint for OptionFlatFileEod {
     const RPC: &'static str = "GetOptionFlatFileEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionFlatFileEod";
@@ -11014,6 +11091,7 @@ impl OptionFlatFileOpenInterest {
         }
     }
 }
+impl sealed::Sealed for OptionFlatFileOpenInterest {}
 impl Endpoint for OptionFlatFileOpenInterest {
     const RPC: &'static str = "GetOptionFlatFileOpenInterest";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionFlatFileOpenInterest";
@@ -11059,6 +11137,7 @@ impl OptionFlatFileQuote {
         }
     }
 }
+impl sealed::Sealed for OptionFlatFileQuote {}
 impl Endpoint for OptionFlatFileQuote {
     const RPC: &'static str = "GetOptionFlatFileQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetOptionFlatFileQuote";
@@ -11103,6 +11182,7 @@ impl StockFlatFileTradeQuote {
         }
     }
 }
+impl sealed::Sealed for StockFlatFileTradeQuote {}
 impl Endpoint for StockFlatFileTradeQuote {
     const RPC: &'static str = "GetStockFlatFileTradeQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockFlatFileTradeQuote";
@@ -11147,6 +11227,7 @@ impl StockFlatFileEod {
         }
     }
 }
+impl sealed::Sealed for StockFlatFileEod {}
 impl Endpoint for StockFlatFileEod {
     const RPC: &'static str = "GetStockFlatFileEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockFlatFileEod";
@@ -11191,6 +11272,7 @@ impl StockFlatFileQuote {
         }
     }
 }
+impl sealed::Sealed for StockFlatFileQuote {}
 impl Endpoint for StockFlatFileQuote {
     const RPC: &'static str = "GetStockFlatFileQuote";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetStockFlatFileQuote";
@@ -11235,6 +11317,7 @@ impl IndexFlatFileEod {
         }
     }
 }
+impl sealed::Sealed for IndexFlatFileEod {}
 impl Endpoint for IndexFlatFileEod {
     const RPC: &'static str = "GetIndexFlatFileEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexFlatFileEod";
@@ -11277,6 +11360,7 @@ impl FutureListSymbols {
         self
     }
 }
+impl sealed::Sealed for FutureListSymbols {}
 impl Endpoint for FutureListSymbols {
     const RPC: &'static str = "GetFutureListSymbols";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureListSymbols";
@@ -11326,6 +11410,7 @@ impl FutureListDates {
         self
     }
 }
+impl sealed::Sealed for FutureListDates {}
 impl Endpoint for FutureListDates {
     const RPC: &'static str = "GetFutureListDates";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureListDates";
@@ -11411,6 +11496,7 @@ impl FutureHistoryTrade {
         self
     }
 }
+impl sealed::Sealed for FutureHistoryTrade {}
 impl Endpoint for FutureHistoryTrade {
     const RPC: &'static str = "GetFutureHistoryTrade";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryTrade";
@@ -11508,6 +11594,7 @@ impl FutureHistoryBbo {
         self
     }
 }
+impl sealed::Sealed for FutureHistoryBbo {}
 impl Endpoint for FutureHistoryBbo {
     const RPC: &'static str = "GetFutureHistoryBbo";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryBbo";
@@ -11606,6 +11693,7 @@ impl FutureHistoryTradeBbo {
         self
     }
 }
+impl sealed::Sealed for FutureHistoryTradeBbo {}
 impl Endpoint for FutureHistoryTradeBbo {
     const RPC: &'static str = "GetFutureHistoryTradeBbo";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryTradeBbo";
@@ -11704,6 +11792,7 @@ impl FutureHistoryOhlc {
         self
     }
 }
+impl sealed::Sealed for FutureHistoryOhlc {}
 impl Endpoint for FutureHistoryOhlc {
     const RPC: &'static str = "GetFutureHistoryOhlc";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryOhlc";
@@ -11767,6 +11856,7 @@ impl FutureHistoryEod {
         self
     }
 }
+impl sealed::Sealed for FutureHistoryEod {}
 impl Endpoint for FutureHistoryEod {
     const RPC: &'static str = "GetFutureHistoryEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistoryEod";
@@ -11825,6 +11915,7 @@ impl FutureHistorySettlement {
         self
     }
 }
+impl sealed::Sealed for FutureHistorySettlement {}
 impl Endpoint for FutureHistorySettlement {
     const RPC: &'static str = "GetFutureHistorySettlement";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureHistorySettlement";
@@ -11890,6 +11981,7 @@ impl FutureAtTimeTrade {
         self
     }
 }
+impl sealed::Sealed for FutureAtTimeTrade {}
 impl Endpoint for FutureAtTimeTrade {
     const RPC: &'static str = "GetFutureAtTimeTrade";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureAtTimeTrade";
@@ -11956,6 +12048,7 @@ impl FutureAtTimeBbo {
         self
     }
 }
+impl sealed::Sealed for FutureAtTimeBbo {}
 impl Endpoint for FutureAtTimeBbo {
     const RPC: &'static str = "GetFutureAtTimeBbo";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureAtTimeBbo";
@@ -12008,6 +12101,7 @@ impl FutureSnapshotBbo {
         self
     }
 }
+impl sealed::Sealed for FutureSnapshotBbo {}
 impl Endpoint for FutureSnapshotBbo {
     const RPC: &'static str = "GetFutureSnapshotBbo";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureSnapshotBbo";
@@ -12058,6 +12152,7 @@ impl FutureSnapshotTrade {
         self
     }
 }
+impl sealed::Sealed for FutureSnapshotTrade {}
 impl Endpoint for FutureSnapshotTrade {
     const RPC: &'static str = "GetFutureSnapshotTrade";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureSnapshotTrade";
@@ -12108,6 +12203,7 @@ impl FutureSnapshotOhlc {
         self
     }
 }
+impl sealed::Sealed for FutureSnapshotOhlc {}
 impl Endpoint for FutureSnapshotOhlc {
     const RPC: &'static str = "GetFutureSnapshotOhlc";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureSnapshotOhlc";
@@ -12158,6 +12254,7 @@ impl FutureSnapshotMarketValue {
         self
     }
 }
+impl sealed::Sealed for FutureSnapshotMarketValue {}
 impl Endpoint for FutureSnapshotMarketValue {
     const RPC: &'static str = "GetFutureSnapshotMarketValue";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureSnapshotMarketValue";
@@ -12201,6 +12298,7 @@ impl FutureFlatFileTradeBbo {
         self
     }
 }
+impl sealed::Sealed for FutureFlatFileTradeBbo {}
 impl Endpoint for FutureFlatFileTradeBbo {
     const RPC: &'static str = "GetFutureFlatFileTradeBbo";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureFlatFileTradeBbo";
@@ -12243,6 +12341,7 @@ impl FutureFlatFileEod {
         self
     }
 }
+impl sealed::Sealed for FutureFlatFileEod {}
 impl Endpoint for FutureFlatFileEod {
     const RPC: &'static str = "GetFutureFlatFileEod";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureFlatFileEod";
@@ -12285,6 +12384,7 @@ impl FutureFlatFileBbo {
         self
     }
 }
+impl sealed::Sealed for FutureFlatFileBbo {}
 impl Endpoint for FutureFlatFileBbo {
     const RPC: &'static str = "GetFutureFlatFileBbo";
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetFutureFlatFileBbo";
