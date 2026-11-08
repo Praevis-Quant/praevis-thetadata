@@ -32,6 +32,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **ROADMAP: the reader-assigned `Event` sequence (#136) is held, not in
+  beta.1** (Coordinator, to confirm with the user).
+  - **The run:** in a 6-round desktop comparison, the median and the p99
+    were unchanged. At 10 contracts, though, p99.9 was above 150 µs in 4 of
+    6 candidate runs against 1 of 6 baseline runs, which is unexplained.
+  - **Why holding is safe:** `Event` is non-exhaustive since #132, so the
+    field can be added later without breaking callers.
 - **Breaking (pre-beta.1): per-call request options** (API change 4 of 5).
   `query_with` and `job_with` take a `RequestOptions` instead of a
   `BatchPolicy`. It holds:

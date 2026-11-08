@@ -130,7 +130,9 @@ work, and none would change existing calls:
 - part-level results from a job;
 - scheduler metrics;
 - stream reconnect;
-- stock and index streaming.
+- stock and index streaming;
+- reader-assigned `Event` sequence: #136, held; 10-contract p99.9
+  unexplained in a 6-round desktop comparison.
 
 **Limits by design:**
 - the stream reads a Terminal on the same machine only;
