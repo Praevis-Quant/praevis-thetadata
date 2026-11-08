@@ -258,6 +258,28 @@ feed, `latency --consumer sleep|spin`, 120 s each, runs
 - **Decision:** unchanged. The user's deferral stands, with `Sleep` the only
   behaviour ([consumer wait strategy](../performance/consumer-wait-strategy.md)).
 
+**Thread priority and affinity (2026-11-08).** These are observations from
+one run each.
+- **Setup:** Windows, the dev feed after a Terminal restart, sleep and spin
+  at normal priority, highest, and highest pinned to core 6. Runs at 10 and
+  1,000 contracts, IDs `w10-dev-{10,1000}-{sleep,spin}-{normal,highest,highest-pin6}-003`.
+- **Results** (the full table is in the
+  [write-up](../performance/consumer-wait-strategy.md)):
+  - **Pinning a sleeping consumer is harmful:** p99.9 of 9.1 ms and
+    2.4 ms, and a max of 72 ms and 16 ms. A pinned thread waits for its
+    core instead of moving.
+  - **Raising priority did not reliably change the max:** lower at 10
+    contracts, higher at 1,000 sleeping, within single-run variance. The
+    p50 and p99 were unchanged.
+  - **Spinning stayed at a p50 of 3 µs and a p99 of 6-7 µs** at every
+    setting.
+  - **The 1,000-contract rate is genuine:** 978-987 contracts quoting,
+    none unsubscribed.
+- **Conclusion:** no evidence that priority or affinity fixes the Windows
+  max. The harness options stay for measurement, with no library change.
+  The heartbeat gaps (21 in one run) stay unexplained, on the Terminal or
+  feed side.
+
 **For users, until the delay is explained:** run either the Terminal's REST
 or our historical client on an account, not both. The Terminal's stream can
 run alongside our client.

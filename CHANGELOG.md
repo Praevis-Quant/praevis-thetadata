@@ -14,6 +14,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Changed
+
+- **W10 thread-priority results recorded** (consumer wait strategy and
+  ADR-0018; one run each).
+  - **Priority:** raising the consumer's priority did not reliably change
+    the Windows max.
+  - **Pinning:** pinning a sleeping consumer was harmful (max up to 72 ms).
+    The write-up now says not to pin a consumer that blocks.
+  - **Spinning** stayed at a p99 of 6-7 µs at every setting.
+  - **No library change.**
+
 ## [0.1.0-alpha.3] - pending (the date is set at publication)
 
 Not yet published: it needs the user's explicit approval. Scope and the
