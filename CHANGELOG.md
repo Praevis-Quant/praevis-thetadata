@@ -41,6 +41,10 @@ The Python package's wheels go on the GitHub release, not PyPI.
   - **Python:** CI smoke-imports the abi3 wheel in a clean environment
     (checking the version and the 100 endpoints) and keeps it as an
     artifact for the GitHub release. It is never uploaded to PyPI.
+  - **Linux wheel:** built inside PyPA's `manylinux_2_28` image (pinned by
+    digest) instead of on the runner. It installs on glibc 2.28 or newer
+    (RHEL 8, Debian 11, Ubuntu 20.04-era), and it is the wheel the smoke
+    test installs.
 
 ### Fixed
 
