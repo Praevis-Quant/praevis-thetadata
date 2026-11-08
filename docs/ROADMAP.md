@@ -44,9 +44,11 @@ The [performance architecture plan](architecture/performance-plan.md)
 - **Releases:**
   - `0.1.0-alpha.1` and `0.1.0-alpha.2` are on crates.io
     ([releases](releases.md)). Everything since is unreleased.
-  - **alpha.3 and beta.1 are on hold.** Any publish or tag needs separate
-    approval.
-  - **The Python package is not published.**
+  - **alpha.3 is in preparation** (user decision 2026-11-07,
+    [scope record](releases.md#alpha3-scope-record-2026-11-08)). Publishing
+    and tagging still need the user's explicit approval.
+  - **The Python package will not go to PyPI this time.** Its wheels are
+    attached to the GitHub release.
 
 ## Python parity
 

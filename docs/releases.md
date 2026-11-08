@@ -18,7 +18,7 @@ the account holder operates the optional live checks.
 | --- | --- | --- | --- |
 | `0.1.0-alpha.1` | **Released 2026-11-02 UTC** ([publication record](crates-io-release-plan.md#publication-record-010-alpha1), tag `v0.1.0-alpha.1`). Useful first publication of auth, core, proto, client and CLI; client EOD clearly experimental | Proto bindings and research at the current reviewed upstream baseline (1.0.17, [update plan](upstream-update-1.0.17.md), decision D5); self-contained archives and licenses; dependency versions/order; Windows/Linux external consumer builds; verified registry owner/publish capability; manually recorded PROD auth and small EOD result, or explicit documented service blocker before reconsidering scope (**met 2026-11-01**: Windows PROD auth with in-memory/`--save`/status/logout lifecycle, AAPL EOD capture/replay matching on all three interfaces, FREE quote denial; [observations](research/live-observations.md#alpha1-prod-exit-gate-2026-11-01)); exact archive review and publication approval | [Packaging plan](crates-io-release-plan.md), [manual live verification](live-verification.md). No empty placeholder crates. |
 | `0.1.0-alpha.2` | EOD feature-complete candidate: exact numeric delivery and Table adapter, bounded lifecycle and documented real-service behavior | Close every applicable clause in the [EOD matrix](requirements/stock-eod-matrix.md); resolve measured null/price regressions or approve a measured per-workload tradeoff; calibrate resource defaults; compare authorized live captures with all three local interfaces; record unresolved service semantics explicitly. **Released 2026-11-03 UTC** ([publication record](crates-io-release-plan.md#publication-record-010-alpha2), tag `v0.1.0-alpha.2`); all five gates met 2026-11-02 ([readiness record](#alpha2-readiness-record-2026-11-02)) | Alpha.1. Release follows the approved [release procedure](#alpha2-release-procedure-pending-approval). |
-| `0.1.0-alpha.3` (proposed) | **Hardening**: close the items deferred from alpha.2 without changing the public API | Deferred items 1-4, 6 and 7 below closed (item 8 proposed), with evidence linked from the EOD matrix and benchmark policy | Alpha.2. Proposed 2026-11-02 so the deferred work stays scheduled; it can be renamed or merged into beta.1 by maintainer decision. |
+| `0.1.0-alpha.3` (in preparation) | **Scope widened by the user on 2026-11-07:** the hardening work plus everything built since alpha.2 (generated endpoints, `query()`/`job()`, the scheduler, the arrow and stream crates, the schema registry), still experimental. See the [scope record](#alpha3-scope-record-2026-11-08) | Deferred items 1-4, 6 and 7 closed (done 2026-11-03); packaging rehearsal green on Windows and Linux for every published crate; abi3 wheels built in CI; the user's explicit approval to publish | Alpha.2. The user publishes manually after approval, as before. |
 | `0.1.0-beta.1` | Freeze auth/EOD public API for the first supported release; runnable consumer examples and troubleshooting | Accept or revise the applicable proposed ADRs; requirement-to-test/evidence review; partial-result and cancellation examples; install/build outside workspace; document supported platforms, native-store prerequisites, resource policy and compatibility boundaries; **API freeze review of a numeric comparison/ordering helper for `Price`** (deferred item 5) | Alpha.2; release review covers API stability, packaging and diagnostics. |
 | `0.1.0` | Supported auth + single-symbol stock EOD libraries and auth CLI | No unresolved blocker for the declared surface; green synthetic Windows/Linux checks; maintainer-reviewed manual PROD report on the release candidate; retained benchmark comparison and calibrated acceptance decision; signed-off release checklist below; **every item in [Deferred from alpha.2](#deferred-from-alpha2) closed** | Beta.1. This is not full Python parity and makes no flat-file/real-time promise. |
 | `0.2.0` | Typed stock discovery, snapshots, OHLC/trade/quote history and at-time slices, delivered in small prereleases | Define per-slice ADRs and L1/L2/L3 first; reconcile inventory entries, wire presence, bounded output and account entitlements; synthetic/fault tests, optional manual live evidence and before/after data-path benchmarks for each newly supported slice | Stable first slice; select endpoint order from consumer needs. Raw bindings remain experimental until individually accepted. |
@@ -44,6 +44,72 @@ in the named milestone and is a `0.1.0` exit gate.
 | 6 | Three-round A/A on the maintainer's Ryzen desktop, to replace its provisional 1.10/0.90 tolerances. | PERF-L3-008; D-B | **Closed 2026-11-03** (alpha.3 A3): no every-round shift above 0.3%; desktop tolerances are now 1.05/0.95 ([record](performance/eod-desktop-aa-results.md)) |
 | 7 | Drop an abandoned worker's schema lease before its job permit (today the result tuple releases the job permit first). The release order becomes deterministic, so a newly admitted job never observes a stale schema lease. It is a data-path change, so it needs the before/after [benchmark protocol](performance/benchmark-policy.md). | EOD resource leases; [#34](https://github.com/Praevis-Quant/praevis-thetadata/pull/34) root cause | **Closed 2026-11-03** (alpha.3 A2): `JobLeases` ordering; neutral against the D-B tolerances ([results](performance/eod-lease-order-results.md)) |
 | 8 | **Proposed 2026-11-03; needs a maintainer decision.** Transport buffering outside the shared budget: each concurrently open stream holds about one full encoded message (measured up to 618 MiB resident at 16 streams × 24 MiB; at the defaults, 16 × 64 MiB could exceed 1 GiB). `concurrent_streams` bounds it linearly. The maintainer rejected a cap (2026-11-03) and asked for the root cause first. **Investigation done:** it is tonic's per-RPC decode buffer, retained for the stream's lifetime. The design alternatives are measured, and own message framing (option 2a) is recommended ([record](performance/eod-transport-buffering.md)). | EOD-L3-023; [memory profile](performance/eod-memory-profile.md) | Design decision pending; before `0.1.0` |
+
+## Alpha.3 scope record (2026-11-08)
+
+**Decisions (user, 2026-11-07):**
+1. Prepare `0.1.0-alpha.3`.
+2. **crates.io only.** The Python package does **not** go to PyPI this
+   time. Its abi3 wheels (Windows and Linux) are attached to the GitHub
+   release as assets.
+3. Nothing is published or tagged until the user explicitly approves it at
+   the end. The user runs `cargo publish` locally, as for alpha.1 and
+   alpha.2.
+
+### What alpha.3 ships since alpha.2
+
+Everything below is **experimental**. A generated binding or a passing live
+check is not a supported-feature promise; the supported surface stays auth
+and the stock EOD slice until beta.1 freezes an API.
+
+| Area | What | Evidence |
+| --- | --- | --- |
+| Endpoints | Generated typed requests for all 100 RPCs; the 81 with a vendor wrapper keep the vendor's defaults and presence rules (`endpoints::*`) | [Endpoint coverage](endpoints/coverage.md) |
+| Queries | `ThetaClient::query()` streams exact Arrow batches; `job()` splits by date and, for all-strike fine option quotes, by strike, with ordered read-ahead; `SessionEnded` for `UNAUTHENTICATED` | [Options phase](architecture/options-phase.md) |
+| Scheduling | A tier-aware scheduler: PRO 8 concurrent; FREE 1 and 20 per minute by default; overridable | [P1 design](architecture/p1-design.md) |
+| Arrow and Parquet | **New crate `praevis-thetadata-arrow`:** the columnar decoder (exact decimal prices, zone-aware millisecond timestamps), the Parquet sink (no decimal statistics by default; upstream arrow-rs#12027) and registered column kinds for 59 endpoints | [ADR-0009 addendum](adr/0009-market-data-values-and-schema.md), [schemas](endpoints/schemas.json) |
+| Real time | **New crate `praevis-thetadata-stream`:** option quotes and the full trade stream from an operator-run Theta Terminal's local WebSocket, parsed without allocation; it unsubscribes on close | [ADR-0018](adr/0018-explicit-connection-adapters.md) (W10 measured on the dev feed only) |
+| Options PRO evidence | 50 of 51 option RPCs value-checked live; the D2 targets met against the vendor package; memory bounded by configuration on the streaming path | [Options phase](architecture/options-phase.md), [D2 results](performance/options-d2-results.md) |
+| Hardening | Deferred items 1-4, 6 and 7 (table below) | [Deferred from alpha.2](#deferred-from-alpha2) |
+| Python | The `praevis_thetadata` package (vendor-named methods, Arrow results, Parquet) as **wheels attached to the GitHub release**, not on PyPI | [Python README](../crates/praevis-thetadata-py/README.md) |
+
+### The items deferred from alpha.2
+
+| # | Item | Disposition for alpha.3 |
+| ---: | --- | --- |
+| 1 | Transport and ZSTD memory profiling | **Done** 2026-11-03 ([record](performance/eod-memory-profile.md)) |
+| 2 | Exhaustive adversarial decoder corpus | **Done** 2026-11-03 (plain-Rust corpus; fuzzing after 0.1.0, ROADMAP) |
+| 3 | Synthetic trusted-TLS fixture | **Done** 2026-11-03 |
+| 4 | Controlled-clock interleavings and the transport seam | **Done** 2026-11-03 ([results](performance/eod-clock-seam-results.md)) |
+| 5 | Numeric comparison/ordering helper for `Price` | **Pushed to beta.1.** It is a public API decision, so it belongs with the API freeze; alpha.3 does not change `Price` |
+| 6 | Desktop A/A tolerances | **Done** 2026-11-03 (1.05/0.95, [record](performance/eod-desktop-aa-results.md)) |
+| 7 | Deterministic schema-lease/job-permit release order | **Done** 2026-11-03 ([results](performance/eod-lease-order-results.md)) |
+| 8 (proposed) | Transport buffering outside the shared budget | **Not in alpha.3.** The root cause is known (tonic's per-RPC decode buffer) and option 2a is recommended, but the design decision is still open. It stays a `0.1.0` gate. Until then, only the client's own accounted allocations are described as bounded |
+
+### Crates and the publish set
+
+Published in dependency order, each at `0.1.0-alpha.3`. Names checked on
+crates.io on 2026-11-08: the two new names are free.
+
+| Order | Crate | crates.io | Packaging status (fixed in step b) |
+| ---: | --- | --- | --- |
+| 1 | `praevis-thetadata-proto` | published (alpha.2) | ready |
+| 2 | `praevis-thetadata-core` | published (alpha.2) | ready |
+| 3 | `praevis-thetadata-auth` | published (alpha.2) | ready |
+| 4 | `praevis-thetadata-arrow` | **new**, name free | `publish = false` to be lifted (the client depends on it, so it must publish); add `documentation`; LICENSE, NOTICE and README present |
+| 5 | `praevis-thetadata-client` | published (alpha.2) | ready; description to update for the new surface |
+| 6 | `praevis-thetadata-cli` | published (alpha.2) | ready; description wording fix (open since alpha.1) |
+| 7 | `praevis-thetadata-stream` | **new**, name free | `publish = false` to be lifted; add LICENSE and NOTICE copies, `documentation`, keywords and categories, and add it to the repository's package-file check. No internal dependencies (the client is a dev-dependency only), so it can publish last |
+| — | `praevis-thetadata-py` | **stays unpublished** (`publish = false`) | Built as abi3 wheels in CI; attached to the GitHub release |
+
+Steps:
+- **a.** This record.
+- **b.** Version bump, the CHANGELOG release section, the publication
+  checklist and order, and the metadata fixes above.
+- **c.** A packaging rehearsal on Windows and Linux for every published
+  crate, abi3 wheels with a smoke import, and the archive contents
+  reviewed.
+- **d.** A GitHub release draft (not published).
 
 Later version scopes are planning allocations, not approval of undocumented
 vendor behavior. Split a milestone into additional prereleases when its evidence

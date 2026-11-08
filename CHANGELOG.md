@@ -55,6 +55,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **The alpha.3 scope is recorded** ([releases](docs/releases.md#alpha3-scope-record-2026-11-08)).
+  The user decided on 2026-11-07 to prepare alpha.3: crates.io only, with
+  the Python wheels attached to the GitHub release and not on PyPI. The
+  record covers:
+  - what ships since alpha.2;
+  - a disposition for each deferred item;
+  - the publish set in dependency order, with the two new crates (arrow,
+    stream) and the unpublished Python crate.
 - **The roadmap reflects where the project stands.** It now opens with the
   current state:
   - all 81 vendor wrappers exist as generated Rust requests and same-name
