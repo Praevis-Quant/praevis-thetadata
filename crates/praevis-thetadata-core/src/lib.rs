@@ -44,8 +44,23 @@ pub enum DataError {
 /// assert_ne!(a, b);
 /// ```
 ///
-/// Normalize both values to a common exponent before comparing or ordering them
-/// numerically. A numeric comparison helper is deferred to the beta.1 API review.
+/// Compare or order them by value with [`Price::numeric_cmp`] and
+/// [`Price::numeric_eq`]. `Price` deliberately does not implement `Ord`:
+/// ordering by value would disagree with `Eq` (123.45 and 123.4500 are equal
+/// in value but not in representation), which sorted collections rely on.
+///
+/// ```
+/// use praevis_thetadata_core::Price;
+/// use std::cmp::Ordering;
+/// let a = Price::from_wire(12345, 8).unwrap().unwrap(); // 123.45
+/// let b = Price::from_wire(1234500, 6).unwrap().unwrap(); // 123.4500
+/// let c = Price::from_wire(-5, 9).unwrap().unwrap(); // -0.5
+/// assert!(a.numeric_eq(&b));
+/// assert_eq!(c.numeric_cmp(&a), Ordering::Less);
+/// let mut prices = vec![a.clone(), c.clone(), b.clone()];
+/// prices.sort_by(Price::numeric_cmp);
+/// assert_eq!(prices[0], c);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Price {
     pub mantissa: i32,
@@ -61,6 +76,56 @@ impl Price {
                 exponent: scale - 10,
             })),
             _ => Err(DataError::PriceScale(scale)),
+        }
+    }
+
+    /// Order two prices by value, exactly, whatever their exponents. Use it
+    /// to sort (`prices.sort_by(Price::numeric_cmp)`) or compare; `==` stays
+    /// representational.
+    pub fn numeric_cmp(&self, other: &Self) -> std::cmp::Ordering {
+        use std::cmp::Ordering;
+        let (a, b) = (i128::from(self.mantissa), i128::from(other.mantissa));
+        // Different signs, or a zero, decide it without scaling.
+        match a.signum().cmp(&b.signum()) {
+            Ordering::Equal if a == 0 => return Ordering::Equal,
+            Ordering::Equal => {}
+            order => return order,
+        }
+        // Same sign, both non-zero: compare magnitudes at a common exponent.
+        let magnitude = Self::magnitude_cmp(
+            (a.unsigned_abs(), self.exponent),
+            (b.unsigned_abs(), other.exponent),
+        );
+        if a < 0 {
+            magnitude.reverse()
+        } else {
+            magnitude
+        }
+    }
+
+    /// Whether two prices have the same value (`123.45` and `123.4500` do).
+    pub fn numeric_eq(&self, other: &Self) -> bool {
+        self.numeric_cmp(other) == std::cmp::Ordering::Equal
+    }
+
+    /// Compare two non-zero magnitudes `m × 10^e`.
+    fn magnitude_cmp((ma, ea): (u128, i32), (mb, eb): (u128, i32)) -> std::cmp::Ordering {
+        // An i32 mantissa has at most 10 digits, so a magnitude with an
+        // exponent 10 or more above the other's is larger whatever the
+        // mantissas: no scaling, and no overflow for any exponents.
+        let shift = i64::from(ea) - i64::from(eb);
+        if shift >= 10 {
+            return std::cmp::Ordering::Greater;
+        }
+        if shift <= -10 {
+            return std::cmp::Ordering::Less;
+        }
+        // Scale the one with the larger exponent down to the other's; at most
+        // 2^31 × 10^9, well within u128.
+        if shift >= 0 {
+            (ma * 10u128.pow(shift as u32)).cmp(&mb)
+        } else {
+            ma.cmp(&(mb * 10u128.pow((-shift) as u32)))
         }
     }
 }
@@ -181,6 +246,79 @@ impl Table {
 
 #[cfg(test)]
 mod tests {
+    use std::cmp::Ordering;
+
+    fn p(mantissa: i32, exponent: i32) -> Price {
+        Price { mantissa, exponent }
+    }
+
+    #[test]
+    fn prices_compare_by_value_whatever_their_representation() {
+        // 123.45 at three scales: equal in value, not in representation.
+        let a = p(12345, -2);
+        let b = p(1_234_500, -4);
+        let c = p(123_450_000, -6);
+        assert!(a.numeric_eq(&b) && b.numeric_eq(&c));
+        assert_ne!(a, b);
+        assert_eq!(a.numeric_cmp(&p(12346, -2)), Ordering::Less);
+        assert_eq!(p(-5, -1).numeric_cmp(&p(1, -9)), Ordering::Less);
+        assert_eq!(p(-5, -1).numeric_cmp(&p(-6, -1)), Ordering::Greater);
+        // Zero has many representations; all are equal.
+        assert!(p(0, -9).numeric_eq(&p(0, 9)));
+        assert_eq!(p(0, 5).numeric_cmp(&p(-1, -9)), Ordering::Greater);
+        // The extremes of the i32 range, without overflow.
+        assert_eq!(p(i32::MIN, 0).numeric_cmp(&p(i32::MAX, 0)), Ordering::Less);
+        assert_eq!(
+            p(1, i32::MAX).numeric_cmp(&p(i32::MAX, i32::MIN)),
+            Ordering::Greater
+        );
+        assert_eq!(
+            p(-1, i32::MAX).numeric_cmp(&p(i32::MIN, i32::MIN)),
+            Ordering::Less
+        );
+        assert_eq!(p(i32::MAX, 0).numeric_cmp(&p(1, 10)), Ordering::Less);
+        assert_eq!(p(i32::MAX, 0).numeric_cmp(&p(1, 9)), Ordering::Greater);
+    }
+
+    #[test]
+    fn numeric_order_matches_an_independent_oracle_on_wire_prices() {
+        // Wire prices have exponents -9..=9: scaling both to -9 in i128 is an
+        // exact oracle that does not share the helper's shortcut.
+        let value = |x: &Price| i128::from(x.mantissa) * 10i128.pow((x.exponent + 9) as u32);
+        let mut seed: u64 = 0x9E37_79B9_7F4A_7C15;
+        let mut next = || {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            seed
+        };
+        let edges = [
+            0,
+            1,
+            -1,
+            10,
+            -10,
+            123_456,
+            i32::MAX,
+            i32::MIN,
+            i32::MAX / 10,
+        ];
+        for i in 0..20_000 {
+            let mut pick = || {
+                let r = next();
+                let mantissa = if i % 4 == 0 {
+                    edges[(r % edges.len() as u64) as usize]
+                } else {
+                    (r >> 16) as i32
+                };
+                p(mantissa, ((r >> 8) % 19) as i32 - 9)
+            };
+            let (a, b) = (pick(), pick());
+            assert_eq!(a.numeric_cmp(&b), value(&a).cmp(&value(&b)), "{a:?} {b:?}");
+            assert_eq!(b.numeric_cmp(&a), value(&b).cmp(&value(&a)));
+        }
+    }
+
     use super::*;
 
     #[test]

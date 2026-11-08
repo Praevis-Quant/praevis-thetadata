@@ -40,7 +40,7 @@ in the named milestone and is a `0.1.0` exit gate.
 | 2 | Exhaustive adversarial decoder corpus beyond the alpha.2 bounded corpus: systematic and generated malformed, oversized and amplification inputs for both decoders and the envelope parser. | EOD-L3-021; D-C | **Closed 2026-11-03** (alpha.3 A6, D-G): plain-Rust corpus with differential oracles; short run in CI, long run manual. Coverage-guided fuzzing is on the ROADMAP for after 0.1.0 |
 | 3 | Synthetic trusted-TLS success fixture. alpha.2 relies on live PROD TLS evidence plus the plain-HTTP rejection and stalled-handshake tests. | EOD-L3-005; D-D(b) | **Closed 2026-11-03** (alpha.3 A5, D-F b): certificates generated per test with the dev-only `rcgen` (ring backend), no committed key, private test seam; untrusted-issuer and wrong-name rejection |
 | 4 | Exhaustive controlled-clock deadline/idle/cancellation interleavings, with the internal fake-transport seam in `eod.rs` that they require (a paused tokio clock cannot drive the real loopback transport). | EOD-L3-019; D-E | **Closed 2026-11-03** (alpha.3 A4): internal `Source` seam and paused-clock interleavings; neutral against the D-B tolerances ([results](performance/eod-clock-seam-results.md)) |
-| 5 | Numeric comparison/ordering helper for `Price`. Equality is representational and documented since alpha.2. | User decision, 2026-11-02 | `0.1.0-beta.1` (API freeze) |
+| 5 | Numeric comparison/ordering helper for `Price`. Equality is representational and documented since alpha.2. | User decision, 2026-11-02 | **Done for beta.1:** `Price::numeric_cmp` and `numeric_eq`, exact for any exponents. `Ord` is deliberately not implemented, because it would disagree with representational `Eq` |
 | 6 | Three-round A/A on the maintainer's Ryzen desktop, to replace its provisional 1.10/0.90 tolerances. | PERF-L3-008; D-B | **Closed 2026-11-03** (alpha.3 A3): no every-round shift above 0.3%; desktop tolerances are now 1.05/0.95 ([record](performance/eod-desktop-aa-results.md)) |
 | 7 | Drop an abandoned worker's schema lease before its job permit (today the result tuple releases the job permit first). The release order becomes deterministic, so a newly admitted job never observes a stale schema lease. It is a data-path change, so it needs the before/after [benchmark protocol](performance/benchmark-policy.md). | EOD resource leases; [#34](https://github.com/Praevis-Quant/praevis-thetadata/pull/34) root cause | **Closed 2026-11-03** (alpha.3 A2): `JobLeases` ordering; neutral against the D-B tolerances ([results](performance/eod-lease-order-results.md)) |
 | 8 | **Proposed 2026-11-03; needs a maintainer decision.** Transport buffering outside the shared budget: each concurrently open stream holds about one full encoded message (measured up to 618 MiB resident at 16 streams × 24 MiB; at the defaults, 16 × 64 MiB could exceed 1 GiB). `concurrent_streams` bounds it linearly. The maintainer rejected a cap (2026-11-03) and asked for the root cause first. **Investigation done:** it is tonic's per-RPC decode buffer, retained for the stream's lifetime. The design alternatives are measured, and own message framing (option 2a) is recommended ([record](performance/eod-transport-buffering.md)). | EOD-L3-023; [memory profile](performance/eod-memory-profile.md) | **Open by user decision A (2026-11-08):** alpha.3 ships with it open; the design (option 2a recommended) is a gate for beta.1 / `0.1.0` ([decision](#item-8-decision-a-user-2026-11-08)) |
@@ -359,8 +359,12 @@ Approved by the user on 2026-11-02 as one decision; **executed 2026-11-03** (#37
 
 Every item must be reviewed before the auth/EOD API is frozen at `0.1.0-beta.1`.
 
-- [ ] **`Price` numeric comparison/ordering helper** (deferred item 5). Add or
-      reject it explicitly; equality stays representational, with per-value scale.
+- [x] **`Price` numeric comparison/ordering helper** (deferred item 5).
+      - **Added:** `Price::numeric_cmp` (use with `sort_by`) and
+        `numeric_eq`, exact for any exponents.
+      - **Unchanged:** equality stays representational, with per-value scale.
+      - **No `Ord`:** a value ordering that disagreed with `Eq` would break
+        sorted collections.
 - [x] **Room to grow without breaking (user-approved API change 1 of 5,
       2026-11-08).** The rules:
       - **Enums are `#[non_exhaustive]`:** every public error, kind, status and
