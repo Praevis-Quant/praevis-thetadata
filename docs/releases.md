@@ -43,7 +43,7 @@ in the named milestone and is a `0.1.0` exit gate.
 | 5 | Numeric comparison/ordering helper for `Price`. Equality is representational and documented since alpha.2. | User decision, 2026-11-02 | `0.1.0-beta.1` (API freeze) |
 | 6 | Three-round A/A on the maintainer's Ryzen desktop, to replace its provisional 1.10/0.90 tolerances. | PERF-L3-008; D-B | **Closed 2026-11-03** (alpha.3 A3): no every-round shift above 0.3%; desktop tolerances are now 1.05/0.95 ([record](performance/eod-desktop-aa-results.md)) |
 | 7 | Drop an abandoned worker's schema lease before its job permit (today the result tuple releases the job permit first). The release order becomes deterministic, so a newly admitted job never observes a stale schema lease. It is a data-path change, so it needs the before/after [benchmark protocol](performance/benchmark-policy.md). | EOD resource leases; [#34](https://github.com/Praevis-Quant/praevis-thetadata/pull/34) root cause | **Closed 2026-11-03** (alpha.3 A2): `JobLeases` ordering; neutral against the D-B tolerances ([results](performance/eod-lease-order-results.md)) |
-| 8 | **Proposed 2026-11-03; needs a maintainer decision.** Transport buffering outside the shared budget: each concurrently open stream holds about one full encoded message (measured up to 618 MiB resident at 16 streams × 24 MiB; at the defaults, 16 × 64 MiB could exceed 1 GiB). `concurrent_streams` bounds it linearly. The maintainer rejected a cap (2026-11-03) and asked for the root cause first. **Investigation done:** it is tonic's per-RPC decode buffer, retained for the stream's lifetime. The design alternatives are measured, and own message framing (option 2a) is recommended ([record](performance/eod-transport-buffering.md)). | EOD-L3-023; [memory profile](performance/eod-memory-profile.md) | Design decision pending; before `0.1.0` |
+| 8 | **Proposed 2026-11-03; needs a maintainer decision.** Transport buffering outside the shared budget: each concurrently open stream holds about one full encoded message (measured up to 618 MiB resident at 16 streams × 24 MiB; at the defaults, 16 × 64 MiB could exceed 1 GiB). `concurrent_streams` bounds it linearly. The maintainer rejected a cap (2026-11-03) and asked for the root cause first. **Investigation done:** it is tonic's per-RPC decode buffer, retained for the stream's lifetime. The design alternatives are measured, and own message framing (option 2a) is recommended ([record](performance/eod-transport-buffering.md)). | EOD-L3-023; [memory profile](performance/eod-memory-profile.md) | **Open by user decision A (2026-11-08):** alpha.3 ships with it open; the design (option 2a recommended) is a gate for beta.1 / `0.1.0` ([decision](#item-8-decision-a-user-2026-11-08)) |
 
 ## Alpha.3 scope record (2026-11-08)
 
@@ -84,9 +84,20 @@ and the stock EOD slice until beta.1 freezes an API.
 | 5 | Numeric comparison/ordering helper for `Price` | **Pushed to beta.1.** It is a public API decision, so it belongs with the API freeze; alpha.3 does not change `Price` |
 | 6 | Desktop A/A tolerances | **Done** 2026-11-03 (1.05/0.95, [record](performance/eod-desktop-aa-results.md)) |
 | 7 | Deterministic schema-lease/job-permit release order | **Done** 2026-11-03 ([results](performance/eod-lease-order-results.md)) |
-| 8 | Transport buffering outside the shared budget | **Decision needed from the user** (below). On 2026-11-03 the user made alpha.3 wait on this item. Until it is resolved, only the client's own accounted allocations are described as bounded |
+| 8 | Transport buffering outside the shared budget | **Decision A (user, 2026-11-08): alpha.3 ships with item 8 open.** It stays a gate for beta.1 / `0.1.0`. Until it is resolved, only the client's own accounted allocations are described as bounded (below) |
 
-### Item 8: decision needed
+### Item 8: decision A (user, 2026-11-08)
+
+**Decided: A.** The user approved publishing alpha.3 on 2026-11-08 with
+item 8 open.
+- **Gate:** it stays a gate for beta.1 / `0.1.0`.
+- **Wording:** everywhere, keep "only the client's own accounted
+  allocations are bounded", and name tonic's per-stream message buffer
+  next to every stated ceiling.
+- **Superseded:** this replaces the 2026-11-03 decision that alpha.3 wait
+  on item 8.
+
+The analysis the decision was made on:
 
 **The 2026-11-03 decision.** The user made alpha.3 wait on item 8, and asked
 for the root cause and design alternatives rather than a cap: HTTP/2
@@ -141,7 +152,7 @@ windows, streaming decode, zero-copy, and admission reservation.
 - **When to choose B instead:** if you want alpha.3 to claim a
   configuration-bounded total for the query path.
 
-**This is the user's decision.** Alpha.3 does not publish until it is made.
+**The user chose A** on 2026-11-08 and approved publication.
 
 ### Crates and the publish set
 
@@ -166,7 +177,8 @@ Steps:
 - **c.** A packaging rehearsal on Windows and Linux for every published
   crate, abi3 wheels with a smoke import, and the archive contents
   reviewed.
-- **d.** A GitHub release draft (not published).
+- **d.** A GitHub release draft, not published:
+  [draft text](release-draft-0.1.0-alpha.3.md).
 
 Later version scopes are planning allocations, not approval of undocumented
 vendor behavior. Split a milestone into additional prereleases when its evidence
