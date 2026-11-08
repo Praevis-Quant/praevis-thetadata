@@ -16,6 +16,22 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Fixed
 
+- **A column that is null throughout a response keeps its type when the
+  endpoint's columns are registered.**
+  - **The defect:** the wire carries no column types, and the columnar
+    decoder took each column's type from its first value. An all-null
+    column became Arrow `Null`. For example, a closed day's `calendar_on_date`
+    returned `open`/`close` as `Null` and an open day's as `Utf8`, so joining
+    the two results failed. The vendor package behaves the same.
+  - **The fix:** `docs/endpoints/schemas.json` registers each endpoint's
+    observed column kinds (names and kinds only, citing run IDs), and the
+    generated `Endpoint::COLUMNS` passes them to the decoder
+    (`ColumnarDecoder::with_column_kinds`). Rust, Python and Parquet all go
+    through it.
+  - **Coverage so far:** the three calendar RPCs (`cal-local-001`), as
+    text. Other endpoints follow as their observed schemas are recorded;
+    unregistered endpoints are unchanged.
+  - **Recorded in:** an addendum to ADR-0009.
 - **Closing or dropping a `Stream` now unsubscribes what it subscribed.**
   - **The defect:** before, it only closed the socket. The Terminal's
     subscriptions are shared by all its clients, and it does not document

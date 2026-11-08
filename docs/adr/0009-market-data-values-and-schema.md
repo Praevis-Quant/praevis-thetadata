@@ -52,6 +52,43 @@ before describing a collected result as complete. Keep explicit null and
 unset/unknown-only oneof behavior documented separately, even if the initial
 compatibility policy maps both to Value::Null.
 
+## Addendum (2026-11-08): column types that do not depend on the response
+
+**Problem.** The wire carries no column types. `DataTable` headers are names
+only, and each cell is a oneof (text, number, price, timestamp, `null_value`,
+boolean). The columnar decoder types a column from its first non-null value,
+so a column that is null throughout one response became Arrow `Null`.
+- **Example:** `calendar_on_date` for a closed day returns `open`/`close`
+  as `Null`, while an open day returns `Utf8`. Joining the two results
+  fails on a schema mismatch.
+- **Scope:** `unify` repairs this within one query or job, not across
+  requests. Any endpoint can hit it, for example a price whose scale is 0
+  (null) in every row.
+- **The vendor package has the same behaviour:** Polars infers `Null` for an
+  all-`None` column, and `pl.concat` then fails the same way.
+
+**Decision (user, 2026-11-07).**
+- **Registry:** a committed registry of observed column kinds per endpoint,
+  [`docs/endpoints/schemas.json`](../endpoints/schemas.json). It holds column
+  names and wire kinds only, each entry citing the live runs that observed
+  it, and is checked against a closed vocabulary by
+  `tools/generate_endpoints.py`.
+- **Decoder:** a registered column starts with its observed type. A response
+  in which it is entirely null still gets that type, with null values. A
+  value of another kind is the existing `ColumnType` error.
+- **Nothing else changes:** registered names the response lacks are not
+  added, nothing is renamed or reordered, and columns not registered behave
+  as before (`Null` when entirely null).
+- **This preserves observed wire data:** a type comes only from values seen
+  in live responses of that endpoint, never from a column name alone (`open`
+  is text in the calendar and a price elsewhere) or from absent data.
+- **Calendar:** the columns stay text (`date`, `type`, `open`, `close`), as the
+  wire and the vendor send them. Parsing them into `date32`/`time64` would add
+  a business meaning; it can be a later opt-in.
+- **No other endpoint's types change.** Other endpoints are registered only
+  from the column lists in the private live reports (names and Arrow types,
+  never values; approved for commit), citing their run IDs.
+
 ## Alternatives
 
 - A dataframe dependency makes inference and whole-result accumulation part

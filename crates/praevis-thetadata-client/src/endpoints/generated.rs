@@ -10493,6 +10493,7 @@ impl Endpoint for CalendarOpenToday {
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCalendarOpenToday";
     const PYTHON_NAME: Option<&'static str> = Some("calendar_open_today");
     const STABILITY: Stability = Stability::VendorWrapper;
+    const COLUMNS: &'static [(&'static str, ColumnKind)] = &[("type", ColumnKind::Text), ("open", ColumnKind::Text), ("close", ColumnKind::Text)];
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves current day equity market schedule\n- *On days when the market closes early at 1:00 PM ET; eligible options will trade until 1:15 PM.\n- **Some NYSE exchanges will continue late trading until 5:00 PM ET on early close days.";
     type Query = api::CalendarOpenTodayRequestQuery;
     type Request = api::CalendarOpenTodayRequest;
@@ -10535,6 +10536,7 @@ impl Endpoint for CalendarOnDate {
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCalendarOnDate";
     const PYTHON_NAME: Option<&'static str> = Some("calendar_on_date");
     const STABILITY: Stability = Stability::VendorWrapper;
+    const COLUMNS: &'static [(&'static str, ColumnKind)] = &[("type", ColumnKind::Text), ("open", ColumnKind::Text), ("close", ColumnKind::Text)];
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves equity market schedule for a given date\n- Note: Holiday data is available 01/01/2012 through the end of the calendar year that immediately follows the current year\n- *On days when the market closes early at 1:00 PM ET; eligible options will trade until 1:15 PM.\n- **Some NYSE exchanges will continue late trading until 5:00 PM ET on early close days.";
     type Query = api::CalendarOnDateRequestQuery;
     type Request = api::CalendarOnDateRequest;
@@ -10578,6 +10580,7 @@ impl Endpoint for CalendarYear {
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetCalendarYear";
     const PYTHON_NAME: Option<&'static str> = Some("calendar_year");
     const STABILITY: Stability = Stability::VendorWrapper;
+    const COLUMNS: &'static [(&'static str, ColumnKind)] = &[("date", ColumnKind::Text), ("type", ColumnKind::Text), ("open", ColumnKind::Text), ("close", ColumnKind::Text)];
     const VENDOR_DESCRIPTION: &'static str = "- Retrieves equity market holidays for a given year\n- Note: Holiday data is available 01/01/2012 through the end of the calendar year that immediately follows the current year\n- *On days when the market closes early at 1:00 PM ET; eligible options will trade until 1:15 PM.\n- **Some NYSE exchanges will continue late trading until 5:00 PM ET on early close days.";
     type Query = api::CalendarYearRequestQuery;
     type Request = api::CalendarYearRequest;

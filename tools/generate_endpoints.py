@@ -29,6 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / "docs/research/python-1.0.17-inventory.json"
 STATUS = ROOT / "docs/endpoints/status.json"
+SCHEMAS = ROOT / "docs/endpoints/schemas.json"
 RUST_OUT = ROOT / "crates/praevis-thetadata-client/src/endpoints/generated.rs"
 DOC_OUT = ROOT / "docs/endpoints/coverage.md"
 PY_OUT = ROOT / "crates/praevis-thetadata-py/src/generated.rs"
@@ -403,14 +404,56 @@ def emit_split(w: Wrapper, params: dict[str, Param]) -> list[str]:
     return out
 
 
+# Wire value kinds a registered column may have, and the Rust variant each maps
+# to (`praevis_thetadata_arrow::ColumnKind`).
+COLUMN_KINDS = {"text": "Text", "number": "Integer", "price": "Price", "boolean": "Boolean",
+                "timestamp-new-york": "TimestampNewYork", "timestamp-utc": "TimestampUtc"}
+# Observed column kinds per RPC (docs/endpoints/schemas.json), set by generate().
+_COLUMNS: dict[str, dict] = {}
+
+
+def load_schemas(path: Path, rpcs: set[str]) -> dict[str, dict]:
+    """The registry of observed column kinds: names and kinds only, each RPC
+    citing the runs that observed it. Everything is checked against a closed
+    vocabulary, so no value can be committed here."""
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    out = {}
+    for rpc, entry in data.items():
+        if rpc not in rpcs:
+            raise GenerationError(f"schemas.json names an unknown RPC: {rpc}")
+        if not isinstance(entry, dict) or set(entry) != {"columns", "runs"}:
+            raise GenerationError(f"{rpc}: a schema holds columns and runs, nothing else")
+        runs, columns = entry["runs"], entry["columns"]
+        if not runs or not all(isinstance(r, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", r) for r in runs):
+            raise GenerationError(f"{rpc}: runs must be run ids")
+        if not columns or not all(isinstance(c, list) and len(c) == 2 for c in columns):
+            raise GenerationError(f"{rpc}: columns are [name, kind] pairs")
+        names = [name for name, _ in columns]
+        if len(set(names)) != len(names) or not all(
+                isinstance(n, str) and re.fullmatch(r"[a-z0-9_]{1,64}", n) for n in names):
+            raise GenerationError(f"{rpc}: column names must be unique snake_case names")
+        if any(kind not in COLUMN_KINDS for _, kind in columns):
+            raise GenerationError(f"{rpc}: unknown column kind")
+        out[rpc] = {"columns": columns, "runs": runs}
+    return out
+
+
 def emit_endpoint_impl(struct, rpc, python, stability, description, request, query, body,
                        split=()) -> list[str]:
     method = snake(rpc)
+    columns = []
+    if rpc in _COLUMNS:
+        kinds = ", ".join(f'("{name}", ColumnKind::{COLUMN_KINDS[kind]})'
+                          for name, kind in _COLUMNS[rpc]["columns"])
+        columns = [f"    const COLUMNS: &'static [(&'static str, ColumnKind)] = &[{kinds}];"]
     out = [f"impl Endpoint for {struct} {{",
            f'    const RPC: &\'static str = "{rpc}";',
            f'    const PATH: &\'static str = "/BetaEndpoints.BetaThetaTerminal/{rpc}";',
            f"    const PYTHON_NAME: Option<&'static str> = {python};",
            f"    const STABILITY: Stability = {stability};",
+           *columns,
            f"    const VENDOR_DESCRIPTION: &'static str = {rust_string(description.strip())};",
            f"    type Query = api::{query};",
            f"    type Request = api::{request};",
@@ -549,8 +592,11 @@ def check_cell(rpc: str, entry: object) -> str:
     return f"{CHECK_RESULTS[entry['result']]}; {CHECK_PYTHON[entry['python']]} ({entry['run']})"
 
 
-def generate(inventory: Path = INVENTORY, status_path: Path = STATUS) -> tuple[str, str]:
+def generate(inventory: Path = INVENTORY, status_path: Path = STATUS,
+             schemas_path: Path = SCHEMAS) -> tuple[str, str]:
     rpcs, messages, wrappers = load(inventory)
+    _COLUMNS.clear()
+    _COLUMNS.update(load_schemas(schemas_path, {rpc["name"] for rpc in rpcs}))
     items, rows = [], []
     for rpc in rpcs:
         request, query, fields = query_fields(rpc, messages)
@@ -605,6 +651,9 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS) -> tuple[s
            "interest-rate run. Only the classification and gRPC code are committed. A named tier",
            "is the tier the service said is required. *Gated* means a probe needs explicit",
            "approval (it could start the vendor's generation of a very large file).",
+           "*Column kinds registered* means the result's column types come from",
+           "[`schemas.json`](schemas.json), observed in the runs named, so a column that is null",
+           "throughout a response keeps its type ([ADR-0009](../adr/0009-market-data-values-and-schema.md)).",
            "*Uncertain* marks a classification the evidence does not settle. Endpoints that",
            "were not probed are not inferred from their family.",
            "",
@@ -639,7 +688,9 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS) -> tuple[s
     for rpc, python, struct, stability in rows:
         status = statuses.get(rpc, {})
         doc.append(f"| `{rpc}` | {'`' + python + '`' if python else '—'} | `endpoints::{struct}` | {stability} "
-                   f"| {status.get('decoder', 'generic (`query`)')} | "
+                   f"| {status.get('decoder', 'generic (`query`)')}"
+                   + (f"; column kinds registered ({', '.join(_COLUMNS[rpc]['runs'])})" if rpc in _COLUMNS else "")
+                   + " | "
                    + " | ".join(live_cell(rpc, status[c], c) if c in status
                                 else "not probed (gated)" if c == "pro" and status.get("gated")
                                 else "not probed"

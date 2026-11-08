@@ -20,6 +20,7 @@
 //! sends only `client=rust` (see `ThetaClient::query_info`).
 use crate::{ThetaClient, api, wire};
 use chrono::{NaiveDate, NaiveTime, Timelike};
+pub use praevis_thetadata_arrow::ColumnKind;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -69,6 +70,11 @@ pub trait Endpoint {
     /// The vendor Python wrapper name, if one exists.
     const PYTHON_NAME: Option<&'static str>;
     const STABILITY: Stability;
+    /// The column kinds observed for this endpoint's responses
+    /// (`docs/endpoints/schemas.json`). Empty unless registered: each column
+    /// is then typed from its values, and a column with no value in a
+    /// response is Arrow `Null`.
+    const COLUMNS: &'static [(&'static str, ColumnKind)] = &[];
     /// The vendor wrapper's description text from the pinned artifact
     /// (unverified service claims).
     const VENDOR_DESCRIPTION: &'static str;

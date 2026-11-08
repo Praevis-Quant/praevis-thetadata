@@ -110,7 +110,10 @@ impl ThetaClient {
                 .saturating_add(decode.decompressed_bytes.saturating_mul(2)),
             zstd_window_log: decode.zstd_window_log,
         })
-        .map_err(map_decode)?;
+        .map_err(map_decode)?
+        // Observed column kinds keep a column typed when a response leaves it
+        // entirely null (ADR-0009 addendum).
+        .with_column_kinds(E::COLUMNS);
         // Admission and retry (P1 PR 4b): a scheduler slot is held from open
         // to the end of the stream. Only RESOURCE_EXHAUSTED and UNAVAILABLE
         // at open are retried; nothing has been delivered yet, so a retry
