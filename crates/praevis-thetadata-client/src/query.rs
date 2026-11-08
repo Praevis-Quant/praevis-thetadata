@@ -175,11 +175,14 @@ impl ThetaClient {
             tonic::Request::new(E::request(self.query_info(), request.to_query()));
         grpc_request.set_timeout(deadline.saturating_duration_since(Instant::now()));
         let failure = framing::Failure::default();
+        // Item 8, option 2a: the body assembles each message and parks it here.
+        let parked = framing::ParkedFrame::default();
         let limit = decode.encoded_bytes + 1024;
         let mut stub = tonic::client::Grpc::new(framing::GuardedChannel {
             channel: self.channel.clone(),
             limit,
             failure: failure.clone(),
+            parked: parked.clone(),
         })
         .max_decoding_message_size(limit);
         check_deadline(deadline)?;
@@ -189,7 +192,7 @@ impl ThetaClient {
             stub.server_streaming(
                 grpc_request,
                 tonic::codegen::http::uri::PathAndQuery::from_static(E::PATH),
-                envelope::EnvelopeCodec::<E::Request>::default(),
+                envelope::EnvelopeCodec::<E::Request>::new(parked),
             )
             .await
             .map_err(|error| failure.classify(error))

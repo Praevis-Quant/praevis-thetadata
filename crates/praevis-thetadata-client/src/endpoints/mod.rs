@@ -109,6 +109,11 @@ pub trait Endpoint {
 impl ThetaClient {
     /// Send a typed request and return the raw server stream (P1 PR 1:
     /// transport only; decoding to Arrow arrives with the columnar decoder).
+    ///
+    /// **Plain tonic, by design:** this raw stream does not use the client's
+    /// own message framing (item 8, option 2a). tonic's decode buffer keeps up
+    /// to one message per open stream for the stream's lifetime, and it is
+    /// outside the client's accounted budget. Prefer `query()` or `job()`.
     pub async fn stream_raw<E: Endpoint>(&self, request: &E) -> Result<RawStream, tonic::Status> {
         E::send(self, request.to_query()).await
     }

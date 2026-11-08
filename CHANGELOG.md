@@ -37,6 +37,28 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
   No design is selected, and load tests are to be discussed with the user
   first.
+- **The client assembles each response message itself** (item 8, option
+  2a), on both `query()`/`job()` and the stock EOD stream.
+  - **How:** `GuardedBody` checks each gRPC length prefix, allocates one
+    exact-capacity buffer, assembles the message and parks it in a
+    one-message slot, and tonic sees only an empty frame. The codec moves
+    the message out instead of copying it.
+  - **Memory effect:** tonic's decode buffer no longer grows to message
+    size, so an idle stream keeps nothing message-sized. The copy from
+    tonic's buffer is gone too.
+  - **The size guard:** `GuardedBody` is now the only size guard, and its
+    limit check still runs before any allocation.
+  - **The tonic contract:** the design relies on tonic decoding each frame
+    before polling again. A contract test checks this, and parking twice is
+    an error, never a silent overwrite.
+  - **Exclusion:** `stream_raw` stays on plain tonic and is documented as
+    excluded.
+  - **New `frame_alloc` example** (offline microbenchmark). It compares
+    the old and new receive sequences per message, at 16 KiB to 2 MiB
+    chunks:
+    - old: a reused buffer, then `vec![0; n]` and a full copy;
+    - 2a: `with_capacity` and a per-chunk copy;
+    - plus zeroed and one-copy variants.
 - **Alpha.3 publication recorded**
   ([record](docs/crates-io-release-plan.md#publication-record-010-alpha3)).
   It covers:

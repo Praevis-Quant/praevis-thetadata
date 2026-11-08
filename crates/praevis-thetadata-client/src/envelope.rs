@@ -5,21 +5,51 @@ use prost::{
     bytes::Buf,
     encoding::{DecodeContext, WireType, decode_key, decode_varint, skip_field},
 };
+use std::sync::{Arc, Mutex};
 use tonic::{
     Status,
     codec::{Codec, DecodeBuf, Decoder, EncodeBuf, Encoder},
 };
 
-/// Encodes any request message with prost and hands each response frame over
-/// as owned bytes, so no prost response tree is built by the transport.
-pub(crate) struct EnvelopeCodec<T>(std::marker::PhantomData<fn(T)>);
-impl<T> Default for EnvelopeCodec<T> {
-    fn default() -> Self {
-        Self(std::marker::PhantomData)
+/// One assembled response message, handed from `framing::GuardedBody` to the codec.
+/// It holds at most one message: tonic decodes each frame before polling the
+/// body again.
+#[derive(Clone, Default)]
+pub(crate) struct ParkedFrame(Arc<Mutex<Option<Vec<u8>>>>);
+impl ParkedFrame {
+    /// Park a complete message. `false` if one is already parked, which would
+    /// mean tonic polled the body again before decoding the previous frame.
+    pub(crate) fn park(&self, message: Vec<u8>) -> bool {
+        let mut slot = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        debug_assert!(
+            slot.is_none(),
+            "a message was parked before the previous one was decoded"
+        );
+        if slot.is_some() {
+            return false;
+        }
+        *slot = Some(message);
+        true
+    }
+    /// Move the parked message out, if any.
+    pub(crate) fn take(&self) -> Option<Vec<u8>> {
+        self.0.lock().unwrap_or_else(|e| e.into_inner()).take()
+    }
+}
+
+/// Encodes any request message with prost and hands each response message
+/// over as owned bytes, so no prost response tree is built by the transport.
+/// The messages are assembled by `framing::GuardedBody` (item 8, option 2a);
+/// tonic only carries an empty frame for each.
+pub(crate) struct EnvelopeCodec<T>(std::marker::PhantomData<fn(T)>, ParkedFrame);
+impl<T> EnvelopeCodec<T> {
+    /// A codec reading the messages this call's `GuardedChannel` parks.
+    pub(crate) fn new(parked: ParkedFrame) -> Self {
+        Self(std::marker::PhantomData, parked)
     }
 }
 pub(crate) struct RequestEncoder<T>(std::marker::PhantomData<fn(T)>);
-pub(crate) struct FrameDecoder;
+pub(crate) struct FrameDecoder(pub(crate) ParkedFrame);
 impl<T: Message + Send + 'static> Codec for EnvelopeCodec<T> {
     type Encode = T;
     type Decode = Vec<u8>;
@@ -29,7 +59,7 @@ impl<T: Message + Send + 'static> Codec for EnvelopeCodec<T> {
         RequestEncoder(std::marker::PhantomData)
     }
     fn decoder(&mut self) -> FrameDecoder {
-        FrameDecoder
+        FrameDecoder(self.1.clone())
     }
 }
 impl<T: Message> Encoder for RequestEncoder<T> {
@@ -44,12 +74,16 @@ impl Decoder for FrameDecoder {
     type Item = Vec<u8>;
     type Error = Status;
     fn decode(&mut self, src: &mut DecodeBuf<'_>) -> Result<Option<Vec<u8>>, Status> {
-        // Tonic checks the configured frame ceiling before calling this codec.
-        // One exact-capacity owned frame; no outer prost tree or retained slice
-        // of an unknown-capacity transport allocation escapes into the worker.
-        let mut bytes = vec![0; src.remaining()];
-        src.copy_to_slice(&mut bytes);
-        Ok(Some(bytes))
+        // The body parked the whole message (one exact-capacity Vec, after its
+        // limit check) and tonic carried an empty frame for it. Move the
+        // message out: no copy, and nothing retained by the transport.
+        debug_assert_eq!(src.remaining(), 0, "tonic carries only empty frames");
+        src.advance(src.remaining());
+        let message = self.0.take();
+        debug_assert!(message.is_some(), "exactly one message is parked per frame");
+        message
+            .map(Some)
+            .ok_or_else(|| Status::internal("local response framing failure"))
     }
 }
 fn field<'a>(bytes: &mut &'a [u8], ty: WireType) -> Result<&'a [u8], EodError> {
