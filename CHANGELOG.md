@@ -37,6 +37,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
   No design is selected, and load tests are to be discussed with the user
   first.
+- **A query-path memory bound** (`eod_memory -- bound`, item 8 PR 3), run
+  in the memory-profile workflow on Windows and Linux. It uses 8 `query()`
+  streams of 24 and 64 MiB messages, in two scenarios:
+  - **Drained at once:** peak growth must stay within the shared budget,
+    plus 8 × `encoded_bytes`, the connection window and a margin.
+  - **Stalled after one batch:** each stream may keep only its window,
+    nothing message-sized.
+
+  On `main` without 2a, the stalled streams keep 206 and 527 MiB and the
+  check fails. With 2a they keep about 14 MiB.
 - **The client assembles each response message itself** (item 8, option
   2a), on both `query()`/`job()` and the stock EOD stream.
   - **How:** `GuardedBody` checks each gRPC length prefix, allocates one

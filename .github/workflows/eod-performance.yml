@@ -152,7 +152,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
@@ -164,6 +164,11 @@ jobs:
           mkdir -p artifacts
           cargo run --release --locked -p praevis-thetadata-client --example eod_memory -- run > artifacts/eod-memory-${{ runner.os }}.md
           cat artifacts/eod-memory-${{ runner.os }}.md
+      - name: Query-path memory bound (item 8; fails if a bound is exceeded)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo run --release --locked -p praevis-thetadata-client --example eod_memory -- bound | tee artifacts/eod-memory-bound-${{ runner.os }}.md
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eod-memory-${{ runner.os }}-${{ github.sha }}
