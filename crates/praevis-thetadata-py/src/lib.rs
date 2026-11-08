@@ -17,8 +17,8 @@ use praevis_thetadata_arrow::{ColumnarDecoder, Limits, ParquetOptions};
 use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment};
 use praevis_thetadata_client::endpoints::Endpoint;
 use praevis_thetadata_client::{
-    ClientConfig, JobStream, ParquetOutputError, QueryError, QueryStream, SchedulerPolicy,
-    ThetaClient, Tier, plan as plan_parts,
+    ClientConfig, JobStream, ParquetOutputError, QueryError, QueryStream, RequestOptions,
+    SchedulerPolicy, ThetaClient, Tier, plan as plan_parts,
 };
 use pyo3::create_exception;
 use pyo3::exceptions::{PyException, PyStopIteration, PyValueError};
@@ -107,6 +107,31 @@ fn output_error(error: ParquetOutputError) -> PyErr {
     }
 }
 
+/// Per-call options from Python keywords: seconds as floats, all optional.
+/// The timeout covers time queued for a slot (see `RequestOptions`).
+fn request_options(
+    timeout: Option<f64>,
+    idle_timeout: Option<f64>,
+    concurrency: Option<usize>,
+) -> PyResult<RequestOptions> {
+    let seconds = |name: &str, value: Option<f64>| -> PyResult<Option<Duration>> {
+        match value {
+            None => Ok(None),
+            Some(v) if v.is_finite() && v > 0.0 => Ok(Some(Duration::from_secs_f64(v))),
+            Some(_) => Err(PyValueError::new_err(format!(
+                "{name}: expected a positive number of seconds"
+            ))),
+        }
+    };
+    if concurrency == Some(0) {
+        return Err(PyValueError::new_err("concurrency: expected at least 1"));
+    }
+    Ok(RequestOptions::default()
+        .with_timeout(seconds("timeout", timeout)?)
+        .with_idle_timeout(seconds("idle_timeout", idle_timeout)?)
+        .with_concurrency(concurrency))
+}
+
 /// Runs one typed request; implemented for each way of consuming a result.
 pub(crate) trait Runner {
     type Output;
@@ -119,6 +144,7 @@ struct Collect<'a, 'py> {
     py: Python<'py>,
     client: &'a ThetaClient,
     plan: bool,
+    options: RequestOptions,
 }
 impl Runner for Collect<'_, '_> {
     type Output = Table;
@@ -128,14 +154,15 @@ impl Runner for Collect<'_, '_> {
     {
         let client = self.client.clone();
         let plan = self.plan;
+        let options = self.options;
         let batches = self
             .py
             .detach(move || {
                 runtime().block_on(async move {
                     if plan {
-                        client.job(&request).await?.collect().await
+                        client.job_with(&request, options).await?.collect().await
                     } else {
-                        client.query(&request).await?.collect().await
+                        client.query_with(&request, options).await?.collect().await
                     }
                 })
             })
@@ -152,6 +179,7 @@ struct Stream<'a, 'py> {
     py: Python<'py>,
     client: &'a ThetaClient,
     plan: bool,
+    options: RequestOptions,
 }
 impl Runner for Stream<'_, '_> {
     type Output = BatchIterator;
@@ -161,14 +189,15 @@ impl Runner for Stream<'_, '_> {
     {
         let client = self.client.clone();
         let plan = self.plan;
+        let options = self.options;
         let source = self
             .py
             .detach(move || {
                 runtime().block_on(async move {
                     Ok::<_, QueryError>(if plan {
-                        Source::Job(Box::new(client.job(&request).await?))
+                        Source::Job(Box::new(client.job_with(&request, options).await?))
                     } else {
-                        Source::Query(Box::new(client.query(&request).await?))
+                        Source::Query(Box::new(client.query_with(&request, options).await?))
                     })
                 })
             })
@@ -185,6 +214,7 @@ struct Parquet<'a, 'py> {
     plan: bool,
     path: String,
     options: ParquetOptions,
+    request: RequestOptions,
 }
 impl Runner for Parquet<'_, '_> {
     type Output = (usize, usize, u64);
@@ -198,16 +228,17 @@ impl Runner for Parquet<'_, '_> {
             plan,
             path,
             options,
+            request: request_options,
         } = self;
         let client = client.clone();
         let summary = py
             .detach(move || {
                 runtime().block_on(async move {
                     if plan {
-                        let job = client.job(&request).await?;
+                        let job = client.job_with(&request, request_options).await?;
                         job.to_parquet(&path, options).await
                     } else {
-                        let stream = client.query(&request).await?;
+                        let stream = client.query_with(&request, request_options).await?;
                         stream.to_parquet(&path, options).await
                     }
                 })
@@ -328,35 +359,45 @@ impl Client {
     /// Run `endpoint` (a vendor name such as `stock_history_eod`, or an RPC
     /// name) and return the whole result. With `plan`, long ranges are split
     /// by date and merged in order.
-    #[pyo3(signature = (endpoint, *, plan = true, **kwargs))]
+    #[pyo3(signature = (endpoint, *, plan = true, timeout = None, idle_timeout = None, concurrency = None, **kwargs))]
+    #[allow(clippy::too_many_arguments)]
     fn query(
         &self,
         py: Python<'_>,
         endpoint: &str,
         plan: bool,
+        timeout: Option<f64>,
+        idle_timeout: Option<f64>,
+        concurrency: Option<usize>,
         kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<Table> {
         let runner = Collect {
             py,
             client: &self.inner,
             plan,
+            options: request_options(timeout, idle_timeout, concurrency)?,
         };
         generated::dispatch(endpoint, Kwargs::new(kwargs), runner)
     }
 
     /// Like `query`, but returns an iterator of batches as they arrive.
-    #[pyo3(signature = (endpoint, *, plan = true, **kwargs))]
+    #[pyo3(signature = (endpoint, *, plan = true, timeout = None, idle_timeout = None, concurrency = None, **kwargs))]
+    #[allow(clippy::too_many_arguments)]
     fn batches(
         &self,
         py: Python<'_>,
         endpoint: &str,
         plan: bool,
+        timeout: Option<f64>,
+        idle_timeout: Option<f64>,
+        concurrency: Option<usize>,
         kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<BatchIterator> {
         let runner = Stream {
             py,
             client: &self.inner,
             plan,
+            options: request_options(timeout, idle_timeout, concurrency)?,
         };
         generated::dispatch(endpoint, Kwargs::new(kwargs), runner)
     }
@@ -365,7 +406,7 @@ impl Client {
     /// `(rows, row_groups, bytes)`; the file appears only when complete.
     /// Decimal columns get no min/max statistics unless `decimal_statistics`
     /// (memory that grows with the file otherwise; see `ParquetOptions`).
-    #[pyo3(signature = (endpoint, path, *, overwrite = false, zstd_level = Some(1), plan = true, decimal_statistics = false, **kwargs))]
+    #[pyo3(signature = (endpoint, path, *, overwrite = false, zstd_level = Some(1), plan = true, decimal_statistics = false, timeout = None, idle_timeout = None, concurrency = None, **kwargs))]
     #[allow(clippy::too_many_arguments)]
     fn to_parquet(
         &self,
@@ -376,6 +417,9 @@ impl Client {
         zstd_level: Option<i32>,
         plan: bool,
         decimal_statistics: bool,
+        timeout: Option<f64>,
+        idle_timeout: Option<f64>,
+        concurrency: Option<usize>,
         kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<(usize, usize, u64)> {
         let runner = Parquet {
@@ -387,6 +431,7 @@ impl Client {
                 .with_zstd_level(zstd_level)
                 .with_overwrite(overwrite)
                 .with_decimal_statistics(decimal_statistics),
+            request: request_options(timeout, idle_timeout, concurrency)?,
         };
         generated::dispatch(endpoint, Kwargs::new(kwargs), runner)
     }
@@ -592,6 +637,23 @@ fn scheduler_policy(
         .with_retries(retries)
 }
 
+/// Test seam for `request_options`: the per-call options Python keywords
+/// make, as `(timeout_s, idle_timeout_s, concurrency)`, without logging in.
+#[pyfunction]
+#[pyo3(signature = (timeout = None, idle_timeout = None, concurrency = None))]
+fn _request_options(
+    timeout: Option<f64>,
+    idle_timeout: Option<f64>,
+    concurrency: Option<usize>,
+) -> PyResult<(Option<f64>, Option<f64>, Option<usize>)> {
+    let options = request_options(timeout, idle_timeout, concurrency)?;
+    Ok((
+        options.timeout.map(|d| d.as_secs_f64()),
+        options.idle_timeout.map(|d| d.as_secs_f64()),
+        options.concurrency,
+    ))
+}
+
 /// Test seam for `scheduler_policy`: `(concurrency, per_minute)` for a tier
 /// name, without logging in.
 #[pyfunction]
@@ -791,6 +853,7 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(_synthetic, m)?)?;
     m.add_function(wrap_pyfunction!(_decode_frames, m)?)?;
     m.add_function(wrap_pyfunction!(_scheduler_policy, m)?)?;
+    m.add_function(wrap_pyfunction!(_request_options, m)?)?;
     m.add_function(wrap_pyfunction!(_synthetic_frames, m)?)?;
     Ok(())
 }

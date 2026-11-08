@@ -5,7 +5,9 @@ mod support;
 
 use chrono::NaiveDate;
 use praevis_thetadata_client::endpoints::{self, Endpoint};
-use praevis_thetadata_client::{ClientConfig, QueryError, SchedulerPolicy, ThetaClient, plan};
+use praevis_thetadata_client::{
+    ClientConfig, QueryError, RequestOptions, SchedulerPolicy, ThetaClient, plan,
+};
 use praevis_thetadata_proto::endpoints::{
     self as wire, DataTable, DataValue, DataValueList, data_value::DataType as Wire,
 };
@@ -428,4 +430,124 @@ async fn a_slow_first_part_does_not_hold_the_other_slots() {
     sorted.sort();
     assert_eq!(starts, sorted);
     assert_eq!(fixture.requests.lock().unwrap().len(), 10);
+}
+
+fn one_day() -> endpoints::StockHistoryEod {
+    endpoints::StockHistoryEod::new("AAPL", day("2024-01-02"), day("2024-01-02"))
+}
+
+#[tokio::test]
+async fn a_per_call_timeout_covers_time_queued_for_a_slot() {
+    // The first request holds the only slot while its headers are delayed.
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(two_rows())],
+        header_delay: Duration::from_secs(3),
+        delay_requests: vec![1],
+        ..Default::default()
+    });
+    let client = connect(&fixture, fast().with_concurrency(1).with_per_minute(None)).await;
+    let holder = {
+        let client = client.clone();
+        tokio::spawn(async move { client.query(&one_day()).await.map(drop) })
+    };
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(fixture.requests.lock().unwrap().len(), 1);
+    // The client's own request timeout is the default 120 s; this call asks
+    // for 300 ms, all of it spent waiting for the slot.
+    let started = std::time::Instant::now();
+    let result = client
+        .query_with(
+            &one_day(),
+            RequestOptions::default().with_timeout(Some(Duration::from_millis(300))),
+        )
+        .await;
+    let waited = started.elapsed();
+    assert!(
+        matches!(result, Err(QueryError::Deadline)),
+        "{:?}",
+        result.err()
+    );
+    assert!(
+        waited >= Duration::from_millis(250) && waited < Duration::from_secs(2),
+        "{waited:?}"
+    );
+    // It never reached the server: its budget ran out in the queue.
+    assert_eq!(fixture.requests.lock().unwrap().len(), 1);
+    holder.abort();
+}
+
+#[tokio::test]
+async fn a_per_call_idle_timeout_overrides_the_clients() {
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(two_rows())],
+        message_delay: Duration::from_millis(500),
+        ..Default::default()
+    });
+    // The client allows 30 s between messages; this call allows 100 ms.
+    let client = connect(&fixture, parallel()).await;
+    let stream = client
+        .query_with(
+            &one_day(),
+            RequestOptions::default().with_idle_timeout(Some(Duration::from_millis(100))),
+        )
+        .await
+        .unwrap();
+    assert!(matches!(stream.collect().await, Err(QueryError::Idle)));
+}
+
+#[tokio::test]
+async fn a_jobs_concurrency_is_checked_against_the_scheduler() {
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(two_rows())],
+        ..Default::default()
+    });
+    let client = connect(&fixture, parallel()).await;
+    for wanted in [0, 9] {
+        let result = client
+            .job_with(
+                &one_day(),
+                RequestOptions::default().with_concurrency(Some(wanted)),
+            )
+            .await;
+        assert!(
+            matches!(result, Err(QueryError::Configuration)),
+            "{wanted}: {}",
+            result.is_ok()
+        );
+    }
+    // At the scheduler's own limit it runs.
+    let job = client
+        .job_with(
+            &one_day(),
+            RequestOptions::default().with_concurrency(Some(8)),
+        )
+        .await
+        .unwrap();
+    assert_eq!(job.collect().await.unwrap().len(), 1);
+}
+
+#[tokio::test]
+async fn a_jobs_concurrency_caps_its_parts_in_flight() {
+    // Every request takes 300 ms to answer. Eight yearly parts at two at a
+    // time need at least four rounds, however many slots the scheduler has.
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(two_rows())],
+        header_delay: Duration::from_millis(300),
+        ..Default::default()
+    });
+    let client = connect(&fixture, parallel()).await;
+    let request = endpoints::StockHistoryEod::new("AAPL", day("2017-01-01"), day("2024-12-31"));
+    let started = std::time::Instant::now();
+    let job = client
+        .job_with(
+            &request,
+            RequestOptions::default().with_concurrency(Some(2)),
+        )
+        .await
+        .unwrap();
+    assert_eq!(job.parts(), 8);
+    let batches = job.collect().await.unwrap();
+    let elapsed = started.elapsed();
+    assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 16);
+    assert!(elapsed >= Duration::from_millis(1_150), "{elapsed:?}");
 }

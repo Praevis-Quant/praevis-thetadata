@@ -99,3 +99,29 @@ class ParquetOptionTests(unittest.TestCase):
         parameter = inspect.signature(pt.Client.to_parquet).parameters["decimal_statistics"]
         self.assertIs(parameter.default, False)
         self.assertEqual(parameter.kind, inspect.Parameter.KEYWORD_ONLY)
+
+
+class RequestOptionTests(unittest.TestCase):
+    def test_per_call_options_are_keyword_only_and_default_to_the_client(self):
+        import inspect
+
+        for method in (pt.Client.query, pt.Client.batches, pt.Client.to_parquet):
+            parameters = inspect.signature(method).parameters
+            for name in ("timeout", "idle_timeout", "concurrency"):
+                with self.subTest(method=method.__name__, name=name):
+                    self.assertIsNone(parameters[name].default)
+                    self.assertEqual(parameters[name].kind, inspect.Parameter.KEYWORD_ONLY)
+        # The vendor-named methods keep the vendor's signatures.
+        vendor = inspect.signature(pt.Client.stock_history_eod).parameters
+        self.assertFalse({"timeout", "idle_timeout", "concurrency"} & set(vendor))
+
+    def test_options_are_validated_before_any_request(self):
+        from praevis_thetadata import _native
+
+        self.assertEqual(_native._request_options(), (None, None, None))
+        self.assertEqual(_native._request_options(2.5, 0.25, 3), (2.5, 0.25, 3))
+        for bad in ({"timeout": 0}, {"timeout": -1.0}, {"idle_timeout": float("nan")},
+                    {"timeout": float("inf")}, {"concurrency": 0}):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                _native._request_options(**bad)
+

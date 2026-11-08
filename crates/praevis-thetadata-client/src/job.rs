@@ -7,7 +7,7 @@
 use crate::ThetaClient;
 use crate::endpoints::{Endpoint, Expiration, OptionHistoryQuote, OptionListStrikes, Split};
 use crate::eod::QueryError;
-use crate::query::BatchPolicy;
+use crate::query::RequestOptions;
 use chrono::{Days, NaiveDate};
 use praevis_thetadata_arrow::arrow_array::{ArrayRef, RecordBatch, new_null_array};
 use praevis_thetadata_arrow::arrow_schema::{DataType, Field, Schema};
@@ -169,7 +169,7 @@ impl ThetaClient {
     /// The parts of `request`: its date split, and for the all-strike fine
     /// quote shape each date part once per listed strike (one extra list
     /// request), in date then ascending strike order.
-    async fn job_parts<E>(&self, request: &E) -> Result<Vec<E>, QueryError>
+    async fn job_parts<E>(&self, request: &E, concurrency: usize) -> Result<Vec<E>, QueryError>
     where
         E: Endpoint + Clone + Send + Sync + 'static,
     {
@@ -181,9 +181,7 @@ impl ThetaClient {
         // One at a time, the split is slower than the single request (95.9 s
         // against about 60 s in opt-split-001): only split when requests
         // can overlap.
-        let Some(expiration) =
-            strike_split_expiration(quote).filter(|_| self.scheduler.policy.concurrency >= 2)
-        else {
+        let Some(expiration) = strike_split_expiration(quote).filter(|_| concurrency >= 2) else {
             return Ok(by_date);
         };
         let Some(strikes) = self.listed_strikes(&quote.symbol, expiration).await? else {
@@ -236,20 +234,30 @@ impl ThetaClient {
     where
         E: Endpoint + Clone + Send + Sync + 'static,
     {
-        self.job_with(request, BatchPolicy::default()).await
+        self.job_with(request, RequestOptions::default()).await
     }
 
-    /// [`ThetaClient::job`] with an explicit batch policy for every part.
+    /// [`ThetaClient::job`] with per-call options. Batching, the timeout (per
+    /// part, covering its queue time) and the idle timeout apply to every
+    /// part. `concurrency` caps the parts holding a slot at once, at most the
+    /// scheduler's; the read-ahead window is that many times `READ_AHEAD`.
     pub async fn job_with<E>(
         &self,
         request: &E,
-        batch: BatchPolicy,
+        options: RequestOptions,
     ) -> Result<JobStream, QueryError>
     where
         E: Endpoint + Clone + Send + Sync + 'static,
     {
-        let parts: VecDeque<E> = self.job_parts(request).await?.into();
-        let concurrency = self.scheduler.policy.concurrency;
+        options.validate()?;
+        let slots = self.scheduler.policy.concurrency;
+        let concurrency = match options.concurrency {
+            None => slots,
+            Some(wanted) if wanted <= slots => wanted,
+            // More than the scheduler has: refused, not silently lowered.
+            Some(_) => return Err(QueryError::Configuration),
+        };
+        let parts: VecDeque<E> = self.job_parts(request, concurrency).await?.into();
         let active = Arc::new(AtomicUsize::new(0));
         let wake = Arc::new(Notify::new());
         let client = self.clone();
@@ -257,7 +265,7 @@ impl ThetaClient {
         let start = Box::new(move |part: E| -> (Shard, JoinHandle<()>) {
             let (tx, rx) = mpsc::channel(2);
             let client = client.clone();
-            let batch = batch.clone();
+            let options = options.clone();
             counter.fetch_add(1, Ordering::AcqRel);
             let running = Running {
                 active: counter.clone(),
@@ -265,7 +273,7 @@ impl ThetaClient {
             };
             let task = tokio::spawn(async move {
                 let _running = running;
-                let mut stream = match client.query_with(&part, batch).await {
+                let mut stream = match client.query_with(&part, options).await {
                     Ok(stream) => stream,
                     Err(error) => {
                         let _ = tx.send(Err(error)).await;

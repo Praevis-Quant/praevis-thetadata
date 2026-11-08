@@ -48,7 +48,7 @@ pub use praevis_thetadata_arrow::{ParquetOptions, ParquetSummary, SinkError};
 /// The arrow-rs crates whose types the query streams return.
 pub use praevis_thetadata_arrow::{arrow_array, arrow_schema};
 pub use praevis_thetadata_core::{BatchValue, DataBatch, TimeZone, Timestamp};
-pub use query::{BatchPolicy, QueryStream, unify};
+pub use query::{BatchPolicy, QueryStream, RequestOptions, unify};
 pub use scheduler::{SchedulerPolicy, Tier};
 
 pub use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, Session};

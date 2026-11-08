@@ -52,7 +52,17 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   ([request timing](../../docs/performance/request-timing.md)). A job sends
   a part whenever a request slot is free and reads parts in order. It keeps
   at most 4× the concurrency parts open, each buffering at most 2 batches,
-  so a slow part does not hold back the others. Every
+  so a slow part does not hold back the others.
+- **Per-call options** (`query_with` and `job_with`, `RequestOptions`):
+  - batching;
+  - an overall timeout per request (per part in a job). **It covers time
+    queued for a scheduler slot**, so a busy scheduler cannot hold a caller
+    past its budget; the request fails with `Deadline`;
+  - an idle timeout between messages;
+  - for jobs, a concurrency of at most the scheduler's, with the read-ahead
+    window scaling with it.
+
+  Each option left unset uses the client's setting. Every
   `query()` is admitted by the client's scheduler. By default it follows the
   account's tier from the login response (`ThetaClient::tier`, the highest
   subscription): FREE's documented 1 concurrent request and 20 per minute;

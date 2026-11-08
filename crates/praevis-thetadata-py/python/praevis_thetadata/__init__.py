@@ -203,15 +203,47 @@ class Client(VendorMethods):
         """``(concurrency, per_minute)`` in use; ``None`` means no per-minute limit."""
         return self._native.scheduler
 
-    def query(self, endpoint: str, /, *, plan: bool = True, **params: Any) -> Result:
+    def query(
+        self,
+        endpoint: str,
+        /,
+        *,
+        plan: bool = True,
+        timeout: float | None = None,
+        idle_timeout: float | None = None,
+        concurrency: int | None = None,
+        **params: Any,
+    ) -> Result:
         """Run ``endpoint`` (a vendor name such as ``"stock_history_eod"``, or
         an RPC name) with the vendor's parameter names. With ``plan``, long
-        date ranges are split within the vendor's limits and merged in order."""
-        return Result(self._native.query(endpoint, plan=plan, **params))
+        date ranges are split within the vendor's limits and merged in order.
 
-    def batches(self, endpoint: str, /, *, plan: bool = True, **params: Any) -> BatchIterator:
+        Per-call options, each defaulting to the client's setting:
+        ``timeout`` (seconds per request, or per part with ``plan``; it
+        includes time waiting for a free slot), ``idle_timeout`` (seconds
+        between messages) and ``concurrency`` (with ``plan``: parts running at
+        once, at most the client's concurrency)."""
+        return Result(self._native.query(
+            endpoint, plan=plan, timeout=timeout, idle_timeout=idle_timeout,
+            concurrency=concurrency, **params
+        ))
+
+    def batches(
+        self,
+        endpoint: str,
+        /,
+        *,
+        plan: bool = True,
+        timeout: float | None = None,
+        idle_timeout: float | None = None,
+        concurrency: int | None = None,
+        **params: Any,
+    ) -> BatchIterator:
         """Like ``query``, but yields batches as they arrive, with bounded memory."""
-        return self._native.batches(endpoint, plan=plan, **params)
+        return self._native.batches(
+            endpoint, plan=plan, timeout=timeout, idle_timeout=idle_timeout,
+            concurrency=concurrency, **params
+        )
 
     def to_parquet(
         self,
@@ -223,6 +255,9 @@ class Client(VendorMethods):
         zstd_level: int | None = 1,
         plan: bool = True,
         decimal_statistics: bool = False,
+        timeout: float | None = None,
+        idle_timeout: float | None = None,
+        concurrency: int | None = None,
         **params: Any,
     ) -> tuple[int, int, int]:
         """Write the result to Parquet from Rust; returns ``(rows, row_groups,
@@ -233,10 +268,12 @@ class Client(VendorMethods):
         writes them for readers' pushdown on prices, at a cost that grows with
         the file: up to 2 x 16 bytes x the batch's rows (1-2 MiB with the
         default 65,536-row batches) per decimal column per row group, held
-        until the file is closed."""
+        until the file is closed. ``timeout``, ``idle_timeout`` and
+        ``concurrency`` are as for ``query``."""
         return self._native.to_parquet(
             endpoint, os.fspath(path), overwrite=overwrite, zstd_level=zstd_level, plan=plan,
-            decimal_statistics=decimal_statistics, **params
+            decimal_statistics=decimal_statistics, timeout=timeout, idle_timeout=idle_timeout,
+            concurrency=concurrency, **params
         )
 
     def _vendor(self, name: str, plan: bool, params: dict[str, Any]) -> Any:

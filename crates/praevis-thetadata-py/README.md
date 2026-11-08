@@ -39,6 +39,11 @@ client.to_parquet("stock_history_eod", "aapl.parquet", symbol="AAPL",
                   start_date="2020-01-02", end_date="2024-12-31")
 ```
 
+`query`, `batches` and `to_parquet` also take per-call keyword options:
+`timeout` and `idle_timeout` in seconds (the timeout includes time waiting for
+a free slot), and `concurrency` for planned jobs (at most the client's).
+Each defaults to the client's setting.
+
 `to_parquet` keeps memory flat however large the file. Decimal (price)
 columns get no min/max statistics; every other column does.
 `decimal_statistics=True` writes them for price pushdown in readers, at a

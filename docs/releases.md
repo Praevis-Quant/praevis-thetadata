@@ -386,6 +386,11 @@ Every item must be reviewed before the auth/EOD API is frozen at `0.1.0-beta.1`.
           shape is fixed by what they are;
         - `Table`, the complete legacy shape;
         - structs with only private fields, which are already closed.
+- [x] **Per-call request options (API change 4 of 5).** `RequestOptions`
+      replaces `BatchPolicy` as the argument of `query_with` and `job_with`.
+      It holds the batch policy, an overall timeout, an idle timeout, and a
+      per-job concurrency of at most the scheduler's. **The timeout covers
+      queue time** (the documented and tested decision).
 - [x] **Stream handles (API change 3 of 5):** `Stream::split()` gives a
       clonable `Send + Sync` `StreamControl` and the single `StreamEvents`
       receiver. Close semantics are unchanged.

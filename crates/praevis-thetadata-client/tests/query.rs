@@ -6,7 +6,9 @@ mod support;
 
 use praevis_thetadata_client::arrow_array::RecordBatch;
 use praevis_thetadata_client::arrow_schema::DataType;
-use praevis_thetadata_client::{BatchPolicy, ClientConfig, QueryError, ThetaClient, endpoints};
+use praevis_thetadata_client::{
+    BatchPolicy, ClientConfig, QueryError, RequestOptions, ThetaClient, endpoints,
+};
 use praevis_thetadata_proto::endpoints::{
     self as wire, DataTable, DataValue, DataValueList, data_value::DataType as Wire,
 };
@@ -104,7 +106,10 @@ async fn row_threshold_and_offloaded_decoding_split_batches_identically() {
         let policy = BatchPolicy::default()
             .with_rows(3)
             .with_inline_bytes(inline_bytes);
-        let mut stream = client.query_with(&request(), policy).await.unwrap();
+        let mut stream = client
+            .query_with(&request(), RequestOptions::default().with_batch(policy))
+            .await
+            .unwrap();
         assert_eq!(
             sizes(&mut stream).await,
             (vec![2, 4, 2], Ok(())),
@@ -183,7 +188,10 @@ async fn opening_errors_keep_the_stock_eod_classes() {
     let client = connect(&fixture, ClientConfig::default()).await;
     let invalid = BatchPolicy::default().with_rows(0);
     assert_eq!(
-        client.query_with(&request(), invalid).await.err(),
+        client
+            .query_with(&request(), RequestOptions::default().with_batch(invalid))
+            .await
+            .err(),
         Some(QueryError::Configuration)
     );
 }
