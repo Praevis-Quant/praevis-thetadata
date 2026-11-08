@@ -55,7 +55,10 @@ fn main() {
         std::env::consts::ARCH,
         rounds
     );
-    println!("{:>8} {:>10} {:>10} {:>7}", "message", "fresh", "reused", "ratio");
+    println!(
+        "{:>8} {:>10} {:>10} {:>7}",
+        "message", "fresh", "reused", "ratio"
+    );
     for mib in [1usize, 8, 24, 64] {
         let bytes = mib << 20;
         let source: Vec<u8> = (0..bytes).map(|i| i as u8).collect();
