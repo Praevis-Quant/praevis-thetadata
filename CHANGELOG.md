@@ -32,6 +32,15 @@ The Python package's wheels go on the GitHub release, not PyPI.
   every RPC, Arrow query and job streams, the scheduler and Parquet.
 - **The ROADMAP's CLI description follow-up is closed.** The fix had
   already shipped with alpha.2.
+- **The packaging rehearsal covers all seven published crates,** in
+  publication order (stream last, as wave 4).
+  - **External consumers:** new ones for arrow (an exact decimal and a
+    registered all-null column) and stream (a parsed quote).
+  - **Archive inspection:** it now also rejects key, certificate and SSH
+    key files.
+  - **Python:** CI smoke-imports the abi3 wheel in a clean environment
+    (checking the version and the 100 endpoints) and keeps it as an
+    artifact for the GitHub release. It is never uploaded to PyPI.
 
 ### Fixed
 

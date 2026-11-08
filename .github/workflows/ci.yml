@@ -109,15 +109,32 @@ jobs:
         run: maturin build --release --locked -m crates/praevis-thetadata-py/Cargo.toml -o dist
       - name: Install the wheel
         run: python -m pip install --no-index --find-links dist praevis-thetadata
+      - name: Wheel smoke import (a clean environment with no other packages)
+        run: |
+          set -euo pipefail
+          ls dist/*-abi3-*.whl
+          python -m venv "$RUNNER_TEMP/smoke"
+          py="$RUNNER_TEMP/smoke/bin/python"; [ -x "$py" ] || py="$RUNNER_TEMP/smoke/Scripts/python.exe"
+          "$py" -m pip install --quiet --no-index --find-links dist praevis-thetadata
+          version=$(python -c "import tomllib; print(tomllib.load(open('Cargo.toml','rb'))['workspace']['package']['version'])")
+          "$py" -c "import sys, praevis_thetadata as pt; v = pt.__version__; print('praevis_thetadata', v); assert v == sys.argv[1], (v, sys.argv[1]); assert len(pt.endpoints()) == 100" "$version"
+      - name: Keep the abi3 wheel (for the GitHub release; never uploaded to PyPI)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wheel-${{ matrix.os }}
+          path: dist/*.whl
+          if-no-files-found: error
       - name: Offline tests and D.2 gates
         run: python -m unittest discover -s crates/praevis-thetadata-py/tests -v
       - name: P1 exit runners, offline
         run: python -m unittest discover -s bench/p1 -p 'test_*.py' -v
 
   packaging-rehearsal:
-    # Builds the five archives at the workspace version, stages them in a local file:// registry (wave 1:
-    # auth/core/proto, then client/cli resolved from it), and builds external consumers and
-    # `cargo install` of the CLI outside the workspace. Never publishes; reads no token.
+    # Builds the seven published archives at the workspace version, stages them in a local file://
+    # registry in publication order (auth/core/proto, arrow, client/cli, stream), inspects every
+    # archive for license files and forbidden inputs (artifacts, keys, credentials), and builds
+    # external consumers and `cargo install` of the CLI outside the workspace. Never publishes;
+    # reads no token.
     name: Packaging rehearsal (${{ matrix.os }})
     strategy:
       fail-fast: false
