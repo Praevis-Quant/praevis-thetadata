@@ -17,6 +17,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Breaking (pre-beta.1): `Endpoint` is sealed** (API change 2 of 5). Only
+  the generated requests implement it, through a private supertrait the
+  generator emits. Code outside the crate still uses it as a bound, as the
+  Python crate does, but cannot implement it. A `compile_fail` doctest
+  checks this, and it fails if the trait is unsealed. Nothing outside the
+  workspace has a legitimate need to implement it: a request is one vendor
+  RPC with its exact wire mapping. Sealing also lets the trait gain items
+  without breaking callers.
 - **Breaking (pre-beta.1): the public API can now grow without breaking
   callers** (user-approved, 2026-11-08).
   - **Enums:** every public error, kind, status and policy enum is

@@ -63,8 +63,54 @@ pub enum Split {
     Days(u32),
 }
 
+/// Seals [`Endpoint`]: only the generated requests implement it. A request
+/// is a vendor RPC with its exact wire mapping, so an implementation outside
+/// this crate could not be one; sealing also lets the trait gain items
+/// without breaking anyone.
+mod sealed {
+    pub trait Sealed {}
+}
+
 /// A typed request for one RPC.
-pub trait Endpoint {
+///
+/// **Sealed:** implemented only by the generated requests in this module, one
+/// per descriptor RPC. Code outside this crate uses it as a bound but cannot
+/// implement it:
+///
+/// ```compile_fail,E0277
+/// use praevis_thetadata_client::endpoints::{Endpoint, StockHistoryEod};
+/// #[derive(Clone)]
+/// struct Mine;
+/// impl Endpoint for Mine {
+///     const RPC: &'static str = <StockHistoryEod as Endpoint>::RPC;
+///     const PATH: &'static str = <StockHistoryEod as Endpoint>::PATH;
+///     const PYTHON_NAME: Option<&'static str> = None;
+///     const STABILITY: praevis_thetadata_client::endpoints::Stability =
+///         <StockHistoryEod as Endpoint>::STABILITY;
+///     const VENDOR_DESCRIPTION: &'static str = "";
+///     type Query = <StockHistoryEod as Endpoint>::Query;
+///     type Request = <StockHistoryEod as Endpoint>::Request;
+///     fn request(
+///         _: praevis_thetadata_proto::beta_endpoints::QueryInfo,
+///         _: Self::Query,
+///     ) -> Self::Request {
+///         unimplemented!()
+///     }
+///     fn to_query(&self) -> Self::Query {
+///         unimplemented!()
+///     }
+///     fn send(
+///         _: &praevis_thetadata_client::ThetaClient,
+///         _: Self::Query,
+///     ) -> praevis_thetadata_client::endpoints::BoxFuture<
+///         '_,
+///         Result<praevis_thetadata_client::endpoints::RawStream, tonic::Status>,
+///     > {
+///         unimplemented!()
+///     }
+/// }
+/// ```
+pub trait Endpoint: sealed::Sealed {
     /// RPC name in the descriptor, for example `GetStockHistoryEod`.
     const RPC: &'static str;
     /// gRPC method path, for example
