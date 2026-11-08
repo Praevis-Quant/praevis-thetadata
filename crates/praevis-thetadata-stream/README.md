@@ -22,7 +22,15 @@ praevis-thetadata-stream = "=0.1.0-alpha.3"
   detected. Heartbeat gaps over 2 s are counted.
 - **Disconnects:** a disconnect ends the stream with `Kind::Disconnected`.
   There is no automatic reconnect.
-- **Closing cleans up:** `close()` or dropping the stream first unsubscribes
+- **One owner, or two handles:** `Stream` does everything from one thread.
+  `stream.split()` gives two handles:
+  - a `StreamControl` (`Clone + Send + Sync`) to subscribe, unsubscribe,
+    read the counters and close from any thread;
+  - the single `StreamEvents` receiver.
+
+  So one thread can wait for events while another subscribes.
+- **Closing cleans up:** `close()` (on the stream or any control handle),
+  dropping the stream, or dropping the `StreamEvents` first unsubscribes
   everything still subscribed, then closes the socket. The Terminal's
   subscriptions are shared by all its clients, so this keeps a finished
   program's subscriptions from reaching the next one.

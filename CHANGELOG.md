@@ -17,6 +17,21 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Stream handles: one thread can subscribe while another waits for
+  events** (API change 3 of 5).
+  - **The problem:** `Stream` held a `std::sync::mpsc::Receiver`, so it was
+    not `Sync`.
+  - **The split:** `Stream::split()` now gives a clonable `StreamControl`
+    (`Clone + Send + Sync`: subscribe, unsubscribe, stats, close) and the
+    single `StreamEvents` receiver (`Send`). `Stream` keeps working as one
+    owner.
+  - **Closing:** a close from any handle, or dropping the events, still
+    unsubscribes everything before the close frame (#114), once.
+  - **Unchanged:** the reader thread and the event path, which stay free
+    of allocation.
+  - **Tests:** compile-time `Send`/`Sync` assertions, a cross-thread
+    subscribe-while-waiting test, and close-from-any-handle tests. The
+    latency harness uses the split.
 - **Breaking (pre-beta.1): `Endpoint` is sealed** (API change 2 of 5). Only
   the generated requests implement it, through a private supertrait the
   generator emits. Code outside the crate still uses it as a bound, as the

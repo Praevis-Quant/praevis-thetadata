@@ -386,6 +386,9 @@ Every item must be reviewed before the auth/EOD API is frozen at `0.1.0-beta.1`.
           shape is fixed by what they are;
         - `Table`, the complete legacy shape;
         - structs with only private fields, which are already closed.
+- [x] **Stream handles (API change 3 of 5):** `Stream::split()` gives a
+      clonable `Send + Sync` `StreamControl` and the single `StreamEvents`
+      receiver. Close semantics are unchanged.
 - [x] **`Endpoint` is sealed (API change 2 of 5).** Only the generated
       requests implement it, so the trait can gain items. Nothing outside the
       crate needs to implement it: a request is a vendor RPC with its exact

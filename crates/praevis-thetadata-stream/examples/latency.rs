@@ -526,15 +526,17 @@ fn main() -> std::process::ExitCode {
             return std::process::ExitCode::FAILURE;
         }
     };
-    let stream = match Stream::connect(Options::default().with_capacity(cli.capacity)) {
-        Ok(stream) => stream,
+    // The control handle subscribes and reads counters; this thread is the
+    // single consumer of the events.
+    let (control, events) = match Stream::connect(Options::default().with_capacity(cli.capacity)) {
+        Ok(stream) => stream.split(),
         Err(error) => {
             eprintln!("stream: {error}");
             return std::process::ExitCode::FAILURE;
         }
     };
     for contract in &list {
-        if let Err(error) = stream.subscribe_quotes(contract) {
+        if let Err(error) = control.subscribe_quotes(contract) {
             eprintln!("subscribe: {error}");
             return std::process::ExitCode::FAILURE;
         }
@@ -546,16 +548,16 @@ fn main() -> std::process::ExitCode {
     let (cpu_start, allocations_start, frames_start) = (
         cpu_time(),
         ALLOCATIONS.load(Ordering::Relaxed),
-        stream.stats().frames,
+        control.stats().frames,
     );
     let start = Instant::now();
     let end = start + Duration::from_secs(cli.seconds);
     let mut ended = false;
     while Instant::now() < end {
         let next = if spin {
-            stream.try_recv()
+            events.try_recv()
         } else {
-            stream.recv_timeout(end.saturating_duration_since(Instant::now()))
+            events.recv_timeout(end.saturating_duration_since(Instant::now()))
         };
         let Some(event) = next else {
             if spin {
@@ -584,7 +586,8 @@ fn main() -> std::process::ExitCode {
         _ => None,
     };
     let allocations = ALLOCATIONS.load(Ordering::Relaxed) - allocations_start;
-    let stats = stream.close();
+    let stats = control.close();
+    drop(events);
     let frames = stats.frames - frames_start;
     let q = |p| histogram.quantile_us(p);
     let report = serde_json::json!({

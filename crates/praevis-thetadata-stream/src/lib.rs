@@ -16,8 +16,13 @@
 //! closed socket ends the stream with [`Kind::Disconnected`]; there is no
 //! automatic reconnect.
 //!
-//! Closing or dropping a [`Stream`] first unsubscribes everything it still
-//! has subscribed, then closes the socket. The Terminal's subscriptions are
+//! [`Stream::split`] gives a clonable, `Send + Sync` [`StreamControl`]
+//! (subscribe, unsubscribe, counters, close) and the single [`StreamEvents`]
+//! receiver, so one thread can wait for events while another subscribes.
+//!
+//! Closing (from any handle), dropping a [`Stream`] or dropping its
+//! [`StreamEvents`] first unsubscribes everything still subscribed, then
+//! closes the socket. The Terminal's subscriptions are
 //! shared by every client, and it does not document dropping them when a
 //! socket closes, so without this they could keep arriving on the next
 //! connection. The requests are sent before the close frame, without
@@ -153,9 +158,33 @@ impl Counters {
     }
 }
 
-/// An open stream: subscribe, then receive events.
+/// An open stream: subscribe, then receive events. One owner for simple use;
+/// [`Stream::split`] gives a clonable [`StreamControl`] for any thread and the
+/// single [`StreamEvents`] receiver.
 pub struct Stream {
+    control: StreamControl,
+    events: StreamEvents,
+}
+
+/// Subscribes, unsubscribes, reads the counters and closes the stream, from
+/// any thread: `Clone + Send + Sync`. Requests are queued for the reader
+/// thread, so a subscription made while another thread waits in
+/// [`StreamEvents::recv_timeout`] takes effect at once.
+#[derive(Clone)]
+pub struct StreamControl {
+    shared: Arc<Shared>,
+}
+
+/// The stream's events, for exactly one consumer (`Send`, not `Sync`).
+/// Dropping it closes the stream, as [`StreamControl::close`] does.
+pub struct StreamEvents {
     events: Receiver<Event>,
+    shared: Arc<Shared>,
+}
+
+/// What the handles share: requests for the reader to send, the record of
+/// what is subscribed, the counters and the reader thread.
+struct Shared {
     outgoing: Arc<Mutex<Vec<String>>>,
     next_id: AtomicU64,
     /// Contracts with quotes subscribed, to unsubscribe on close.
@@ -163,7 +192,7 @@ pub struct Stream {
     full_trades: AtomicBool,
     counters: Arc<Counters>,
     stop: Arc<AtomicBool>,
-    reader: Option<JoinHandle<()>>,
+    reader: Mutex<Option<JoinHandle<()>>>,
 }
 
 const HEARTBEAT_GAP: Duration = Duration::from_secs(2);
@@ -216,20 +245,145 @@ impl Stream {
                 })
                 .map_err(|e| StreamError::Connect(e.kind()))?
         };
-        Ok(Self {
-            events,
+        let shared = Arc::new(Shared {
             outgoing,
             next_id: AtomicU64::new(0),
             quotes: Mutex::new(HashSet::new()),
             full_trades: AtomicBool::new(false),
             counters,
             stop,
-            reader: Some(reader),
+            reader: Mutex::new(Some(reader)),
+        });
+        Ok(Self {
+            control: StreamControl {
+                shared: shared.clone(),
+            },
+            events: StreamEvents { events, shared },
         })
     }
 
+    /// The control handle (clonable, any thread) and the single receiver.
+    pub fn split(self) -> (StreamControl, StreamEvents) {
+        (self.control, self.events)
+    }
+
+    /// Start the full trade stream; returns the request id.
+    pub fn subscribe_full_trades(&self) -> Result<u64, StreamError> {
+        self.control.subscribe_full_trades()
+    }
+
+    /// Stop the full trade stream; returns the request id.
+    pub fn unsubscribe_full_trades(&self) -> Result<u64, StreamError> {
+        self.control.unsubscribe_full_trades()
+    }
+
+    /// Start quote events for `contract`; returns the request id.
+    pub fn subscribe_quotes(&self, contract: &Contract) -> Result<u64, StreamError> {
+        self.control.subscribe_quotes(contract)
+    }
+
+    /// Stop quote events for `contract`; returns the request id.
+    pub fn unsubscribe_quotes(&self, contract: &Contract) -> Result<u64, StreamError> {
+        self.control.unsubscribe_quotes(contract)
+    }
+
+    /// The next event, waiting at most `timeout`. `None` on timeout or after
+    /// the stream ended (its last event is [`Kind::Disconnected`]).
+    pub fn recv_timeout(&self, timeout: Duration) -> Option<Event> {
+        self.events.recv_timeout(timeout)
+    }
+
+    /// The next event if one is waiting.
+    pub fn try_recv(&self) -> Option<Event> {
+        self.events.try_recv()
+    }
+
+    pub fn stats(&self) -> Stats {
+        self.control.stats()
+    }
+
+    /// Unsubscribe everything still subscribed, close the socket and wait
+    /// for the reader thread.
+    pub fn close(self) -> Stats {
+        self.control.close()
+    }
+}
+
+impl StreamControl {
+    /// Start the full trade stream: every US option trade on OPRA, each
+    /// preceded by a quote and an OHLC message for its contract (options PRO
+    /// only, as the vendor documents). Returns the request id.
+    pub fn subscribe_full_trades(&self) -> Result<u64, StreamError> {
+        self.shared.full_trades(true)
+    }
+
+    /// Stop the full trade stream; returns the request id.
+    pub fn unsubscribe_full_trades(&self) -> Result<u64, StreamError> {
+        self.shared.full_trades(false)
+    }
+
+    /// Start quote events for `contract`; returns the request id.
+    pub fn subscribe_quotes(&self, contract: &Contract) -> Result<u64, StreamError> {
+        self.shared.request(contract, true)
+    }
+
+    /// Stop quote events for `contract`; returns the request id.
+    pub fn unsubscribe_quotes(&self, contract: &Contract) -> Result<u64, StreamError> {
+        self.shared.request(contract, false)
+    }
+
+    pub fn stats(&self) -> Stats {
+        self.shared.counters.snapshot()
+    }
+
+    /// Unsubscribe everything still subscribed, close the socket and wait
+    /// for the reader thread. Idempotent; every handle sees the stream end.
+    pub fn close(&self) -> Stats {
+        self.shared.shutdown();
+        self.shared.counters.snapshot()
+    }
+}
+
+impl StreamEvents {
+    /// The next event, waiting at most `timeout`. `None` on timeout or after
+    /// the stream ended (its last event is [`Kind::Disconnected`]).
+    pub fn recv_timeout(&self, timeout: Duration) -> Option<Event> {
+        self.events.recv_timeout(timeout).ok()
+    }
+
+    /// The next event if one is waiting.
+    pub fn try_recv(&self) -> Option<Event> {
+        self.events.try_recv().ok()
+    }
+
+    pub fn stats(&self) -> Stats {
+        self.shared.counters.snapshot()
+    }
+
+    /// Close the stream (see [`StreamControl::close`]).
+    pub fn close(self) -> Stats {
+        self.shared.shutdown();
+        self.shared.counters.snapshot()
+    }
+}
+
+impl Drop for StreamEvents {
+    /// The consumer is gone: close the stream, unsubscribing first.
+    fn drop(&mut self) {
+        self.shared.shutdown();
+    }
+}
+
+impl Shared {
+    fn open(&self) -> bool {
+        self.reader
+            .lock()
+            .map(|r| r.as_ref().is_some_and(|r| !r.is_finished()))
+            .unwrap_or(false)
+    }
+
     fn request(&self, contract: &Contract, add: bool) -> Result<u64, StreamError> {
-        if self.reader.as_ref().is_none_or(JoinHandle::is_finished) {
+        if !self.open() {
             return Err(StreamError::Closed);
         }
         let id = self.send_quotes(contract, add)?;
@@ -264,12 +418,8 @@ impl Stream {
         Ok(id)
     }
 
-    /// Start (`add`) or stop the full trade stream: every US option trade
-    /// on OPRA, each preceded by a quote and an OHLC message for its
-    /// contract (options PRO only, as the vendor documents). Returns the
-    /// request id.
     fn full_trades(&self, add: bool) -> Result<u64, StreamError> {
-        if self.reader.as_ref().is_none_or(JoinHandle::is_finished) {
+        if !self.open() {
             return Err(StreamError::Closed);
         }
         let id = self.send_full_trades(add)?;
@@ -289,50 +439,15 @@ impl Stream {
         Ok(id)
     }
 
-    /// Start the full trade stream; returns the request id.
-    pub fn subscribe_full_trades(&self) -> Result<u64, StreamError> {
-        self.full_trades(true)
-    }
-
-    /// Stop the full trade stream; returns the request id.
-    pub fn unsubscribe_full_trades(&self) -> Result<u64, StreamError> {
-        self.full_trades(false)
-    }
-
-    /// Start quote events for `contract`; returns the request id.
-    pub fn subscribe_quotes(&self, contract: &Contract) -> Result<u64, StreamError> {
-        self.request(contract, true)
-    }
-
-    /// Stop quote events for `contract`; returns the request id.
-    pub fn unsubscribe_quotes(&self, contract: &Contract) -> Result<u64, StreamError> {
-        self.request(contract, false)
-    }
-
-    /// The next event, waiting at most `timeout`. `None` on timeout or after
-    /// the stream ended (its last event is [`Kind::Disconnected`]).
-    pub fn recv_timeout(&self, timeout: Duration) -> Option<Event> {
-        self.events.recv_timeout(timeout).ok()
-    }
-
-    /// The next event if one is waiting.
-    pub fn try_recv(&self) -> Option<Event> {
-        self.events.try_recv().ok()
-    }
-
-    pub fn stats(&self) -> Stats {
-        self.counters.snapshot()
-    }
-
-    /// Unsubscribe everything still subscribed, close the socket and wait
-    /// for the reader thread.
-    pub fn close(mut self) -> Stats {
-        self.shutdown();
-        self.counters.snapshot()
-    }
-
-    fn shutdown(&mut self) {
-        if self.reader.as_ref().is_some_and(|r| !r.is_finished()) {
+    /// Unsubscribe what is still subscribed, then stop the reader, which
+    /// sends the queued requests before the close frame, and wait for it.
+    /// Runs once; later calls find no reader and return.
+    fn shutdown(&self) {
+        let reader = self.reader.lock().ok().and_then(|mut r| r.take());
+        let Some(reader) = reader else {
+            return;
+        };
+        if !reader.is_finished() {
             if self.full_trades.swap(false, Ordering::Relaxed) {
                 let _ = self.send_full_trades(false);
             }
@@ -347,13 +462,11 @@ impl Stream {
         }
         // The reader sends queued requests before it closes the socket.
         self.stop.store(true, Ordering::Relaxed);
-        if let Some(reader) = self.reader.take() {
-            let _ = reader.join();
-        }
+        let _ = reader.join();
     }
 }
 
-impl Drop for Stream {
+impl Drop for Shared {
     fn drop(&mut self) {
         self.shutdown();
     }
