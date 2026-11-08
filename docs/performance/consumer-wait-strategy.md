@@ -177,6 +177,24 @@ decision it stays on the ROADMAP only, with no library change.
 - **The reader's own wake-up** when a frame arrives. It is outside our
   latency measurement, but real for end-to-end latency.
 
+### Thread-priority experiment (approved 2026-11-07)
+
+The latency harness can set the consumer thread's scheduling, as a
+measurement option only, with no library API change:
+- `--consumer-priority normal|above-normal|highest|time-critical`
+  (Windows `SetThreadPriority`; on Linux only `normal`, since raising it
+  needs `CAP_SYS_NICE`);
+- `--consumer-affinity <core>` (`SetThreadAffinityMask` or
+  `sched_setaffinity`);
+- `--process-priority high` (Windows `HIGH_PRIORITY_CLASS`).
+
+The report records the values the OS reads back. The library's reader
+thread keeps its defaults.
+
+The planned runs: sleep and spin × {normal, highest, highest + pinned}, at
+10 and 1,000 contracts on the dev feed after a Terminal restart, 120 s
+each. The results go here.
+
 ## Proposed API (when picked up)
 
 ```rust
