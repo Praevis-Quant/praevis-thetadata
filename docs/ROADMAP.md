@@ -42,13 +42,13 @@ The [performance architecture plan](architecture/performance-plan.md)
 
   The live-market runs remain (below).
 - **Releases:**
-  - `0.1.0-alpha.1` and `0.1.0-alpha.2` are on crates.io
-    ([releases](releases.md)). Everything since is unreleased.
-  - **alpha.3 is in preparation** (user decision 2026-11-07,
-    [scope record](releases.md#alpha3-scope-record-2026-11-08)). Publishing
-    and tagging still need the user's explicit approval.
-  - **The Python package will not go to PyPI this time.** Its wheels are
-    attached to the GitHub release.
+  - `0.1.0-alpha.1`, `0.1.0-alpha.2` and **`0.1.0-alpha.3` (2026-11-08)**
+    are on crates.io ([releases](releases.md),
+    [alpha.3 record](crates-io-release-plan.md#publication-record-010-alpha3)).
+    Alpha.3 added the arrow and stream crates.
+  - **The Python package is not on PyPI.** Its alpha.3 wheels are attached to
+    the GitHub release.
+  - **Next:** beta.1, the API freeze, with deferred items 5 and 8.
 
 ## Python parity
 

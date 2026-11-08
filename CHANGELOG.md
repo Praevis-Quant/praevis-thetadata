@@ -8,7 +8,8 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 
 `0.1.0-alpha.1` was the first published prerelease (crates.io, tag
 `v0.1.0-alpha.1`, 2026-11-02 UTC), followed by `0.1.0-alpha.2` (tag
-`v0.1.0-alpha.2`, 2026-11-03 UTC). Each release heading covers the entries
+`v0.1.0-alpha.2`, 2026-11-03 UTC) and `0.1.0-alpha.3` (tag `v0.1.0-alpha.3`,
+2026-11-08). Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
@@ -16,6 +17,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Alpha.3 publication recorded**
+  ([record](docs/crates-io-release-plan.md#publication-record-010-alpha3)).
+  It covers:
+  - the seven crates and their checksums;
+  - the tag and the GitHub pre-release with the two wheels;
+  - the Windows and Linux post-publication checks;
+  - docs.rs.
+
+  The CHANGELOG section is dated, and the release draft and release train
+  are marked published.
 - **W10 thread-priority results recorded** (consumer wait strategy and
   ADR-0018; one run each).
   - **Priority:** raising the consumer's priority did not reliably change
@@ -25,11 +36,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **Spinning** stayed at a p99 of 6-7 µs at every setting.
   - **No library change.**
 
-## [0.1.0-alpha.3] - pending (the date is set at publication)
+## [0.1.0-alpha.3] - 2026-11-08
 
-Not yet published: it needs the user's explicit approval. Scope and the
-publish set: [alpha.3 scope record](docs/releases.md#alpha3-scope-record-2026-11-08).
-The Python package's wheels go on the GitHub release, not PyPI.
+Published to crates.io from `7402533` (tag `v0.1.0-alpha.3`), with two new
+crates, `praevis-thetadata-arrow` and `praevis-thetadata-stream`. The
+Python package's wheels are attached to the
+[GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-alpha.3),
+not on PyPI. See the [scope record](docs/releases.md#alpha3-scope-record-2026-11-08)
+and the [publication record](docs/crates-io-release-plan.md#publication-record-010-alpha3).
 
 ### Release
 
