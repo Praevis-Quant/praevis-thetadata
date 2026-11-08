@@ -216,9 +216,8 @@ message-sized memory only inside a job.
   be assembled at once. Without further work the query-path worst case stays
   **streams × `encoded_bytes`** (8 × 64 MiB at PRO's 8 streams).
 
-**Decision (user, 2026-11-08, after a risk review).** The target use case
-is 1,000 of the licensee's own workloads in one process. Four PRs proceed,
-in this order:
+**Decision (user, 2026-11-08, after a risk review).** Four PRs proceed, in
+this order:
 
 | PR | What |
 | ---: | --- |
@@ -232,6 +231,13 @@ being assembled, which would bound the concurrent term. **The trigger to
 revisit it:** if PR 0's real maxima reach the tens of MiB.
 
 **`encoded_bytes` is not lowered.**
+
+**Correction (user, 2026-11-08):** the risk review first named "1,000 of
+the licensee's own workloads in one process" as the target. That is out
+of scope for this project, which replaces the official Python package; a
+future shared-service project would own it
+([ROADMAP](../ROADMAP.md#out-of-scope-a-shared-data-service-for-many-consumers)).
+Item 8 stays a beta.1 gate on its own merits.
 
 ## Recommendation
 
