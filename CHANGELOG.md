@@ -17,6 +17,30 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Breaking (pre-beta.1): per-call request options** (API change 4 of 5).
+  `query_with` and `job_with` take a `RequestOptions` instead of a
+  `BatchPolicy`. It holds:
+  - the batch policy;
+  - an overall timeout;
+  - an idle timeout;
+  - for jobs, a concurrency of at most the scheduler's slots. More is
+    refused with `Configuration`, and the read-ahead window scales with it.
+
+  Each option left unset uses the client's setting.
+  - **Decided and documented: the timeout covers time queued for a
+    slot.** It is a wall-clock budget from submission, as
+    `request_timeout` already was, so a busy scheduler cannot hold a caller
+    past it. In a job, each part has its own budget. Tests:
+    - a queued request fails with `Deadline` at its 300 ms budget without
+      reaching the server;
+    - a per-call idle timeout overrides the client's;
+    - a job capped at 2 needs four rounds for 8 parts;
+    - out-of-range concurrency is refused.
+
+    Mutation-checked.
+  - **Python:** `query`, `batches` and `to_parquet` take `timeout`,
+    `idle_timeout` (seconds) and `concurrency` as keyword-only options.
+    The vendor-named methods are unchanged.
 - **Stream handles: one thread can subscribe while another waits for
   events** (API change 3 of 5).
   - **The problem:** `Stream` held a `std::sync::mpsc::Receiver`, so it was

@@ -55,6 +55,50 @@ impl BatchPolicy {
     }
 }
 
+/// Per-call options for [`ThetaClient::query_with`] and
+/// [`ThetaClient::job_with`]. Each one left unset uses the client's setting.
+///
+/// **The timeout covers time spent queued.** It is a wall-clock budget that
+/// starts when the request is submitted, before it waits for a scheduler
+/// slot, and ends when its stream ends. A request that never gets a slot
+/// fails with [`QueryError::Deadline`] when its budget runs out, so a busy
+/// scheduler cannot hold a caller longer than it asked for. In a job, each
+/// part has its own budget, from the moment the job submits it.
+#[derive(Debug, Clone, Default)]
+#[non_exhaustive]
+pub struct RequestOptions {
+    /// How rows are coalesced into batches.
+    pub batch: BatchPolicy,
+    /// The overall deadline of a request (each part, in a job), including
+    /// time queued for a slot. Default: `ClientConfig::request_timeout`.
+    pub timeout: Option<Duration>,
+    /// The longest wait between messages once a request streams. Default:
+    /// `ClientConfig::idle_timeout`.
+    pub idle_timeout: Option<Duration>,
+    /// Jobs only: parts holding a scheduler slot at once, from 1 to the
+    /// scheduler's concurrency; the read-ahead window scales with it.
+    /// Default: the scheduler's concurrency. `query_with` ignores it.
+    pub concurrency: Option<usize>,
+}
+with_setters!(RequestOptions {
+    with_batch => batch: BatchPolicy,
+    with_timeout => timeout: Option<Duration>,
+    with_idle_timeout => idle_timeout: Option<Duration>,
+    with_concurrency => concurrency: Option<usize>,
+});
+impl RequestOptions {
+    pub(crate) fn validate(&self) -> Result<(), QueryError> {
+        self.batch.validate()?;
+        if self.timeout.is_some_and(|t| t.is_zero())
+            || self.idle_timeout.is_some_and(|t| t.is_zero())
+            || self.concurrency == Some(0)
+        {
+            return Err(QueryError::Configuration);
+        }
+        Ok(())
+    }
+}
+
 fn map_decode(error: DecodeError) -> QueryError {
     match error {
         DecodeError::Decode | DecodeError::Poisoned => QueryError::Decode,
@@ -84,20 +128,29 @@ impl ThetaClient {
     /// }
     /// ```
     pub async fn query<E: Endpoint>(&self, request: &E) -> Result<QueryStream, QueryError> {
-        self.query_with(request, BatchPolicy::default()).await
+        self.query_with(request, RequestOptions::default()).await
     }
 
-    /// [`ThetaClient::query`] with an explicit batch policy.
+    /// [`ThetaClient::query`] with per-call options: batching, an overall
+    /// timeout (which covers time queued for a slot) and an idle timeout.
     pub async fn query_with<E: Endpoint>(
         &self,
         request: &E,
-        batch: BatchPolicy,
+        options: RequestOptions,
     ) -> Result<QueryStream, QueryError> {
         budgets(&self.config)?;
-        batch.validate()?;
+        options.validate()?;
+        let RequestOptions {
+            batch,
+            timeout,
+            idle_timeout,
+            ..
+        } = options;
+        // The budget starts now, before admission: queue time counts.
         let deadline = Instant::now()
-            .checked_add(self.config.request_timeout)
+            .checked_add(timeout.unwrap_or(self.config.request_timeout))
             .ok_or(QueryError::Configuration)?;
+        let idle = idle_timeout.unwrap_or(self.config.idle_timeout);
         let pool = self.eod_pool.clone();
         let decode = &pool.policy.decode;
         let limits = Limits::default()
@@ -146,7 +199,7 @@ impl ThetaClient {
             decoder: Some(Box::new(decoder)),
             pool,
             deadline,
-            idle: self.config.idle_timeout,
+            idle,
             batch,
             failure,
             leases: Some((stream_lease, slot)),
