@@ -45,6 +45,9 @@ The Python package's wheels go on the GitHub release, not PyPI.
     digest) instead of on the runner. It installs on glibc 2.28 or newer
     (RHEL 8, Debian 11, Ubuntu 20.04-era), and it is the wheel the smoke
     test installs.
+- **A GitHub release draft** ([text](docs/release-draft-0.1.0-alpha.3.md),
+  not published). It covers the wheel assets and how to `pip install`
+  from them, since the package is not on PyPI.
 
 ### Fixed
 

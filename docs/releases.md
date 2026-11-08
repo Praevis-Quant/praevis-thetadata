@@ -166,7 +166,8 @@ Steps:
 - **c.** A packaging rehearsal on Windows and Linux for every published
   crate, abi3 wheels with a smoke import, and the archive contents
   reviewed.
-- **d.** A GitHub release draft (not published).
+- **d.** A GitHub release draft, not published:
+  [draft text](release-draft-0.1.0-alpha.3.md).
 
 Later version scopes are planning allocations, not approval of undocumented
 vendor behavior. Split a milestone into additional prereleases when its evidence
