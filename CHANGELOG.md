@@ -30,6 +30,33 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **The roadmap reflects where the project stands.** It now opens with the
+  current state:
+  - all 81 vendor wrappers exist as generated Rust requests and same-name
+    Python methods;
+  - P0, P1 and options PRO are done;
+  - 50 of the 51 option RPCs are value-checked;
+  - W10 is done on the dev feed.
+
+  A new **Python parity** section lists what remains:
+  - live and value checks for the 30 stock, index, calendar and
+    interest-rate wrappers;
+  - an endpoint-by-subscription table;
+  - futures and corporate actions, which are descriptor-only and blocked on
+    vendor documentation.
+
+  The deferred items are kept, and the pre-reset stock-EOD plan is reduced
+  to a short history note. The verbatim original review stays at the end,
+  unchanged.
+- **The Python 1.0.17 catalogue's feature dispositions match the code.**
+  - **Now supported,** each linked to its implementation and tests and
+    stating its limits: query wrappers, date and time, presence and
+    defaults, gRPC transport, errors, conversion, prices, timestamps,
+    dataframes, decoded memory, construction and flat files.
+  - **Live streaming stays unresolved** as parity, with the Terminal
+    WebSocket adapter linked.
+  - **Unchanged:** stock EOD, query metadata (still `client=rust` only) and
+    the vendor examples.
 - **W10 low-rate sleep-against-spin runs recorded** (consumer wait strategy
   and ADR-0018), one run each, after a Terminal restart and with #114:
   - **Result:** at about 670 quotes/s, spinning cut the p99 from 37 to
