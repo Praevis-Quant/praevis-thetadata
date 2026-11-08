@@ -18,8 +18,14 @@ praevis-thetadata-stream = "=0.1.0-alpha.3"
   JSON digits), and strikes stay in tenths of a cent, as sent.
 - **A slow consumer never backs up the Terminal:** when the queue is full,
   the newest event is dropped and counted (`Stats::dropped`).
-- **Gaps:** the stream has no sequence numbers, so gaps in data cannot be
-  detected. Heartbeat gaps over 2 s are counted.
+- **Gaps:**
+  - The vendor's stream has no sequence numbers, so gaps in its data cannot
+    be detected. Heartbeat gaps over 2 s are counted.
+  - **Our own losses are visible:** every event carries `sequence`, this
+    client's count of events, assigned by the reader before the queue. An
+    event dropped because the queue was full still takes its number, so a
+    jump shows exactly where and how many events were dropped.
+  - It is not a vendor sequence.
 - **Disconnects:** a disconnect ends the stream with `Kind::Disconnected`.
   There is no automatic reconnect.
 - **One owner, or two handles:** `Stream` does everything from one thread.

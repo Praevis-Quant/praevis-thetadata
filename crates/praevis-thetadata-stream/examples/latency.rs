@@ -10,7 +10,9 @@
 //!   this consumer receiving it, as p50, p90, p99, p99.9 and max, against
 //!   the p99 ≤ 50 µs target. The Terminal's own delay is not measurable:
 //!   events carry no send time;
-//! - events per second, drops, heartbeat gaps and unparsed frames;
+//! - events per second, drops, heartbeat gaps and unparsed frames; and the
+//!   drops seen as jumps in `Event::sequence` (`dropped_by_sequence`), which
+//!   should equal the reader's `dropped`;
 //! - **contracts seen:** how many distinct contracts sent quotes, and how
 //!   many quotes came for contracts not in `--contracts` (for example,
 //!   subscriptions another client left in the Terminal). A run is only as
@@ -553,6 +555,7 @@ fn main() -> std::process::ExitCode {
     let start = Instant::now();
     let end = start + Duration::from_secs(cli.seconds);
     let mut ended = false;
+    let (mut last_sequence, mut dropped_by_sequence): (Option<u64>, u64) = (None, 0);
     while Instant::now() < end {
         let next = if spin {
             events.try_recv()
@@ -567,6 +570,11 @@ fn main() -> std::process::ExitCode {
         };
         // The user callback would run here; the measurement is the hand-off.
         let ns = event.received.elapsed().as_nanos() as u64;
+        // A jump in the client's own event numbers is events dropped there.
+        if let Some(last) = last_sequence {
+            dropped_by_sequence += event.sequence.saturating_sub(last + 1);
+        }
+        last_sequence = Some(event.sequence);
         match event.kind {
             Kind::Quote { contract, .. } => {
                 histogram.record(ns);
@@ -627,6 +635,7 @@ fn main() -> std::process::ExitCode {
             "others": stats.others, "unparsed": stats.unparsed, "dropped": stats.dropped,
             "heartbeat_gaps": stats.heartbeat_gaps,
             "heartbeat_max_interval_ms": stats.heartbeat_max_interval_ms,
+            "dropped_by_sequence": dropped_by_sequence,
         },
         "allocations_per_frame": if frames > 0 { Some(allocations as f64 / frames as f64) } else { None },
         "cpu_s": cpu.map(|c| c.as_secs_f64()),

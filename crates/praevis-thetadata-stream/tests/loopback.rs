@@ -64,14 +64,19 @@ fn requests_events_and_counters() {
     assert!(sent[0].contains(r#""strike":570000"#) && sent[0].contains(r#""right":"C""#));
     assert!(sent[1].contains(r#""add":false,"id":1"#));
     let mut kinds = Vec::new();
+    let mut sequences = Vec::new();
     while let Some(event) = stream.recv_timeout(Duration::from_secs(5)) {
         let end = event.kind == Kind::Disconnected;
         kinds.push(event.kind);
+        sequences.push(event.sequence);
         if end {
             break;
         }
     }
     assert_eq!(kinds.len(), 4, "{kinds:?}");
+    // Nothing dropped: the client's numbers are contiguous from 0. The
+    // unparsed frame is not an event and takes no number.
+    assert_eq!(sequences, [0, 1, 2, 3]);
     assert_eq!(
         kinds[0],
         Kind::Heartbeat {
@@ -118,12 +123,20 @@ fn a_full_queue_drops_the_newest_and_counts_by_default() {
     assert_eq!(stats.quotes, 20);
     assert_eq!(stats.dropped, 17);
     let mut received = 0;
+    let mut sequences = Vec::new();
     while let Some(event) = stream.recv_timeout(Duration::from_millis(500)) {
         if matches!(event.kind, Kind::Quote { .. }) {
             received += 1;
         }
+        sequences.push(event.sequence);
     }
     assert_eq!(received, 3);
+    // The first 3 quotes were queued; quotes 3-19 were dropped but kept their
+    // numbers; the end of the stream is number 20. The jump is exactly where,
+    // and how many, events were dropped.
+    assert_eq!(sequences, [0, 1, 2, 20]);
+    let lost: u64 = sequences.windows(2).map(|w| w[1] - w[0] - 1).sum();
+    assert_eq!(lost, stats.dropped);
     // Block (tests only) delivers every event.
     let (url, _) = server(frames, 0);
     let stream = Stream::connect(

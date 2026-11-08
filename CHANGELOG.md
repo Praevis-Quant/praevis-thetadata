@@ -17,6 +17,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Stream events carry this client's own sequence number** (API change 5
+  of 5). `Event::sequence` counts events from 0. The reader assigns it to
+  every event before the queue, so an event dropped by `DropNewest` still
+  takes its number, and a jump shows exactly where and how many were
+  dropped.
+  - **It is not a vendor sequence:** the Terminal's stream has none.
+  - **No allocation:** a `u64` held by the reader thread.
+  - **Tests:** contiguous numbers when nothing is dropped, and with a full
+    queue the jump equals `dropped`. Mutation-checked.
+  - **Harness:** the latency harness reports `dropped_by_sequence` next to
+    `dropped`.
 - **Breaking (pre-beta.1): per-call request options** (API change 4 of 5).
   `query_with` and `job_with` take a `RequestOptions` instead of a
   `BatchPolicy`. It holds:

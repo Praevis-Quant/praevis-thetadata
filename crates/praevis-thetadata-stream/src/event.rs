@@ -192,4 +192,12 @@ pub struct Event {
     pub kind: Kind,
     /// When the reader thread had the whole frame, before parsing.
     pub received: Instant,
+    /// **This client's** count of events, from 0, assigned by the reader to
+    /// every event before it is queued. **It is not a vendor sequence number:**
+    /// the Terminal's stream has none, so gaps in the vendor's data cannot be
+    /// seen. What it shows is our own losses: an event dropped because the
+    /// queue was full (`Overflow::DropNewest`) still takes its number, so a
+    /// jump between consecutive events is exactly how many were dropped
+    /// there. Unparsed frames are not events and take no number.
+    pub sequence: u64,
 }

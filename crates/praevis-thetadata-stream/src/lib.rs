@@ -482,6 +482,8 @@ fn read(
     stop: &AtomicBool,
 ) {
     let mut last_heartbeat: Option<Instant> = None;
+    // This client's event count (`Event::sequence`), not a vendor sequence.
+    let mut sequence: u64 = 0;
     let mut pending: Vec<String> = Vec::new();
     loop {
         // Read the flag before draining, so requests queued before a stop
@@ -492,7 +494,7 @@ fn read(
         }
         for text in pending.drain(..) {
             if socket.send(Message::text(text)).is_err() {
-                let _ = sender.try_send(disconnected());
+                let _ = sender.try_send(disconnected(sequence));
                 return;
             }
         }
@@ -512,7 +514,7 @@ fn read(
                 continue;
             }
             Err(_) => {
-                let _ = sender.send(disconnected());
+                let _ = sender.send(disconnected(sequence));
                 return;
             }
         };
@@ -520,7 +522,7 @@ fn read(
         let Message::Text(text) = frame else {
             // Pings are answered by tungstenite; nothing else is expected.
             if matches!(frame, Message::Close(_)) {
-                let _ = sender.send(disconnected());
+                let _ = sender.send(disconnected(sequence));
                 return;
             }
             continue;
@@ -549,7 +551,13 @@ fn read(
             _ => &counters.others,
         }
         .fetch_add(1, Ordering::Relaxed);
-        let event = Event { kind, received };
+        // Numbered before the queue, so a dropped event still uses its number.
+        let event = Event {
+            kind,
+            received,
+            sequence,
+        };
+        sequence += 1;
         match overflow {
             Overflow::DropNewest => match sender.try_send(event) {
                 Ok(()) => {}
@@ -568,8 +576,9 @@ fn read(
     }
 }
 
-fn disconnected() -> Event {
+fn disconnected(sequence: u64) -> Event {
     Event {
+        sequence,
         kind: Kind::Disconnected,
         received: Instant::now(),
     }

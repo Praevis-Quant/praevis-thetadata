@@ -386,6 +386,9 @@ Every item must be reviewed before the auth/EOD API is frozen at `0.1.0-beta.1`.
           shape is fixed by what they are;
         - `Table`, the complete legacy shape;
         - structs with only private fields, which are already closed.
+- [x] **Event sequence (API change 5 of 5).** `Event::sequence` is this
+      client's own count of events, assigned before the queue, so a jump
+      shows where `DropNewest` lost events. It is not a vendor sequence.
 - [x] **Per-call request options (API change 4 of 5).** `RequestOptions`
       replaces `BatchPolicy` as the argument of `query_with` and `job_with`.
       It holds the batch policy, an overall timeout, an idle timeout, and a
