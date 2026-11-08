@@ -105,6 +105,18 @@ class OutputTests(unittest.TestCase):
             with self.subTest(rpc):
                 self.assertEqual(gen.required_tier(rpc, status), expected)
 
+    def test_a_gated_rpc_is_shown_as_not_probed_and_never_with_a_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            status = Path(directory) / "status.json"
+            status.write_text(json.dumps({"GetStockFlatFileQuote": {"gated": True}}))
+            _, doc = gen.generate(status_path=status)
+            self.assertIn("| not probed | not probed (gated) | not checked |", doc)
+            pro = {"class": "entitled", "code": "OK", "run": "r1"}
+            for entry in ({"gated": "approval"}, {"gated": False}, {"gated": True, "pro": pro}):
+                status.write_text(json.dumps({"GetStockFlatFileQuote": entry}))
+                with self.subTest(entry=entry), self.assertRaises(gen.GenerationError):
+                    gen.generate(status_path=status)
+
     def test_status_entries_must_name_real_rpcs(self):
         with tempfile.TemporaryDirectory() as directory:
             status = Path(directory) / "status.json"

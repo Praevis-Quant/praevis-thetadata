@@ -115,7 +115,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **Calendar:** `calendar_open_today`, `calendar_on_date` (a weekday, a
     weekend, 2025-12-25 and the 2025-11-28 early close) and `calendar_year`
     (2025 and 2026), with their decoded rows kept in the private report.
-  - **Flat files:** the four flat files are bounded probes.
+  - **Flat files:** index EOD, stock EOD and stock trade-quote are bounded
+    probes. The stock quote flat file is **gated** behind
+    `--include-stock-quote-flat-file`, off by default, because even a probe
+    could start the vendor's generation of a very large file. Coverage shows
+    it as "not probed (gated)".
   - **Python:** `bench/p1/stock_index_rate_checks.py` runs the same
     requests through the Python package.
 - **Endpoint coverage shows the subscription each wrapper requires.**

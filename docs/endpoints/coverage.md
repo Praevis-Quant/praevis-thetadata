@@ -17,7 +17,8 @@ classified by a person from the private report. The PRO account column holds the
 runs on the user's account (options PRO; stocks and indices FREE): the approved
 options PRO map, every option RPC once, and the approved stock, index, calendar and
 interest-rate run. Only the classification and gRPC code are committed. A named tier
-is the tier the service said is required.
+is the tier the service said is required. *Gated* means a probe needs explicit
+approval (it could start the vendor's generation of a very large file).
 *Uncertain* marks a classification the evidence does not settle. Endpoints that
 were not probed are not inferred from their family.
 
@@ -121,7 +122,7 @@ Vendor wrappers by the subscription required:
 | `GetOptionFlatFileQuote` | `option_flat_file_quote` | `endpoints::OptionFlatFileQuote` | vendor wrapper | generic (`query`) | not probed | invalid-argument (uncertain) (`InvalidArgument`, opt-pro-entitlements-001) | not checked | unknown |
 | `GetStockFlatFileTradeQuote` | `stock_flat_file_trade_quote` | `endpoints::StockFlatFileTradeQuote` | vendor wrapper | generic (`query`) | not probed | not probed | not checked | unknown |
 | `GetStockFlatFileEod` | `stock_flat_file_eod` | `endpoints::StockFlatFileEod` | vendor wrapper | generic (`query`) | tier-denied (`PermissionDenied`, p1-entitlements-001) | not probed | not checked | unknown |
-| `GetStockFlatFileQuote` | `stock_flat_file_quote` | `endpoints::StockFlatFileQuote` | vendor wrapper | generic (`query`) | not probed | not probed | not checked | unknown |
+| `GetStockFlatFileQuote` | `stock_flat_file_quote` | `endpoints::StockFlatFileQuote` | vendor wrapper | generic (`query`) | not probed | not probed (gated) | not checked | unknown |
 | `GetIndexFlatFileEod` | `index_flat_file_eod` | `endpoints::IndexFlatFileEod` | vendor wrapper | generic (`query`) | not probed | not probed | not checked | unknown |
 | `GetFutureListSymbols` | — | `endpoints::FutureListSymbols` | unstable | generic (`query`) | no-data (uncertain) (`NotFound`, p1-entitlements-001) | not probed | not checked | — |
 | `GetFutureListDates` | — | `endpoints::FutureListDates` | unstable | generic (`query`) | not probed | not probed | not checked | — |

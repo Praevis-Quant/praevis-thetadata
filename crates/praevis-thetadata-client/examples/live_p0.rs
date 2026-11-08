@@ -36,7 +36,9 @@
 //!   sequential, through ONE response decoded both ways (the columnar and
 //!   legacy decoders, compared value by value), read for at most
 //!   `--max-messages`. Calendar requests run for several dates and years.
-//!   The flat files are bounded probes, as above. The private report keeps
+//!   The flat files are bounded probes, as above; the stock quote flat file
+//!   only with `--include-stock-quote-flat-file` (gated, off by default).
+//!   The private report keeps
 //!   the server's status text, for a person to classify the tier, and the
 //!   calendar requests' decoded rows (calendar data, not market prices).
 //! * `sizes`: the options workloads (W4-W6 in `workloads.json`), one paced
@@ -246,6 +248,12 @@ struct EntitlementsArgs {
     /// (`options-pro` and `stock-index-rate`).
     #[arg(long)]
     flat_file_date: Option<String>,
+    /// `stock-index-rate` only: also probe the stock quote flat file. Off by
+    /// default: if entitled, even a probe can start the vendor's generation
+    /// of a very large file (like the about-38 GB option quote file), so it
+    /// needs explicit approval.
+    #[arg(long)]
+    include_stock_quote_flat_file: bool,
 }
 
 #[derive(Args)]
@@ -1013,6 +1021,7 @@ async fn entitlements(
             max_messages: options.max_messages,
             day,
             flat,
+            include_quote_flat_file: options.include_stock_quote_flat_file,
         };
         return stock_index_rate(&set, client, flat_files, report).await;
     }
@@ -1330,6 +1339,8 @@ struct StockIndexRateSet<'a> {
     day: NaiveDate,
     /// Flat files: a past day within the vendor's 7-day window.
     flat: NaiveDate,
+    /// Probe the stock quote flat file too (gated: needs explicit approval).
+    include_quote_flat_file: bool,
 }
 
 /// The calendar requests: a normal weekday, a weekend day, a full holiday and
@@ -1458,7 +1469,9 @@ async fn stock_index_rate(
     r.run(typed::IndexFlatFileEod::new(flat)).await?;
     r.run(typed::StockFlatFileEod::new(flat)).await?;
     r.run(typed::StockFlatFileTradeQuote::new(flat)).await?;
-    r.run(typed::StockFlatFileQuote::new(flat)).await?;
+    if set.include_quote_flat_file {
+        r.run(typed::StockFlatFileQuote::new(flat)).await?;
+    }
     Ok(())
 }
 
@@ -2859,6 +2872,7 @@ mod tests {
             only: only.iter().map(|rpc| (*rpc).to_owned()).collect(),
             set: "free".into(),
             flat_file_date: None,
+            include_stock_quote_flat_file: false,
         }
     }
 
@@ -3161,13 +3175,27 @@ mod tests {
         });
         let client = fixture_client(&server).await;
         let flat_files = fixture_client_with_limit(&server, FLAT_FILE_PROBE_LIMIT).await;
-        let set = StockIndexRateSet {
+        // The gated stock quote flat file is only probed when asked for.
+        let mut set = StockIndexRateSet {
             min_interval: 0.0,
             only: &[],
             max_messages: 5,
             day: date("2024-06-14"),
             flat: date("2026-11-04"),
+            include_quote_flat_file: false,
         };
+        let mut report = Report::default();
+        stock_index_rate(&set, &client, &flat_files, &mut report)
+            .await
+            .unwrap();
+        assert!(
+            report
+                .results
+                .iter()
+                .all(|r| r["rpc"] != "GetStockFlatFileQuote")
+        );
+        assert_eq!(report.results.len(), 29 + 3 + 1);
+        set.include_quote_flat_file = true;
         let mut report = Report::default();
         stock_index_rate(&set, &client, &flat_files, &mut report)
             .await

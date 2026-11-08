@@ -170,8 +170,12 @@ once (the calendar per date and year), paced and sequential.
 - **Same rules:** the same stop and privacy rules apply. The private report
   also keeps the calendar responses' decoded rows: calendar data, not market
   prices, which the user asked to see.
-- **Flat files:** its four flat files (index EOD, and stock EOD, trade-quote
-  and quote) are bounded probes only, covered by this approval.
+- **Flat files:** three flat files (index EOD, stock EOD and stock
+  trade-quote) are bounded probes only, covered by this approval.
+- **Gated:** the **stock quote flat file** is excluded unless
+  `--include-stock-quote-flat-file` is given. If entitled, even a probe can
+  start the vendor's generation of a very large file, so it needs explicit
+  approval, like the option quote file.
 - **Python side:** `bench/p1/stock_index_rate_checks.py` sends the same
   requests through the Python package.
 - **Re-running** either side needs approval again.
