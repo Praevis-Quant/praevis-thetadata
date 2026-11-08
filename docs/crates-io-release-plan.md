@@ -65,8 +65,8 @@ checksums match the local `.crate` files. None is yanked. The publisher is
     **`stream`** (a parsed quote).
 
   The default `auth` and `client` pull no keyring or D-Bus packages.
-- **The Linux wheel was not installed:** the sandbox is aarch64 and the
-  wheel is x86_64. It was verified instead:
+- **The Linux wheel, inspected** (the sandbox is aarch64, so it was
+  installed on x86_64 by the owner; see below):
   - the release asset matches its SHA-256 and is byte-identical to the CI
     artifact of run 42450063300, which installed and imported this exact
     file in a clean environment;
@@ -75,6 +75,12 @@ checksums match the local `.crate` files. None is yanked. The publisher is
   - its native library needs at most `GLIBC_2.28` and links only libc,
     libm, libpthread, libdl and libgcc_s;
   - it holds no files beyond the package, metadata, licenses and SBOM.
+
+**Post-publication check, Linux x86_64 (owner, WSL Ubuntu, glibc 2.39,
+Python 3.12.3):** `pip install` of
+`praevis_thetadata-0.1.0a3-cp310-abi3-manylinux_2_28_x86_64.whl` straight
+from the release URL into a clean venv imported it: `__version__`
+`0.1.0-alpha.3`, 81 vendor-named methods.
 
 **docs.rs:** proto, core, auth, arrow, client and stream built. The CLI has
 no documentation build, which is expected: it is a binary-only crate (no
