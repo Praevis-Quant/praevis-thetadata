@@ -13,16 +13,61 @@
       "docs/adr/0012-requirements-and-research-traceability.md"
     ],
     "requirements": [
-      "EOD-L1-001", "EOD-L1-002", "EOD-L1-003", "EOD-L1-004", "EOD-L1-005", "EOD-L1-006",
-      "EOD-L2-001", "EOD-L2-002", "EOD-L2-003", "EOD-L2-004", "EOD-L2-005", "EOD-L2-006",
-      "EOD-L2-007", "EOD-L2-008", "EOD-L2-009", "EOD-L2-010", "EOD-L2-011", "EOD-L2-012",
-      "EOD-L3-001", "EOD-L3-002", "EOD-L3-003", "EOD-L3-004", "EOD-L3-005", "EOD-L3-006",
-      "EOD-L3-007", "EOD-L3-008", "EOD-L3-009", "EOD-L3-010", "EOD-L3-011", "EOD-L3-012",
-      "EOD-L3-013", "EOD-L3-014", "EOD-L3-015", "EOD-L3-016", "EOD-L3-017", "EOD-L3-018",
-      "EOD-L3-019", "EOD-L3-020", "EOD-L3-021", "EOD-L3-022", "EOD-L3-023", "EOD-L3-024",
-      "EOD-L3-025", "EOD-L3-026", "EOD-L3-027", "EOD-L3-028", "EOD-L3-029"
+      "EOD-L1-001",
+      "EOD-L1-002",
+      "EOD-L1-003",
+      "EOD-L1-004",
+      "EOD-L1-005",
+      "EOD-L1-006",
+      "EOD-L2-001",
+      "EOD-L2-002",
+      "EOD-L2-003",
+      "EOD-L2-004",
+      "EOD-L2-005",
+      "EOD-L2-006",
+      "EOD-L2-007",
+      "EOD-L2-008",
+      "EOD-L2-009",
+      "EOD-L2-010",
+      "EOD-L2-011",
+      "EOD-L2-012",
+      "EOD-L3-001",
+      "EOD-L3-002",
+      "EOD-L3-003",
+      "EOD-L3-004",
+      "EOD-L3-005",
+      "EOD-L3-006",
+      "EOD-L3-007",
+      "EOD-L3-008",
+      "EOD-L3-009",
+      "EOD-L3-010",
+      "EOD-L3-011",
+      "EOD-L3-012",
+      "EOD-L3-013",
+      "EOD-L3-014",
+      "EOD-L3-015",
+      "EOD-L3-016",
+      "EOD-L3-017",
+      "EOD-L3-018",
+      "EOD-L3-019",
+      "EOD-L3-020",
+      "EOD-L3-021",
+      "EOD-L3-022",
+      "EOD-L3-023",
+      "EOD-L3-024",
+      "EOD-L3-025",
+      "EOD-L3-026",
+      "EOD-L3-027",
+      "EOD-L3-028",
+      "EOD-L3-029"
     ],
-    "implementation": ["crates/praevis-thetadata-client/src/eod.rs", "crates/praevis-thetadata-client/src/bounded.rs", "crates/praevis-thetadata-client/src/envelope.rs", "crates/praevis-thetadata-client/src/framing.rs", "crates/praevis-thetadata-core/src/batch.rs"],
+    "implementation": [
+      "crates/praevis-thetadata-client/src/eod.rs",
+      "crates/praevis-thetadata-client/src/bounded.rs",
+      "crates/praevis-thetadata-client/src/envelope.rs",
+      "crates/praevis-thetadata-client/src/framing.rs",
+      "crates/praevis-thetadata-core/src/batch.rs"
+    ],
     "verification": [
       "crates/praevis-thetadata-client/tests/eod_fixture.rs",
       "crates/praevis-thetadata-client/tests/eod_typed.rs",
@@ -77,9 +122,9 @@
   },
   {
     "id": "construction",
-    "status": "planned",
+    "status": "supported",
     "section": "constructor-and-configuration",
-    "rationale": "Python combines discovery, synchronous authentication, and channel creation in one constructor. Rust intentionally separates auth, storage, and async client construction; a high-level compatibility API is not baselined.",
+    "rationale": "The Python Client follows the vendor's credential order and constructor options, and can share an existing session without logging in again. Rust keeps auth, storage and async client construction separate on purpose; there is no single Rust constructor that mirrors Python's.",
     "adrs": [
       "docs/adr/0001-standalone-auth.md",
       "docs/adr/0007-first-market-data-slice.md",
@@ -87,10 +132,13 @@
     ],
     "requirements": [],
     "implementation": [
+      "crates/praevis-thetadata-py/python/praevis_thetadata/__init__.py",
       "crates/praevis-thetadata-auth/src/lib.rs",
       "crates/praevis-thetadata-client/src/lib.rs"
     ],
-    "verification": []
+    "verification": [
+      "crates/praevis-thetadata-py/tests/test_credentials.py"
+    ]
   },
   {
     "id": "credential-file",
@@ -198,9 +246,9 @@
   },
   {
     "id": "query-wrappers",
-    "status": "planned",
+    "status": "supported",
     "section": "wrapper-semantics",
-    "rationale": "All 80 signatures, defaults, construction conditions, vendor descriptions, and RPC mappings are retained. Raw Rust helpers exist, but Python defaults and typed validation/output parity are not implemented or approved market-data requirements. Proposed ADR-0007 selects only stock_history_eod for the first requirements slice; the remaining wrappers stay future candidates. ADR links do not mark implementation complete.",
+    "rationale": "All 81 vendor wrappers exist as generated Rust requests (endpoints::*, with the vendor's defaults and explicit presence) and as same-name Python methods with the vendor 1.0.17 signatures (tested). Live: 50 of the 51 option wrappers are value-checked on options PRO (columnar against legacy decoder, plus the Python package); the option quote flat file is gated on size. The 30 stock, index, calendar and interest-rate wrappers have only the one-time FREE entitlement map (6 entitled, 11 tier-denied, 13 not probed) and no value checks; see docs/endpoints/coverage.md. Requests carry typed wire fields; there is no per-endpoint validation of argument values beyond their types.",
     "adrs": [
       "docs/adr/0007-first-market-data-slice.md",
       "docs/adr/0008-typed-requests-and-presence.md",
@@ -208,34 +256,54 @@
     ],
     "requirements": [],
     "implementation": [
-      "crates/praevis-thetadata-client/build.rs",
-      "crates/praevis-thetadata-client/src/lib.rs"
+      "crates/praevis-thetadata-client/src/endpoints/generated.rs",
+      "crates/praevis-thetadata-client/src/query.rs",
+      "crates/praevis-thetadata-py/python/praevis_thetadata/_vendor.py",
+      "crates/praevis-thetadata-py/src/generated.rs"
     ],
-    "verification": []
+    "verification": [
+      "crates/praevis-thetadata-client/tests/endpoints.rs",
+      "crates/praevis-thetadata-py/tests/test_vendor.py",
+      "crates/praevis-thetadata-py/tests/test_api.py",
+      "docs/endpoints/coverage.md"
+    ]
   },
   {
     "id": "date-time",
-    "status": "planned",
+    "status": "supported",
     "section": "date-and-presence",
-    "rationale": "Time formatting, string passthrough, wildcard expiration handling, and per-method differences need explicit typed request contracts. Current generated wire structs leave this to callers.",
+    "rationale": "Generated requests format dates, times and expirations the way the wrappers do (typed Expiration, TimeOfDay and Symbols, including the * wildcard). The Python package accepts datetime.date or YYYY-MM-DD, datetime.time or vendor text, and refuses a datetime where a date is expected rather than dropping its time. Per-method differences follow the generated wrapper rules; vendor behaviour for malformed text is not reproduced.",
     "adrs": [
       "docs/adr/0008-typed-requests-and-presence.md"
     ],
     "requirements": [],
-    "implementation": [],
-    "verification": []
+    "implementation": [
+      "crates/praevis-thetadata-client/src/endpoints/mod.rs",
+      "crates/praevis-thetadata-client/src/endpoints/generated.rs",
+      "crates/praevis-thetadata-py/src/kwargs.rs"
+    ],
+    "verification": [
+      "crates/praevis-thetadata-client/tests/endpoints.rs",
+      "crates/praevis-thetadata-py/tests/test_api.py"
+    ]
   },
   {
     "id": "presence-and-defaults",
-    "status": "planned",
+    "status": "supported",
     "section": "date-and-presence",
-    "rationale": "Retain None versus false/zero/empty and distinguish Python truthiness omission from server defaults. No automatic claim of bug-for-bug compatibility; decide each typed API default when scoped.",
+    "rationale": "Optional request fields are Option<T> with the vendor's defaults, and the wrappers' truthiness guards are applied as the vendor applies them (tested per shape: snapshots, OHLC intervals, Greeks). In Python, passing a default builds the same wire query as omitting it. This is wire-level compatibility with the wrapper, checked synthetically; server-side defaults are not inferred.",
     "adrs": [
       "docs/adr/0008-typed-requests-and-presence.md"
     ],
     "requirements": [],
-    "implementation": [],
-    "verification": []
+    "implementation": [
+      "crates/praevis-thetadata-client/src/endpoints/generated.rs",
+      "crates/praevis-thetadata-py/python/praevis_thetadata/_vendor.py"
+    ],
+    "verification": [
+      "crates/praevis-thetadata-client/tests/endpoints.rs",
+      "crates/praevis-thetadata-py/tests/test_vendor.py"
+    ]
   },
   {
     "id": "query-metadata",
@@ -253,23 +321,29 @@
   },
   {
     "id": "grpc-transport",
-    "status": "planned",
+    "status": "supported",
     "section": "transport-and-errors",
-    "rationale": "TLS/channel and finite server-streaming foundations exist. Python has no exposed per-wrapper deadline/cancellation/close controls; Rust adds deadlines and stream dropping. Live limits, retry policy, and safe concurrency remain open.",
+    "rationale": "query() and job() run on a tier-aware scheduler (PRO 8 concurrent, FREE 1 and 20 per minute by default, overridable), with deadlines, idle timeouts and cancellation; jobs split by date and, for all-strike fine quotes, by strike, with ordered read-ahead. Only RESOURCE_EXHAUSTED and UNAVAILABLE are retried, and only when a request opens. Measured live up to 8 concurrent on options PRO; behaviour above 8 and over the vendor's limits is not probed.",
     "adrs": [
       "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
     ],
     "requirements": [],
     "implementation": [
-      "crates/praevis-thetadata-client/src/lib.rs"
+      "crates/praevis-thetadata-client/src/query.rs",
+      "crates/praevis-thetadata-client/src/job.rs",
+      "crates/praevis-thetadata-client/src/scheduler.rs"
     ],
-    "verification": []
+    "verification": [
+      "crates/praevis-thetadata-client/tests/query.rs",
+      "crates/praevis-thetadata-client/tests/job.rs",
+      "docs/architecture/options-phase.md"
+    ]
   },
   {
     "id": "errors",
-    "status": "planned",
+    "status": "supported",
     "section": "transport-and-errors",
-    "rationale": "Auth errors are baselined; the full Python exception surface also includes gRPC NOT_FOUND, generic transport/config/conversion errors, and partial-stream failure. Rust mapping exists but a complete market-data error contract and fixtures remain future work.",
+    "rationale": "Rust maps failures to typed QueryError classes: remote status, decode/schema errors, timeouts, cancellation and SessionEnded for UNAUTHENTICATED on every path. Rows received before a failure are delivered, then the error once. Python raises ThetaDataError subclasses (QueryFailed, SessionEnded, OutputFailed). The vendor's exception classes and messages are not reproduced; this is a deliberate, documented difference.",
     "adrs": [
       "docs/adr/0002-auth-contract-and-credentials.md",
       "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
@@ -278,53 +352,58 @@
       "AUTH-L3-006"
     ],
     "implementation": [
-      "crates/praevis-thetadata-auth/src/lib.rs",
-      "crates/praevis-thetadata-client/src/lib.rs"
+      "crates/praevis-thetadata-client/src/query.rs",
+      "crates/praevis-thetadata-client/src/job.rs",
+      "crates/praevis-thetadata-py/src/lib.rs"
     ],
     "verification": [
-      "crates/praevis-thetadata-auth/src/tests.rs"
+      "crates/praevis-thetadata-client/tests/query.rs",
+      "crates/praevis-thetadata-client/tests/job.rs",
+      "crates/praevis-thetadata-py/tests/test_api.py"
     ]
   },
   {
     "id": "conversion",
-    "status": "planned",
+    "status": "supported",
     "section": "conversion-and-output",
-    "rationale": "Rust decodes batches, not Python's fully accumulated dataframe. Compression, row shape, price, timestamp, null, dataframe inference, and empty-stream semantics need explicit per-feature acceptance criteria.",
+    "rationale": "A columnar decoder turns each response into Arrow record batches (exact types, nulls backfilled, schema errors classified) and query() coalesces them into batches; Python and Parquet output build on the same batches. Values are checked equal to the legacy decoder live on 50 option RPCs. A batch stream is not one accumulated dataframe; Result and collect() accumulate explicitly.",
     "adrs": [
       "docs/adr/0009-market-data-values-and-schema.md",
       "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
     ],
     "requirements": [],
     "implementation": [
-      "crates/praevis-thetadata-client/src/decode.rs",
-      "crates/praevis-thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-arrow/src/lib.rs",
+      "crates/praevis-thetadata-client/src/query.rs"
     ],
     "verification": [
-      "crates/praevis-thetadata-client/src/decode.rs",
-      "crates/praevis-thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-arrow/tests/decoder.rs",
+      "crates/praevis-thetadata-client/tests/query.rs",
+      "docs/endpoints/coverage.md"
     ]
   },
   {
     "id": "prices",
-    "status": "planned",
+    "status": "supported",
     "section": "conversion-and-output",
-    "rationale": "Rust exact mantissa/exponent and null-for-scale-zero deliberately differ from Python float multiplication and NaN; Python also accepts negative scale indexing. Existing tests cover Rust behavior, not dataframe parity.",
+    "rationale": "Prices are exact decimal128(38, 10) in Arrow, from the wire mantissa and scale, never floats. This deliberately differs from Python's float multiplication and NaN. Values match the legacy decoder on the live option checks.",
     "adrs": [
       "docs/adr/0009-market-data-values-and-schema.md"
     ],
     "requirements": [],
     "implementation": [
-      "crates/praevis-thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-arrow/src/lib.rs"
     ],
     "verification": [
-      "crates/praevis-thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-arrow/tests/decoder.rs",
+      "crates/praevis-thetadata-py/tests/test_arrow.py"
     ]
   },
   {
     "id": "timestamps",
-    "status": "planned",
+    "status": "supported",
     "section": "conversion-and-output",
-    "rationale": "Python emits aware datetime objects and Polars millisecond columns; Rust emits RFC3339 strings and rejects unknown zones. Define output representation, timezone/DST/overflow guarantees before expanding the public API.",
+    "rationale": "The Arrow path emits millisecond timestamps with their time zone, as Polars and pandas expect, and rejects mixed zones in one column. The legacy Table adapter still formats RFC3339 strings. Nanosecond precision stays open under ADR-0019 until ThetaData defines nanos and precision.",
     "adrs": [
       "docs/adr/0009-market-data-values-and-schema.md",
       "docs/adr/0019-timestamp-precision.md"
@@ -334,56 +413,71 @@
       "EOD-L3-030"
     ],
     "implementation": [
+      "crates/praevis-thetadata-arrow/src/lib.rs",
       "crates/praevis-thetadata-core/src/lib.rs"
     ],
     "verification": [
-      "crates/praevis-thetadata-core/src/lib.rs",
-      "crates/praevis-thetadata-client/tests/eod_contracts.rs"
+      "crates/praevis-thetadata-arrow/tests/decoder.rs",
+      "crates/praevis-thetadata-py/tests/test_arrow.py"
     ]
   },
   {
     "id": "dataframes",
-    "status": "planned",
+    "status": "supported",
     "section": "conversion-and-output",
-    "rationale": "Both Pandas and Polars behavior is retained as research. Native Rust table/column/export choices remain open; do not silently equate a batch stream with one accumulated dataframe or add Python runtime dependencies.",
+    "rationale": "The Python package returns the client's dataframe_type (Polars by default, pandas or Arrow) for vendor-named methods, and Result.to_polars/to_pandas/to_arrow otherwise, through the Arrow PyCapsule interface without per-row Python objects. Column types are exact (decimal prices, zone-aware timestamps), so they differ from the vendor's float columns. Rust stays Arrow-only, with no Python dependency.",
     "adrs": [
       "docs/adr/0009-market-data-values-and-schema.md"
     ],
     "requirements": [],
     "implementation": [
-      "crates/praevis-thetadata-core/src/lib.rs"
+      "crates/praevis-thetadata-py/python/praevis_thetadata/__init__.py",
+      "crates/praevis-thetadata-py/src/lib.rs"
     ],
-    "verification": []
+    "verification": [
+      "crates/praevis-thetadata-py/tests/test_arrow.py",
+      "crates/praevis-thetadata-py/tests/test_vendor.py"
+    ]
   },
   {
     "id": "decoded-memory",
-    "status": "planned",
+    "status": "supported",
     "section": "conversion-and-output",
-    "rationale": "Encoded/decompressed byte limits do not bound total decoded heap. Row/cell limits, bounded CPU work, allocation reuse, and concurrent budgets remain roadmap candidates with benchmarks required.",
+    "rationale": "DecodeLimits bound every message and the decoder's buffer, and the streaming path (job to Parquet) was measured live with a Rust heap bounded by configuration plus Parquet footer metadata of about 13 KB per row group. This does not bound total process memory: transport buffering is outside the budget (alpha.3 item 8), and an accumulated Result grows with its rows.",
     "adrs": [
       "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
     ],
     "requirements": [],
     "implementation": [
-      "crates/praevis-thetadata-client/src/decode.rs"
+      "crates/praevis-thetadata-arrow/src/lib.rs",
+      "crates/praevis-thetadata-arrow/src/parquet_sink.rs",
+      "crates/praevis-thetadata-client/src/job.rs"
     ],
-    "verification": []
+    "verification": [
+      "crates/praevis-thetadata-arrow/tests/decoder.rs",
+      "crates/praevis-thetadata-arrow/tests/parquet_memory.rs",
+      "docs/architecture/options-phase.md"
+    ]
   },
   {
     "id": "flat-files",
-    "status": "unresolved",
+    "status": "supported",
     "section": "flat-files-and-corporate-actions",
-    "rationale": "Seven wrappers and manifest wire fields exist, but Python ignores the manifest and has no dedicated downloader/framing parser. Rust deliberately rejects flat-file table decoding. Live framing/availability/output semantics need evidence before requirements.",
+    "rationale": "Flat-file responses decode through the same columnar path into Parquet. Live, the option open-interest, EOD and trade-quote files were downloaded in full and decoded with no error or manifest, values compared on the first message. The option quote file (about 38 GB) is gated on the user's go-ahead; the stock and index flat files are not checked. Like Python, the manifest is not used.",
     "adrs": [
       "docs/adr/0007-first-market-data-slice.md",
       "docs/adr/0011-market-data-verification-and-artifact-retention.md"
     ],
     "requirements": [],
     "implementation": [
-      "crates/praevis-thetadata-client/src/decode.rs"
+      "crates/praevis-thetadata-arrow/src/lib.rs",
+      "crates/praevis-thetadata-arrow/src/parquet_sink.rs",
+      "crates/praevis-thetadata-client/src/output.rs"
     ],
     "verification": [
-      "crates/praevis-thetadata-client/src/decode.rs"
+      "crates/praevis-thetadata-arrow/tests/decoder.rs",
+      "crates/praevis-thetadata-client/examples/live_job_memory.rs",
+      "docs/architecture/options-phase.md"
     ]
   },
   {
@@ -484,12 +578,16 @@
     "id": "live-streaming",
     "status": "unresolved",
     "section": "remaining-contracts",
-    "rationale": "Finite gRPC query streams are present; a WebSocket/FPSS subscription client is absent from this artifact. Treat real-time event streaming as a separately evidenced adapter, not a missing wrapper inferred from server_streaming=true.",
+    "rationale": "The Python artifact has no streaming client; finite gRPC query streams are a different thing. Rust adds a separate adapter for the operator-run Terminal's WebSocket (ADR-0018): quotes and the full trade stream, verified on the Terminal's dev feed only. Live-market runs remain, so this stays unresolved as parity, and it is not a missing wrapper inferred from server_streaming=true.",
     "adrs": [
       "docs/adr/0007-first-market-data-slice.md"
     ],
     "requirements": [],
-    "implementation": [],
-    "verification": []
+    "implementation": [
+      "crates/praevis-thetadata-stream/src/lib.rs"
+    ],
+    "verification": [
+      "crates/praevis-thetadata-stream/tests/loopback.rs"
+    ]
   }
 ]

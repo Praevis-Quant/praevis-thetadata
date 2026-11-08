@@ -1,102 +1,133 @@
 # Roadmap
 
-This is a forward-looking work list, not a changelog. Recommendations become requirements when selected for implementation; their inclusion here does not approve the entire market-data scope.
+This is a forward-looking work list, not a changelog. Delivered work is in
+[CHANGELOG.md](../CHANGELOG.md). A recommendation becomes a requirement only
+when it is selected for implementation. Its inclusion here does not approve
+the whole market-data scope.
 
-> **Direction reset (2026-11-03, plan approved the same day).** The
-> [performance architecture plan](architecture/performance-plan.md) redirects
-> the work from hand-built slices toward generated endpoints, a columnar Arrow
-> data path, a tier-aware scheduler, PyO3 and real-time streaming, measured
-> against the vendor Python package. It supersedes the slice-by-slice ordering
-> below; P0 (measurement on FREE) is next. Item 8 / option 2a, alpha.3 and beta.1 are on hold.
+## Where the project stands (2026-11-08)
 
-## Release sequence and immediate service integration
+The [performance architecture plan](architecture/performance-plan.md)
+(approved 2026-11-03) replaced the earlier slice-by-slice plan (see
+[History](#history)).
 
-Follow the [concrete release milestones and exit gates](releases.md):
-`0.1.0-alpha.1` publishes useful experimental foundations; `alpha.2` closes EOD
-feature/performance acceptance; `beta.1` freezes the initial API; `0.1.0` supports
-auth and single-symbol stock EOD. Subsequent minor milestones cover typed stock,
-option/index/calendar/rate slices, flat files and real-time subscriptions before
-a reviewed stable Rust API. PyO3 remains a separate later adapter release.
-Version targets are gate-based, not promises of dates or full Python parity.
+- **Endpoints:**
+  - **All 81 vendor wrappers** of the pinned Python 1.0.17 package exist in
+    two forms:
+    - generated Rust requests (`endpoints::*`, with explicit presence and the
+      vendor's defaults);
+    - same-name Python methods with the vendor's signatures
+      (`praevis_thetadata.Client`).
+  - **The other 19 RPCs are descriptor-only:** 17 futures and 2 corporate
+    actions.
+  - Per-endpoint status is in [endpoint coverage](endpoints/coverage.md).
+- **Phases:**
+  - **P0 is done** ([results](performance/p0-results.md)).
+  - **P1 is done** ([exit results](performance/p1-exit-results.md)), with
+    two recorded misses: Python into Polars at 9.0-9.2× against the 10×
+    target, and criterion (d).
+- **Options PRO is done** ([options phase](architecture/options-phase.md)):
+  - **50 of the 51 option RPCs are value-checked live:** the columnar
+    decoder against the legacy decoder, plus the Python package.
+  - **The remaining one is the option quote flat file** (about 38 GB). Even a
+    probe needs the user's go-ahead.
+  - **The D2 targets are met** against the vendor package
+    ([results](performance/options-d2-results.md)).
+  - **Memory is bounded by configuration** on the streaming path, with the
+    stated limits.
+- **Real-time (W10) is done on the dev feed** (ADR-0018 W10 record; the
+  [stream crate](../crates/praevis-thetadata-stream/README.md)):
+  - quotes and the full trade stream through the operator's Terminal;
+  - p99 ≤ 50 µs met at the measured rates.
 
-**`0.1.0-alpha.1` was released on crates.io on 2026-11-02 UTC**
-([record](crates-io-release-plan.md#publication-record-010-alpha1)). **`0.1.0-alpha.2`,
-the EOD feature-complete candidate, was released on 2026-11-03 UTC**
-([record](crates-io-release-plan.md#publication-record-010-alpha2),
-[readiness](releases.md#alpha2-readiness-record-2026-11-02)). Next, the proposed `0.1.0-alpha.3` hardens the
-[deferred items](releases.md#deferred-from-alpha2), then `beta.1` freezes the API.
+  The live-market runs remain (below).
+- **Releases:**
+  - `0.1.0-alpha.1` and `0.1.0-alpha.2` are on crates.io
+    ([releases](releases.md)). Everything since is unreleased.
+  - **alpha.3 and beta.1 are on hold.** Any publish or tag needs separate
+    approval.
+  - **The Python package is not published.**
 
-Use the [release execution chart](releases.md#immediate-execution-order) for the
-next packaging and acceptance changes. The selected
-[Rust and Python comparison plan](performance/python-comparison.md) adds a pinned
-vendor baseline, equivalent consumer tasks and Windows/Linux evidence before
-making comparative performance claims. Existing Rust-only measurements do not
-establish a speedup over Python.
+## Python parity
 
-Expand [optional manual PROD verification](live-verification.md) using the
-account holder's explicitly selected environment key or local credential file.
-Follow the [subscription matrix](subscription-testing.md): pair allowed EOD data
-with explicitly expected endpoint denials on FREE; add independent paid-product
-profiles as available and keep unavailable tiers marked not-run. Compare bounded
-captures through raw/numeric/Table delivery and mock replay, review schema/value/
-date/completion differences, and record [observations](research/live-observations.md).
-No live checks, credentials or live artifact uploads belong in CI. STAGE is a
-separate vendor connection, not an assumed testing sandbox. Close package/archive/
-owner checks for alpha.1 while pursuing the performance acceptance work below.
+Parity here means the vendor package's 81 wrappers, each with:
+- a live entitlement result on the account's tiers;
+- values checked through our decoders and our Python package.
+
+Options are done. What remains:
+
+1. **Stocks (16 wrappers), indices (10), calendar (3) and interest rate (1):
+   live checks and value checks are missing.**
+   - Only the one-time FREE map touched them: 17 probed (6 entitled and 11
+     tier-denied), 13 not probed, none value-checked.
+   - The next step is a one-run sweep of all 30, like the option checks. The
+     user approved it on 2026-11-07, and it is being added to `live_p0`.
+   - Our account is stocks FREE and indices FREE, so most of these will
+     classify as tier-denied. Their values can only be checked on a higher
+     tier.
+2. **An endpoint-by-subscription table:** per wrapper, the minimum tier the
+   service names (FREE, VALUE, STANDARD or PRO, per product), from the FREE
+   map, the options PRO map and that sweep. Where no run has established it,
+   the table says unknown.
+3. **Futures (17 RPCs) and corporate actions (2): descriptor-only.**
+   - **Blocked:** they have no vendor wrapper, no public documentation, no
+     symbology and no result schemas.
+   - **Watched** by the [upstream monitor](upstream-monitor.md). Act when a
+     vendor release adds wrappers or documentation.
+   - Until then, keep the raw bindings without promising service behaviour.
+
+The option quote flat file (above) is the one option RPC left. It is gated
+on the user's go-ahead because of its size, not blocked.
+
+## Real-time stream (W10): what remains
+
+- **Live `--no-login` subscribe probe:** explain the roughly 150 s before
+  the first live quote. On the dev feed, the first event arrived in 1.5 s.
+- **Live-market latency runs:**
+  1. Restore the Terminal's live hosts.
+  2. Run at 10, 100 and 1,000 contracts, then the full trade stream.
+  3. Check the W10 "sustained full-stream load without drops" exit
+     criterion.
+- **The `Remote(Internal)` error on a second gRPC request** is unexplained.
+  An idle connection was ruled out. It stays open until there is evidence.
+- **For users:** run either the Terminal's REST API or our historical client
+  on one account, not both (ADR-0018 W10 record).
 
 ## Optional Theta Terminal connection track
 
-Implement [ADR-0018](adr/0018-explicit-connection-adapters.md) and
-[CONN requirements](requirements/connections.md): first a REST adapter for an
-operator-started v3 JAR, then optional process supervision with explicit ownership
-and version provenance, then a separate WebSocket subscription adapter. Keep the
-direct HTTPS/gRPC path Java-free and prevent implicit transport fallback. Use the
-[connection inventory and SVG](connections.md) to keep endpoints, errors,
-entitlements and lifecycle/performance evidence distinct. Terminal support does
-not bypass subscription restrictions or imply complete Python parity.
+[ADR-0018](adr/0018-explicit-connection-adapters.md) and the
+[CONN requirements](requirements/connections.md) define three adapters. The
+WebSocket subscription adapter exists (the stream crate). Two remain
+candidates:
+- a REST adapter for an operator-started v3 JAR;
+- optional process supervision, with explicit ownership and version
+  provenance.
 
-The next round is completing the stock EOD slice's [defined L1/L2/L3 requirements](requirements/L1-stock-eod.md) and [performance-first contracts](requirements/performance.md) from [proposed ADRs 0007-0016](adr/README.md), [the detailed Python research](research/thetadata-1.0.12.md#deep-analysis-2026-10-04), and [coverage matrix](research/python-1.0.12-catalog.md). Build on the Rust-native fixtures and [numeric-path measurements](performance/eod-numeric-results.md) to close the [resource-policy measurement gate](requirements/stock-eod-evidence.md). Recommendations **#1, #3, and #6** inform resource/verification contracts; **#4** informs additive numeric delivery, and **#5** requires measured buffer-reuse evaluation. The original review remains verbatim as source material; implementation evidence belongs in the requirements and performance documentation.
+The rules for the track:
+- Keep the direct HTTPS/gRPC path Java-free, and allow no implicit transport
+  fallback.
+- Use the [connection inventory](connections.md) to keep endpoints, errors,
+  entitlements and lifecycle evidence distinct.
+- Terminal support does not bypass subscription restrictions or imply
+  complete Python parity.
 
-## Next round: implement and verify stock EOD
+## Deferred work
 
-Complete acceptance of the typed one-symbol EOD request and pull stream against [the L3 contracts](requirements/L3-stock-eod.md). First investigate the repeatable null/price decode regressions in the [fault/resource calibration](performance/eod-acceptance-results.md), preserving local error provenance, bounded admission and transport progress. Close the remaining clauses in the [requirement-by-requirement matrix](requirements/stock-eod-matrix.md): dependency-log/session/URL sentinels, timeout metadata, controlled-clock interleavings, timestamp domain boundaries and the standalone partial-result example. Profile transport and C allocation separately; extend policy calibration to text/header extremes and the full supported query-cap range. Use the [retained baseline](performance/eod-results.md) and common-harness before/after evidence to approve resource defaults and performance tolerances. Evaluate further small-batch changes only against the retained platform variability. Report regressions and fixture/instrumentation effects as well as improvements. A raw generated binding is not acceptance evidence for a supported product feature.
+**Hardening (proposed `0.1.0-alpha.3`).** Seven items were deferred from
+alpha.2 on 2026-11-02:
+1. memory profiling;
+2. the exhaustive adversarial corpus;
+3. a synthetic trusted-TLS fixture;
+4. controlled-clock interleavings with a transport seam;
+5. a `Price` numeric helper;
+6. finalizing the desktop tolerances;
+7. a deterministic schema-lease/job-permit release order.
 
-Verify validation/wire mapping, exact values, session use, stream/schema/empty-result behavior, deadlines/cancellation, and partial-stream errors on Windows and Linux. Link implementation and passing evidence to each requirement before accepting the slice. Retain open service-column, date-inclusivity, ordering/adjustment, entitlement, and token-lifecycle questions until supported by authorized live evidence or vendor confirmation. Future optional-field endpoints need explicit false/zero-presence contracts when selected; they are not part of the three-field EOD query.
-
-Extend the coverage matrix from each selected inventory item to its ADR, requirements, implementation, and verification without dropping unselected items. Preserve source hashes and earlier research, reconcile new findings, and retain explicit planned/supported/excluded/unresolved dispositions. Close session lifecycle/identity questions before unattended use; establish separate evidence and designs for flat files, corporate actions, and real-time subscriptions. Do not turn unverified findings into requirements or claim live behavior from artifact coverage alone.
-
-## Deferred hardening after alpha.2
-
-Seven items were deliberately deferred from alpha.2 on 2026-11-02: memory
-profiling, the exhaustive adversarial corpus, a synthetic trusted-TLS fixture,
-controlled-clock interleavings with a transport seam, a `Price` numeric helper,
-finalizing the desktop tolerances, and a deterministic schema-lease/job-permit
-release order. They are consolidated, with sources and
-targets, in [Deferred from alpha.2](releases.md#deferred-from-alpha2). A
-dedicated hardening milestone (`0.1.0-alpha.3`) is proposed for them. Item 1,
-the memory profile, found transport buffering outside the shared budget. That
-is proposed item 8, so describe only the client's own accounted allocations as
-bounded.
-
-## Performance-first library architecture and enhancements
-
-Implement [ADRs 0013-0016](adr/README.md) and the [ARCH](requirements/architecture.md),
-[PERF](requirements/performance.md), and [EXT](requirements/enhancements.md)
-contracts alongside the EOD slice. Performance is the leading optimization
-objective within correctness, security and bounded-resource/lifecycle contracts.
-Build on the retained Rust-native decoder-to-consumer baseline to select
-finite limits, numeric DataBatch layout and bounded scheduling. Keep formatted
-Table output as an explicit compatibility adapter. Evaluate capped buffer/schema
-reuse from original recommendations #4/#5 under these measurement gates.
-
-Keep the current crate structure while separating internal responsibilities;
-make native storage optional for library consumers and explicitly enabled by
-the CLI. Use the [architecture review](research/architecture-performance-review.md)
-to assess dependency costs before extracting further crates. Define optional
-local filtering/projection after the unfiltered numeric path is verified;
-preserve source validation and lifecycle semantics and benchmark adapter bypass.
-Explore bounded aggregation/windowing, export adapters and caching only with
-separate consumer requirements, state budgets and provenance/invalidation rules.
+They are listed with sources and targets in
+[Deferred from alpha.2](releases.md#deferred-from-alpha2). Item 1, the
+memory profile, found transport buffering outside the shared budget. That is
+proposed item 8. Until it is resolved, describe only the client's own
+accounted allocations as bounded.
 
 **Re-enable Decimal128 Parquet statistics after the upstream fix ships.**
 `ParquetSink` writes no decimal min/max statistics by default. This works
@@ -121,83 +152,29 @@ deferred it; sleeping stays the only and default behaviour. The problem,
 options, costs, proposed API, gates and decision record are in
 [consumer wait strategy](performance/consumer-wait-strategy.md).
 
-## Initial crates.io presence
+**Library extensions, only with their own requirements:**
+- optional local filtering and projection;
+- bounded aggregation and windowing;
+- further export adapters and caching.
 
-Done: `0.1.0-alpha.1` was published on 2026-11-02 UTC
-([record](crates-io-release-plan.md#publication-record-010-alpha1)).
-Follow-ups:
+Each needs separate consumer requirements, state budgets and
+provenance/invalidation rules, and must be benchmarked against the adapter
+bypass. Use the
+[architecture review](research/architecture-performance-review.md) to weigh
+dependency costs before extracting further crates.
+
+**crates.io follow-ups:**
 - add a backup crates.io owner;
 - fix the CLI package description wording at the next release.
 
-The original plan is kept below.
+**Python package before a first publish:**
+- packaging and wheels;
+- the supported Python versions and platforms;
+- free-threading support.
 
-Prepare the selected [praevis-thetadata package family](project-naming.md) for
-publication. Recheck registry availability and give each package its own public
-README; distinguish the CLI package from its executable and the virtual workspace.
-Preserve credential/store compatibility and historical upstream evidence.
+Publishing it needs separate approval, like any release.
 
-Prepare useful experimental prereleases of the five existing workspace crates
-using the [crates.io release plan](crates-io-release-plan.md). Resolve package
-metadata, registry dependency versions, self-contained build/benchmark assets,
-license inclusion, ownership and token permissions before publication. Review
-exact archives and Windows/Linux consumer checks, then approve the public
-release. Recheck name availability; do not reserve speculative future packages.
-
-## Related project research
-
-Review [ThetaDataDx and other tracked projects](research/related-projects.md)
-at release planning and before selecting event, binding or dataframe features.
-Record revisions and independently verify useful design/performance claims;
-keep third-party ideas separate from the pinned Python compatibility baseline.
-
-## Future Python interface through PyO3
-
-Create a separate PyO3 binding project/package after the Rust contracts and
-performance baseline stabilize. Expose the selected auth, query, value/batch and
-transform interfaces through reusable Rust APIs; core/auth/client must not depend
-on Python. Design batch ownership/lifetimes, async runtime integration,
-cancellation/errors, interpreter detachment/free-threading support, packaging
-and supported Python/platform versions when this scope is selected. Benchmark
-Python transfer separately from Rust delivery; avoid default per-row Python
-callbacks and unnecessary object conversion. Evaluate Arrow/buffer interchange
-as options with explicit copy/lifetime evidence, not an assumed zero-copy promise.
-Add binding ADRs/requirements and enhancement-origin records before implementation.
-
-## Respond to upstream compatibility changes
-
-For each newer stable release detected by [the scheduled PyPI monitor](upstream-monitor.md), research the versioned source artifacts and assess compatibility before updating the tracked Python baseline. Keep that baseline separate from the Rust crate version; a failed check initiates research and requirements review, not an automatic baseline bump.
-
-The 1.0.12 → 1.0.17 update is complete ([plan and record](upstream-update-1.0.17.md)):
-research #15, tooling #16, baseline #17, ADR-0019 timestamp precision #18 and
-documentation. Remaining follow-ups:
-
-- **Futures research (unresolved):** 17 `GetFuture*` RPCs exist only as
-  descriptor bindings. Obtain vendor documentation, entitlements and result
-  schemas before any requirement.
-- **New optional request fields:** when a typed snapshot, Greeks or trade-quote
-  slice is selected, expose `current_day_only`, `option_use_nbbo`,
-  `use_time_based_trade_quote`, `annual_dividend_amount`, `exercise_style` and
-  `implied_vol_method` with explicit presence (ADR-0008). Do not copy Python's
-  truthiness omission.
-- **Timestamp precision:** supersede ADR-0019 with a representation decision
-  once ThetaData defines `nanos`/`precision`.
-- **ADR-0019 performance follow-up:** the Linux before/after comparison in #18
-  showed a possible ~1–2% Table-adapter decode increase on `small-mixed-none`
-  and `large-mixed-none`. The shift was consistent across three rounds and just
-  outside the baseline's A/A spread. It was not seen on ZSTD variants, the
-  numeric engine or the timestamp-heavy cases. Windows was not benchmarked.
-  Reproduce on both platforms under PERF-L3-007/008 before deciding whether to
-  act; this is an open observation, not an accepted regression.
-
-Use the [upgrade impact template](upstream-update-template.md) and exhaustive
-[origin register](requirements/origins.md). Reconcile upstream contracts and
-Rust enhancements independently; preserve exact values, native-store/lifecycle
-policy, numeric delivery, filtering and performance/bounds through adapter
-changes. Run separate compatibility/enhancement checks and relevant before/after
-measurements. A conflicting upstream change needs an explicit migration ADR,
-not silent removal or reinterpretation of local functionality.
-
-## Coverage-guided fuzzing (after 0.1.0)
+### Coverage-guided fuzzing (after 0.1.0)
 
 The maintainer explicitly wants this; decided 2026-11-03 (D-G). Add
 coverage-guided fuzzing with `cargo-fuzz` (libFuzzer, nightly toolchain) in a
@@ -221,9 +198,64 @@ packages and ordinary CI then never depend on nightly or the fuzzer.
 
 The plain-Rust corpus (deferred item 2, closed in alpha.3) remains the CI gate.
 
-## Native Rust development tooling
+### Native Rust development tooling (xtask)
 
 Evaluate migrating the performance harness and upstream version checker to a Rust `xtask` so routine builds, verification, and benchmarks use the Rust toolchain. Preserve synthetic fixtures, native-store cleanup, before/after build provenance, raw samples, comparison semantics, and regression coverage. Validate the replacement against the existing measurements before retiring the current tooling. Keep Python-specific artifact analysis scoped to research. This is a separate candidate from the runtime startup implementation.
+
+## Respond to upstream compatibility changes
+
+For each newer stable release detected by [the scheduled PyPI monitor](upstream-monitor.md),
+research the versioned source artifacts and assess compatibility before updating the
+tracked Python baseline. Keep that baseline separate from the Rust crate version; a
+failed check initiates research and requirements review, not an automatic baseline bump.
+
+The 1.0.12 → 1.0.17 update is complete ([plan and record](upstream-update-1.0.17.md)).
+Remaining follow-ups:
+
+- **Futures and corporate actions:** see [Python parity](#python-parity), item 3.
+- **Timestamp precision:** supersede ADR-0019 with a representation decision
+  once ThetaData defines `nanos`/`precision`.
+- **ADR-0019 performance follow-up:** the Linux before/after comparison in #18
+  showed a possible ~1–2% Table-adapter decode increase on `small-mixed-none`
+  and `large-mixed-none`. The shift was consistent across three rounds and just
+  outside the baseline's A/A spread. It was not seen on ZSTD variants, the
+  numeric engine or the timestamp-heavy cases. Windows was not benchmarked.
+  Reproduce on both platforms under PERF-L3-007/008 before deciding whether to
+  act; this is an open observation, not an accepted regression.
+
+Use the [upgrade impact template](upstream-update-template.md) and exhaustive
+[origin register](requirements/origins.md). Reconcile upstream contracts and
+Rust enhancements independently; preserve exact values, native-store/lifecycle
+policy, numeric delivery, filtering and performance/bounds through adapter
+changes. Run separate compatibility/enhancement checks and relevant before/after
+measurements. A conflicting upstream change needs an explicit migration ADR,
+not silent removal or reinterpretation of local functionality.
+
+## Related project research
+
+Review [ThetaDataDx and other tracked projects](research/related-projects.md)
+at release planning and before selecting event, binding or dataframe features.
+Record revisions and independently verify useful design/performance claims;
+keep third-party ideas separate from the pinned Python compatibility baseline.
+
+## History
+
+**Before the 2026-11-03 direction reset,** this roadmap planned
+slice-by-slice work:
+- complete and accept the one-symbol stock EOD slice against its L1-L3
+  requirements;
+- extend the coverage matrix item by item;
+- then add typed option, index, calendar and rate slices, a PyO3 adapter,
+  and a Terminal track.
+
+The [performance plan](architecture/performance-plan.md) replaced that
+ordering with generated endpoints, a columnar Arrow path, a tier-aware
+scheduler, PyO3 and real-time streaming. The EOD slice's open evidence items
+stay in [stock EOD evidence](requirements/stock-eod-evidence.md). The old
+text is in this file's git history.
+
+The original performance review that started this work is preserved
+below, byte for byte (`tools/research_python.py` checks it).
 
 ## Original review and recommendations (verbatim)
 
