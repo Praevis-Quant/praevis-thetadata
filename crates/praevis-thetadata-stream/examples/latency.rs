@@ -18,7 +18,15 @@
 //! - **allocations per frame** in the whole process (a counting allocator):
 //!   the parse and hand-off allocate nothing, so this is `tungstenite`'s
 //!   per-frame buffer and anything else;
-//! - **process CPU** time and its share of one core.
+//! - **process CPU** time and its share of one core;
+//! - **Rust heap** at the start of the measurement and its peak during it
+//!   (bytes through the global allocator; not process RSS).
+//!
+//! `--full-trades` subscribes to the full trade stream instead of a contract
+//! list (options PRO): the W10 "sustained full-stream load without drops"
+//! run. Every trade arrives with a quote (and an OHLC) for its contract, so
+//! latency is recorded per quote and per trade; contracts seen counts the
+//! contracts that traded.
 //!
 //! The thread-priority experiment (user, 2026-11-07) sets this consumer
 //! thread's scheduling: `--consumer-priority` (Windows `SetThreadPriority`;
@@ -36,18 +44,29 @@ use std::collections::HashSet;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
-/// Distinct contracts the run can count without allocating.
-const SEEN_CAPACITY: usize = 1 << 16;
+/// Distinct contracts the run can count without allocating (the full
+/// trade stream reached 48,543 in 15 minutes at midday).
+const SEEN_CAPACITY: usize = 1 << 17;
 
 struct Counting;
 static ALLOCATIONS: AtomicU64 = AtomicU64::new(0);
+/// Rust heap bytes live now, and the most since the last reset.
+static LIVE: AtomicU64 = AtomicU64::new(0);
+static PEAK: AtomicU64 = AtomicU64::new(0);
 unsafe impl GlobalAlloc for Counting {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
-        unsafe { System.alloc(layout) }
+        let p = unsafe { System.alloc(layout) };
+        if !p.is_null() {
+            ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
+            let live =
+                LIVE.fetch_add(layout.size() as u64, Ordering::Relaxed) + layout.size() as u64;
+            PEAK.fetch_max(live, Ordering::Relaxed);
+        }
+        p
     }
     unsafe fn dealloc(&self, p: *mut u8, layout: Layout) {
         unsafe { System.dealloc(p, layout) };
+        LIVE.fetch_sub(layout.size() as u64, Ordering::Relaxed);
     }
 }
 #[global_allocator]
@@ -60,8 +79,15 @@ struct Cli {
     #[arg(long)]
     run_id: String,
     /// One contract per line: `ROOT,YYYYMMDD,STRIKE_DOLLARS,C|P`.
+    #[arg(
+        long,
+        required_unless_present = "full_trades",
+        conflicts_with = "full_trades"
+    )]
+    contracts: Option<std::path::PathBuf>,
+    /// Subscribe to the full trade stream instead of `--contracts`.
     #[arg(long)]
-    contracts: std::path::PathBuf,
+    full_trades: bool,
     #[arg(long, default_value_t = 60)]
     seconds: u64,
     /// Queue capacity in events.
@@ -503,13 +529,14 @@ fn main() -> std::process::ExitCode {
         eprintln!("run id already used");
         return std::process::ExitCode::FAILURE;
     }
-    let list = match contracts(&cli.contracts) {
-        Ok(list) if !list.is_empty() => list,
-        Ok(_) => {
+    let list = match cli.contracts.as_deref().map(contracts) {
+        None => Vec::new(),
+        Some(Ok(list)) if !list.is_empty() => list,
+        Some(Ok(_)) => {
             eprintln!("no contracts");
             return std::process::ExitCode::FAILURE;
         }
-        Err(message) => {
+        Some(Err(message)) => {
             eprintln!("{message}");
             return std::process::ExitCode::FAILURE;
         }
@@ -535,11 +562,15 @@ fn main() -> std::process::ExitCode {
             return std::process::ExitCode::FAILURE;
         }
     };
-    for contract in &list {
-        if let Err(error) = control.subscribe_quotes(contract) {
-            eprintln!("subscribe: {error}");
-            return std::process::ExitCode::FAILURE;
-        }
+    let subscribed = if cli.full_trades {
+        control.subscribe_full_trades().map(|_| ())
+    } else {
+        list.iter()
+            .try_for_each(|contract| control.subscribe_quotes(contract).map(|_| ()))
+    };
+    if let Err(error) = subscribed {
+        eprintln!("subscribe: {error}");
+        return std::process::ExitCode::FAILURE;
     }
     let mut histogram = Histogram::new();
     let mut slowest = Slowest::new();
@@ -550,6 +581,9 @@ fn main() -> std::process::ExitCode {
         ALLOCATIONS.load(Ordering::Relaxed),
         control.stats().frames,
     );
+    let heap_start = LIVE.load(Ordering::Relaxed);
+    PEAK.store(heap_start, Ordering::Relaxed);
+    let (mut quotes_measured, mut trades_measured) = (0u64, 0u64);
     let start = Instant::now();
     let end = start + Duration::from_secs(cli.seconds);
     let mut ended = false;
@@ -571,6 +605,15 @@ fn main() -> std::process::ExitCode {
             Kind::Quote { contract, .. } => {
                 histogram.record(ns);
                 slowest.record(ns, start.elapsed().as_millis() as u64);
+                quotes_measured += 1;
+                if !cli.full_trades {
+                    seen.record(contract);
+                }
+            }
+            Kind::Trade { contract, .. } if cli.full_trades => {
+                histogram.record(ns);
+                slowest.record(ns, start.elapsed().as_millis() as u64);
+                trades_measured += 1;
                 seen.record(contract);
             }
             Kind::Disconnected => {
@@ -586,6 +629,7 @@ fn main() -> std::process::ExitCode {
         _ => None,
     };
     let allocations = ALLOCATIONS.load(Ordering::Relaxed) - allocations_start;
+    let heap_peak = PEAK.load(Ordering::Relaxed);
     let stats = control.close();
     drop(events);
     let frames = stats.frames - frames_start;
@@ -593,16 +637,22 @@ fn main() -> std::process::ExitCode {
     let report = serde_json::json!({
         "run_id": cli.run_id,
         "command": "w10-latency",
+        "mode": if cli.full_trades { "full-trades" } else { "quotes" },
         "feed": cli.feed,
         "host": {"os": std::env::consts::OS, "arch": std::env::consts::ARCH},
         "contracts": list.len(),
         "contracts_seen": seen.contracts.len(),
-        "contracts_seen_unsubscribed": seen.unsubscribed_contracts(),
-        "quotes_unsubscribed": seen.unsubscribed_quotes,
+        // Not meaningful on the full trade stream: nothing is subscribed by contract.
+        "contracts_seen_unsubscribed": (!cli.full_trades).then(|| seen.unsubscribed_contracts()),
+        "quotes_unsubscribed": (!cli.full_trades).then_some(seen.unsubscribed_quotes),
         "seconds": elapsed.as_secs_f64(),
         "stream_ended": ended,
-        "quotes_measured": histogram.count,
-        "quotes_per_second": histogram.count as f64 / elapsed.as_secs_f64(),
+        "events_measured": histogram.count,
+        "events_per_second": histogram.count as f64 / elapsed.as_secs_f64(),
+        "quotes_measured": quotes_measured,
+        "quotes_per_second": quotes_measured as f64 / elapsed.as_secs_f64(),
+        "trades_measured": trades_measured,
+        "trades_per_second": trades_measured as f64 / elapsed.as_secs_f64(),
         "latency_us": {
             "p50": q(0.50), "p90": q(0.90), "p99": q(0.99), "p999": q(0.999),
             "max": histogram.max_ns as f64 / 1_000.0,
@@ -629,22 +679,33 @@ fn main() -> std::process::ExitCode {
             "heartbeat_max_interval_ms": stats.heartbeat_max_interval_ms,
         },
         "allocations_per_frame": if frames > 0 { Some(allocations as f64 / frames as f64) } else { None },
+        "rust_heap_bytes": {
+            "at_start": heap_start, "peak": heap_peak,
+            "note": "global allocator only, from the start of the measurement; not process RSS",
+        },
         "cpu_s": cpu.map(|c| c.as_secs_f64()),
         "cpu_share_of_one_core": cpu.map(|c| c.as_secs_f64() / elapsed.as_secs_f64()),
     });
     eprintln!(
-        "{} quotes from {} contracts seen ({} subscribed; {} quotes from others) in {:.0} s: p50 {:?} µs, p99 {:?} µs, p99.9 {:?} µs, max {:.0} µs; dropped {}, gaps {}",
+        "{} events ({} trades) from {} contracts seen ({} subscribed; {} quotes from others) in {:.0} s: p50 {:?} µs, p99 {:?} µs, p99.9 {:?} µs, max {:.0} µs; dropped {}, gaps {} (max interval {} ms); Rust heap peak {} bytes",
         histogram.count,
+        trades_measured,
         seen.contracts.len(),
         list.len(),
-        seen.unsubscribed_quotes,
+        if cli.full_trades {
+            "n/a".to_owned()
+        } else {
+            seen.unsubscribed_quotes.to_string()
+        },
         elapsed.as_secs_f64(),
         q(0.5),
         q(0.99),
         q(0.999),
         histogram.max_ns as f64 / 1_000.0,
         stats.dropped,
-        stats.heartbeat_gaps
+        stats.heartbeat_gaps,
+        stats.heartbeat_max_interval_ms,
+        heap_peak
     );
     std::fs::create_dir_all(report_path.parent().expect("parent")).expect("artifacts directory");
     std::fs::write(
