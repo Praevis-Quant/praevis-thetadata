@@ -32,6 +32,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **W10 live latency, clean re-run recorded** (2026-11-10, Windows, main
+  7877d78, after #141; single runs).
+  - **#141 confirmed:** the Terminal answered the bulk unsubscribe with
+    `REQ_RESPONSE` `SUBSCRIBED`, and every run had `quotes_unsubscribed` 0.
+  - **Results:** p99 was 32 / 24 / 26 µs at 10 / 100 / 1,000 contracts.
+    p99.9 was 37-40 µs and the max under 1 ms at 100 and 1,000. At 10
+    contracts there was one 16 ms max.
+  - **The first attempt is kept**, marked as measured under leftover load.
+  - **Updated:** ADR-0018, the wait-strategy write-up, the ROADMAP, the
+    releases table, the options-phase step table and the research
+    disposition. `Response::Subscribed`'s documentation notes that an
+    unsubscribe gets the same answer.
+  - **Remaining:** the live full-trade-stream run.
 - **Recorded the stock, index, calendar and interest-rate run**
   (`sir-checks-001`, with `sir-checks-py-001`; 2026-11-10, options PRO with
   stocks and indices FREE; 33 requests, no stop).

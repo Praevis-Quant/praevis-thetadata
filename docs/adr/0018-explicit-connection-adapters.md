@@ -177,7 +177,7 @@ consumer. All exit 0, none ended, 0 dropped, 0 unparsed, 0 heartbeat gaps.
   and each quantile is reported as its bucket's upper edge, which is
   conservative. "50" means the p99 sample was between 49 and 50 µs. That
   meets the target by the letter, but one run does not make it robust. The
-  live-market runs remain.
+  live-market runs followed on 2026-11-10 (below).
 
 **Why fewer contracts give a worse tail: waking the consumer.**
 - **The mechanism:** the consumer blocks in `recv_timeout` between events.
@@ -285,6 +285,43 @@ one run each.
   max. The harness options stay for measurement, with no library change.
   The heartbeat gaps (21 in one run) stay unexplained, on the Terminal or
   feed side.
+
+**W10 latency on the live market (2026-11-10).** Single runs, so
+observations.
+- **First attempt (14:5x UTC), kept but superseded:** the runs also received
+  the full trade stream from `discover_contracts`, whose unsubscribe was
+  lost (`quotes_unsubscribed` 350,212 / 210,708 / 45,204). Closing reset
+  the connection instead of closing it; #141 fixed that. Their tails (a
+  9.4 ms p99.9 and a 95 ms max at 1,000 contracts) were measured under that
+  load ([write-up](../performance/consumer-wait-strategy.md#live-market-2026-11-10-measured-under-extra-load)).
+- **Clean re-run:**
+  - **Setup:** Windows, main 7877d78 (with #141), the Terminal on the live
+    hosts (`fpss_nj_hosts`) and restarted at 16:05 UTC, the sleep consumer,
+    120 s per run.
+  - **Contracts:** the top N from 60 s of the live full trade stream
+    (`discover_contracts`: 27,024 trades on 7,024 contracts).
+  - **#141 confirmed:** `discover_contracts` got the Terminal's answer to its
+    bulk unsubscribe, `REQ_RESPONSE` with the literal value `SUBSCRIBED`.
+    Every run then had `quotes_unsubscribed` 0 and `contracts_seen` no more
+    than the contracts subscribed.
+
+| Contracts | Quotes/s | p50 | p90 | p99 | p99.9 | Max | CPU (cores) | Dropped | Heartbeat gaps (max interval) |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 | 3,667 | 15 | 19 | 32 | 468 | 15,987 | 0.14 | 0 | 0 (1,016 ms) |
+| 100 | 25,879 | 15 | 17 | 24 | 37 | 782 | 1.00 | 0 | 0 (1,287 ms) |
+| 1,000 | 26,037 | 15 | 18 | 26 | 40 | 614 | 1.04 | 0 | 2 (2,479 ms) |
+
+Latencies are in µs.
+- **The p99 ≤ 50 µs target is met live at every load:** 32, 24 and 26 µs.
+- **The tails:**
+  - at 100 and 1,000 contracts, p99.9 was 37-40 µs and the max was under
+    1 ms, as good as the dev feed's;
+  - at 10 contracts, one 16 ms max, a single outlier.
+- **The REQ_RESPONSE value:** the Terminal answers a bulk unsubscribe with
+  `SUBSCRIBED`, so that value means "request accepted", not "now
+  subscribed".
+- **Remaining:** the full trade stream itself, against the W10 "sustained
+  full-stream load without drops" exit criterion, and Linux.
 
 **For users, until the delay is explained:** run either the Terminal's REST
 or our historical client on an account, not both. The Terminal's stream can
