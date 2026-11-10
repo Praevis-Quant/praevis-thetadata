@@ -321,7 +321,27 @@ Latencies are in µs.
   `SUBSCRIBED`, so that value means "request accepted", not "now
   subscribed".
 - **Remaining:** the full trade stream itself, against the W10 "sustained
-  full-stream load without drops" exit criterion, and Linux.
+  full-stream load without drops" exit criterion, and Linux. (The full
+  trade stream ran the same day, below.)
+
+**W10 full trade stream on the live market (2026-11-10, midday).** One run,
+so an observation.
+- **Setup:** Windows, main be5aca2, the live feed, 16:37-16:52 UTC,
+  `discover_contracts --seconds 900`.
+- **Result:**
+  - 410,468 trades on 48,543 contracts (2,026 roots) in 900 s, about 456
+    trades/s on average;
+  - the first trade 42 ms after the subscribe;
+  - **0 dropped**;
+  - process CPU of 72.8 s over 900 s, about 0.08 cores;
+  - on close, the unsubscribe was answered `SUBSCRIBED`.
+- **The exit criterion "sustained full-stream load without drops" is met
+  at midday load only.** The open and the last 15 minutes carry the peak
+  rates. A run across either would be the stronger test.
+- **Not captured:**
+  - heartbeat gaps and per-event latency (`discover_contracts` does not
+    report them);
+  - peak memory (the measurement failed).
 
 **For users, until the delay is explained:** run either the Terminal's REST
 or our historical client on an account, not both. The Terminal's stream can

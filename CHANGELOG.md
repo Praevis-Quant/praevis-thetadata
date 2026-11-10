@@ -32,6 +32,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **W10 live full trade stream recorded** (2026-11-10, 16:37-16:52 UTC,
+  Windows, main be5aca2; one run).
+  - **Result:** 410,468 trades on 48,543 contracts in 900 s (about 456/s),
+    0 dropped, about 0.08 cores. The unsubscribe was answered `SUBSCRIBED`
+    on close.
+  - **The "sustained full-stream load without drops" exit criterion is met
+    at midday load only.** A run across the open or the last 15 minutes
+    remains.
+  - **Not captured:** heartbeat gaps, per-event latency and peak memory.
 - **W10 live latency, clean re-run recorded** (2026-11-10, Windows, main
   7877d78, after #141; single runs).
   - **#141 confirmed:** the Terminal answered the bulk unsubscribe with

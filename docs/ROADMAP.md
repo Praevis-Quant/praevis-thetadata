@@ -42,7 +42,8 @@ The [performance architecture plan](architecture/performance-plan.md)
   - p99 ≤ 50 µs met at the measured rates, live included (2026-11-10:
     24-32 µs at 10, 100 and 1,000 contracts, Windows).
 
-  The live full-trade-stream run remains (below).
+  The live full trade stream ran 15 minutes at midday with 0 dropped
+  (2026-11-10); a peak-hours run remains (below).
 - **Releases:**
   - `0.1.0-alpha.1`, `0.1.0-alpha.2` and **`0.1.0-alpha.3` (2026-11-08)**
     are on crates.io ([releases](releases.md),
@@ -155,10 +156,16 @@ this use case. It closed on 2026-11-10.
     contracts, with `quotes_unsubscribed` 0. p99 was 24-32 µs, and p99.9
     was 37-40 µs at 100 and 1,000 contracts. These replace a first attempt
     measured under leftover load.
+- **Live full trade stream: done 2026-11-10 at midday.**
+  - **The run:** 15 minutes, 410,468 trades (about 456/s), 0 dropped, about
+    0.08 cores.
+  - **The W10 "sustained full-stream load without drops" exit criterion is
+    met at midday load only.**
   - **Still to do:**
-    1. Run the full trade stream.
-    2. Check the W10 "sustained full-stream load without drops" exit
-       criterion.
+    1. A run across the open or the last 15 minutes, the peak rates. Add
+       heartbeat gaps and per-event latency to what it reports, and get
+       peak memory measured.
+    2. Linux.
 - **The `Remote(Internal)` error on a second gRPC request** is unexplained.
   An idle connection was ruled out. It stays open until there is evidence.
 - **For users:** run either the Terminal's REST API or our historical client
