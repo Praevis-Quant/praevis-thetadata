@@ -30,7 +30,8 @@ Since alpha.2, all closed on 2026-11-03:
 - item 3 under 005 (alpha.3 A5: the synthetic trusted-TLS fixture).
 - item 2 under 021 (alpha.3 A6: the adversarial corpus).
 - item 1 under 023 (alpha.3 A7: the memory profile). It found transport
-  buffering outside the shared budget, now proposed item 8.
+  buffering outside the shared budget: item 8, closed 2026-11-10
+  ([closure](../performance/eod-transport-buffering.md#closure-2026-11-10-under-decision-as-beta1-gate)).
 
 Closed clauses still carry the scope limits in their third column. For example,
 EOD-L3-030 rejects non-millisecond timestamps while the vendor meaning of

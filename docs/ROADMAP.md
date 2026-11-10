@@ -120,7 +120,8 @@ observations come **from reading the code and are untested**:
 5. **One session serves everything.** A single login, and a single point of
    failure if it ends (`SessionEnded`).
 6. **Many open streams can each assemble a message at once** (item 8 on
-   the query path: up to streams × `encoded_bytes`).
+   the query path: up to streams × `encoded_bytes` while messages are in
+   flight; closed for this project as a stated, tested bound).
 
 **Possible additive API for that project.** These are not part of this
 work, and none would change existing calls:
@@ -139,8 +140,8 @@ work, and none would change existing calls:
 - one session per account;
 - `QueryError` carries `tonic::Code` for remote statuses, accepted for now.
 
-Item 8 (transport buffering) stays a beta.1 gate on its own merits, not
-for this use case.
+Item 8 (transport buffering) was a beta.1 gate on its own merits, not for
+this use case. It closed on 2026-11-10.
 
 ## Real-time stream (W10): what remains
 
@@ -188,9 +189,10 @@ alpha.2 on 2026-11-02:
 
 They are listed with sources and targets in
 [Deferred from alpha.2](releases.md#deferred-from-alpha2). Item 1, the
-memory profile, found transport buffering outside the shared budget. That is
-proposed item 8. Until it is resolved, describe only the client's own
-accounted allocations as bounded.
+memory profile, found transport buffering outside the shared budget. That was
+item 8, **closed on 2026-11-10** with a tested bound
+([closure](performance/eod-transport-buffering.md#closure-2026-11-10-under-decision-as-beta1-gate)).
+Byte credits stay held until real messages reach the tens of MiB.
 
 **Re-enable Decimal128 Parquet statistics after the upstream fix ships.**
 `ParquetSink` writes no decimal min/max statistics by default. This works

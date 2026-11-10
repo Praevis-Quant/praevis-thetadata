@@ -315,12 +315,19 @@ service compatibility.
   The [acceptance matrix](docs/requirements/stock-eod-matrix.md) retains the
   current verification gaps; do not call them accepted. The null/price decode
   regressions were resolved in alpha.2 ([decoder record](docs/performance/eod-decoder-results.md)).
-- **Never claim total memory is bounded.** Docs, READMEs and crate descriptions
-  may say only that the client's own accounted allocations are bounded. The
-  2026-11-03 profile ([record](docs/performance/eod-memory-profile.md)) showed
-  transport buffering of about one encoded message per open stream outside the
-  shared budget (deferred item 8).
-  Do not claim complete heap/RSS or typed-slice acceptance from those checks.
+- **Never claim total memory is bounded.** Process RSS (allocator, interpreter,
+  libraries) is never claimed bounded. Since item 8 closed (2026-11-10,
+  [closure](docs/performance/eod-transport-buffering.md#closure-2026-11-10-under-decision-as-beta1-gate)),
+  docs may say this much:
+  - the **Rust heap** on `query()`/`job()` and the stock EOD stream is
+    bounded by configuration;
+  - **plus up to streams × `encoded_bytes`** for messages being assembled,
+    held only while they are in flight (tested by #130; real messages were
+    at most 0.36 MiB).
+
+  This does not cover `stream_raw` (plain tonic), results the caller
+  collects, or Parquet footer metadata. Do not claim complete heap/RSS or
+  typed-slice acceptance from those checks.
   **One narrow addition, from the 2026-11-05 W5 evidence:** for the streaming
   job-to-Parquet path only, docs may say the **Rust heap** is bounded by
   configuration (read-ahead, batch limits, stream windows, one row group) plus

@@ -239,6 +239,63 @@ future shared-service project would own it
 ([ROADMAP](../ROADMAP.md#out-of-scope-a-shared-data-service-for-many-consumers)).
 Item 8 stays a beta.1 gate on its own merits.
 
+## Closure (2026-11-10, under decision A's beta.1 gate)
+
+**Item 8 is closed** with the bound below: tested, documented, and without
+byte credits.
+
+**What landed:**
+- **#129, option 2a on both callers** (`query()`/`job()` and the stock EOD
+  stream).
+  - **How it works:** `GuardedBody` assembles each message in one
+    exact-capacity buffer after the limit check, parks it in a
+    one-message slot and hands tonic an empty frame. tonic's decode buffer
+    no longer grows or stays message-sized.
+  - **Memory:** `text-24mib` × 16 went from 458-506 to 128 MiB Rust heap
+    on both runners.
+  - **Speed:** the D-B decode gate showed no regression over 6 rounds. The
+    runner's Windows large-message slowdown did not reproduce on the
+    desktop.
+- **#130, the query-path bound test** (`eod_memory -- bound`, in the
+  memory-profile workflow). With 8 streams of 24 and 64 MiB messages:
+  - **Stalled:** the streams keep **13-15 MiB** in total, against 206 and
+    527 MiB before 2a. Nothing message-sized stays with an idle or stalled
+    stream.
+  - **Overlapping:** the peak stays within the stated bound (256-650 MiB
+    against 1,090 MiB).
+- **PR 0, `opt-msgsize-001`** (Windows, options PRO, `main` `8da0c13`,
+  2026-11-10; 20 requests, all OK, none over the row cap):
+  - **The largest encoded message was 378,470 bytes (0.36 MiB)**, in W6c
+    (Greeks). The W6c per-request maxima were 269,915-378,470 bytes over
+    8-22 messages each. W5c (tick quotes, per strike) maxima were
+    1,237-89,853 bytes over 64-296 messages each.
+  - **The histogram over all 1,820 messages:** 1,711 at ≤ 64 KiB, 39 at
+    ≤ 256 KiB, 70 at ≤ 1 MiB, and **none above 1 MiB**.
+  - **Scope limits:** options W5c and W6c only, on one day's shapes. No
+    bulk (flat) files and no stock or index endpoints were measured.
+
+**The bound.** The Rust heap on `query()`/`job()` and the stock EOD stream
+is bounded by configuration:
+- the accounted budget (read-ahead, decoders, batch limits, stream windows);
+- **plus up to streams × `encoded_bytes` for messages being assembled.**
+  That is held only while those messages are in flight; an idle or stalled
+  stream keeps nothing message-sized (#130). The worst case is 8 × 64 MiB
+  at PRO.
+- **At observed message sizes** that term is about 8 × 0.36 MiB, roughly
+  3 MiB.
+
+**What it does not cover:**
+- process RSS (allocator retention, the interpreter, libraries);
+- `stream_raw`, which stays on plain tonic and is documented as excluded;
+- results the caller collects;
+- Parquet footer metadata, about 13 KB per row group.
+
+**Decisions kept:**
+- **Byte credits (PR 2) stay held.** The trigger was maxima in the tens of
+  MiB; the observed maximum is 0.36 MiB.
+- **`encoded_bytes` stays at 64 MiB.** There is no evidence for lowering it,
+  and a lower limit would turn a legitimate larger response into an error.
+
 ## Recommendation
 
 **Adopt option 2a** (own message framing in the body layer), optionally with

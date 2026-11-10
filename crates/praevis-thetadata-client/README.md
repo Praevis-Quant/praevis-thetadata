@@ -15,12 +15,19 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
 
 - **Typed stock EOD** (`StockEodRequest`, `stock_eod_batches`, `stock_eod`):
   validated one-symbol requests, exact values, pull-based batches, explicit
-  partial results, deadlines and cancellation. **Memory:** only the client's own
-  accounted allocations are bounded: decoded batch sizes, per-batch accounted
-  bytes and in-flight decode work. Total process memory is not bounded.
-  Profiling showed that libzstd stays within the accounted budget, but
-  transport buffering adds roughly one full encoded message per concurrently
-  open stream. For large responses, lower `EodPolicy::concurrent_streams`. This is **experimental**: synthetic acceptance is extensive, but
+  partial results, deadlines and cancellation.
+  - **Memory:** the Rust heap on this stream and on `query()`/`job()` is
+    bounded by configuration:
+    - decoded batch sizes, accounted bytes and decode work;
+    - **plus up to one message per open stream while it is being
+      assembled.** That's streams × `encoded_bytes` in the worst case. The
+      client assembles messages itself, so an idle or stalled stream keeps
+      nothing message-sized, and real messages measured at most 0.36 MiB.
+  - **Not bounded:** total process memory (the allocator, libraries).
+  - **Not covered:** `stream_raw`, which uses plain tonic and keeps up to
+    one message per open stream for the stream's lifetime.
+
+  This is **experimental**: synthetic acceptance is extensive, but
   live service semantics are only partly verified.
 - **Query streams** (`ThetaClient::query`, `endpoints::*`, unreleased P1
   work): any of the 100 generated typed requests, streamed as exact Arrow
