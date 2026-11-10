@@ -145,13 +145,20 @@ this use case. It closed on 2026-11-10.
 
 ## Real-time stream (W10): what remains
 
-- **Live `--no-login` subscribe probe:** explain the roughly 150 s before
-  the first live quote. On the dev feed, the first event arrived in 1.5 s.
+- **Live `--no-login` subscribe probe: done 2026-11-10.** The first quote
+  came 1,032 ms after the subscribe, so the earlier 150 s delay did not
+  reproduce. It stays unexplained.
 - **Live-market latency runs:**
-  1. Restore the Terminal's live hosts.
-  2. Run at 10, 100 and 1,000 contracts, then the full trade stream.
-  3. Check the W10 "sustained full-stream load without drops" exit
-     criterion.
+  - **Run once on 2026-11-10, but under extra load.** The full trade stream
+    from `discover_contracts` kept arriving, because closing reset the
+    connection and the unsubscribe was lost; that is fixed in the stream
+    crate's close.
+  - **Still to do:**
+    1. Re-run at 10, 100 and 1,000 contracts after a Terminal restart,
+       checking `quotes_unsubscribed` is 0.
+    2. Then run the full trade stream.
+    3. Check the W10 "sustained full-stream load without drops" exit
+       criterion.
 - **The `Remote(Internal)` error on a second gRPC request** is unexplained.
   An idle connection was ruled out. It stays open until there is evidence.
 - **For users:** run either the Terminal's REST API or our historical client

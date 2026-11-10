@@ -136,6 +136,12 @@ from the Terminal's own REST snapshot, so there was no extra login.
   extended (#106). `login_conflict_probe --no-login` on a restarted Terminal
   will record the Terminal's answer to the subscribe and the time to the
   first quote.
+  - **Live run (2026-11-10, market hours, 60 s after a Terminal restart):**
+    SPY 20261110 748 C (at the money by mid price) was answered
+    `SUBSCRIBED` at 1,020 ms, and the first quote came at 1,032 ms. Then
+    98,804 quotes in 180 s, no heartbeat gaps, and REST 200 throughout.
+  - **The 150 s delay did not reproduce.** It stays unexplained, as an
+    observation.
 
 **Dev feed observations (2026-11-07, Saturday).** The Terminal was
 restarted with `fpss_region = "fpss_dev_hosts"`; the live configuration is

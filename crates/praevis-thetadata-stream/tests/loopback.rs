@@ -348,3 +348,67 @@ fn closing_through_a_control_handle_unsubscribes_before_the_close_frame() {
     assert!(seen[1].contains("STREAM_BULK") && seen[1].contains(r#""add":false"#));
     assert_eq!(seen[2], "CLOSE");
 }
+
+/// A busy Terminal: it sends bursts of quotes and reads requests only
+/// between them, like a server that is writing most of the time. It reports
+/// the requests it read, and how the connection ended: `CLOSE` for a close
+/// frame, `RESET` if a send failed first (the peer reset the connection).
+fn busy_server() -> (String, mpsc::Receiver<Vec<String>>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("ws://{}/v1/events", listener.local_addr().unwrap());
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let (tcp, _) = listener.accept().unwrap();
+        let mut socket = tungstenite::accept(tcp).unwrap();
+        socket
+            .get_ref()
+            .set_read_timeout(Some(Duration::from_millis(1)))
+            .unwrap();
+        let mut seen = Vec::new();
+        'serve: loop {
+            for _ in 0..2_000 {
+                if socket.send(Message::text(QUOTE)).is_err() {
+                    seen.push("RESET".to_owned());
+                    break 'serve;
+                }
+            }
+            std::thread::sleep(Duration::from_millis(20));
+            loop {
+                match socket.read() {
+                    Ok(Message::Text(text)) => seen.push(text.as_str().to_owned()),
+                    Ok(Message::Close(_)) => {
+                        // Answer the close frame and finish the handshake.
+                        let _ = socket.flush();
+                        seen.push("CLOSE".to_owned());
+                        break 'serve;
+                    }
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
+            }
+        }
+        let _ = tx.send(seen);
+    });
+    (url, rx)
+}
+
+#[test]
+fn closing_while_data_arrives_finishes_the_close_handshake() {
+    // Dropping a socket with data unread resets the connection, and a
+    // Terminal can lose the unsubscribes sent just before (live 2026-11-10:
+    // the full trade stream kept flowing into the next program).
+    for _ in 0..5 {
+        let (url, ended) = busy_server();
+        let stream = Stream::connect(Options::default().with_url(url)).unwrap();
+        stream.subscribe_full_trades().unwrap();
+        std::thread::sleep(Duration::from_millis(50));
+        stream.close();
+        let seen = ended.recv_timeout(Duration::from_secs(10)).unwrap();
+        assert!(
+            seen.iter()
+                .any(|s| s.contains(r#""req_type":"TRADE","add":false"#)),
+            "{seen:?}"
+        );
+        assert_eq!(seen.last().map(String::as_str), Some("CLOSE"), "{seen:?}");
+    }
+}

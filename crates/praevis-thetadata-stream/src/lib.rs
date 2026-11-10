@@ -26,7 +26,10 @@
 //! shared by every client, and it does not document dropping them when a
 //! socket closes, so without this they could keep arriving on the next
 //! connection. The requests are sent before the close frame, without
-//! waiting for the Terminal's responses.
+//! waiting for the Terminal's responses. Closing then waits up to 2 s for the
+//! Terminal's close frame, discarding data still arriving: a socket dropped
+//! with data unread is reset rather than closed, and a reset can discard
+//! the unsubscribes before the Terminal reads them.
 //!
 //! This crate never starts, stops or reconfigures the Terminal.
 /// `with_<field>` setters for a `#[non_exhaustive]` configuration struct: build
@@ -199,6 +202,8 @@ const HEARTBEAT_GAP: Duration = Duration::from_secs(2);
 /// How long a quiet read waits before the reader checks for requests to
 /// send or a stop. Data wakes it at once.
 const POLL: Duration = Duration::from_millis(20);
+/// How long closing waits for the Terminal's close frame.
+const CLOSE_WAIT: Duration = Duration::from_secs(2);
 
 impl Stream {
     /// Connect to the Terminal and start the reader thread.
@@ -497,8 +502,7 @@ fn read(
             }
         }
         if stopping {
-            let _ = socket.close(None);
-            let _ = socket.flush();
+            finish_close(&mut socket);
             return;
         }
         let frame = match socket.read() {
@@ -564,6 +568,33 @@ fn read(
                     return;
                 }
             }
+        }
+    }
+}
+
+/// Send the close frame, then read and discard until the Terminal answers
+/// with its own (bounded by [`CLOSE_WAIT`]). Dropping the socket while data
+/// is still arriving makes the OS reset the connection instead of closing
+/// it, and a reset can discard requests the Terminal has received but not
+/// yet read: the unsubscribes sent just before. With the full trade stream
+/// flowing, that is nearly every close.
+fn finish_close(socket: &mut WebSocket<TcpStream>) {
+    let _ = socket.close(None);
+    let _ = socket.flush();
+    let deadline = Instant::now() + CLOSE_WAIT;
+    while Instant::now() < deadline {
+        match socket.read() {
+            Ok(_) => {}
+            Err(tungstenite::Error::Io(e))
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                ) =>
+            {
+                let _ = socket.flush();
+            }
+            // The handshake finished (`ConnectionClosed`) or the socket failed.
+            Err(_) => return,
         }
     }
 }

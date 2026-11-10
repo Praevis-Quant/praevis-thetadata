@@ -34,6 +34,10 @@ praevis-thetadata-stream = "=0.1.0-alpha.3"
   everything still subscribed, then closes the socket. The Terminal's
   subscriptions are shared by all its clients, so this keeps a finished
   program's subscriptions from reaching the next one.
+  - **The close waits for the Terminal's answer, up to 2 s.** A socket
+    dropped while data is still arriving is reset rather than closed, and a
+    reset can lose the unsubscribes. With the full trade stream, that's
+    nearly every close.
 - **Scope of this slice:**
   - option quotes per contract;
   - the full trade stream (`subscribe_full_trades`, options PRO);
