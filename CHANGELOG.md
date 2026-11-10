@@ -198,6 +198,24 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **Spinning** stayed at a p99 of 6-7 µs at every setting.
   - **No library change.**
 
+### Fixed
+
+- **Closing a stream no longer loses its unsubscribes** (`praevis-thetadata-stream`).
+  - **The bug:** closing dropped the socket right after the close frame.
+    With data still arriving, the OS resets the connection instead of
+    closing it, and a reset can discard the unsubscribe the Terminal has
+    received but not yet read.
+  - **What it caused:** on the live market on 2026-11-10, the full trade
+    stream from `discover_contracts` kept arriving in the next programs.
+    On loopback, 15 of 20 such closes ended in a reset.
+  - **The fix:** closing now finishes the WebSocket close handshake. It
+    reads and discards until the Terminal's close frame, for up to 2 s.
+  - **Also:** `discover_contracts` reports the Terminal's answer to its
+    unsubscribe.
+  - **Recorded:** the live `--no-login` probe (first quote at 1,032 ms; the
+    150 s delay did not reproduce) and the live latency runs, which were
+    measured under that extra load.
+
 ## [0.1.0-alpha.3] - 2026-11-08
 
 Published to crates.io from `7402533` (tag `v0.1.0-alpha.3`), with two new

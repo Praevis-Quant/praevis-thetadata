@@ -138,6 +138,41 @@ came from unsubscribed contracts (`contracts_seen_unsubscribed` and
 It is worth offering later as an opt-in wait strategy. Per the user's
 decision it stays on the ROADMAP only, with no library change.
 
+### Live market (2026-11-10): measured under extra load
+
+One run each, not a verified result.
+- **Setup:** Windows, main 7777151, the Terminal on live hosts and
+  restarted at 14:48 UTC, the sleep consumer, 120 s per run.
+- **Contracts:** the top N from 60 s of the live full trade stream
+  (`discover_contracts`: 43,845 trades on 10,944 contracts).
+
+**These runs do not meet the gate's "intended rate" condition.** All three
+also received the full trade stream that `discover_contracts` had
+unsubscribed:
+- `quotes_unsubscribed` was 350,212 / 210,708 / 45,204;
+- `contracts_seen` was 19,496 / 17,459 / 9,309;
+- 118,573 / 115,696 / 42,044 frames of other types arrived.
+
+**The cause** (reproduced on loopback, fixed in the stream crate):
+- closing dropped the socket right after the close frame;
+- with data still arriving, the OS resets the connection instead of
+  closing it;
+- a reset can discard requests the peer has received but not yet read,
+  here the unsubscribe;
+- on loopback, 15 of 20 such closes ended in a reset.
+
+Closing now waits up to 2 s for the Terminal's close frame.
+
+| Contracts | Quotes/s | p50 | p90 | p99 | p99.9 | Max | CPU (cores) | Dropped | Heartbeat gaps |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 | 4,725 | 15 | 18 | 25 | 41 | 240 | 0.26 | 0 | 0 |
+| 100 | 21,533 | 15 | 18 | 27 | 221 | 22,469 | 0.95 | 0 | 31 (max interval 12,880 ms) |
+| 1,000 | 24,273 | 15 | 20 | 33 | 9,399 | 95,254 | 1.04 | 0 | 1 |
+
+Latencies are in µs. Even under the extra load, the p50 and p99 met the
+50 µs target. The tails and heartbeat gaps at 100 and 1,000 contracts need
+a clean re-run before they are read as the library's.
+
 ## The mechanism today
 
 1. **The reader thread** owns the Terminal's WebSocket. It blocks in a

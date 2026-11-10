@@ -113,7 +113,27 @@ fn main() -> std::process::ExitCode {
             _ => {}
         }
     }
-    let _ = stream.unsubscribe_full_trades();
+    // The Terminal's answer to the unsubscribe, if it sends one within 2 s
+    // (live 2026-11-10: the full trade stream outlived this program).
+    let unsubscribe = match stream.unsubscribe_full_trades() {
+        Ok(id) => {
+            let deadline = Instant::now() + Duration::from_secs(2);
+            let mut answer = "none within 2 s".to_owned();
+            while let Some(event) =
+                stream.recv_timeout(deadline.saturating_duration_since(Instant::now()))
+            {
+                if let Kind::Response { id: got, response } = event.kind {
+                    if got == id as i64 {
+                        answer = format!("{response:?}");
+                        break;
+                    }
+                }
+            }
+            answer
+        }
+        Err(error) => format!("not sent: {error}"),
+    };
+    eprintln!("unsubscribe answer: {unsubscribe}");
     let stats = stream.close();
     let roots: BTreeSet<&str> = counts.keys().map(|c| c.root.as_str()).collect();
     eprintln!(
