@@ -10076,6 +10076,7 @@ impl Endpoint for IndexListDates {
     const PATH: &'static str = "/BetaEndpoints.BetaThetaTerminal/GetIndexListDates";
     const PYTHON_NAME: Option<&'static str> = Some("index_list_dates");
     const STABILITY: Stability = Stability::VendorWrapper;
+    const COLUMNS: &'static [(&'static str, ColumnKind)] = &[("date", ColumnKind::Text)];
     const VENDOR_DESCRIPTION: &'static str = "Lists all dates of data that are available for a index with a given request type and symbol. This endpoint is updated overnight.";
     type Query = api::IndexListDatesRequestQuery;
     type Request = api::IndexListDatesRequest;

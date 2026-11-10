@@ -179,6 +179,8 @@ once (the calendar per date and year), paced and sequential.
 - **Python side:** `bench/p1/stock_index_rate_checks.py` sends the same
   requests through the Python package.
 - **Re-running** either side needs approval again.
+- **Used:** the run was done on 2026-11-10 as `sir-checks-001` (Rust) and
+  `sir-checks-py-001` (Python), with the stock quote flat file left gated.
 
 **Flat files: probes are bounded, and full downloads are approved one file
 at a time.**
