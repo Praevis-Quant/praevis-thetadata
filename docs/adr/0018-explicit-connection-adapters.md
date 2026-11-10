@@ -343,6 +343,36 @@ so an observation.
     report them);
   - peak memory (the measurement failed).
 
+**W10 full trade stream across the close run-up (2026-11-10).** One run
+(`w10-live-full-close-001`), so an observation.
+- **Setup:**
+  - Windows, main 06d1642, the live feed, the Terminal restarted at 20:37
+    UTC;
+  - `latency --full-trades --seconds 1200`, 20:37:54-20:57:54 UTC. That
+    covers the last 22 minutes up to 2 minutes before the 21:00 close, but
+    not the final 2 minutes.
+- **Load:** 2,020,545 events (1,443,259 quotes and 577,286 trades) on
+  59,867 contracts. That is 1,684 events/s, 1,203 quotes/s and 481
+  trades/s. The trade rate was only about 5% above the midday run's, so
+  this was not a much heavier load.
+- **Latency** (per event, µs): p50 15, p90 19, p99 27, p99.9 312, max
+  28,997. That's the same profile as the quote runs.
+- **The slowest 20 events form two bursts:** 7 at about 64.5 s (about
+  29.0 ms each) and 13 at about 664.4 s (about 20.3-20.5 ms). Each is the
+  backlog-drain pattern seen before: the consumer was descheduled. They
+  were not delayed upstream.
+- **Health:**
+  - **0 dropped**, 0 unparsed, and the stream did not end;
+  - 1,196 heartbeats with 0 gaps; the longest interval was 1,020 ms;
+  - CPU of 102.2 s, about 0.085 cores.
+- **Memory and allocations:**
+  - **Rust heap:** 16,212,351 bytes at the start and a peak of 16,212,535
+    bytes, so flat. That's the global allocator only, not RSS.
+  - **Allocations:** 1.15 × 10⁻⁶ per frame.
+- **The exit criterion "sustained full-stream load without drops" is met**
+  across the late session and the close run-up: a single run, on Windows.
+  Linux remains.
+
 **For users, until the delay is explained:** run either the Terminal's REST
 or our historical client on an account, not both. The Terminal's stream can
 run alongside our client.
