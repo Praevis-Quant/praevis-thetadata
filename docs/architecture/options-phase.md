@@ -209,6 +209,7 @@ accounted buffers only, never for the whole process.
 | Open job parts: 32 (4× concurrency) × 2 batches × ≤ 8 MiB | ≤ 512 MiB |
 | 8 decoders building a batch, ≤ 8 MiB each | ≤ 64 MiB |
 | 8 HTTP/2 stream windows of 2 MiB | 16 MiB |
+| Messages being assembled, one per open stream, while in flight (item 8, closed 2026-11-10) | ≤ 8 × 64 MiB; about 3 MiB at observed sizes |
 | One Parquet row group | 131,072 rows |
 
 Real batches are far smaller. A per-strike part over two hours is about
@@ -358,6 +359,8 @@ path** (`job()` to Parquet, the Rust heap):
     or 8 MiB (32 × 2 × 8 MiB = 512 MiB at PRO);
   - the decoders: 8 × 8 MiB;
   - the stream windows: 8 × 2 MiB;
+  - messages being assembled, one per open stream, only while in flight:
+    up to 8 × `encoded_bytes` (64 MiB), about 3 MiB at observed sizes;
   - one Parquet row group in progress.
 
   Peaks reach this only if one request stalls long enough for every other
@@ -367,9 +370,13 @@ path** (`job()` to Parquet, the Rust heap):
   `encoded_bytes`, 64 MiB by default). That is up to 8 × 64 MiB = 512 MiB
   more in the worst case at PRO. The observed peaks above include it,
   because the counting allocator sees it, and real messages are far smaller.
-  It is outside our accounting until item 8 is resolved
-  ([decision A](../releases.md#item-8-decision-a-user-2026-11-08): open
-  in alpha.3, a gate for beta.1 / 0.1.0).
+  **Resolved 2026-11-10 (item 8 closed):**
+  - since option 2a (#129), the client assembles messages itself, and an
+    idle or stalled stream keeps nothing message-sized (#130);
+  - the term is now part of the stated bound, only while messages are in
+    flight: up to 8 × `encoded_bytes`;
+  - real messages are at most 0.36 MiB (`opt-msgsize-001`), so about 3 MiB
+    ([closure](../performance/eod-transport-buffering.md#closure-2026-11-10-under-decision-as-beta1-gate)).
 - **Not bounded:**
   - Parquet footer metadata, about **13 KB per row group**, held until the
     file closes. It grows with the file (about 0.1 MiB per million rows at

@@ -32,6 +32,20 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Item 8 (transport buffering) is closed for beta.1** (decision A's gate;
+  item 8 PR 4).
+  - **The evidence:** option 2a on both callers (#129), the query-path
+    bound test (#130), and `opt-msgsize-001`. Real messages were at most
+    0.36 MiB over 1,820 messages, with none above 1 MiB (options W5c and
+    W6c only; no flat files, stocks or indices).
+  - **The bound, now stated in AGENTS.md, the client README, the W5 record
+    and the release notes:** the Rust heap on `query()`/`job()` and the EOD
+    stream is bounded by configuration, plus up to streams × `encoded_bytes`
+    while messages are in flight (8 × 64 MiB worst case at PRO, about 3 MiB
+    at observed sizes).
+  - **Not covered:** process RSS and `stream_raw`.
+  - **Held:** byte credits, until messages reach the tens of MiB.
+  - **Kept:** `encoded_bytes` stays at 64 MiB.
 - **ROADMAP: the reader-assigned `Event` sequence (#136) is held, not in
   beta.1** (Coordinator, to confirm with the user).
   - **The run:** in a 6-round desktop comparison, the median and the p99

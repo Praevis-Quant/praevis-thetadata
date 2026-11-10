@@ -443,7 +443,7 @@
     "id": "decoded-memory",
     "status": "supported",
     "section": "conversion-and-output",
-    "rationale": "DecodeLimits bound every message and the decoder's buffer, and the streaming path (job to Parquet) was measured live with a Rust heap bounded by configuration plus Parquet footer metadata of about 13 KB per row group. This does not bound total process memory: transport buffering is outside the budget (alpha.3 item 8), and an accumulated Result grows with its rows.",
+    "rationale": "DecodeLimits bound every message and the decoder's buffer, and the streaming path (job to Parquet) was measured live with a Rust heap bounded by configuration plus Parquet footer metadata of about 13 KB per row group. On the query path the bound also includes up to streams × encoded_bytes for messages being assembled, only while they are in flight (item 8, closed 2026-11-10). This does not bound total process memory, and an accumulated Result grows with its rows.",
     "adrs": [
       "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
     ],

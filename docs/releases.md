@@ -43,7 +43,7 @@ in the named milestone and is a `0.1.0` exit gate.
 | 5 | Numeric comparison/ordering helper for `Price`. Equality is representational and documented since alpha.2. | User decision, 2026-11-02 | **Done for beta.1:** `Price::numeric_cmp` and `numeric_eq`, exact for any exponents. `Ord` is deliberately not implemented, because it would disagree with representational `Eq` |
 | 6 | Three-round A/A on the maintainer's Ryzen desktop, to replace its provisional 1.10/0.90 tolerances. | PERF-L3-008; D-B | **Closed 2026-11-03** (alpha.3 A3): no every-round shift above 0.3%; desktop tolerances are now 1.05/0.95 ([record](performance/eod-desktop-aa-results.md)) |
 | 7 | Drop an abandoned worker's schema lease before its job permit (today the result tuple releases the job permit first). The release order becomes deterministic, so a newly admitted job never observes a stale schema lease. It is a data-path change, so it needs the before/after [benchmark protocol](performance/benchmark-policy.md). | EOD resource leases; [#34](https://github.com/Praevis-Quant/praevis-thetadata/pull/34) root cause | **Closed 2026-11-03** (alpha.3 A2): `JobLeases` ordering; neutral against the D-B tolerances ([results](performance/eod-lease-order-results.md)) |
-| 8 | **Proposed 2026-11-03; needs a maintainer decision.** Transport buffering outside the shared budget: each concurrently open stream holds about one full encoded message (measured up to 618 MiB resident at 16 streams × 24 MiB; at the defaults, 16 × 64 MiB could exceed 1 GiB). `concurrent_streams` bounds it linearly. The maintainer rejected a cap (2026-11-03) and asked for the root cause first. **Investigation done:** it is tonic's per-RPC decode buffer, retained for the stream's lifetime. The design alternatives are measured, and own message framing (option 2a) is recommended ([record](performance/eod-transport-buffering.md)). | EOD-L3-023; [memory profile](performance/eod-memory-profile.md) | **Open by user decision A (2026-11-08):** alpha.3 ships with it open; the design (option 2a recommended) is a gate for beta.1 / `0.1.0` ([decision](#item-8-decision-a-user-2026-11-08)) |
+| 8 | **Proposed 2026-11-03; needs a maintainer decision.** Transport buffering outside the shared budget: each concurrently open stream holds about one full encoded message (measured up to 618 MiB resident at 16 streams × 24 MiB; at the defaults, 16 × 64 MiB could exceed 1 GiB). `concurrent_streams` bounds it linearly. The maintainer rejected a cap (2026-11-03) and asked for the root cause first. **Investigation done:** it is tonic's per-RPC decode buffer, retained for the stream's lifetime. The design alternatives are measured, and own message framing (option 2a) is recommended ([record](performance/eod-transport-buffering.md)). | EOD-L3-023; [memory profile](performance/eod-memory-profile.md) | **Closed 2026-11-10** under decision A's beta.1 gate. Option 2a on both callers (#129) and a query-path bound test (#130); real messages at most 0.36 MiB (`opt-msgsize-001`). The bound: the Rust heap on `query()`/`job()` and the stock EOD stream is bounded by configuration, plus up to streams × `encoded_bytes` for messages being assembled, held only while they are in flight ([closure](performance/eod-transport-buffering.md#closure-2026-11-10-under-decision-as-beta1-gate)) |
 
 ## Alpha.3 scope record (2026-11-08)
 
@@ -84,7 +84,7 @@ and the stock EOD slice until beta.1 freezes an API.
 | 5 | Numeric comparison/ordering helper for `Price` | **Pushed to beta.1.** It is a public API decision, so it belongs with the API freeze; alpha.3 does not change `Price` |
 | 6 | Desktop A/A tolerances | **Done** 2026-11-03 (1.05/0.95, [record](performance/eod-desktop-aa-results.md)) |
 | 7 | Deterministic schema-lease/job-permit release order | **Done** 2026-11-03 ([results](performance/eod-lease-order-results.md)) |
-| 8 | Transport buffering outside the shared budget | **Decision A (user, 2026-11-08): alpha.3 ships with item 8 open.** It stays a gate for beta.1 / `0.1.0`. Until it is resolved, only the client's own accounted allocations are described as bounded (below) |
+| 8 | Transport buffering outside the shared budget | **Decision A (user, 2026-11-08): alpha.3 ships with item 8 open.** It stays a gate for beta.1 / `0.1.0`. **Closed 2026-11-10** for beta.1 (see the deferred table above) |
 
 ### Item 8: decision A (user, 2026-11-08)
 
@@ -153,6 +153,17 @@ windows, streaming decode, zero-copy, and admission reservation.
   configuration-bounded total for the query path.
 
 **The user chose A** on 2026-11-08 and approved publication.
+
+**Closed for beta.1 on 2026-11-10.**
+- **What landed:** option 2a on both callers (#129) and the query-path bound
+  test (#130).
+- **The measured messages:** real ones are at most 0.36 MiB
+  (`opt-msgsize-001`).
+- **The bound now stated:** the Rust heap on `query()`/`job()` and the stock EOD stream is bounded by configuration, plus up to streams × `encoded_bytes` for messages being assembled, held only while they are in flight. That's 8 × 64 MiB in the worst case at PRO, and about 3 MiB at
+  observed sizes. It is not process RSS and not `stream_raw`.
+- **Held:** byte credits, until real messages reach the tens of MiB.
+- **Kept:** `encoded_bytes` stays at 64 MiB
+  ([closure](performance/eod-transport-buffering.md#closure-2026-11-10-under-decision-as-beta1-gate)).
 
 ### Crates and the publish set
 
@@ -359,6 +370,10 @@ Approved by the user on 2026-11-02 as one decision; **executed 2026-11-03** (#37
 
 Every item must be reviewed before the auth/EOD API is frozen at `0.1.0-beta.1`.
 
+- [x] **Transport buffering (deferred item 8), closed 2026-11-10.** The bound:
+      the Rust heap on `query()`/`job()` and the EOD stream is bounded by
+      configuration, plus streams × `encoded_bytes` while messages are in
+      flight. It is tested by #130; real messages are at most 0.36 MiB.
 - [x] **`Price` numeric comparison/ordering helper** (deferred item 5).
       - **Added:** `Price::numeric_cmp` (use with `sort_by`) and
         `numeric_eq`, exact for any exponents.

@@ -106,7 +106,9 @@ Whether to (a) document only, (b) lower the default `concurrent_streams` after
 benchmarking, or (c) identify the buffering layer and reserve it in admission
 (so that total memory becomes bounded by the budget) is
 [proposed deferred item 8](../releases.md#deferred-from-alpha2), pending a
-maintainer decision.
+maintainer decision. **Update:** item 8 closed on 2026-11-10 with option 2a
+and a tested bound
+([closure](eod-transport-buffering.md#closure-2026-11-10-under-decision-as-beta1-gate)).
 
 To reproduce: `cargo run --release -p praevis-thetadata-client --example eod_memory -- run`,
 or dispatch **Synthetic EOD performance** with `memory: true`.
