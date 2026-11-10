@@ -32,6 +32,26 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **Recorded the stock, index, calendar and interest-rate run**
+  (`sir-checks-001`, with `sir-checks-py-001`; 2026-11-10, options PRO with
+  stocks and indices FREE; 33 requests, no stop).
+  - **Entitled (10 RPCs):** stock and index list symbols, list dates and EOD,
+    the calendar (today, four dates, two years) and the rate history. Each has
+    values equal on the same response, and Python OK.
+  - **Refused before data (19 RPCs):** each named a tier. The tiers match the
+    FREE map wherever both name one.
+    - Stock and index snapshot, history and at-time RPCs name VALUE or
+      STANDARD.
+    - The index EOD, stock EOD and stock trade-quote flat files name PRO.
+  - **Python:** the status matched Rust on all 30 non-flat-file requests.
+  - **Not probed:** the stock quote flat file, which stays gated.
+  - **Column kinds** are registered for `GetIndexListDates`. The run is added
+    to the 9 RPCs already registered, whose kinds matched.
+  - **The calendar:** `GetCalendarOnDate`, refused on the all-FREE account
+    naming VALUE, is entitled on this account. Which product's tier it needs
+    stays unknown.
+  - **Updated:** `status.json`, `schemas.json`, the coverage table and the
+    subscription matrix.
 - **Item 8 (transport buffering) is closed for beta.1** (decision A's gate;
   item 8 PR 4).
   - **The evidence:** option 2a on both callers (#129), the query-path

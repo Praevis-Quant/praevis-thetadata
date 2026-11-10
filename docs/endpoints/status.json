@@ -4,6 +4,16 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
     }
   },
   "GetOptionHistoryEod": {
@@ -28,6 +38,16 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
     }
   },
   "GetStockListDates": {
@@ -35,6 +55,16 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
     }
   },
   "GetStockSnapshotOhlc": {
@@ -42,6 +72,12 @@
       "class": "tier-denied",
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
       "tier": "VALUE"
     }
   },
@@ -51,6 +87,12 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "STANDARD"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "STANDARD"
     }
   },
   "GetStockSnapshotQuote": {
@@ -58,6 +100,12 @@
       "class": "tier-denied",
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
       "tier": "VALUE"
     }
   },
@@ -67,6 +115,12 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "VALUE"
     }
   },
   "GetStockHistoryTrade": {
@@ -74,6 +128,12 @@
       "class": "tier-denied",
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
+      "tier": "STANDARD"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
       "tier": "STANDARD"
     }
   },
@@ -83,6 +143,12 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "VALUE"
     }
   },
   "GetStockAtTimeQuote": {
@@ -91,6 +157,12 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "VALUE"
     }
   },
   "GetStockFlatFileEod": {
@@ -98,6 +170,12 @@
       "class": "tier-denied",
       "code": "PermissionDenied",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "PRO"
     }
   },
   "GetOptionListSymbols": {
@@ -389,6 +467,16 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
     }
   },
   "GetIndexSnapshotPrice": {
@@ -397,6 +485,12 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "STANDARD"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "STANDARD"
     }
   },
   "GetIndexHistoryEod": {
@@ -404,6 +498,16 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
     }
   },
   "GetIndexHistoryPrice": {
@@ -411,6 +515,12 @@
       "class": "tier-denied",
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
+      "tier": "VALUE"
+    },
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
       "tier": "VALUE"
     }
   },
@@ -420,6 +530,16 @@
       "code": "PermissionDenied",
       "run": "p1-entitlements-001",
       "tier": "VALUE"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
     }
   },
   "GetInterestRateHistoryEod": {
@@ -427,6 +547,16 @@
       "class": "entitled",
       "code": "OK",
       "run": "p1-entitlements-001"
+    },
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
     }
   },
   "GetFutureListSymbols": {
@@ -851,5 +981,113 @@
   },
   "GetStockFlatFileQuote": {
     "gated": true
+  },
+  "GetIndexListDates": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
+    }
+  },
+  "GetCalendarOpenToday": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
+    }
+  },
+  "GetCalendarYear": {
+    "pro": {
+      "class": "entitled",
+      "code": "OK",
+      "run": "sir-checks-001"
+    },
+    "check": {
+      "result": "values-equal-same-response",
+      "python": "ok",
+      "run": "sir-checks-001"
+    }
+  },
+  "GetStockSnapshotMarketValue": {
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetStockHistoryTradeQuote": {
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetStockAtTimeTrade": {
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetIndexSnapshotOhlc": {
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetIndexSnapshotMarketValue": {
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetIndexHistoryOhlc": {
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "STANDARD"
+    }
+  },
+  "GetIndexAtTimePrice": {
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "VALUE"
+    }
+  },
+  "GetIndexFlatFileEod": {
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "PRO"
+    }
+  },
+  "GetStockFlatFileTradeQuote": {
+    "pro": {
+      "class": "tier-denied",
+      "code": "PermissionDenied",
+      "run": "sir-checks-001",
+      "tier": "PRO"
+    }
   }
 }

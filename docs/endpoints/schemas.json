@@ -1,27 +1,31 @@
 {
   "GetCalendarOnDate": {
     "columns": [["type", "text"], ["open", "text"], ["close", "text"]],
-    "runs": ["cal-local-001"]
+    "runs": ["cal-local-001", "sir-checks-001"]
   },
   "GetCalendarOpenToday": {
     "columns": [["type", "text"], ["open", "text"], ["close", "text"]],
-    "runs": ["cal-local-001"]
+    "runs": ["cal-local-001", "sir-checks-001"]
   },
   "GetCalendarYear": {
     "columns": [["date", "text"], ["type", "text"], ["open", "text"], ["close", "text"]],
-    "runs": ["cal-local-001"]
+    "runs": ["cal-local-001", "sir-checks-001"]
   },
   "GetIndexHistoryEod": {
     "columns": [["created", "timestamp-new-york"], ["last_trade", "timestamp-new-york"], ["open", "price"], ["high", "price"], ["low", "price"], ["close", "price"], ["volume", "number"], ["count", "number"], ["bid_size", "number"], ["bid_exchange", "number"], ["bid", "price"], ["bid_condition", "number"], ["ask_size", "number"], ["ask_exchange", "number"], ["ask", "price"], ["ask_condition", "number"]],
-    "runs": ["p1-checks-001"]
+    "runs": ["p1-checks-001", "sir-checks-001"]
+  },
+  "GetIndexListDates": {
+    "columns": [["date", "text"]],
+    "runs": ["sir-checks-001"]
   },
   "GetIndexListSymbols": {
     "columns": [["symbol", "text"]],
-    "runs": ["p1-checks-001"]
+    "runs": ["p1-checks-001", "sir-checks-001"]
   },
   "GetInterestRateHistoryEod": {
     "columns": [["created", "text"], ["rate", "price"]],
-    "runs": ["p1-checks-001"]
+    "runs": ["p1-checks-001", "sir-checks-001"]
   },
   "GetOptionAtTimeQuote": {
     "columns": [["symbol", "text"], ["expiration", "text"], ["strike", "price"], ["right", "text"], ["timestamp", "timestamp-new-york"], ["bid_size", "number"], ["bid_exchange", "number"], ["bid", "price"], ["bid_condition", "number"], ["ask_size", "number"], ["ask_exchange", "number"], ["ask", "price"], ["ask_condition", "number"]],
@@ -225,14 +229,14 @@
   },
   "GetStockHistoryEod": {
     "columns": [["created", "timestamp-new-york"], ["last_trade", "timestamp-new-york"], ["open", "price"], ["high", "price"], ["low", "price"], ["close", "price"], ["volume", "number"], ["count", "number"], ["bid_size", "number"], ["bid_exchange", "number"], ["bid", "price"], ["bid_condition", "number"], ["ask_size", "number"], ["ask_exchange", "number"], ["ask", "price"], ["ask_condition", "number"]],
-    "runs": ["p1-checks-001"]
+    "runs": ["p1-checks-001", "sir-checks-001"]
   },
   "GetStockListDates": {
     "columns": [["date", "text"]],
-    "runs": ["p1-checks-001"]
+    "runs": ["p1-checks-001", "sir-checks-001"]
   },
   "GetStockListSymbols": {
     "columns": [["symbol", "text"]],
-    "runs": ["p1-checks-001"]
+    "runs": ["p1-checks-001", "sir-checks-001"]
   }
 }
