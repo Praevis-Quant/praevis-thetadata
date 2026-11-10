@@ -122,11 +122,11 @@ fn main() -> std::process::ExitCode {
             while let Some(event) =
                 stream.recv_timeout(deadline.saturating_duration_since(Instant::now()))
             {
-                if let Kind::Response { id: got, response } = event.kind {
-                    if got == id as i64 {
-                        answer = format!("{response:?}");
-                        break;
-                    }
+                if let Kind::Response { id: got, response } = event.kind
+                    && got == id as i64
+                {
+                    answer = format!("{response:?}");
+                    break;
                 }
             }
             answer
