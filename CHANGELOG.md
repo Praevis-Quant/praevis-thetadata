@@ -17,6 +17,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **`latency --full-trades`** (stream example; W10 full-stream load). It
+  subscribes to the full trade stream instead of `--contracts` and records
+  per-event latency for quotes and trades on the same histogram as the
+  quote runs, with drops, heartbeat gaps and the longest heartbeat
+  interval.
+  - **New in every report:** the Rust heap at the start of the measurement
+    and its peak (global allocator only, not RSS), and counts and rates of
+    events, quotes and trades.
+  - **Full-trades reports:** `quotes_unsubscribed` is null, since nothing is
+    subscribed by contract.
+  - **For:** the peak-hours run of W10's "sustained full-stream load without
+    drops" criterion, which the midday run met without these
+    measurements.
 - **`Price::numeric_cmp` and `Price::numeric_eq`** (deferred item 5, for the
   beta.1 freeze). They compare prices by value, exactly, whatever their
   exponents: `123.45` and `123.4500` are numerically equal.

@@ -50,6 +50,13 @@ praevis-thetadata-stream = "=0.1.0-alpha.3"
   latency harness's format, with the trade date seen. The dev feed replays
   a past day the vendor does not name, so this is how you find contracts
   that trade on it.
+- **Full-stream load:** the `latency` example's `--full-trades` mode
+  subscribes to the full trade stream instead of a contract list. It
+  reports:
+  - per-event latency (quotes and trades) on the same histogram;
+  - drops, and heartbeat gaps with the longest interval;
+  - the Rust heap at the start and its peak (not process RSS);
+  - CPU, as a JSON report under `artifacts/w10/`.
 
 ```rust,no_run
 use praevis_thetadata_stream::{Contract, Kind, Options, Right, Root, Stream};
