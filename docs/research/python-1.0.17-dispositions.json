@@ -578,7 +578,7 @@
     "id": "live-streaming",
     "status": "unresolved",
     "section": "remaining-contracts",
-    "rationale": "The Python artifact has no streaming client; finite gRPC query streams are a different thing. Rust adds a separate adapter for the operator-run Terminal's WebSocket (ADR-0018): quotes and the full trade stream, verified on the Terminal's dev feed, and for option quotes on the live market (2026-11-10). The live full trade stream ran 15 minutes at midday with 0 dropped; a peak-hours run remains, so this stays unresolved as parity, and it is not a missing wrapper inferred from server_streaming=true.",
+    "rationale": "The Python artifact has no streaming client; finite gRPC query streams are a different thing. Rust adds a separate adapter for the operator-run Terminal's WebSocket (ADR-0018): quotes and the full trade stream, verified on the Terminal's dev feed, and for option quotes on the live market (2026-11-10). The live full trade stream ran with 0 dropped at midday and across the close run-up (Windows); Linux remains, so this stays unresolved as parity, and it is not a missing wrapper inferred from server_streaming=true.",
     "adrs": [
       "docs/adr/0007-first-market-data-slice.md"
     ],

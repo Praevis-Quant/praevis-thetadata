@@ -45,6 +45,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **W10 full trade stream across the close run-up recorded**
+  (`w10-live-full-close-001`, 2026-11-10 20:37:54-20:57:54 UTC, Windows,
+  main 06d1642; one run).
+  - **Load:** 2,020,545 events, at 481 trades/s and 1,203 quotes/s.
+  - **Latency:** p99 27 µs, p99.9 312 µs and a 29 ms max, from two
+    consumer-descheduling bursts.
+  - **Health:** 0 dropped, 0 heartbeat gaps, about 0.085 cores, and a flat
+    Rust heap.
+  - **The "sustained full-stream load without drops" exit criterion is met**
+    on Windows. Linux remains.
 - **W10 live full trade stream recorded** (2026-11-10, 16:37-16:52 UTC,
   Windows, main be5aca2; one run).
   - **Result:** 410,468 trades on 48,543 contracts in 900 s (about 456/s),
