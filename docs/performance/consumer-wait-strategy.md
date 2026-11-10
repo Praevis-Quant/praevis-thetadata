@@ -140,6 +140,9 @@ decision it stays on the ROADMAP only, with no library change.
 
 ### Live market (2026-11-10): measured under extra load
 
+**Superseded by the [clean re-run](#live-market-clean-re-run-2026-11-10)
+below.** Kept because its tails were measured under leftover load.
+
 One run each, not a verified result.
 - **Setup:** Windows, main 7777151, the Terminal on live hosts and
   restarted at 14:48 UTC, the sleep consumer, 120 s per run.
@@ -172,6 +175,35 @@ Closing now waits up to 2 s for the Terminal's close frame.
 Latencies are in µs. Even under the extra load, the p50 and p99 met the
 50 µs target. The tails and heartbeat gaps at 100 and 1,000 contracts need
 a clean re-run before they are read as the library's.
+
+### Live market: clean re-run (2026-11-10)
+
+One run each, so observations, not a verified result.
+- **Setup:** Windows, main 7877d78 (with #141), the Terminal on the live
+  hosts (`fpss_nj_hosts`) and restarted at 16:05 UTC, the sleep consumer,
+  120 s per run.
+- **Contracts:** the top N from 60 s of the live full trade stream
+  (`discover_contracts`: 27,024 trades on 7,024 contracts).
+- **#141 confirmed:** `discover_contracts` got the Terminal's answer to its
+  bulk unsubscribe, `REQ_RESPONSE` with the literal value `SUBSCRIBED`.
+  Every run then had `quotes_unsubscribed` 0 and `contracts_seen` no more
+  than the contracts subscribed.
+
+| Contracts | Quotes/s | p50 | p90 | p99 | p99.9 | Max | CPU (cores) | Dropped | Heartbeat gaps (max interval) |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 | 3,667 | 15 | 19 | 32 | 468 | 15,987 | 0.14 | 0 | 0 (1,016 ms) |
+| 100 | 25,879 | 15 | 17 | 24 | 37 | 782 | 1.00 | 0 | 0 (1,287 ms) |
+| 1,000 | 26,037 | 15 | 18 | 26 | 40 | 614 | 1.04 | 0 | 2 (2,479 ms) |
+
+Latencies are in µs.
+- **p99 met the 50 µs target at every load:** 32, 24 and 26 µs.
+- **The live tails match the dev feed's:**
+  - at 100 and 1,000 contracts, p99.9 was 37-40 µs and the max was under
+    1 ms;
+  - the 9.4 ms p99.9 and 95 ms max of the earlier 1,000-contract run did
+    not recur.
+- **At 10 contracts, one outlier:** a 16 ms max in a single run. The
+  p99.9 of 468 µs is in line with the dev feed's waking cost at low rates.
 
 ## The mechanism today
 
@@ -310,7 +342,9 @@ pub enum WaitStrategy {
    dev feed and then live. Each run must show that it ran at the intended
    rate (`contracts_seen`, `quotes_unsubscribed` 0, after a Terminal
    restart). **The low-rate case on the dev feed is met by the
-   `w10-dev-10-*-002` runs**; Linux, 100 contracts and live remain. Each variant against `Sleep`, reporting p50,
+   `w10-dev-10-*-002` runs**. **Live on Windows, `Sleep` at 10, 100 and
+   1,000 contracts, is met by the [clean re-run](#live-market-clean-re-run-2026-11-10)**
+   (2026-11-10). Linux, and each variant live, remain. Each variant against `Sleep`, reporting p50,
    p99, p99.9, max, CPU and drops. The same harness and decision rules as
    other performance changes (benchmark policy, interleaved rounds).
 2. **No backfire:** with more spinning consumers than free cores, latency

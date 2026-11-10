@@ -111,7 +111,9 @@ pub enum Status {
 #[non_exhaustive]
 pub enum Response {
     /// Accepted. It does not confirm the contract exists: data flows only if
-    /// it does.
+    /// it does. The Terminal also gives this answer to an unsubscribe
+    /// (observed live for the full trade stream, 2026-11-10), so it means
+    /// "request accepted", not "now subscribed".
     Subscribed,
     /// Too many contracts are streaming for the subscription.
     MaxStreamsReached,

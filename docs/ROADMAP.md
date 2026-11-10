@@ -35,12 +35,14 @@ The [performance architecture plan](architecture/performance-plan.md)
     ([results](performance/options-d2-results.md)).
   - **Memory is bounded by configuration** on the streaming path, with the
     stated limits.
-- **Real-time (W10) is done on the dev feed** (ADR-0018 W10 record; the
+- **Real-time (W10) is done on the dev feed, and for quotes on the live
+  market** (ADR-0018 W10 record; the
   [stream crate](../crates/praevis-thetadata-stream/README.md)):
   - quotes and the full trade stream through the operator's Terminal;
-  - p99 ≤ 50 µs met at the measured rates.
+  - p99 ≤ 50 µs met at the measured rates, live included (2026-11-10:
+    24-32 µs at 10, 100 and 1,000 contracts, Windows).
 
-  The live-market runs remain (below).
+  The live full-trade-stream run remains (below).
 - **Releases:**
   - `0.1.0-alpha.1`, `0.1.0-alpha.2` and **`0.1.0-alpha.3` (2026-11-08)**
     are on crates.io ([releases](releases.md),
@@ -149,15 +151,13 @@ this use case. It closed on 2026-11-10.
   came 1,032 ms after the subscribe, so the earlier 150 s delay did not
   reproduce. It stays unexplained.
 - **Live-market latency runs:**
-  - **Run once on 2026-11-10, but under extra load.** The full trade stream
-    from `discover_contracts` kept arriving, because closing reset the
-    connection and the unsubscribe was lost; that is fixed in the stream
-    crate's close.
+  - **Done 2026-11-10 on Windows, after #141:** 10, 100 and 1,000
+    contracts, with `quotes_unsubscribed` 0. p99 was 24-32 µs, and p99.9
+    was 37-40 µs at 100 and 1,000 contracts. These replace a first attempt
+    measured under leftover load.
   - **Still to do:**
-    1. Re-run at 10, 100 and 1,000 contracts after a Terminal restart,
-       checking `quotes_unsubscribed` is 0.
-    2. Then run the full trade stream.
-    3. Check the W10 "sustained full-stream load without drops" exit
+    1. Run the full trade stream.
+    2. Check the W10 "sustained full-stream load without drops" exit
        criterion.
 - **The `Remote(Internal)` error on a second gRPC request** is unexplained.
   An idle connection was ruled out. It stays open until there is evidence.
