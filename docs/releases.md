@@ -6,7 +6,9 @@ not published versions or calendar promises. The workspace's
 owner-approved crates.io publication. Preserve the independent Python baseline
 in the [protocol manifest](../crates/praevis-thetadata-proto/schema/manifest.json).
 
-The first supported release will cover authentication and one stock EOD slice.
+The first supported release was planned to cover authentication and one stock EOD
+slice. On 2026-11-10 the user widened it to the
+[beta.1 scope](#beta1-scope-record-user-2026-11-10).
 Generated bindings for 100 RPCs (Python 1.0.17 baseline) do not make 100 supported features. Every release
 must state its supported surface and distinguish experimental raw bindings.
 Maintainers own release decisions; client/core owners own EOD acceptance;
@@ -19,7 +21,7 @@ the account holder operates the optional live checks.
 | `0.1.0-alpha.1` | **Released 2026-11-02 UTC** ([publication record](crates-io-release-plan.md#publication-record-010-alpha1), tag `v0.1.0-alpha.1`). Useful first publication of auth, core, proto, client and CLI; client EOD clearly experimental | Proto bindings and research at the current reviewed upstream baseline (1.0.17, [update plan](upstream-update-1.0.17.md), decision D5); self-contained archives and licenses; dependency versions/order; Windows/Linux external consumer builds; verified registry owner/publish capability; manually recorded PROD auth and small EOD result, or explicit documented service blocker before reconsidering scope (**met 2026-11-01**: Windows PROD auth with in-memory/`--save`/status/logout lifecycle, AAPL EOD capture/replay matching on all three interfaces, FREE quote denial; [observations](research/live-observations.md#alpha1-prod-exit-gate-2026-11-01)); exact archive review and publication approval | [Packaging plan](crates-io-release-plan.md), [manual live verification](live-verification.md). No empty placeholder crates. |
 | `0.1.0-alpha.2` | EOD feature-complete candidate: exact numeric delivery and Table adapter, bounded lifecycle and documented real-service behavior | Close every applicable clause in the [EOD matrix](requirements/stock-eod-matrix.md); resolve measured null/price regressions or approve a measured per-workload tradeoff; calibrate resource defaults; compare authorized live captures with all three local interfaces; record unresolved service semantics explicitly. **Released 2026-11-03 UTC** ([publication record](crates-io-release-plan.md#publication-record-010-alpha2), tag `v0.1.0-alpha.2`); all five gates met 2026-11-02 ([readiness record](#alpha2-readiness-record-2026-11-02)) | Alpha.1. Release follows the approved [release procedure](#alpha2-release-procedure-pending-approval). |
 | `0.1.0-alpha.3` | **Released 2026-11-08** ([publication record](crates-io-release-plan.md#publication-record-010-alpha3), tag `v0.1.0-alpha.3`; wheels on the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-alpha.3), not PyPI). The hardening work plus everything built since alpha.2 (generated endpoints, `query()`/`job()`, the scheduler, the arrow and stream crates, the schema registry), still experimental. See the [scope record](#alpha3-scope-record-2026-11-08) | Deferred items 1-4, 6 and 7 closed; item 8 open by user decision A (a beta.1 / `0.1.0` gate); packaging rehearsal green on Windows and Linux; abi3 wheels built and smoke-imported in CI; published after the user's approval | Alpha.2. Next: beta.1 (API freeze), with items 5 and 8 |
-| `0.1.0-beta.1` | Freeze auth/EOD public API for the first supported release; runnable consumer examples and troubleshooting | Accept or revise the applicable proposed ADRs; requirement-to-test/evidence review; partial-result and cancellation examples; install/build outside workspace; document supported platforms, native-store prerequisites, resource policy and compatibility boundaries; **API freeze review of a numeric comparison/ordering helper for `Price`** (deferred item 5) | Alpha.2; release review covers API stability, packaging and diagnostics. |
+| `0.1.0-beta.1` | **API freeze of the [beta.1 scope](#beta1-scope-record-user-2026-11-10)** (user decision 2026-11-10): auth, core, arrow (with the Parquet sink), the client's `query()`/`job()`, scheduler, `RequestOptions` and generated endpoints, and the Python package (vendor-named methods plus `query`/`batches`/`to_parquet`). The stream crate stays experimental; raw gRPC access stays low-level and unstable. Runnable consumer examples and troubleshooting | The [API-freeze checklist](#beta1-api-freeze-checklist): ADRs accepted, revised or superseded; requirement-to-test/evidence review of the frozen surface; partial-result and cancellation examples; install/build outside the workspace; supported platforms, native-store prerequisites, resource policy and compatibility boundaries documented; error categories reviewed against service semantics. Deferred items 5 and 8 are done | Alpha.3; release review covers API stability, packaging and diagnostics. No publish or tag without the user's approval |
 | `0.1.0` | Supported auth + single-symbol stock EOD libraries and auth CLI | No unresolved blocker for the declared surface; green synthetic Windows/Linux checks; maintainer-reviewed manual PROD report on the release candidate; retained benchmark comparison and calibrated acceptance decision; signed-off release checklist below; **every item in [Deferred from alpha.2](#deferred-from-alpha2) closed** | Beta.1. This is not full Python parity and makes no flat-file/real-time promise. |
 | `0.2.0` | Typed stock discovery, snapshots, OHLC/trade/quote history and at-time slices, delivered in small prereleases | Define per-slice ADRs and L1/L2/L3 first; reconcile inventory entries, wire presence, bounded output and account entitlements; synthetic/fault tests, optional manual live evidence and before/after data-path benchmarks for each newly supported slice | Stable first slice; select endpoint order from consumer needs. Raw bindings remain experimental until individually accepted. |
 | `0.3.0` | Typed option/index slices, calendars and interest-rate history | Explicit option-contract identity, expiration/strike semantics, precise values and endpoint-specific output/resource requirements; each selected inventory item gains implementation and verification links | Stock patterns established; research unresolved contracts before implementation. Publish the exact supported endpoint list. |
@@ -27,6 +29,33 @@ the account holder operates the optional live checks.
 | `0.5.0` | Real-time subscription interface, subject to supported vendor contracts | Explicit session/subscription lifecycle, reconnect/gap semantics, ordering, slow-consumer policy and resource budgets; deterministic mocks and limited authorized live checks | No inferred token refresh/revocation; obtain evidence for transport and subscription contracts first. |
 | `1.0.0` | Stable declared Rust API and compatibility matrix | Every upstream inventory item has a reviewed supported/excluded/unresolved disposition; all advertised features accepted; migration/versioning policy; repeatable release and performance evidence; resolve any blocker to a full-parity claim before making one | The preceding versions may expose deliberate subsets. A stable API alone does not prove complete Python equivalence. |
 | Separate PyO3 `0.1.0` | Python adapters over stabilized Rust interfaces | Binding ADRs/requirements, ownership/async/error/cancellation contracts, packaging/platform tests, copy/allocation and Python-transfer benchmarks | Separate project after Rust interfaces stabilize; keep Python outside core/auth/client dependencies. |
+
+## Beta.1 scope record (user, 2026-11-10)
+
+The user decided to proceed to beta.1 with this freeze scope.
+
+**Frozen:**
+- `praevis-thetadata-auth`;
+- `praevis-thetadata-core`;
+- `praevis-thetadata-arrow`, including the Parquet sink;
+- `praevis-thetadata-client`: `query()`, `job()`, the scheduler,
+  `RequestOptions` and the generated endpoints;
+- the Python package: the vendor-named methods, plus `query`, `batches` and
+  `to_parquet`.
+
+**What "frozen" means before 1.0:** no breaking change without a deliberate
+new prerelease version and release notes.
+
+**Not frozen:**
+- **`praevis-thetadata-stream` stays experimental.** Linux evidence is
+  pending, and the event sequence (#136) is held.
+- **Raw gRPC access stays low-level and unstable:** `stream_raw`,
+  `raw_client` and `RawStream`. They expose tonic types.
+
+**Not named in the approval** (to confirm with the user):
+- **`praevis-thetadata-proto`:** the generated protobuf and tonic types.
+  The same reason as raw access applies.
+- **`praevis-thetadata-cli`:** the auth CLI.
 
 ## Deferred from alpha.2
 
@@ -368,7 +397,8 @@ Approved by the user on 2026-11-02 as one decision; **executed 2026-11-03** (#37
 
 ### Beta.1 API-freeze checklist
 
-Every item must be reviewed before the auth/EOD API is frozen at `0.1.0-beta.1`.
+Every item must be reviewed before the [beta.1 scope](#beta1-scope-record-user-2026-11-10)
+is frozen at `0.1.0-beta.1`.
 
 - [x] **Transport buffering (deferred item 8), closed 2026-11-10.** The bound:
       the Rust heap on `query()`/`job()` and the EOD stream is bounded by
@@ -422,7 +452,7 @@ Every item must be reviewed before the auth/EOD API is frozen at `0.1.0-beta.1`.
 - [ ] Partial-result and cancellation consumer examples.
 - [ ] Install and build outside the workspace.
 - [ ] Document supported platforms, native-store prerequisites, resource policy and compatibility boundaries.
-- [ ] Review the public error categories (`EodError`, `NoData` for both no-data and unknown symbol) against the observed service semantics.
+- [ ] Review the public error categories (`QueryError`, and `EodError` for the EOD stream; `NoData` for both no-data and unknown symbol) against the observed service semantics.
 
 ## Checklist for every release candidate
 

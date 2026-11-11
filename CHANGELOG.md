@@ -45,6 +45,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **The beta.1 scope is recorded** (user decision, 2026-11-10;
+  `docs/releases.md`).
+  - **Frozen:** auth, core, arrow with the Parquet sink, the client's
+    `query()`/`job()`/scheduler/`RequestOptions`/generated endpoints, and the
+    Python package (vendor-named methods plus `query`/`batches`/`to_parquet`).
+  - **Not frozen:** the stream crate stays experimental. Raw gRPC access
+    (`stream_raw`, `raw_client`, `RawStream`) stays low-level and unstable.
+  - **What "frozen" means before 1.0:** no breaking change without a
+    deliberate new prerelease version and release notes.
 - **W10 full trade stream across the close run-up recorded**
   (`w10-live-full-close-001`, 2026-11-10 20:37:54-20:57:54 UTC, Windows,
   main 06d1642; one run).
