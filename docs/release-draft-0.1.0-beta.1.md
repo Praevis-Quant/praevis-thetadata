@@ -8,7 +8,8 @@ Nothing is tagged or published yet.
 - the date;
 - the commit;
 - the exact wheel file names, from the CI artifacts `wheel-ubuntu-latest`
-  and `wheel-windows-latest` of that commit;
+  and `wheel-windows-latest` of `da57cab`'s CI run. The same two files go to
+  PyPI and to this release.
 
 ---
 
@@ -91,8 +92,21 @@ praevis-thetadata-stream = "=0.1.0-beta.1"   # optional, real time, experimental
 cargo install praevis-thetadata-cli --version 0.1.0-beta.1 --locked
 ```
 
-**Python** (3.10 or newer; **not on PyPI**). Install the wheel for your
-platform from this release's assets:
+**Python** (3.10 or newer), from PyPI. It is a pre-release, so pass `--pre`
+or pin the version:
+
+```text
+pip install --pre praevis-thetadata
+# or
+pip install praevis-thetadata==0.1.0b1
+```
+
+Wheels exist for Windows x86_64 and Linux x86_64 (glibc 2.28 or newer)
+only. There is no macOS or ARM wheel, and no source distribution, so pip
+will not try to build it elsewhere.
+
+**Alternative:** install the same wheel for your platform from this
+release's assets:
 
 ```text
 # Windows x86_64

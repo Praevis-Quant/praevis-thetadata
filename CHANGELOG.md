@@ -26,6 +26,13 @@ wheels are attached to the GitHub release, not published to PyPI.
 
 ### Release
 
+- **The Python package goes to PyPI** as `praevis-thetadata` `0.1.0b1` (user
+  decision 2026-11-11). This supersedes alpha.3's crates.io-only decision.
+  - **What:** the two CI-tested abi3 wheels (Windows x86_64, and Linux
+    x86_64 `manylinux_2_28`), uploaded by hand with `twine` after the
+    crates.io publish. No sdist, and no CI upload.
+  - **Install:** `pip install --pre praevis-thetadata`. The same wheels stay attached to the GitHub
+    release.
 - **The error-category review is complete** (`err-notfound-001`, 2026-11-11).
   An unknown symbol and a range with no trading days are identical at the
   service (code, details and message), so `NoData` covering both is the

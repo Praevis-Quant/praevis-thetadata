@@ -49,8 +49,9 @@ The [performance architecture plan](architecture/performance-plan.md)
     are on crates.io ([releases](releases.md),
     [alpha.3 record](crates-io-release-plan.md#publication-record-010-alpha3)).
     Alpha.3 added the arrow and stream crates.
-  - **The Python package is not on PyPI.** Its alpha.3 wheels are attached to
-    the GitHub release.
+  - **The Python package was not on PyPI for alpha.3.** Its alpha.3 wheels
+    are attached to the GitHub release. From beta.1 it also goes to PyPI as
+    `praevis-thetadata` (user decision 2026-11-11).
   - **Next:** beta.1, the API freeze, with deferred items 5 and 8.
 
 ## Python parity

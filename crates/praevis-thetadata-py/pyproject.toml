@@ -3,7 +3,8 @@ requires = ["maturin>=1.9,<2"]
 build-backend = "maturin"
 
 [project]
-# PyPI name decided as D3; not published (releases are user-approved only).
+# PyPI name decided as D3. Uploaded to PyPI by hand from 0.1.0b1 (user decision
+# 2026-11-11), wheels only; CI never uploads, and releases are user-approved only.
 name = "praevis-thetadata"
 description = "Independent, unofficial Python client for ThetaData's direct gRPC API: exact Arrow results, zero-copy into pyarrow, Polars and pandas"
 readme = "README.md"

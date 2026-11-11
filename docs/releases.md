@@ -59,6 +59,17 @@ new prerelease version and release notes.
 - **`praevis-thetadata-proto` stays unstable.** It exposes generated tonic
   types, the same reason as raw gRPC access.
 
+**Distribution (user decision, 2026-11-11): beta.1 also goes to PyPI.**
+- **What is uploaded:** `praevis-thetadata` `0.1.0b1`, the two CI-tested
+  abi3 wheels (Windows x86_64, and Linux x86_64 `manylinux_2_28`) from
+  `da57cab`'s CI run. No sdist this time.
+- **How:** the user uploads them by hand with `twine`, after the crates.io
+  publish. Nothing in CI uploads.
+- **The wheels** are also attached to the GitHub release, as the
+  alternative.
+- **This supersedes, for beta.1,** the alpha.3 decision of 2026-11-07
+  ("crates.io only"; [alpha.3 scope record](#alpha3-scope-record-2026-11-08)).
+
 ## Deferred from alpha.2
 
 These were deliberately deferred out of alpha.2 by the maintainer's decisions
@@ -82,7 +93,9 @@ in the named milestone and is a `0.1.0` exit gate.
 1. Prepare `0.1.0-alpha.3`.
 2. **crates.io only.** The Python package does **not** go to PyPI this
    time. Its abi3 wheels (Windows and Linux) are attached to the GitHub
-   release as assets.
+   release as assets. *(Superseded for beta.1 by the user's decision of
+   2026-11-11: beta.1 also goes to PyPI. See the
+   [beta.1 scope record](#beta1-scope-record-user-2026-11-10).)*
 3. Nothing is published or tagged until the user explicitly approves it at
    the end. The user runs `cargo publish` locally, as for alpha.1 and
    alpha.2.

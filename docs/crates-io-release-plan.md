@@ -16,8 +16,10 @@ the API-freeze checklist must be complete.
 - **Seven crates are published.** `praevis-thetadata-stream` is published
   but documented as experimental and outside the freeze.
   `praevis-thetadata-proto` is published and documented as unstable.
-- **`praevis-thetadata-py` is not published** (`publish = false`). Its abi3
-  wheels go to the GitHub release only.
+- **`praevis-thetadata-py` is not published to crates.io** (`publish = false`).
+  **Its abi3 wheels go to PyPI** as `praevis-thetadata` `0.1.0b1` (user
+  decision 2026-11-11; the step after the crates waves), and to the GitHub
+  release. No sdist this time.
 - **Nothing else** is unpublished, or newly published.
 
 **Before publishing:**
@@ -52,19 +54,34 @@ the previous crates:
 | 3 | `praevis-thetadata-client` | auth, arrow, core, proto |
 | 4 | `praevis-thetadata-cli`, `praevis-thetadata-stream` | auth; none (the client is only a stream dev-dependency) |
 
+**Then PyPI** (the user, by hand, after wave 4):
+- **What:** upload the two CI-tested wheels from `da57cab`'s CI run
+  (artifacts `wheel-windows-latest` and `wheel-ubuntu-latest`) with
+  `twine upload`.
+  - `praevis_thetadata-0.1.0b1-cp310-abi3-win_amd64.whl`;
+  - `praevis_thetadata-0.1.0b1-cp310-abi3-manylinux_2_28_x86_64.whl`.
+- **No sdist,** and nothing in CI uploads.
+- **The token** comes from the environment (`TWINE_USERNAME=__token__`,
+  `TWINE_PASSWORD`). It is never in argv, logs or shell history.
+- **Check the files before uploading** (`twine check`). A PyPI version can
+  be yanked but never replaced: a file name, once uploaded, can never be
+  uploaded again with different contents.
+
 **After publishing:**
 1. **Tag:** an annotated tag `v0.1.0-beta.1` on the published commit.
 2. **GitHub release:** from the [draft](release-draft-0.1.0-beta.1.md),
-   marked as a prerelease. Attach the Windows and Linux abi3 wheels from
-   that commit's CI run. **Not on PyPI.**
+   marked as a prerelease. Attach the same two wheels as the alternative
+   to PyPI.
 3. **Checks on Windows and Linux:**
    - `cargo install praevis-thetadata-cli --version 0.1.0-beta.1 --locked`
      prints the version;
    - the crates.io-only consumers build;
    - the downloaded `.crate` hashes match the registry;
    - docs.rs builds;
-   - `pip install` of each attached wheel into a clean venv imports, with
-     `__version__` `0.1.0-beta.1`.
+   - `pip install --pre praevis-thetadata` from PyPI into a clean venv
+     resolves `0.1.0b1` and imports, with `__version__` `0.1.0-beta.1`. The
+     PyPI files' SHA-256 matches the CI artifacts;
+   - `pip install` of each attached GitHub release wheel does the same.
 4. **Records:** a "Publication record: 0.1.0-beta.1" section here; the
    CHANGELOG section dated; the beta.1 row of `releases.md` marked
    released.
@@ -111,8 +128,8 @@ released wheels from the release URL on Windows and on Linux x86_64.
 
 **Not covered:**
 - macOS, and ARM wheels: not supported, and not built;
-- a PyPI install: the wheels are attached to the GitHub release, not
-  published to PyPI;
+- a PyPI install, before publication: from beta.1 the wheels go to PyPI by
+  hand, and the post-publication checks install from it;
 - Python versions: the wheel declares Python ≥ 3.10, but CI tests 3.12 only.
 
 ## Publication record: 0.1.0-alpha.3
