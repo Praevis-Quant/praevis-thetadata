@@ -17,6 +17,20 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Consumer examples for partial results and cancellation** (beta.1
+  checklist item 3), in Rust and Python. Both run against a synthetic
+  loopback service in CI.
+  - **Rust:** `query_consumer` keeps a failed `query()` stream's rows as
+    partial (`collect()` is all-or-error). It cancels a `job()` mid-way by
+    dropping it, and the next request then gets its slot at once.
+  - **Python:** `examples/consumer_patterns.py` does the same with
+    `batches()` and `cancel()`. It shows that `query()` raises and keeps no
+    rows.
+  - **Loopback service:** `loopback_server` (a client-crate example) serves a
+    fake login and a scripted gRPC stream on 127.0.0.1.
+  - **Test seam:** the Python native `Client` accepts hidden `_auth_url` and
+    `_endpoint` keywords for it. They are plain HTTP on 127.0.0.1 or
+    localhost only, both together, and not public API.
 - **Error categories reviewed for beta.1** (checklist item 6). No meaning
   changed.
   - **The client README** documents each `QueryError` category, when it

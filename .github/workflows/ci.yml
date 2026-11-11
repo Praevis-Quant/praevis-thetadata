@@ -148,6 +148,16 @@ jobs:
           name: wheel-${{ matrix.os }}
           path: dist/*.whl
           if-no-files-found: error
+      - name: Build the loopback service for the consumer examples
+        run: cargo build --release --locked -p praevis-thetadata-client --example loopback_server
+      - name: Consumer examples (partial results, cancellation) against the loopback service
+        run: |
+          set -euo pipefail
+          server="$PWD/target/release/examples/loopback_server"
+          if [ "$RUNNER_OS" = Windows ]; then server="$(cygpath -w "$server.exe")"; fi
+          # Later steps run the example tests against it too (never skipped in CI).
+          echo "PRAEVIS_LOOPBACK_SERVER=$server" >> "$GITHUB_ENV"
+          PRAEVIS_LOOPBACK_SERVER="$server" python crates/praevis-thetadata-py/examples/consumer_patterns.py
       - name: Offline tests and D.2 gates
         run: python -m unittest discover -s crates/praevis-thetadata-py/tests -v
       - name: P1 exit runners, offline

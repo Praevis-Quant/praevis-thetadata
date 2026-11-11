@@ -143,6 +143,17 @@ async fn eod(session: Session) -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+**Runnable examples,** in the repository (not in the package). Both run
+against a synthetic loopback server, with no credentials:
+- **`query_consumer`** (`query()` and `job()`):
+  - **Partial results:** keep the rows delivered before a failure, and call
+    them complete only after `Ok(None)`. `collect()` is all-or-error.
+  - **Cancellation:** drop a `JobStream` mid-way. Its requests are cancelled
+    and its scheduler slot is free at once.
+- **`eod_partial`:** the same partial-result pattern on the stock EOD stream.
+
+`cargo run -p praevis-thetadata-client --example query_consumer`
+
 ## License
 
 Apache-2.0. The package includes `LICENSE` and `NOTICE`. Source, issues,

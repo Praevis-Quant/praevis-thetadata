@@ -277,7 +277,7 @@ struct Client {
 #[pymethods]
 impl Client {
     #[new]
-    #[pyo3(signature = (*, api_key = None, email = None, password = None, creds_file = None, environment = "prod", concurrency = None, per_minute = None, retries = 3, request_timeout = 300.0, idle_timeout = 60.0))]
+    #[pyo3(signature = (*, api_key = None, email = None, password = None, creds_file = None, environment = "prod", concurrency = None, per_minute = None, retries = 3, request_timeout = 300.0, idle_timeout = 60.0, _auth_url = None, _endpoint = None))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python<'_>,
@@ -291,6 +291,8 @@ impl Client {
         retries: u32,
         request_timeout: f64,
         idle_timeout: f64,
+        _auth_url: Option<String>,
+        _endpoint: Option<String>,
     ) -> PyResult<Self> {
         // Exactly one source, already chosen by the Python layer in the
         // ADR-0020 order. The file is parsed like the CLI parses it.
@@ -319,13 +321,33 @@ impl Client {
                 .filter(|d| !d.is_zero())
                 .ok_or_else(|| PyValueError::new_err(format!("{name}: positive seconds")))
         };
-        let config = ClientConfig::default()
+        let mut config = ClientConfig::default()
             .with_request_timeout(seconds("request_timeout", request_timeout)?)
             .with_idle_timeout(seconds("idle_timeout", idle_timeout)?);
+        let mut auth_config = AuthConfig::default().with_environment(environment);
+        // Test seam, not public API: a loopback fake service for the runnable
+        // examples and tests. Plain HTTP is allowed only for 127.0.0.1 or
+        // localhost, and only with both URLs given.
+        match (_auth_url, _endpoint) {
+            (None, None) => {}
+            (Some(auth_url), Some(endpoint)) if loopback(&auth_url) && loopback(&endpoint) => {
+                auth_config = auth_config
+                    .with_auth_url(auth_url)
+                    .with_allow_insecure(true);
+                config = config
+                    .with_endpoint(Some(endpoint))
+                    .with_allow_insecure(true);
+            }
+            _ => {
+                return Err(PyValueError::new_err(
+                    "_auth_url and _endpoint: both, as http://127.0.0.1 or http://localhost URLs",
+                ));
+            }
+        }
 
         let inner = py.detach(move || {
             runtime().block_on(async move {
-                let auth = AuthClient::new(AuthConfig::default().with_environment(environment))
+                let auth = AuthClient::new(auth_config)
                     .map_err(|_| query_error(QueryError::Configuration))?;
                 // The key is never logged or echoed in errors.
                 let session = auth.authenticate(&credentials).await.map_err(|_| {
@@ -615,6 +637,14 @@ impl BatchIterator {
             *source = None;
         }
     }
+}
+
+/// A plain-HTTP URL on this machine: `http://127.0.0.1[:port]/…` or
+/// `http://localhost[:port]/…`.
+fn loopback(url: &str) -> bool {
+    url.strip_prefix("http://")
+        .and_then(|rest| rest.split(['/', ':']).next())
+        .is_some_and(|host| host == "127.0.0.1" || host == "localhost")
 }
 
 /// The tier's limits with the caller's overrides: unset values come from

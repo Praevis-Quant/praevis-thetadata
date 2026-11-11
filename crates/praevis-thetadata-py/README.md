@@ -67,6 +67,16 @@ same native query and returns the client's `dataframe_type`. Differences, by
 design: prices stay exact (`decimal128(38, 10)`, Arrow-backed in pandas), and
 timestamps keep their time zone.
 
+**Partial results and cancellation.**
+- **Partial results:** `query()` is all-or-error: if the stream fails, it
+  raises `QueryFailed` and keeps no rows. To keep what arrived before a
+  failure, iterate `batches()`. The rows are complete only if the iteration
+  ends without an error.
+- **Cancellation:** `cancel()` a batch iterator, or drop it. That stops its
+  requests and frees their slots for the next request.
+- **Runnable example:** [`examples/consumer_patterns.py`](examples/consumer_patterns.py),
+  against a synthetic loopback service. CI runs it.
+
 **Credentials** follow the vendor and CLI order (ADR-0020): explicit
 `creds_file`, `api_key`, or `email` and `password`; otherwise
 `THETADATA_API_KEY`, `THETADATA_EMAIL` and `THETADATA_PASSWORD`,
