@@ -45,14 +45,14 @@ The [performance architecture plan](architecture/performance-plan.md)
   The live full trade stream ran with 0 dropped at midday and across the
   close run-up (2026-11-10, Windows); Linux remains (below).
 - **Releases:**
-  - `0.1.0-alpha.1`, `0.1.0-alpha.2` and **`0.1.0-alpha.3` (2026-11-08)**
-    are on crates.io ([releases](releases.md),
-    [alpha.3 record](crates-io-release-plan.md#publication-record-010-alpha3)).
-    Alpha.3 added the arrow and stream crates.
-  - **The Python package was not on PyPI for alpha.3.** Its alpha.3 wheels
-    are attached to the GitHub release. From beta.1 it also goes to PyPI as
-    `praevis-thetadata` (user decision 2026-11-11).
-  - **Next:** beta.1, the API freeze, with deferred items 5 and 8.
+  - **`0.1.0-beta.1`, the API freeze, was published on 2026-11-11**
+    ([record](crates-io-release-plan.md#publication-record-010-beta1)), on
+    crates.io and, for the first time, on PyPI as
+    [`praevis-thetadata` 0.1.0b1](https://pypi.org/project/praevis-thetadata/0.1.0b1/).
+  - `0.1.0-alpha.1`, `0.1.0-alpha.2` and `0.1.0-alpha.3` (2026-11-08) came
+    before it ([releases](releases.md)). Alpha.3 added the arrow and stream
+    crates. Its wheels were on the GitHub release only, not on PyPI.
+  - **Next:** `0.1.0`.
 
 ## Python parity
 

@@ -2,12 +2,98 @@
 
 Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 (2026-11-01 US time), `0.1.0-alpha.2` on 2026-11-03 UTC and `0.1.0-alpha.3`
-on 2026-11-08, each after owner approval. The plan below is retained as the preparation record. Publishing
+on 2026-11-08 and `0.1.0-beta.1` on 2026-11-11, each after owner approval. From
+beta.1 the Python wheels are also on PyPI. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
+
+## Publication record: 0.1.0-beta.1
+
+**Published 2026-11-11 at about 17:10 UTC,** approved by the user after the
+live checks (`err-notfound-001`, and the WSL Linux run).
+- **Source:** the owner ran `cargo publish` locally from clean `main` at
+  `c0c3dbe2cf13a7cfa8b70d94daa973e024991cf6` (#156).
+- **CI:** CI and Auth performance were green on that commit.
+- **The token** was never in argv or logs.
+
+**Crates:**
+- **Order:** proto, core, auth, arrow, client, cli, stream. Each was
+  "Published", and cargo waited for the index before the next.
+- **Checksums:** all seven registry checksums match the local `.crate`
+  files.
+- **Not yanked:** none.
+- **Publisher:** `joey-huckabee`.
+
+| Crate | `.crate` SHA-256 (registry = local = downloaded) |
+| --- | --- |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.0-beta.1) | `8cecb0c0a67474e01efdf49951808ec7241c5ecaa1f9837d9d9c0fc26b65c3bc` |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.0-beta.1) | `d2f4b195fe2c906a40ee33ff502476c352fb453ca957227d7d43f863a810ce42` |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.0-beta.1) | `23bbd4a00dfada5aec9ce371c9a92915ac64bfa886cfad1b1502a7e649ed5346` |
+| [`praevis-thetadata-arrow`](https://crates.io/crates/praevis-thetadata-arrow/0.1.0-beta.1) | `96aa964b01a88fc4def20fa42adfe8c337dab705a1face34f5ecbaf599096787` |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.0-beta.1) | `cee668961265da5c0fd11c98e764b177bb0d2425e956f37bec88d948f3c094e9` |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.0-beta.1) | `5b239ef5222c78b14b5821bed316a46859062ddd9229fbcbee0aeda1201914ae` |
+| [`praevis-thetadata-stream`](https://crates.io/crates/praevis-thetadata-stream/0.1.0-beta.1) | `c62a89a7dda6f8e29fdf396248d9cb03cd79d8adc467c8da03dbf668956a0b16` |
+
+`praevis-thetadata-py` is not published to crates.io.
+
+**PyPI** (first upload of the project):
+- **Release:** [`praevis-thetadata` 0.1.0b1](https://pypi.org/project/praevis-thetadata/0.1.0b1/).
+- **Upload:** `twine check` passed. `twine upload`, with the token from the
+  environment only, uploaded the two wheels from `da57cab`'s CI run
+  43021749387. No sdist.
+- **Why those wheels:** between `da57cab` and `c0c3dbe`, only a CI step
+  name and a `pyproject.toml` comment differ, so the wheels match the
+  tagged source.
+- **PyPI's SHA-256 equals the CI artifacts:**
+
+| Wheel | SHA-256 |
+| --- | --- |
+| `praevis_thetadata-0.1.0b1-cp310-abi3-manylinux_2_28_x86_64.whl` | `7f690072cd34ed497644fbe97e060e6c7129e77485ccf8814e6412123e303913` |
+| `praevis_thetadata-0.1.0b1-cp310-abi3-win_amd64.whl` | `ca079ee65e4772f975ee1d51d8d473f1c0ac1c7463d9eb56fb584be268a01ca3` |
+
+**Tag and release:**
+- **Tag:** annotated `v0.1.0-beta.1`, tag object `18ac0433a9b1`, pointing
+  to `c0c3dbe`.
+- **Release:** the
+  [GitHub pre-release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-beta.1),
+  its body taken from the [release draft](release-draft-0.1.0-beta.1.md),
+  with the same two wheels attached.
+
+**Post-publication checks (owner):**
+- **The CLI, Windows:** `cargo install praevis-thetadata-cli --version
+  0.1.0-beta.1 --locked` printed `praevis-thetadata 0.1.0-beta.1`.
+- **PyPI:** `pip install --pre praevis-thetadata` from PyPI into clean
+  venvs imported `0.1.0-beta.1` with 81 vendor-named methods, on:
+  - Windows (Python 3.12);
+  - WSL Ubuntu 24.04 (Python 3.12.3, glibc 2.39).
+- **docs.rs** built proto, core, auth, arrow, client and stream. The CLI
+  has no documentation build, which is expected: it is binary-only, as
+  before.
+
+**Post-publication checks, Linux (the agent's sandbox, aarch64, 2026-11-11):**
+- **The crates:** all seven `.crate` files downloaded from crates.io match
+  the SHA-256 values above and the crates.io index's checksums, and none is
+  yanked.
+- **Crates.io-only consumers:** copies of `tools/release-consumers`, with
+  the staging registry removed, built and ran against crates.io. Each
+  printed its check:
+  - `proto`: 100 RPCs;
+  - `core`;
+  - `auth`, and `auth-store` (the native store);
+  - `arrow`: an exact decimal and a typed all-null column;
+  - `client`: the frozen surface compiled; 100 endpoints, the planner and
+    the tier scheduler offline;
+  - `stream`: a parsed quote.
+
+  The default `auth` and `client` consumers resolve no keyring or D-Bus
+  packages.
+- **The CLI:** `cargo install praevis-thetadata-cli --version 0.1.0-beta.1
+  --locked` from crates.io built and printed `praevis-thetadata
+  0.1.0-beta.1`.
 
 ## Beta.1 publication checklist and order (prepared 2026-11-11)
 
-**Approved by the user, conditional on the remaining live checks.** The user
+**Executed 2026-11-11** ([record above](#publication-record-010-beta1)). Kept as
+the preparation record. **Approved by the user, conditional on the remaining live checks.** The user
 runs `cargo publish` locally, with the token never in argv or logs.
 Scope: [beta.1 scope record](releases.md#beta1-scope-record-user-2026-11-10);
 the API-freeze checklist must be complete.

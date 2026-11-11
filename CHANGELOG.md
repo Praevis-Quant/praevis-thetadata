@@ -15,14 +15,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
-## [0.1.0-beta.1] - pending
+## [0.1.0-beta.1] - 2026-11-11
 
-Prepared, not published: dated and tagged (`v0.1.0-beta.1`) at publication,
-after the user's approval and the remaining live checks. **The beta.1 API
-freeze:** see the [scope record](docs/releases.md#beta1-scope-record-user-2026-11-10),
-the [API-freeze checklist](docs/releases.md#beta1-api-freeze-checklist) and
-the [release-notes draft](docs/release-draft-0.1.0-beta.1.md). The Python
-wheels are attached to the GitHub release, not published to PyPI.
+Published to crates.io from `c0c3dbe` (tag `v0.1.0-beta.1`), and to PyPI as
+[`praevis-thetadata` 0.1.0b1](https://pypi.org/project/praevis-thetadata/0.1.0b1/)
+(wheels only; the same wheels are attached to the
+[GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-beta.1)).
+**The beta.1 API freeze:** see the
+[scope record](docs/releases.md#beta1-scope-record-user-2026-11-10), the
+[API-freeze checklist](docs/releases.md#beta1-api-freeze-checklist) and the
+[publication record](docs/crates-io-release-plan.md#publication-record-010-beta1).
 
 ### Release
 
