@@ -344,7 +344,9 @@ pub enum WaitStrategy {
    restart). **The low-rate case on the dev feed is met by the
    `w10-dev-10-*-002` runs**. **Live on Windows, `Sleep` at 10, 100 and
    1,000 contracts, is met by the [clean re-run](#live-market-clean-re-run-2026-11-10)**
-   (2026-11-10). Linux, and each variant live, remain. Each variant against `Sleep`, reporting p50,
+   (2026-11-10). **Linux under WSL2, `Sleep` live** (2026-11-11, ADR-0018
+   W10 record): no drops, but a p99 of 61-68 µs, above the target.
+   Native Linux, and each variant live, remain. Each variant against `Sleep`, reporting p50,
    p99, p99.9, max, CPU and drops. The same harness and decision rules as
    other performance changes (benchmark policy, interleaved rounds).
 2. **No backfire:** with more spinning consumers than free cores, latency

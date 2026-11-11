@@ -371,7 +371,40 @@ so an observation.
   - **Allocations:** 1.15 × 10⁻⁶ per frame.
 - **The exit criterion "sustained full-stream load without drops" is met**
   across the late session and the close run-up: a single run, on Windows.
-  Linux remains.
+  Linux remains. (Linux under WSL2 followed on 2026-11-11, below.)
+
+**W10 on Linux under WSL2 (2026-11-11, `w10-wsl-*`).** Single runs, so
+observations, all labelled WSL.
+- **Setup:**
+  - WSL2 Ubuntu 24.04 (kernel 6.18 microsoft-standard);
+  - the Terminal running inside WSL with Temurin 21;
+  - the repository at `da57cab`, the sleep consumer, 14:40-15:07 UTC.
+- **Contracts:** discovery read 63,878 trades on 14,170 contracts in
+  60 s. Its unsubscribe was answered `SUBSCRIBED`.
+- **Clean runs:** `quotes_unsubscribed` was 0 in every quote run. The Rust
+  heap was flat at about 16.2-16.6 MB.
+
+| Run | Events/s | p50 | p90 | p99 | p99.9 | Max | CPU (cores) | Dropped | Heartbeat gaps |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 contracts | 3,340 | 15 | 47 | 67 | 96 | 990 | 0.05 | 0 | 3 (max 2,297 ms) |
+| 100 contracts | 24,138 | 14 | 44 | 61 | 124 | 5,288 | 0.26 | 0 | 0 |
+| 1,000 contracts | 93,551 | 14 | 44 | 68 | 746 | 9,166 | 0.97 | 0 | 1 |
+| Full trade stream, 1,200 s | 2,966 | 14 | 46 | 68 | 110 | 11,219 | 0.05 | 0 | 4 (max 2,338 ms) |
+
+Latencies are in µs. The full-stream run: 3,559,208 events, of them
+989,373 trades (825/s), on 82,892 contracts.
+- **No drops, including the full trade stream at about 1.7× the Windows
+  close run's trade rate.** The exit criterion "sustained full-stream load
+  without drops" is met under WSL as well (WSL label, single runs).
+- **The p99 ≤ 50 µs target is not met under WSL:**
+  - p99 was 61-68 µs at every load;
+  - p90 was 44-47 µs, against 17-20 µs on Windows;
+  - p50 was unchanged, at 14-15 µs.
+
+  WSL2 virtualisation (timers and scheduling under Hyper-V) is the likely
+  cause, but that is not established.
+- **The target, by platform:** met on Windows; not met under WSL; open for
+  native Linux.
 
 **For users, until the delay is explained:** run either the Terminal's REST
 or our historical client on an account, not both. The Terminal's stream can
@@ -410,7 +443,8 @@ See [connection inventory, diagram and sources](../connections.md),
   for an operator-run Terminal.
 
 **The stream crate stays experimental and outside the beta.1 freeze.**
-- Linux evidence is pending.
+- Linux evidence is pending. (Under WSL2 on 2026-11-11: no drops, but the
+  p99 target was not met; native Linux is open. See the WSL record above.)
 - The event sequence (#136) is closed and parked (2026-11-11), not
   rejected; it can be reopened.
 - Its live records are above.

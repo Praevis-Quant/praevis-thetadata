@@ -15,6 +15,20 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Changed
+
+- **W10 on Linux under WSL2 recorded** (`w10-wsl-*`, 2026-11-11, single
+  runs, WSL label).
+  - **No drops** at 10, 100 and 1,000 contracts, and on a 1,200 s full
+    trade stream (3,559,208 events, 825 trades/s, about 1.7× the Windows
+    close run). The exit criterion "sustained full-stream load without
+    drops" is met under WSL too.
+  - **The p99 was 61-68 µs, above the 50 µs target.** The p90 was 44-47 µs,
+    against 17-20 µs on Windows; the p50 was unchanged. WSL2 virtualisation
+    is the likely cause, not established.
+  - **The target:** met on Windows, not met under WSL, open for native
+    Linux.
+
 ## [0.1.0-beta.1] - 2026-11-11
 
 Published to crates.io from `c0c3dbe` (tag `v0.1.0-beta.1`), and to PyPI as
