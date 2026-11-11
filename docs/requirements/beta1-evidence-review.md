@@ -23,7 +23,7 @@ CI runs every synthetic test on Windows and Linux.
 | **Scheduler** | `SchedulerPolicy`, `Tier`, `with_scheduler` | `scheduler.rs` unit tests; `job.rs`: tier default, retry only at open | PRO concurrency 8 used in the W5 and options runs. FREE pacing respected in the FREE map |
 | **Per-call options** | `RequestOptions` (batch, timeout including queue time, idle timeout, concurrency) | `job.rs`: the timeout covers queued time, the idle override, concurrency checks. The examples' 5 s timeout | None specific (see the gaps) |
 | **Generated endpoints** | `endpoints::*` (100 requests), `Endpoint` (sealed), `ALL`, `EndpointInfo` | `tools/test_generate_endpoints.py`; `client/tests/endpoints.rs` (8): wire mapping against the vendor wrappers; `generate_endpoints.py --check` | See the [coverage table](../endpoints/coverage.md). Of 81 vendor wrappers: **60 value-checked live**, **20 seen only as tier refusals**, **1 gated, not probed** |
-| **Errors** | `QueryError` (and `EodError`), Python `QueryFailed`/`SessionEnded` | `query.rs` (opening errors), `eod_contracts.rs`, `eod_typed.rs` | `NOT_FOUND`, `PERMISSION_DENIED`, `UNAUTHENTICATED` and `INVALID_ARGUMENT` observed ([client README](../../crates/praevis-thetadata-client/README.md), Errors) |
+| **Errors** | `QueryError` (and `EodError`), Python `QueryFailed`/`SessionEnded` | `query.rs` (opening errors), `eod_contracts.rs`, `eod_typed.rs` | `NOT_FOUND`, `PERMISSION_DENIED`, `UNAUTHENTICATED` and `INVALID_ARGUMENT` observed ([client README](../../crates/praevis-thetadata-client/README.md), Errors). An unknown symbol and no trading days are identical at the service: the same code, details and message (`err-notfound-001`) |
 | **Memory bound** | The stated Rust-heap bound (item 8) | `eod_memory -- bound` (#130, the memory-profile workflow); `parquet_memory.rs` | Largest real message 0.36 MiB (`opt-msgsize-001`). The W5 heap runs |
 | **Python, vendor-named methods** | 81 `Client` methods with the 1.0.17 signatures, credential order, `dataframe_type` | `test_vendor.py` (signatures against the pinned inventory); `test_credentials.py`; `test_api.py` | Python OK on every entitled method in `opt-checks-py-001` and `sir-checks-py-001`, with status matching Rust on every refusal |
 | **Python, `query`/`batches`/`to_parquet`** | `Result`, `BatchIterator` (`cancel`), Arrow export, per-call keywords | `test_arrow.py`, `test_api.py`, `test_gates.py` (the D.2 overhead gates), `test_examples.py` (loopback partial results and cancellation) | `to_parquet` live in the options memory runs (`opt-mem-M*`, for example `opt-mem-M5-parquet-001`) |
@@ -53,9 +53,6 @@ None of these is hidden by the counts above.
   probed, by policy.
 - **`RequestOptions` timeouts** have no live run of their own. Live runs
   used the defaults.
-- **`NoData`:** whether an unknown symbol can be told apart from no
-  trading days without parsing text is pending a live run of
-  `live_p0 not-found`.
 - **`Remote(Internal)`:** seen once on a second request, unexplained.
 
 **Platforms:**
