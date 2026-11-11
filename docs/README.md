@@ -22,6 +22,7 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Contract origin register](requirements/origins.md) | Exhaustive upstream/enhancement/mixed classification, separate from status |
 | [Upstream update template](upstream-update-template.md) | Compatibility and enhancement impact, tests and performance reconciliation |
 | [Architecture decisions](adr/README.md) | Decisions, alternatives, and consequences |
+| [Beta.1 evidence review](requirements/beta1-evidence-review.md) | Each frozen public area with its tests and live evidence, and the gaps listed explicitly |
 | [User guide](user-guide.md) | Supported platforms, native-store prerequisites, resource policy and compatibility with the vendor package (beta.1) |
 | [First market-data slice](adr/0007-first-market-data-slice.md) | Superseded by the performance plan (2026-11-03); ADRs 0008-0018 were reviewed against what shipped for beta.1 ([index](adr/README.md)) |
 | [Vendor research](research/thetadata-1.0.12.md) | Evidence, contradictions, discoveries, and unanswered questions |

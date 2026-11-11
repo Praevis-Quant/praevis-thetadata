@@ -458,7 +458,12 @@ is frozen at `0.1.0-beta.1`.
       - **Deferred:** 0016, never built.
 
       Each record ends with a short "Beta.1 review" note.
-- [ ] Requirement-to-test/evidence review of the declared surface.
+- [x] **Requirement-to-test/evidence review of the frozen surface**
+      (2026-11-11, [review](requirements/beta1-evidence-review.md)). Each
+      frozen area has its tests and live evidence.
+      - **Gaps, listed:** 20 vendor wrappers seen only as refusals, and one
+        gated; no live retry or `RequestOptions` timeout; live runs on
+        Windows only; Python 3.12 only in CI.
 - [x] **Partial-result and cancellation consumer examples** (2026-11-11).
       - **Rust:** `query_consumer` (`query()`/`job()`); its tests run in
         `cargo test`.
