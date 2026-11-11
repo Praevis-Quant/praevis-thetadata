@@ -149,7 +149,7 @@ jobs:
           "$py" -c "import sys, praevis_thetadata as pt; v = pt.__version__; print('praevis_thetadata', v); assert v == sys.argv[1], (v, sys.argv[1]); assert len(pt.endpoints()) == 100" "$version"
           # Offline use with no optional packages: argument checks and the wire query.
           "$py" -c "import praevis_thetadata as pt; q, parts = pt.describe('stock_history_eod', symbol='AAPL', start_date='2022-01-01', end_date='2024-03-01'); assert parts == 3 and 'AAPL' in q, (q, parts); assert callable(pt.Client.stock_history_eod); print('describe OK')"
-      - name: Keep the abi3 wheel (for the GitHub release; never uploaded to PyPI)
+      - name: Keep the abi3 wheel (for the GitHub release and the user's manual PyPI upload; CI never uploads)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: wheel-${{ matrix.os }}

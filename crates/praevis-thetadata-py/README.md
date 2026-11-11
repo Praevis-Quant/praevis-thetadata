@@ -5,7 +5,12 @@ pass-through over Arrow.
 
 > **Independent and experimental.** This is an unofficial project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. It is not published yet.
+> identifies the service it interoperates with.
+
+**Install** (a pre-release, so pass `--pre`): `pip install --pre praevis-thetadata`. Wheels exist for
+Windows x86_64 and Linux x86_64 (glibc 2.28 or newer), Python 3.10 or newer.
+There is no macOS or ARM wheel and no source distribution. The same wheels
+are attached to the GitHub release.
 
 - Queries run in Rust: the scheduler (the account tier's documented limits
   by default, overridable), transport and decoding, with the GIL released.

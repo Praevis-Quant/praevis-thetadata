@@ -22,8 +22,10 @@ says what is frozen and what is not.
   - Neither Python nor `protoc` is needed for the Rust crates.
 
 **Distribution:** the crates are on crates.io as prereleases, so pin the exact
-version. The Python wheels are attached to the GitHub release, not published
-to PyPI.
+version. The Python package is on PyPI as `praevis-thetadata` from
+`0.1.0b1`, a pre-release, so install it with `pip install --pre praevis-thetadata`. There are wheels only
+(Windows x86_64, and Linux x86_64 with glibc 2.28 or later) and no source
+distribution. The same wheels are attached to the GitHub release.
 
 ## Credentials and the native store
 
