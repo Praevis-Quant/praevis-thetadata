@@ -1,7 +1,7 @@
 # User guide: platforms, prerequisites, resources and compatibility
 
-For `0.1.0-beta.1`. The [beta.1 scope record](releases.md) says what is
-frozen and what is not.
+For `0.1.0-beta.1`. The [beta.1 scope record](releases.md#beta1-scope-record-user-2026-11-10)
+says what is frozen and what is not.
 
 ## Supported platforms
 
@@ -97,7 +97,7 @@ peaks of 103-182 MiB over 7 live runs).
 | Prices | Floating point (scale 0 becomes NaN) | Exact `decimal128(38, 10)`; a missing price is null. pandas frames are Arrow-backed |
 | Timestamps | Python `datetime` objects, built through floating-point seconds; the dataframe library infers the column type | Exact millisecond Arrow timestamps with the zone in the column type (`America/New_York`, or `UTC` where sent) |
 | A column null throughout a response | Inferred as `Null`, so joining results can fail | Registered endpoints keep the column's observed type ([registry](endpoints/schemas.json)) |
-| No data (`NOT_FOUND`) | `NoDataFoundError` | `QueryFailed` with kind `"no_data"`. An unknown symbol and a range with no trading days are the same category |
+| No data (`NOT_FOUND`) | `NoDataFoundError` | `QueryFailed` with kind `"no_data"`. An unknown symbol and a range with no trading days are the same category. The service answers both identically (`err-notfound-001`), so check the symbol with `stock_list_symbols` or `index_list_symbols` if you need to know which |
 | Ended session | — | `SessionEnded`, a subclass of `QueryFailed`. No automatic re-login |
 | Long date ranges | Sent as one request | Split within the vendor's limits and merged in order (`plan=True`). `plan=False` sends as given |
 | Concurrency | The caller's threads | A scheduler at the tier's documented limits, with retry only at open on `RESOURCE_EXHAUSTED`/`UNAVAILABLE` |
