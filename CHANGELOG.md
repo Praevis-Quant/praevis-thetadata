@@ -17,6 +17,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **User guide** (`docs/user-guide.md`, beta.1 checklist item 5). It
+  covers:
+  - supported platforms: Windows x86_64 and Linux x86_64 with glibc 2.28 or
+    later; macOS and ARM are not supported;
+  - native-store prerequisites: Credential Manager, and Secret Service over
+    D-Bus;
+  - the resource policy: the item 8 bound, not RSS;
+  - the differences from the vendor Python package: exact prices,
+    zone-aware timestamps, registered column types, errors, planning and
+    the scheduler.
 - **Install and build outside the workspace, recorded and extended**
   (beta.1 checklist item 4; `docs/crates-io-release-plan.md`).
   - **The release client consumer** now compiles the frozen client surface
