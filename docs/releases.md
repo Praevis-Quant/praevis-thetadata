@@ -466,7 +466,14 @@ is frozen at `0.1.0-beta.1`.
         loopback service (`loopback_server`) on both platforms.
       - **The cancellation tests fail without the cancellation:** the next
         request would hit its 5 s timeout.
-- [ ] Install and build outside the workspace.
+- [x] **Install and build outside the workspace** (2026-11-11,
+      [record](crates-io-release-plan.md#install-and-build-outside-the-workspace-beta1-record-2026-11-11)).
+      - **Already proven** by the rehearsal: the archives built in
+        isolation, seven external consumers, and the CLI install. The
+        Python job installs the wheel into a clean environment.
+      - **Added:** the client consumer now covers the frozen client
+        surface; the declared MSRV 1.88 is checked in CI; the clean
+        environment runs `describe()` offline.
 - [ ] Document supported platforms, native-store prerequisites, resource policy and compatibility boundaries.
 - [ ] Review the public error categories (`QueryError`, and `EodError` for the EOD stream; `NoData` for both no-data and unknown symbol) against the observed service semantics.
       **Reviewed 2026-11-11** (client README, "Errors"): no meaning changed.

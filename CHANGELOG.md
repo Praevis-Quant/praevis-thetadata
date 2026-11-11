@@ -17,6 +17,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Install and build outside the workspace, recorded and extended**
+  (beta.1 checklist item 4; `docs/crates-io-release-plan.md`).
+  - **The release client consumer** now compiles the frozen client surface
+    against the staged archive: generated endpoints with
+    `query_with`/`job_with`, `RequestOptions`, the scheduler and
+    `to_parquet`. It checks the endpoint count, the job planner and the tier
+    limits offline.
+  - **CI checks the declared minimum Rust version** (1.88) on Linux.
+  - **The clean-environment wheel check** also runs `describe()` offline.
 - **Consumer examples for partial results and cancellation** (beta.1
   checklist item 3), in Rust and Python. Both run against a synthetic
   loopback service in CI.
