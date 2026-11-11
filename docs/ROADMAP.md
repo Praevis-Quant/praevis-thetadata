@@ -43,7 +43,8 @@ The [performance architecture plan](architecture/performance-plan.md)
     24-32 µs at 10, 100 and 1,000 contracts, Windows).
 
   The live full trade stream ran with 0 dropped at midday and across the
-  close run-up (2026-11-10, Windows); Linux remains (below).
+  close run-up (2026-11-10, Windows), and under WSL2 (2026-11-11). Under
+  WSL the p99 target was not met; native Linux remains (below).
 - **Releases:**
   - **`0.1.0-beta.1`, the API freeze, was published on 2026-11-11**
     ([record](crates-io-release-plan.md#publication-record-010-beta1)), on
@@ -169,7 +170,13 @@ this use case. It closed on 2026-11-10.
   - **The W10 "sustained full-stream load without drops" exit criterion is
     met** (single runs, Windows). The close run's rate was only about 5%
     above midday.
-  - **Still to do:** Linux.
+- **Linux under WSL2: done 2026-11-11** (`w10-wsl-*`, single runs).
+  - **No drops** at 10, 100 and 1,000 contracts, and on a 20-minute full
+    trade stream at about 1.7× the Windows close rate (989,373 trades).
+  - **But the p99 was 61-68 µs, above the 50 µs target.** The p90 was
+    44-47 µs against 17-20 on Windows; the p50 was unchanged. WSL2
+    virtualisation is the likely cause, not established.
+  - **Still to do:** native Linux. That decides the target there.
 - **The `Remote(Internal)` error on a second gRPC request** is unexplained.
   An idle connection was ruled out. It stays open until there is evidence.
 - **For users:** run either the Terminal's REST API or our historical client
