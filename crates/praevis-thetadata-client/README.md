@@ -82,6 +82,23 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   `QueryError::SessionEnded` (gRPC `UNAUTHENTICATED`). It is not retried
   and the client never logs in again by itself. Log in once and clone the
   client (Python: `existing_authorized_client`).
+- **Errors** (`QueryError`, reviewed for beta.1 on 2026-11-11). Each
+  category, with when it happens and the evidence for it:
+
+  | Category | When | Evidence |
+  | --- | --- | --- |
+  | `Input`, `Configuration` | Invalid request or options, rejected before any network activity | Synthetic tests |
+  | `Connection` | The channel or transport failed | Synthetic tests |
+  | `Deadline`, `Idle` | The local whole-request budget (queue time included) or the idle gap between messages ran out | Synthetic tests |
+  | `Cancelled` | The caller cancelled | Synthetic tests |
+  | `NoData` | The service answered `NOT_FOUND` | **Live (stock EOD, FREE, 2026-11-02):** an unknown symbol and a range with no trading days (a weekend, a holiday) both answer `NOT_FOUND` at the headers, so both are `NoData`. Vendor text is never parsed to tell them apart. A stream that ends cleanly with no rows is **not** `NoData`. In a job, empty parts are skipped, and the job is `NoData` only if every part was |
+  | `SessionEnded` | `UNAUTHENTICATED`: the session ended | **Live** (`opt-session-001`): a second login for the account ends the first session |
+  | `Remote(code)` | Any other gRPC status, with its code | **Live:** `PermissionDenied` for every tier refusal (it is never `NoData`), and `InvalidArgument` for one flat-file date. `Internal` was seen once, unexplained. `ResourceExhausted` and `Unavailable` are retried at open first |
+  | `Decode`, `Schema`, `Unsupported`, `Resource` | The response broke a local rule: malformed data, a column changing type, an unsupported feature (a flat-file manifest), or a size limit | Synthetic tests and the adversarial corpus |
+
+  **Python:** these become `QueryFailed(kind, detail, grpc_code)`, with
+  `kind` the snake-case category (`"no_data"`, …). `SessionEnded` has its
+  own subclass.
 - **Raw helpers** call every descriptor RPC with wire query types. They are
   unsupported foundations: no typed validation, and no claim that any endpoint
   or entitlement works.

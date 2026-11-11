@@ -27,6 +27,12 @@ pub enum QueryError {
     Idle,
     #[error("query cancelled")]
     Cancelled,
+    /// The service answered `NOT_FOUND`. On the stock EOD it does so both for
+    /// an unknown symbol and for a range with no trading days (observed
+    /// 2026-11-02), and the status does not tell them apart; the vendor's
+    /// text is never parsed. A stream that ends cleanly with no rows is not
+    /// `NoData`. In a job, empty parts are skipped, and the job is `NoData`
+    /// only if every part was.
     #[error("no data found")]
     NoData,
     /// The service answered `UNAUTHENTICATED`, on any query path: the session
