@@ -642,9 +642,16 @@ impl BatchIterator {
 /// A plain-HTTP URL on this machine: `http://127.0.0.1[:port]/…` or
 /// `http://localhost[:port]/…`.
 fn loopback(url: &str) -> bool {
-    url.strip_prefix("http://")
-        .and_then(|rest| rest.split(['/', ':']).next())
-        .is_some_and(|host| host == "127.0.0.1" || host == "localhost")
+    let Some(rest) = url.strip_prefix("http://") else {
+        return false;
+    };
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    // No userinfo: in `http://localhost:1@example.com/` the host is example.com.
+    if authority.contains('@') {
+        return false;
+    }
+    let host = authority.split(':').next().unwrap_or_default();
+    host == "127.0.0.1" || host == "localhost"
 }
 
 /// The tier's limits with the caller's overrides: unset values come from

@@ -41,7 +41,14 @@ class LoopbackSeamTests(unittest.TestCase):
 
         for urls in ({"_auth_url": "http://127.0.0.1:1/auth"},
                      {"_auth_url": "http://example.com/auth", "_endpoint": "http://127.0.0.1:1"},
-                     {"_auth_url": "https://127.0.0.1:1/auth", "_endpoint": "http://127.0.0.1:1"}):
+                     {"_auth_url": "https://127.0.0.1:1/auth", "_endpoint": "http://127.0.0.1:1"},
+                     # Look-alike hosts are other hosts.
+                     {"_auth_url": "http://127.0.0.1.example.com/auth", "_endpoint": "http://127.0.0.1:1"},
+                     {"_auth_url": "http://localhost:1/auth", "_endpoint": "http://localhost.example.com:1"},
+                     {"_auth_url": "http://user@example.com/auth", "_endpoint": "http://127.0.0.1:1"},
+                     # Userinfo that looks like a loopback host: the real host is example.com.
+                     {"_auth_url": "http://localhost:1@example.com/auth", "_endpoint": "http://127.0.0.1:1"},
+                     {"_auth_url": "http://127.0.0.1:1/auth", "_endpoint": "http://127.0.0.1@example.com"}):
             with self.subTest(urls=urls), self.assertRaises(ValueError):
                 _native.Client(api_key="synthetic", **urls)
 
