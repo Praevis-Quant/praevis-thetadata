@@ -23,7 +23,8 @@ the API-freeze checklist must be complete.
 **Before publishing:**
 1. **The live checks pass:**
    - `err-notfound-001` (`live_p0 not-found`, the error review's open
-     question);
+     question): **done 2026-11-11.** The two cases are identical, so
+     `NoData` stands as documented;
    - the WSL Linux run.
 
    The checklist's error item is then ticked or recorded.

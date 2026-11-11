@@ -26,6 +26,12 @@ wheels are attached to the GitHub release, not published to PyPI.
 
 ### Release
 
+- **The error-category review is complete** (`err-notfound-001`, 2026-11-11).
+  An unknown symbol and a range with no trading days are identical at the
+  service (code, details and message), so `NoData` covering both is the
+  only mapping possible. The client README and `NoData`'s documentation
+  tell callers to check the symbol (list symbols) when they need the
+  distinction. No error changes meaning.
 - **Version `0.1.0-beta.1`** across the workspace: every crate version,
   internal pin, release-consumer pin, README install line and the
   lockfile. The Python wheel follows through maturin (`0.1.0b1`).

@@ -9,8 +9,6 @@ Nothing is tagged or published yet.
 - the commit;
 - the exact wheel file names, from the CI artifacts `wheel-ubuntu-latest`
   and `wheel-windows-latest` of that commit;
-- the result of the `err-notfound-001` live check (the `NoData` line under
-  "Known gaps").
 
 ---
 
@@ -131,9 +129,11 @@ never run.
 **Behaviour:**
 - **Retry:** retry on `RESOURCE_EXHAUSTED` and `UNAVAILABLE`, and the
   per-call timeouts, have synthetic evidence only.
-- **`NoData`:** it covers both an unknown symbol and a range with no
-  trading days, because the service answers both with `NOT_FOUND`.
-  *(Fill in from `err-notfound-001`.)*
+- **`NoData` covers both an unknown symbol and a range with no trading
+  days.** The service answers them identically: the same `NOT_FOUND` code,
+  the same details and the same message (checked live, 2026-11-11). To
+  tell them apart, check the symbol yourself, for example with
+  `stock_list_symbols` or `index_list_symbols`.
 
 **Platforms:**
 - Live checks ran on Windows; Linux is covered by CI and install checks.

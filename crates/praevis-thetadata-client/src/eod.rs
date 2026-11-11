@@ -29,8 +29,9 @@ pub enum QueryError {
     Cancelled,
     /// The service answered `NOT_FOUND`. On the stock EOD it does so both for
     /// an unknown symbol and for a range with no trading days (observed
-    /// 2026-11-02), and the status does not tell them apart; the vendor's
-    /// text is never parsed. A stream that ends cleanly with no rows is not
+    /// 2026-11-02), and the two are indistinguishable: the same code, details
+    /// and message (`err-notfound-001`, 2026-11-11). To tell them apart,
+    /// check the symbol, for example with `StockListSymbols`. A stream that ends cleanly with no rows is not
     /// `NoData`. In a job, empty parts are skipped, and the job is `NoData`
     /// only if every part was.
     #[error("no data found")]
