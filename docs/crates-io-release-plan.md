@@ -5,6 +5,52 @@ Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 on 2026-11-08, each after owner approval. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
 
+## Install and build outside the workspace (beta.1 record, 2026-11-11)
+
+What CI proves on every change, on Windows and Linux. Nothing is published,
+and no token is read.
+
+**Rust (the packaging rehearsal, `tools/staging_registry.py`):**
+- **Each published crate is packaged and built in isolation** (`cargo package`).
+  The crates are auth, core, proto, arrow, client, cli and stream.
+- **They are staged** in a local registry in publication order.
+- **Every archive is inspected:** file lists, SHA-256, license files and
+  forbidden inputs.
+- **Seven consumer crates** (`tools/release-consumers`) are copied outside
+  the workspace, then built, run and tested against the staged archives only:
+  - proto, core, auth and auth with the native store;
+  - arrow, client and stream.
+- **The client consumer covers the frozen client surface** (added for
+  beta.1):
+  - compiled: generated endpoints through `query`/`query_with`,
+    `job`/`job_with`, `collect`/`unify`, `RequestOptions`,
+    `SchedulerPolicy`/`Tier` and `to_parquet`;
+  - run offline: 100 endpoints, the job planner and the tier limits.
+- **`cargo install praevis-thetadata-cli`** works from the staged registry.
+- **The default auth and client consumers** resolve no native credential-store
+  packages.
+- **The minimum supported Rust version:** `cargo +1.88 check --workspace
+  --all-targets` runs on Linux (added for beta.1). Before this, 1.88 was
+  checked only by hand.
+
+**Python (the "Python package" job):**
+- **The abi3 wheel is built:** `manylinux_2_28` on Linux, and win_amd64.
+- **It is installed into a clean virtual environment** with no other
+  packages. It imports with the workspace version and 100 endpoints, and
+  `describe()` builds a wire query and its job plan offline (added for
+  beta.1).
+- **The installed wheel runs the offline test suite and the D.2 gates.**
+
+**After each publication, by hand** (recorded per release below): crates.io-only
+consumers, `.crate` hashes against the index, docs.rs, and `pip install` of the
+released wheels from the release URL on Windows and on Linux x86_64.
+
+**Not covered:**
+- macOS, and ARM wheels: not supported, and not built;
+- a PyPI install: the wheels are attached to the GitHub release, not
+  published to PyPI;
+- Python versions: the wheel declares Python ≥ 3.10, but CI tests 3.12 only.
+
 ## Publication record: 0.1.0-alpha.3
 
 **Published 2026-11-08,** approved by the user the same day (decision A on

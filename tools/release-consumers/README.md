@@ -6,4 +6,5 @@ copied to a temporary directory outside the workspace and resolve the
 so a passing build exercises the actual archives rather than workspace path
 dependencies. Each is its own workspace and is not a workspace member. The code
 mirrors each package README example; nothing contacts ThetaData or reads
-credentials.
+credentials. The client consumer also compiles the frozen beta.1 client surface
+(`query`/`job` with `RequestOptions`, the scheduler and Parquet output).
