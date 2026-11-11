@@ -1,14 +1,18 @@
 # praevis-thetadata-client
 
-Experimental gRPC client for ThetaData market data. It reuses a session from
-`praevis-thetadata-auth` and offers raw RPC helpers plus a typed stock end-of-day
-(EOD) stream with finite limits on its own accounted decode allocations.
+gRPC client for ThetaData market data: generated typed requests for all 100
+RPCs, exact Arrow `query()` and `job()` streams, a tier-aware scheduler and
+Parquet output, plus the typed stock end-of-day (EOD) stream. It reuses a
+session from `praevis-thetadata-auth`.
 
-> **Independent and experimental.** This is an unofficial Rust project. It is not
+> **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-alpha.3` is an early
-> prerelease: APIs may change between alphas, and it is **not** a full port of, or
-> drop-in replacement for, the vendor Python package. The Rust version is
+> identifies the service it interoperates with. `0.1.0-beta.1` is a prerelease
+> whose public API is **frozen for beta.1**, except raw access
+> (`raw_client`, `stream_raw`, `RawStream`), which stays low-level and unstable
+> ([scope](../../docs/releases.md#beta1-scope-record-user-2026-11-10)): no breaking
+> change without a new prerelease version and release notes. It is **not** a
+> full port of, or drop-in replacement for, the vendor Python package. The Rust version is
 > independent of the tracked Python compatibility baseline (currently 1.0.17).
 
 ## Status and scope
@@ -111,7 +115,7 @@ Prereleases are never selected implicitly, so pin the version:
 
 ```toml
 [dependencies]
-praevis-thetadata-client = "=0.1.0-alpha.3"
+praevis-thetadata-client = "=0.1.0-beta.1"
 ```
 
 ## Supported platforms

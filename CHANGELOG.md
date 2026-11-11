@@ -15,6 +15,32 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+## [0.1.0-beta.1] - pending
+
+Prepared, not published: dated and tagged (`v0.1.0-beta.1`) at publication,
+after the user's approval and the remaining live checks. **The beta.1 API
+freeze:** see the [scope record](docs/releases.md#beta1-scope-record-user-2026-11-10),
+the [API-freeze checklist](docs/releases.md#beta1-api-freeze-checklist) and
+the [release-notes draft](docs/release-draft-0.1.0-beta.1.md). The Python
+wheels are attached to the GitHub release, not published to PyPI.
+
+### Release
+
+- **Version `0.1.0-beta.1`** across the workspace: every crate version,
+  internal pin, release-consumer pin, README install line and the
+  lockfile. The Python wheel follows through maturin (`0.1.0b1`).
+- **The same publish set as alpha.3:** seven crates. `praevis-thetadata-py`
+  stays unpublished.
+- **README notices match the freeze:**
+  - auth, core, arrow, the client (except raw access) and the CLI are
+    frozen;
+  - the proto crate is unstable;
+  - the stream crate stays experimental.
+- **The client's README description** now names its surface.
+- **`docs/crates-io-release-plan.md`** gains the beta.1 publication checklist
+  and order.
+- **`docs/release-draft-0.1.0-beta.1.md`** drafts the GitHub release text.
+
 ### Added
 
 - **Beta.1 evidence review** (`docs/requirements/beta1-evidence-review.md`,
