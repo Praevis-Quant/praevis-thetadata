@@ -462,8 +462,8 @@ is frozen at `0.1.0-beta.1`.
       (2026-11-11, [review](requirements/beta1-evidence-review.md)). Each
       frozen area has its tests and live evidence.
       - **Gaps, listed:** 20 vendor wrappers seen only as refusals, and one
-        gated; no live retry or `RequestOptions` timeout; the `NoData`
-        check pending; live runs on Windows only; Python 3.12 only in CI.
+        gated; no live retry or `RequestOptions` timeout; live runs on
+        Windows only; Python 3.12 only in CI.
 - [x] **Partial-result and cancellation consumer examples** (2026-11-11).
       - **Rust:** `query_consumer` (`query()`/`job()`); its tests run in
         `cargo test`.

@@ -23,8 +23,7 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **Gaps, listed explicitly:** 20 vendor wrappers have no data-path
     evidence (only tier refusals), one is gated, and 17 descriptor-only
     RPCs were never probed. The retry and per-call timeouts have no live
-    evidence. The `NoData` distinction is pending. Live runs were on Windows
-    only. CI tests Python 3.12 only.
+    evidence. Live runs were on Windows only. CI tests Python 3.12 only.
 - **User guide** (`docs/user-guide.md`, beta.1 checklist item 5). It
   covers:
   - supported platforms: Windows x86_64 and Linux x86_64 with glibc 2.28 or
