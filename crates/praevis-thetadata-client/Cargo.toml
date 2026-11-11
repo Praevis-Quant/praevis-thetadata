@@ -41,6 +41,12 @@ required-features = ["live-tests"]
 name = "eod_partial"
 test = true
 
+# Runnable consumer patterns for query()/job(): partial results and
+# cancellation. `test = true` runs its tests in `cargo test --workspace`.
+[[example]]
+name = "query_consumer"
+test = true
+
 # The CPU benchmark's loopback mode also times Parquet output.
 [[example]]
 name = "columnar_benchmark"

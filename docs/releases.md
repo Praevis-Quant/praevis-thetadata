@@ -459,7 +459,13 @@ is frozen at `0.1.0-beta.1`.
 
       Each record ends with a short "Beta.1 review" note.
 - [ ] Requirement-to-test/evidence review of the declared surface.
-- [ ] Partial-result and cancellation consumer examples.
+- [x] **Partial-result and cancellation consumer examples** (2026-11-11).
+      - **Rust:** `query_consumer` (`query()`/`job()`); its tests run in
+        `cargo test`.
+      - **Python:** `examples/consumer_patterns.py`, run in CI against the
+        loopback service (`loopback_server`) on both platforms.
+      - **The cancellation tests fail without the cancellation:** the next
+        request would hit its 5 s timeout.
 - [ ] Install and build outside the workspace.
 - [ ] Document supported platforms, native-store prerequisites, resource policy and compatibility boundaries.
 - [ ] Review the public error categories (`QueryError`, and `EodError` for the EOD stream; `NoData` for both no-data and unknown symbol) against the observed service semantics.
