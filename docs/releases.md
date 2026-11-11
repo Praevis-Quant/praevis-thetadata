@@ -474,7 +474,13 @@ is frozen at `0.1.0-beta.1`.
       - **Added:** the client consumer now covers the frozen client
         surface; the declared MSRV 1.88 is checked in CI; the clean
         environment runs `describe()` offline.
-- [ ] Document supported platforms, native-store prerequisites, resource policy and compatibility boundaries.
+- [x] **Supported platforms, native-store prerequisites, resource policy and
+      compatibility boundaries documented** (2026-11-11,
+      [user guide](user-guide.md)).
+      - **Platforms:** Windows x86_64 and Linux x86_64 with glibc 2.28 or
+        later; macOS and ARM are not supported.
+      - **Resource policy:** the item 8 bound in the wording AGENTS.md
+        allows.
 - [ ] Review the public error categories (`QueryError`, and `EodError` for the EOD stream; `NoData` for both no-data and unknown symbol) against the observed service semantics.
       **Reviewed 2026-11-11** (client README, "Errors"): no meaning changed.
       `NoData` stays `NOT_FOUND`, which covers both cases. One open question
