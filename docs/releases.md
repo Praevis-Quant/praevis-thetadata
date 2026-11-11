@@ -447,7 +447,16 @@ is frozen at `0.1.0-beta.1`.
       requests implement it, so the trait can gain items. Nothing outside the
       crate needs to implement it: a request is a vendor RPC with its exact
       wire mapping.
-- [ ] Accept or revise the applicable proposed ADRs.
+- [x] **ADRs accepted, revised or superseded** (2026-11-11,
+      [index](adr/README.md)).
+      - **Accepted:** 0011, 0012 and 0015.
+      - **Accepted with revisions:** 0008, 0009, 0010, 0013 and 0014.
+      - **Accepted in part:** 0018 (the WebSocket adapter; it stays
+        experimental).
+      - **Superseded:** 0007, by the performance plan.
+      - **Deferred:** 0016, never built.
+
+      Each record ends with a short "Beta.1 review" note.
 - [ ] Requirement-to-test/evidence review of the declared surface.
 - [ ] Partial-result and cancellation consumer examples.
 - [ ] Install and build outside the workspace.

@@ -1,6 +1,6 @@
 # ADR-0015: track upstream compatibility and Rust enhancements independently
 
-Status: Proposed. Date: 2026-10-04. Owner: workspace maintainers.
+Status: **Accepted** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Owner: workspace maintainers.
 Origin: **Rust enhancement** (maintenance and change-control contract).
 Requirements: [EXT L1/L2/L3](../requirements/enhancements.md).
 
@@ -48,3 +48,12 @@ and measured performance still require their own tests and change review.
 This ADR proposes the ongoing process; classification/auditing delivered with
 it does not mean future migration or runtime test coverage already exists.
 The [upgrade template](../upstream-update-template.md) provides the review record.
+
+## Beta.1 review (2026-11-11)
+
+Followed as written:
+- **The origin register** covers every requirement and ADR, checked by
+  `tools/check_repository.py`.
+- **Upstream updates:** the 1.0.17 update shipped with the impact record
+  this ADR asks for ([update](../upstream-update-1.0.17.md), [template](../upstream-update-template.md)).
+- **Raw and typed surfaces stay separate.**

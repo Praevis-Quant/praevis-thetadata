@@ -1,6 +1,6 @@
 # ADR-0008: typed requests with explicit value presence
 
-Status: Proposed. Date: 2026-10-04. Owner: praevis-thetadata-client maintainers.
+Status: **Accepted with revisions** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Owner: praevis-thetadata-client maintainers.
 Requirements: [EOD-L2-002](../requirements/L2-stock-eod.md),
 [EOD-L3-001 through EOD-L3-005](../requirements/L3-stock-eod.md); relates to
 AUTH-L1-001. Defined contracts, implementation/acceptance planned.
@@ -73,3 +73,19 @@ not approval to implement all wrapper defaults now.
 - [Complete signatures and construction tables](../research/python-1.0.12-catalog.md).
 - [Standalone auth boundary](0001-standalone-auth.md) and
   [first-slice scope](0007-first-market-data-slice.md).
+
+## Beta.1 review (2026-11-11)
+
+The decision stands. What shipped:
+- **Typed requests for all 100 RPCs** (`endpoints::*`), generated from the
+  pinned 1.0.17 inventory by `tools/generate_endpoints.py`. The descriptor
+  types stay the exact wire representation.
+- **Explicit presence:** an optional parameter is an `Option` (absent means
+  omit). Vendor wrapper defaults are applied in the request layer, from the
+  inventory, not from truthiness.
+- **QueryInfo:** built from the session, with one fixed parameter
+  (`client=rust`). Python's map of every argument is not copied.
+- **The EOD request** validates its symbol and dates before any network
+  activity, as stated.
+- **Raw access** (`raw_client`, `stream_raw`) stays available. It is outside
+  the beta.1 freeze, marked low-level and unstable.

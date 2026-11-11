@@ -1,6 +1,6 @@
 # ADR-0018: Explicit direct and Terminal connection adapters
 
-Status: Proposed, 2026-10-04. Origin: Rust enhancement.
+Status: **Accepted in part** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Origin: Rust enhancement.
 Owner: workspace/client maintainers.
 Requirements: [CONN contracts](../requirements/connections.md),
 [LIVE subscription evidence](../requirements/live-verification.md).
@@ -399,3 +399,21 @@ WebSocket stream was deferred by the user on 2026-11-07; see
 See [connection inventory, diagram and sources](../connections.md),
 [subscription verification](../subscription-testing.md), and
 [library boundaries](0013-library-boundaries.md).
+
+## Beta.1 review (2026-11-11)
+
+**Accepted:**
+- the explicit, never-silent connection selection;
+- the Java-free direct path;
+- the per-product/tier/connector evidence policy;
+- the W10 design note: `praevis-thetadata-stream`, the WebSocket adapter
+  for an operator-run Terminal.
+
+**The stream crate stays experimental and outside the beta.1 freeze.**
+- Linux evidence is pending.
+- The event sequence (#136) is held.
+- Its live records are above.
+
+**Still proposed, not implemented:**
+- the Terminal REST adapter;
+- JAR process supervision.

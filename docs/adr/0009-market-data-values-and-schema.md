@@ -1,6 +1,6 @@
 # ADR-0009: exact values and explicit batch schemas
 
-Status: Proposed. Date: 2026-10-04. Owner: praevis-thetadata-core and praevis-thetadata-client maintainers.
+Status: **Accepted with revisions** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Owner: praevis-thetadata-core and praevis-thetadata-client maintainers.
 Requirements: [EOD-L1-002](../requirements/L1-stock-eod.md),
 [EOD-L2-003 and EOD-L2-004](../requirements/L2-stock-eod.md),
 [EOD-L3-006 through EOD-L3-012](../requirements/L3-stock-eod.md).
@@ -118,3 +118,28 @@ preserving observed wire data, not inventing those business meanings.
 - [Current core representation and tests](../../crates/praevis-thetadata-core/src/lib.rs).
 - [Current decoder](../../crates/praevis-thetadata-client/src/decode.rs) and
   [stream lifecycle proposal](0010-stream-lifecycle-and-resource-bounds.md).
+
+## Beta.1 review (2026-11-11)
+
+The value rules stand. They hold on both output paths:
+- exact prices, never floats;
+- scale 0 is null, and a scale outside 1-19 is an error;
+- distinct kinds, with no coercion;
+- headers kept in order, with duplicates and ragged rows rejected;
+- a successful empty result is distinct from `NOT_FOUND` and from an
+  incomplete stream;
+- rows delivered before an error are partial.
+
+**Revised:**
+- **Arrow became the main output.** `query()`/`job()` and the Python package
+  return Arrow batches through `praevis-thetadata-arrow` (ADR-0014):
+  - prices are `Decimal128(38, 10)`, exact;
+  - timestamps are zone-aware `Timestamp(ms, "America/New_York")` (or
+    `"UTC"`), not RFC 3339 text.
+- **`Table` stays the compatibility output** of the stock EOD stream, with
+  the RFC 3339 representation described above.
+- **The schema rule** on the Arrow path:
+  - the only allowed change between batches is a `Null` column becoming
+    typed, repaired by `unify`;
+  - the 2026-11-08 addendum's registry fixes the type of registered
+    columns.

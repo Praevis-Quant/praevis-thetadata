@@ -22,7 +22,7 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Contract origin register](requirements/origins.md) | Exhaustive upstream/enhancement/mixed classification, separate from status |
 | [Upstream update template](upstream-update-template.md) | Compatibility and enhancement impact, tests and performance reconciliation |
 | [Architecture decisions](adr/README.md) | Decisions, alternatives, and consequences |
-| [First market-data slice](adr/0007-first-market-data-slice.md) | Proposed stock EOD design; ADRs 0007-0012 link to defined requirements, implementation pending |
+| [First market-data slice](adr/0007-first-market-data-slice.md) | Superseded by the performance plan (2026-11-03); ADRs 0008-0018 were reviewed against what shipped for beta.1 ([index](adr/README.md)) |
 | [Vendor research](research/thetadata-1.0.12.md) | Evidence, contradictions, discoveries, and unanswered questions |
 | [Complete Python catalogue and coverage matrix](research/python-1.0.12-catalog.md) | Every file/symbol/RPC/message, signatures/defaults/fields, and feature-to-requirement dispositions |
 | [Deep source inventory](research/python-1.0.12-inventory.json) | Regenerable source hashes, AST evidence, descriptors, metadata, and examples |
