@@ -1,6 +1,6 @@
 # ADR-0011: Rust protocol fixtures and recoverable research inputs
 
-Status: Proposed. Date: 2026-10-04. Owner: Praevis-Quant maintainers.
+Status: **Accepted** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Owner: Praevis-Quant maintainers.
 Requirements: [EOD-L1-006](../requirements/L1-stock-eod.md),
 [EOD-L2-010 through EOD-L2-012](../requirements/L2-stock-eod.md),
 [EOD-L3-024 through EOD-L3-029](../requirements/L3-stock-eod.md);
@@ -80,3 +80,17 @@ does not approve a new market-data implementation.
 - [Existing provenance decision](0005-verification-and-provenance.md).
 - [Source inventory/checker](../../tools/research_python.py) and
   [before/after methodology](../performance/cli-startup.md).
+
+## Beta.1 review (2026-11-11)
+
+Followed as written:
+- **Fixtures:** Rust-native, from a loopback fake service and synthetic
+  responses.
+- **CI:** stays credential-free on Windows and Linux.
+- **Live checks:** manual, approved one run at a time, with only codes,
+  classifications and column kinds committed.
+- **The research archive:** recovered by hash.
+
+**One addition:** a few manual comparison harnesses call the vendor's Python
+package side by side (`bench/p1`). They are outside the product, build and
+CI, as this ADR allows.

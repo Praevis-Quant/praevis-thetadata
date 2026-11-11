@@ -1,6 +1,6 @@
 # ADR-0010: explicit stream completion, failure, and resource limits
 
-Status: Proposed. Date: 2026-10-04. Owner: praevis-thetadata-client maintainers.
+Status: **Accepted with revisions** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Owner: praevis-thetadata-client maintainers.
 Requirements: [EOD-L2-005 through EOD-L2-009](../requirements/L2-stock-eod.md),
 [EOD-L3-012 through EOD-L3-023](../requirements/L3-stock-eod.md);
 preserves AUTH-L1-004 and the explicit session lifecycle.
@@ -95,3 +95,31 @@ vendor throughput guarantee follows from this proposal.
 - [Current stream implementation](../../crates/praevis-thetadata-client/src/lib.rs).
 - [Explicit auth lifecycle](0004-explicit-session-lifecycle.md).
 - [Preserved performance recommendations](../ROADMAP.md#original-review-and-recommendations-verbatim).
+
+## Beta.1 review (2026-11-11)
+
+**These stand:**
+- a pull-based stream with a terminal state;
+- the error categories, with no-data never covering permission, corrupt data
+  or a successful zero rows;
+- separate whole-query and idle budgets, enforced locally;
+- cancellation on drop, without a claim that the vendor stopped at once;
+- partial results;
+- no silent re-authentication.
+
+**Revised by what shipped with `query()`/`job()` (P1):**
+- **A shared scheduler** admits requests: the tier's concurrency and a
+  per-minute limit.
+  - **Retry:** it retries only at open, before any data, and only on
+    `RESOURCE_EXHAUSTED` and `UNAVAILABLE`. With nothing delivered, a retry
+    cannot duplicate rows or leave a partial result.
+- **Jobs read ahead in a bounded window:** concurrency × 4 open parts, read
+  in order. That replaces "at most the next requested batch" for jobs. A
+  single `query()` still delivers on demand.
+- **`RequestOptions`:** the whole-query timeout covers time queued for a
+  slot.
+- **The memory bound** is the one stated since item 8 closed (2026-11-10):
+  - the Rust heap is bounded by configuration, plus up to streams ×
+    `encoded_bytes` while messages are in flight;
+  - this is not process RSS, and `stream_raw` is excluded
+    ([closure](../performance/eod-transport-buffering.md#closure-2026-11-10-under-decision-as-beta1-gate)).

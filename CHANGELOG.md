@@ -45,6 +45,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **ADRs reviewed for beta.1** (checklist item 1). Each Proposed ADR now
+  has a status and ends with a short "Beta.1 review" note saying what
+  stands and what shipped differently. The original rationale is
+  unchanged.
+  - **Accepted:** 0011, 0012 and 0015.
+  - **Accepted with revisions:** 0008, 0009, 0010, 0013 and 0014.
+  - **Accepted in part:** 0018.
+  - **Deferred, not implemented:** 0016.
 - **The beta.1 scope is recorded** (user decision, 2026-11-10;
   `docs/releases.md`).
   - **Frozen:** auth, core, arrow with the Parquet sink, the client's

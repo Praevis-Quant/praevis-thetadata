@@ -1,6 +1,6 @@
 # ADR-0013: cohesive libraries with explicit outer adapters
 
-Status: Proposed. Date: 2026-10-04. Owner: workspace maintainers.
+Status: **Accepted with revisions** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Owner: workspace maintainers.
 The optional-storage part is implemented and accepted by [ADR-0020](0020-in-memory-sessions-and-optional-persistence.md) (2026-11-01).
 Origin: **Rust enhancement** (architecture independent of Python packaging).
 Requirements: [ARCH L1/L2/L3](../requirements/architecture.md).
@@ -47,3 +47,21 @@ native persistence; service hosts own environment/secrets and pass explicit conf
 No crate refactor is implemented by this ADR. Existing auth contracts remain
 unchanged. Validate dependency direction, storage-disabled builds and consumers
 before accepting the architecture requirements.
+
+## Beta.1 review (2026-11-11)
+
+**The boundaries stand:**
+- proto holds the wire types;
+- core holds exact values and pure operations, with no network, storage or
+  Python;
+- the client adapts the vendor at its boundary;
+- native storage is optional (ADR-0020);
+- Python depends on Rust, never the reverse.
+
+**Revised:** the workspace grew from five crates to eight, each for a
+measured or dependency reason, not a pattern:
+- **`praevis-thetadata-arrow`:** the columnar decoder and Parquet sink.
+  Arrow and Parquet stay out of core.
+- **`praevis-thetadata-stream`:** the Terminal WebSocket adapter
+  (ADR-0018), so history users never pull a WebSocket dependency.
+- **`praevis-thetadata-py`:** the PyO3 package, unpublished on crates.io.

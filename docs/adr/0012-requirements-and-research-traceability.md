@@ -1,6 +1,6 @@
 # ADR-0012: central outcomes, component detail, and source traceability
 
-Status: Proposed. Date: 2026-10-04. Owner: Praevis-Quant maintainers.
+Status: **Accepted** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Owner: Praevis-Quant maintainers.
 Requirements: [EOD-L2-012](../requirements/L2-stock-eod.md) and
 [EOD-L3-028](../requirements/L3-stock-eod.md);
 existing AUTH requirement IDs and definitions remain unchanged.
@@ -81,3 +81,18 @@ ADR status convention; they do not change the accepted auth baseline.
   [coverage matrix](../research/python-1.0.12-catalog.md).
 - [Current repository checker](../../tools/check_repository.py), which should
   not be mistaken for a complete feature-to-test traceability checker.
+
+## Beta.1 review (2026-11-11)
+
+Followed as written:
+- **Central requirements:** they stay central (no crate-local requirement
+  trees were needed).
+- **The checker:** `tools/check_repository.py` audits IDs, parents and
+  origins.
+- **Inventory:** it is never reduced. The 1.0.12 inventory (531 items)
+  stays checked, and the 1.0.17 baseline has 623.
+
+**Revised for generated endpoints:** these are traced by the generated
+coverage table ([`docs/endpoints/coverage.md`](../endpoints/coverage.md))
+instead of per-endpoint L1/L2/L3 rows, as the performance plan's process
+simplification decided.

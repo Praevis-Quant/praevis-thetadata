@@ -1,6 +1,6 @@
 # ADR-0016: optional local filtering and projection
 
-Status: Proposed. Date: 2026-10-04. Owner: core/client maintainers.
+Status: **Proposed; deferred, not implemented** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Owner: core/client maintainers.
 Origin: **Rust enhancement**; not a Python 1.0.12 query feature or service promise.
 Requirements: [EXT-L2-003 and EXT-L3-005 through EXT-L3-007](../requirements/enhancements.md).
 
@@ -47,3 +47,13 @@ SQL/dataframe engines or filtering in generated requests add dependencies and
 scope before a demonstrated need. Benchmark no-op and selective cases; more
 functionality is not automatically faster. Filtering remains planned, with
 no fixed EOD column vocabulary or implementation promised by this ADR.
+
+## Beta.1 review (2026-11-11)
+
+**Not built, and not part of the beta.1 surface.** Output is now Arrow
+(ADR-0014), so callers can filter and project with Arrow or Polars compute
+after delivery.
+
+A native transform plan stays a possible later enhancement. EXT-L3-005 to
+EXT-L3-007 stay planned. This ADR should be accepted or withdrawn when that
+work is selected.

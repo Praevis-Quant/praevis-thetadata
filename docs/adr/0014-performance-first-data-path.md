@@ -1,6 +1,6 @@
 # ADR-0014: numeric batches and measured consumer delivery
 
-Status: Proposed. Date: 2026-10-04. Owner: core/client maintainers.
+Status: **Accepted with revisions** (beta.1 review, 2026-11-11; [notes](#beta1-review-2026-11-11)). Proposed 2026-10-04. Owner: core/client maintainers.
 Origin: **Rust enhancement**, not required for Python dataframe parity.
 Requirements: [PERF L1/L2/L3](../requirements/performance.md).
 
@@ -64,3 +64,21 @@ evidence. The measurement and resource-policy gate in EOD-L3-023 remains open;
 this ADR adds first-batch and
 adapter-cost criteria and selects the numeric-path direction before coding.
 See the [architecture review](../research/architecture-performance-review.md).
+
+## Beta.1 review (2026-11-11)
+
+**The principles stand:**
+- measure before and after;
+- keep the data path numeric;
+- format only at an adapter.
+
+**What shipped:**
+- **`DataBatch`** in core, with `stock_eod_batches` and a `Table` adapter
+  over it, as proposed.
+- **The approved [performance plan](../architecture/performance-plan.md)
+  then made Arrow the main path.** `praevis-thetadata-arrow`'s
+  `ColumnarDecoder` decodes messages straight into Arrow builders for
+  `query()`, `job()`, the Parquet sink and the Python package.
+  - The evidence and gates are the P0/P1 records and the D-B decode
+    benchmark rule.
+  - `DataBatch` stays the numeric path of the stock EOD stream.
