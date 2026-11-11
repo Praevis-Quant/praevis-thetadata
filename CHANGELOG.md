@@ -50,8 +50,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **Frozen:** auth, core, arrow with the Parquet sink, the client's
     `query()`/`job()`/scheduler/`RequestOptions`/generated endpoints, and the
     Python package (vendor-named methods plus `query`/`batches`/`to_parquet`).
+  - **Also frozen:** the auth CLI (its commands, flags, exit codes and JSON
+    output).
   - **Not frozen:** the stream crate stays experimental. Raw gRPC access
-    (`stream_raw`, `raw_client`, `RawStream`) stays low-level and unstable.
+    (`stream_raw`, `raw_client`, `RawStream`) and the proto crate (generated
+    tonic types) stay low-level and unstable.
   - **What "frozen" means before 1.0:** no breaking change without a
     deliberate new prerelease version and release notes.
 - **W10 full trade stream across the close run-up recorded**
