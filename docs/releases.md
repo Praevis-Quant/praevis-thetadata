@@ -48,7 +48,8 @@ new prerelease version and release notes.
 
 **Not frozen:**
 - **`praevis-thetadata-stream` stays experimental.** Linux evidence is
-  pending, and the event sequence (#136) is held.
+  pending, and the event sequence (#136) is held (closed and parked on
+  2026-11-11; it can be reopened).
 - **Raw gRPC access stays low-level and unstable:** `stream_raw`,
   `raw_client` and `RawStream`. They expose tonic types.
 
@@ -171,7 +172,7 @@ windows, streaming decode, zero-copy, and admission reservation.
 | Option | What | Cost | Effect on the bound |
 | --- | --- | --- | --- |
 | **A. Ship alpha.3 with item 8 open, moved to beta.1** | Keep "only accounted allocations are bounded" everywhere, document the per-stream message term next to every ceiling, and resolve it before the beta.1 API freeze | none now | The stated ceilings stay accounted-only, with the tonic term named explicitly |
-| **B. Hold alpha.3 for option 2a** | Implement 2a in the `query()` and EOD paths (from `exp/transport-own-framing`), add a bound test, and run the before/after benchmark protocol and the memory runner on Windows and Linux | about 2 PRs plus a benchmark cycle; alpha.3 waits for the results | Memory bounded by configuration, including transport, pending the bound test |
+| **B. Hold alpha.3 for option 2a** | Implement 2a in the `query()` and EOD paths (from the [`archive/exp-transport-own-framing`](https://github.com/Praevis-Quant/praevis-thetadata/tree/archive/exp-transport-own-framing) prototype), add a bound test, and run the before/after benchmark protocol and the memory runner on Windows and Linux | about 2 PRs plus a benchmark cycle; alpha.3 waits for the results | Memory bounded by configuration, including transport, pending the bound test |
 | **C. Hold alpha.3 for 2b** | Streaming decode into the Arrow builders | high; a new incremental parser over adversarial input | As B, minus about one message per active job |
 
 **Recommendation: A.**

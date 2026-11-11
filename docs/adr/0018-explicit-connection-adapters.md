@@ -411,7 +411,8 @@ See [connection inventory, diagram and sources](../connections.md),
 
 **The stream crate stays experimental and outside the beta.1 freeze.**
 - Linux evidence is pending.
-- The event sequence (#136) is held.
+- The event sequence (#136) is closed and parked (2026-11-11), not
+  rejected; it can be reopened.
 - Its live records are above.
 
 **Still proposed, not implemented:**

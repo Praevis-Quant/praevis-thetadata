@@ -130,6 +130,12 @@ wheels are attached to the GitHub release, not published to PyPI.
 
 ### Changed
 
+- **Branch cleanup recorded** (docs only).
+  - **The item-8 prototypes** are linked through their archive tags
+    (`archive/exp-transport-own-framing`, `-payload-in-place`, `-windows`),
+    since their branches are being deleted.
+  - **#136** (the reader-assigned `Event` sequence) is closed and parked,
+    not rejected: it can be reopened.
 - **ADRs reviewed for beta.1** (checklist item 1). Each Proposed ADR now
   has a status and ends with a short "Beta.1 review" note saying what
   stands and what shipped differently. The original rationale is
