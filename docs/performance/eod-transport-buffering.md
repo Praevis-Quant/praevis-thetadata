@@ -54,7 +54,7 @@ about 24 MiB), NONE, numeric engine, default policy (2 jobs, 16 streams),
 ### Controls that rule out other layers
 
 - **h2 receive buffering is bounded by the window, and it is not the main
-  cost.** In the `exp/transport-windows` branch the stream window was varied
+  cost.** In the [`archive/exp-transport-windows`](https://github.com/Praevis-Quant/praevis-thetadata/tree/archive/exp-transport-windows) prototype the stream window was varied
   (connection window = (streams + 1) × stream window, as today):
 
   | Stream window | tonic retained | Rust heap peak | `text-24mib` × 16 time | `large-mixed` × 16 heap / time |
@@ -85,14 +85,15 @@ adds a redundant full copy (`FrameDecoder`) per active job.
 
 ## Phase 2: design alternatives
 
-Each prototype is on its own unmerged branch, measured with the same harness
-(aarch64; runner results below):
+Each prototype was built on its own unmerged branch, measured with the same
+harness (aarch64; runner results below). The branches are archived as annotated
+tags on the same commits (2026-11-11):
 
-- [`exp/transport-windows`](https://github.com/Praevis-Quant/praevis-thetadata/tree/exp/transport-windows)
+- [`archive/exp-transport-windows`](https://github.com/Praevis-Quant/praevis-thetadata/tree/archive/exp-transport-windows)
   (option 1, an environment override of the stream window);
-- [`exp/transport-own-framing`](https://github.com/Praevis-Quant/praevis-thetadata/tree/exp/transport-own-framing)
+- [`archive/exp-transport-own-framing`](https://github.com/Praevis-Quant/praevis-thetadata/tree/archive/exp-transport-own-framing)
   (option 2a);
-- [`exp/transport-payload-in-place`](https://github.com/Praevis-Quant/praevis-thetadata/tree/exp/transport-payload-in-place)
+- [`archive/exp-transport-payload-in-place`](https://github.com/Praevis-Quant/praevis-thetadata/tree/archive/exp-transport-payload-in-place)
   (option 3).
 
 Option 2a's raw runner memory reports:
@@ -101,10 +102,10 @@ Option 2a's raw runner memory reports:
 | # | Option | Branch | Peak Rust heap, 1 / 16 queries (`text-24mib`) | Throughput | Complexity | Risks | Public API | Total memory bounded? |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | — | **Current** | `main` | 74-77 / 501-508 MiB | baseline | — | — | — | No: per stream × largest message |
-| 1 | Small HTTP/2 windows | `exp/transport-windows` | unchanged / 457 MiB at 64 KiB | -18% on 24 MiB messages at 64 KiB | trivial | the stall fix's receive-credit invariant must hold for any window | none | **No**: tonic's buffer is independent of the window |
-| 2a | **Own message framing in our body layer, bypassing tonic's buffer** | `exp/transport-own-framing` | **50 / 128 MiB** | Gate neutral. Large messages: Linux 11-17% faster, Windows up to about 8% slower in some cases (below) | small (about 60 lines in `framing.rs`/`envelope.rs`) | relies on tonic decoding each yielded frame before polling again (FIFO; covered by tests) | none | **Yes, by configuration** (see below), pending a bound test |
+| 1 | Small HTTP/2 windows | [`archive/exp-transport-windows`](https://github.com/Praevis-Quant/praevis-thetadata/tree/archive/exp-transport-windows) | unchanged / 457 MiB at 64 KiB | -18% on 24 MiB messages at 64 KiB | trivial | the stall fix's receive-credit invariant must hold for any window | none | **No**: tonic's buffer is independent of the window |
+| 2a | **Own message framing in our body layer, bypassing tonic's buffer** | [`archive/exp-transport-own-framing`](https://github.com/Praevis-Quant/praevis-thetadata/tree/archive/exp-transport-own-framing) | **50 / 128 MiB** | Gate neutral. Large messages: Linux 11-17% faster, Windows up to about 8% slower in some cases (below) | small (about 60 lines in `framing.rs`/`envelope.rs`) | relies on tonic decoding each yielded frame before polling again (FIFO; covered by tests) | none | **Yes, by configuration** (see below), pending a bound test |
 | 2b | Full streaming decode (chunk-sized frames) | not prototyped | estimated 2a minus about one message per active job | unknown | high: incremental preflight, decoder and ZSTD | a new incremental parser over adversarial input | none | yes |
-| 3 | Remove our extra copies (in-place payload) | `exp/transport-payload-in-place` | 73 / 501 MiB: **no peak change** | not measured: no memory effect | trivial | none | none | no |
+| 3 | Remove our extra copies (in-place payload) | [`archive/exp-transport-payload-in-place`](https://github.com/Praevis-Quant/praevis-thetadata/tree/archive/exp-transport-payload-in-place) | 73 / 501 MiB: **no peak change** | not measured: no memory effect | trivial | none | none | no |
 | 4 | Reserve the transport buffer in admission | analysis | like a dynamic stream cap: about 200 MiB at an effective 4 streams ([cap sweep](eod-memory-profile.md)) | lowers concurrency for large messages | moderate | must reserve the largest possible message for a stream's whole lifetime, because tonic retains until drop | none | yes, by lowering concurrency |
 | 5 | Upstream tonic: release the decode buffer when it empties | upstream issue/PR | as 2a, if accepted | — | external | timeline outside our control | none | yes |
 
