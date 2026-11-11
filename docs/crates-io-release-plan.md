@@ -5,6 +5,70 @@ Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 on 2026-11-08, each after owner approval. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
 
+## Beta.1 publication checklist and order (prepared 2026-11-11)
+
+**Approved by the user, conditional on the remaining live checks.** The user
+runs `cargo publish` locally, with the token never in argv or logs.
+Scope: [beta.1 scope record](releases.md#beta1-scope-record-user-2026-11-10);
+the API-freeze checklist must be complete.
+
+**Same crate set as alpha.3:**
+- **Seven crates are published.** `praevis-thetadata-stream` is published
+  but documented as experimental and outside the freeze.
+  `praevis-thetadata-proto` is published and documented as unstable.
+- **`praevis-thetadata-py` is not published** (`publish = false`). Its abi3
+  wheels go to the GitHub release only.
+- **Nothing else** is unpublished, or newly published.
+
+**Before publishing:**
+1. **The live checks pass:**
+   - `err-notfound-001` (`live_p0 not-found`, the error review's open
+     question): **done 2026-11-11.** The two cases are identical, so
+     `NoData` stands as documented;
+   - the WSL Linux run.
+
+   The checklist's error item is then ticked or recorded.
+2. **This bump PR is merged last,** after the API-freeze PRs, with Verify,
+   the Python package job and the packaging rehearsal green on Windows and
+   Linux. The rehearsal packages all seven crates, stages them in the order
+   below, and builds the external consumers outside the workspace (the
+   client consumer compiles the frozen surface). It also installs the CLI.
+   The Python job builds the abi3 wheels, installs them into a clean
+   environment and runs the consumer examples.
+3. **Archive review:** the per-package file lists and hashes from the
+   rehearsal. Check the LICENSE and NOTICE copies (plus `LICENSE.upstream`
+   in proto), and that there are no `artifacts/`, captures, `.env` files,
+   keys or report files.
+4. **The maintainer's final local review** on the merged commit, then the
+   user's go-ahead for that exact commit.
+
+**Publish, in dependency order,** each step waiting until the index serves
+the previous crates:
+
+| Wave | Crates | Depends on |
+| ---: | --- | --- |
+| 1 | `praevis-thetadata-proto`, `praevis-thetadata-core`, `praevis-thetadata-auth` | — |
+| 2 | `praevis-thetadata-arrow` | core, proto |
+| 3 | `praevis-thetadata-client` | auth, arrow, core, proto |
+| 4 | `praevis-thetadata-cli`, `praevis-thetadata-stream` | auth; none (the client is only a stream dev-dependency) |
+
+**After publishing:**
+1. **Tag:** an annotated tag `v0.1.0-beta.1` on the published commit.
+2. **GitHub release:** from the [draft](release-draft-0.1.0-beta.1.md),
+   marked as a prerelease. Attach the Windows and Linux abi3 wheels from
+   that commit's CI run. **Not on PyPI.**
+3. **Checks on Windows and Linux:**
+   - `cargo install praevis-thetadata-cli --version 0.1.0-beta.1 --locked`
+     prints the version;
+   - the crates.io-only consumers build;
+   - the downloaded `.crate` hashes match the registry;
+   - docs.rs builds;
+   - `pip install` of each attached wheel into a clean venv imports, with
+     `__version__` `0.1.0-beta.1`.
+4. **Records:** a "Publication record: 0.1.0-beta.1" section here; the
+   CHANGELOG section dated; the beta.1 row of `releases.md` marked
+   released.
+
 ## Install and build outside the workspace (beta.1 record, 2026-11-11)
 
 What CI proves on every change, on Windows and Linux. Nothing is published,

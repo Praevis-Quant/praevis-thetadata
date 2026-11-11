@@ -68,7 +68,7 @@ question. Sources:
 | Rows per response frame | Observed: one | All multi-day runs | Any batch size within `DecodeLimits` is accepted |
 | Non-trading days | Observed: omitted | No weekend or holiday rows in range | Not synthesized |
 | Range with no trading days | Observed: `NOT_FOUND` (5) at headers, zero frames | Weekend (6–7 Jan 2024) and holiday (1 Jan 2024) | `EodError::NoData`; successful empty completion (EOD-L3-012) stays supported but was not seen on PROD |
-| Unknown symbol | Observed: `NOT_FOUND` (5) at headers | `ZZZZNOTREAL` | `EodError::NoData`. **Unresolved:** at the status level the service does not distinguish an unknown symbol from no trading days, and vendor text is not parsed. The beta.1 review (2026-11-11) keeps this meaning. `live_p0 not-found` checks whether the status metadata or details tell the two apart |
+| Unknown symbol | Observed: `NOT_FOUND` (5) at headers | `ZZZZNOTREAL` | `EodError::NoData`. **Resolved: indistinguishable.** `err-notfound-001`, main b37e62b, Windows, 2026-11-11: the same code, the same status details and the same message for an unknown symbol and for a range with no trading days. Callers check the symbol themselves (list symbols) |
 | Determinism of a past day's row | Observed: identical | 2024-01-02 AAPL frame byte-identical on 2026-10-04, 2026-11-01 and 2026-11-02 | None assumed |
 | Split adjustment | Observed: **unadjusted** | NVDA 10:1: close(2024-06-07)/close(2024-06-10) = 9.926 | Values returned as sent; no adjustment |
 | Dividend and other corporate-action adjustment | **Unresolved** | No case run | None |

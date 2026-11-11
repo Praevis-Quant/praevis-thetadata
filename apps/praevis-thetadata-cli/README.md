@@ -4,10 +4,12 @@ Independent authentication application for ThetaData. This **binary package**
 builds the `praevis-thetadata` executable; it is separate from the reusable `praevis-thetadata-auth`
 library and the experimental market-data client. It has no market-data query commands yet.
 
-> **Independent and experimental.** This is an unofficial Rust project. It is not
+> **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-alpha.3` is an early
-> prerelease and **not** a full port of the vendor Python package.
+> identifies the service it interoperates with. `0.1.0-beta.1` is a prerelease.
+> Its commands, flags, exit codes and JSON output are **frozen for beta.1**
+> ([scope](https://github.com/Praevis-Quant/praevis-thetadata/blob/main/docs/releases.md#beta1-scope-record-user-2026-11-10)).
+> It is **not** a full port of the vendor Python package.
 
 **Supported platforms:** Windows (Credential Manager) and Linux (Secret Service
 over D-Bus, with an unlocked persistent keyring). On other platforms,
@@ -21,11 +23,11 @@ install. The package is `praevis-thetadata-cli`; the executable is
 
 ## Install
 
-The experimental `0.1.0-alpha.3` prerelease is on crates.io. Prereleases are
+The `0.1.0-beta.1` prerelease is on crates.io. Prereleases are
 never selected implicitly, so name the version:
 
 ```text
-cargo install praevis-thetadata-cli --version 0.1.0-alpha.3 --locked
+cargo install praevis-thetadata-cli --version 0.1.0-beta.1 --locked
 praevis-thetadata --help
 ```
 
@@ -57,7 +59,7 @@ The CLI needs no Java, gRPC or market-data decoding dependencies.
 See the [workspace guide](https://github.com/Praevis-Quant/praevis-thetadata#build-and-authenticate)
 for setup, credential precedence, profiles, environments and exit codes. For
 embedding authentication in Rust, use the library rather than invoking this CLI.
-This alpha is experimental: behavior and output may change between prereleases.
+Its commands, flags, exit codes and JSON output are frozen for beta.1: no breaking change without a new prerelease version and release notes.
 
 Licensed under Apache-2.0. The package includes `LICENSE` and `NOTICE`; see also the repository
 [LICENSE](https://github.com/Praevis-Quant/praevis-thetadata/blob/main/LICENSE) and

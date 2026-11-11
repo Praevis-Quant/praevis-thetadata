@@ -1,14 +1,18 @@
 # praevis-thetadata-client
 
-Experimental gRPC client for ThetaData market data. It reuses a session from
-`praevis-thetadata-auth` and offers raw RPC helpers plus a typed stock end-of-day
-(EOD) stream with finite limits on its own accounted decode allocations.
+gRPC client for ThetaData market data: generated typed requests for all 100
+RPCs, exact Arrow `query()` and `job()` streams, a tier-aware scheduler and
+Parquet output, plus the typed stock end-of-day (EOD) stream. It reuses a
+session from `praevis-thetadata-auth`.
 
-> **Independent and experimental.** This is an unofficial Rust project. It is not
+> **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-alpha.3` is an early
-> prerelease: APIs may change between alphas, and it is **not** a full port of, or
-> drop-in replacement for, the vendor Python package. The Rust version is
+> identifies the service it interoperates with. `0.1.0-beta.1` is a prerelease
+> whose public API is **frozen for beta.1**, except raw access
+> (`raw_client`, `stream_raw`, `RawStream`), which stays low-level and unstable
+> ([scope](../../docs/releases.md#beta1-scope-record-user-2026-11-10)): no breaking
+> change without a new prerelease version and release notes. It is **not** a
+> full port of, or drop-in replacement for, the vendor Python package. The Rust version is
 > independent of the tracked Python compatibility baseline (currently 1.0.17).
 
 ## Status and scope
@@ -91,7 +95,7 @@ Experimental gRPC client for ThetaData market data. It reuses a session from
   | `Connection` | The channel or transport failed | Synthetic tests |
   | `Deadline`, `Idle` | The local whole-request budget (queue time included) or the idle gap between messages ran out | Synthetic tests |
   | `Cancelled` | The caller cancelled | Synthetic tests |
-  | `NoData` | The service answered `NOT_FOUND` | **Live (stock EOD, FREE, 2026-11-02):** an unknown symbol and a range with no trading days (a weekend, a holiday) both answer `NOT_FOUND` at the headers, so both are `NoData`. Vendor text is never parsed to tell them apart. A stream that ends cleanly with no rows is **not** `NoData`. In a job, empty parts are skipped, and the job is `NoData` only if every part was |
+  | `NoData` | The service answered `NOT_FOUND` | **Live (stock EOD, FREE, 2026-11-02):** an unknown symbol and a range with no trading days (a weekend, a holiday) both answer `NOT_FOUND` at the headers, so both are `NoData`. **They are indistinguishable** (`err-notfound-001`, main b37e62b, Windows, 2026-11-11): the same code, the same details and the same message. To tell them apart, check the symbol yourself, for example with `StockListSymbols`/`IndexListSymbols` (Python: `stock_list_symbols`, `index_list_symbols`). A stream that ends cleanly with no rows is **not** `NoData`. In a job, empty parts are skipped, and the job is `NoData` only if every part was |
   | `SessionEnded` | `UNAUTHENTICATED`: the session ended | **Live** (`opt-session-001`): a second login for the account ends the first session |
   | `Remote(code)` | Any other gRPC status, with its code | **Live:** `PermissionDenied` for every tier refusal (it is never `NoData`), and `InvalidArgument` for one flat-file date. `Internal` was seen once, unexplained. `ResourceExhausted` and `Unavailable` are retried at open first |
   | `Decode`, `Schema`, `Unsupported`, `Resource` | The response broke a local rule: malformed data, a column changing type, an unsupported feature (a flat-file manifest), or a size limit | Synthetic tests and the adversarial corpus |
@@ -111,7 +115,7 @@ Prereleases are never selected implicitly, so pin the version:
 
 ```toml
 [dependencies]
-praevis-thetadata-client = "=0.1.0-alpha.3"
+praevis-thetadata-client = "=0.1.0-beta.1"
 ```
 
 ## Supported platforms

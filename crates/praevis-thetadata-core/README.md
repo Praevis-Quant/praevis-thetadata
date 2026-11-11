@@ -4,11 +4,12 @@ Transport-independent value types shared by the praevis-thetadata clients:
 exact prices, validated timestamps, generic tables and immutable numeric
 batches.
 
-> **Independent and experimental.** This is an unofficial Rust project. It is not
+> **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-alpha.3` is an early
-> prerelease: APIs may change between alphas, and it is **not** a full port of, or
-> drop-in replacement for, the vendor Python package. The Rust version is
+> identifies the service it interoperates with. `0.1.0-beta.1` is a prerelease
+> whose public API is **frozen for beta.1** ([scope](../../docs/releases.md#beta1-scope-record-user-2026-11-10)): no breaking
+> change without a new prerelease version and release notes. It is **not** a
+> full port of, or drop-in replacement for, the vendor Python package. The Rust version is
 > independent of the tracked Python compatibility baseline (currently 1.0.17).
 
 ## What it does
@@ -30,7 +31,7 @@ Prereleases are never selected implicitly, so pin the version:
 
 ```toml
 [dependencies]
-praevis-thetadata-core = "=0.1.0-alpha.3"
+praevis-thetadata-core = "=0.1.0-beta.1"
 ```
 
 ## Supported platforms
