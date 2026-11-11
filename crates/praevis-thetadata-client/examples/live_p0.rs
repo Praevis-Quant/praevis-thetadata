@@ -123,6 +123,16 @@ enum Command {
     /// One login, then the same small request after growing idle gaps:
     /// does an idle connection fail the next request, and with which code?
     IdleReconnect(IdleReconnectArgs),
+    /// Beta.1 error review: an unknown symbol against a range with no
+    /// trading days. Two stock EOD requests, each through `query()` and the
+    /// raw stub: are they told apart by anything but the vendor's text?
+    NotFound(NotFoundArgs),
+}
+
+#[derive(Args)]
+struct NotFoundArgs {
+    #[command(flatten)]
+    common: Common,
 }
 
 #[derive(Args)]
@@ -2344,6 +2354,95 @@ async fn idle_reconnect(
     Ok(())
 }
 
+/// The beta.1 error review (item 6): `QueryError::NoData` covers both an
+/// unknown symbol and a range with no trading days, because both answered
+/// `NOT_FOUND` (2026-11-02). This asks whether anything other than the
+/// vendor's text tells them apart.
+///
+/// Two stock EOD requests inside the FREE window, each sent through `query()`
+/// (the category a caller sees) and through the raw stub (the full status).
+/// Recorded per case:
+/// - the gRPC code;
+/// - the names of the status metadata keys (never their values);
+/// - the length of the binary status details.
+///
+/// Then: whether the two messages and the two details are byte-identical.
+/// The text itself goes to the private report only.
+async fn not_found(client: &ThetaClient, report: &mut Report, pause: Duration) -> Result<(), Stop> {
+    let cases = [
+        ("unknown-symbol", "ZZZZNOTREAL", "2024-01-02", "2024-01-05"),
+        ("no-trading-days", "AAPL", "2024-01-06", "2024-01-07"),
+    ];
+    let mut statuses = Vec::new();
+    for (index, (case, symbol, start, end)) in cases.into_iter().enumerate() {
+        if index > 0 {
+            tokio::time::sleep(pause).await;
+        }
+        let request = typed::StockHistoryEod::new(symbol, date(start), date(end));
+        let query = match client.query(&request).await {
+            Ok(stream) => match stream.collect().await {
+                Ok(batches) => format!(
+                    "OK ({} rows)",
+                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                ),
+                Err(error) => format!("{error:?}"),
+            },
+            Err(error) => format!("{error:?}"),
+        };
+        tokio::time::sleep(pause).await;
+        let raw = async {
+            let mut stream = client.stream_raw(&request).await?;
+            let mut messages = 0u32;
+            while stream.message().await?.is_some() {
+                messages += 1;
+            }
+            Ok::<_, tonic::Status>(messages)
+        }
+        .await;
+        let mut out = serde_json::json!({"case": case, "query": query});
+        match raw {
+            Ok(messages) => {
+                out["status"] = "OK".into();
+                out["messages"] = messages.into();
+            }
+            Err(status) => {
+                let mut keys: Vec<String> = status
+                    .metadata()
+                    .keys()
+                    .map(|key| match key {
+                        tonic::metadata::KeyRef::Ascii(k) => k.as_str().to_owned(),
+                        tonic::metadata::KeyRef::Binary(k) => k.as_str().to_owned(),
+                    })
+                    .collect();
+                keys.sort();
+                out["status"] = status_name(status.code()).into();
+                out["metadata_keys"] = keys.into();
+                out["details_bytes"] = status.details().len().into();
+                // Private report only, for a person to read; never committed.
+                out["status_text"] = status_text(&status).into();
+                statuses.push(status);
+            }
+        }
+        eprintln!(
+            "{case:<16} query {}, raw {}",
+            out["query"].as_str().unwrap_or("?"),
+            out["status"].as_str().unwrap_or("?")
+        );
+        report.results.push(out);
+    }
+    if let [a, b] = statuses.as_slice() {
+        let same = serde_json::json!({
+            "case": "comparison",
+            "same_code": a.code() == b.code(),
+            "same_message": a.message() == b.message(),
+            "same_details": a.details() == b.details(),
+        });
+        eprintln!("comparison: {same}");
+        report.results.push(same);
+    }
+    Ok(())
+}
+
 /// One endpoint, ONE request: every message of the same response decoded by
 /// the columnar decoder (the one `query()` uses) and by the legacy decoder,
 /// compared exactly. Unlike [`check`], the two sides see identical bytes, so
@@ -2632,6 +2731,7 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::SplitProbe(options) => (&options.common, "split-probe"),
         Command::OptionChecks(options) => (&options.common, "option-checks"),
         Command::IdleReconnect(options) => (&options.common, "idle-reconnect"),
+        Command::NotFound(options) => (&options.common, "not-found"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -2699,6 +2799,7 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::Workload(options) => workload(options, &client, &mut report).await,
         Command::SplitProbe(options) => split_probe(options, &client, &mut report).await,
         Command::IdleReconnect(options) => idle_reconnect(options, &client, &mut report).await,
+        Command::NotFound(_) => not_found(&client, &mut report, Duration::from_secs(4)).await,
         Command::OptionChecks(options) => {
             // Flat files through the capped client, as in the PRO map.
             match connect_with_limit(client.session(), FLAT_FILE_PROBE_LIMIT).await {
@@ -3412,6 +3513,33 @@ mod tests {
         assert_eq!(report.results[2]["idle_s"], 0);
         // query() and the raw stub each sent every request.
         assert_eq!(server.requests.lock().unwrap().len(), 6);
+    }
+
+    #[tokio::test]
+    async fn not_found_records_codes_and_compares_without_committing_text() {
+        let server = fixture::Fixture::start(fixture::Script {
+            initial_error: Some(tonic::Status::not_found("no data")),
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let mut report = Report::default();
+        not_found(&client, &mut report, Duration::ZERO)
+            .await
+            .unwrap();
+        assert_eq!(report.results.len(), 3);
+        for case in &report.results[..2] {
+            assert_eq!(case["query"], "NoData");
+            assert_eq!(case["status"], "NotFound");
+            assert_eq!(case["details_bytes"], 0);
+            assert!(case["metadata_keys"].is_array());
+        }
+        assert_eq!(
+            report.results[2],
+            serde_json::json!({"case": "comparison", "same_code": true,
+                "same_message": true, "same_details": true})
+        );
+        // Each case once through query() and once through the raw stub.
+        assert_eq!(server.requests.lock().unwrap().len(), 4);
     }
 
     #[tokio::test]

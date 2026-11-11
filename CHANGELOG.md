@@ -17,6 +17,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Added
 
+- **Error categories reviewed for beta.1** (checklist item 6). No meaning
+  changed.
+  - **The client README** documents each `QueryError` category, when it
+    happens and its evidence (live or synthetic).
+  - **`QueryError::NoData`'s documentation** states its frozen meaning: the
+    service's `NOT_FOUND`, which on the stock EOD covers both an unknown
+    symbol and a range with no trading days. A clean empty stream is not
+    `NoData`.
+  - **`live_p0 not-found`** sends two stock EOD requests (an unknown symbol,
+    and a weekend) through `query()` and the raw stub. It records the codes,
+    the status metadata key names and the details length, and whether the
+    two messages and details are identical. The text goes to the private
+    report only.
 - **`latency --full-trades`** (stream example; W10 full-stream load). It
   subscribes to the full trade stream instead of `--contracts` and records
   per-event latency for quotes and trades on the same histogram as the

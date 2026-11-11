@@ -462,6 +462,10 @@ is frozen at `0.1.0-beta.1`.
 - [ ] Install and build outside the workspace.
 - [ ] Document supported platforms, native-store prerequisites, resource policy and compatibility boundaries.
 - [ ] Review the public error categories (`QueryError`, and `EodError` for the EOD stream; `NoData` for both no-data and unknown symbol) against the observed service semantics.
+      **Reviewed 2026-11-11** (client README, "Errors"): no meaning changed.
+      `NoData` stays `NOT_FOUND`, which covers both cases. One open question
+      is waiting on a live run of `live_p0 not-found`: does anything but the
+      vendor's text tell the two apart?
 
 ## Checklist for every release candidate
 
