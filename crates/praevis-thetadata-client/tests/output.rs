@@ -6,8 +6,7 @@ mod support;
 
 use chrono::NaiveDate;
 use praevis_thetadata_client::{
-    ClientConfig, ParquetOptions, ParquetOutputError, QueryError, SchedulerPolicy, SinkError,
-    ThetaClient, endpoints,
+    ClientConfig, ParquetOptions, ParquetOutputError, QueryError, SinkError, ThetaClient, endpoints,
 };
 use praevis_thetadata_proto::endpoints::{
     self as wire, DataTable, DataValue, DataValueList, data_value::DataType as Wire,
@@ -44,8 +43,6 @@ async fn connect(fixture: &Fixture) -> ThetaClient {
         support::session().await,
     )
     .await
-    .unwrap()
-    .with_scheduler(SchedulerPolicy::default().with_per_minute(None))
     .unwrap()
 }
 fn dir(name: &str) -> PathBuf {

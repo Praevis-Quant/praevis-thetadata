@@ -202,8 +202,8 @@ struct WorkloadArgs {
     /// Comma-separated workload IDs from `workloads.json`.
     #[arg(long)]
     workloads: String,
-    /// Requests in flight at once; the client's tier scheduler (PRO: 8) is
-    /// the upper bound.
+    /// Requests in flight at once, at most 8 (PRO's documented limit; the
+    /// client itself no longer limits them).
     #[arg(long, default_value_t = 8, value_parser = clap::value_parser!(u32).range(1..=8))]
     concurrency: u32,
     #[arg(long, default_value_t = 3, value_parser = clap::value_parser!(u32).range(1..=10))]
@@ -2861,7 +2861,7 @@ async fn connect(session: Session) -> Result<ThetaClient, EodError> {
 async fn connect_with_limit(session: Session, limit: usize) -> Result<ThetaClient, EodError> {
     ThetaClient::with_eod_policy(
         ClientConfig::default()
-            .with_request_timeout(Duration::from_secs(120))
+            .with_request_timeout(Some(Duration::from_secs(120)))
             .with_max_batch_bytes(limit),
         session,
         EodPolicy::default(),
@@ -3118,13 +3118,8 @@ mod tests {
         // Option RPCs reach the stock-EOD-only fixture and are refused there;
         // every request of each workload is still sent and recorded once.
         let server = fixture::Fixture::start(fixture::Script::default());
-        // The fixture login has no tier (FREE: 20 a minute); 26 requests here.
-        let client = fixture_client(&server)
-            .await
-            .with_scheduler(praevis_thetadata_client::SchedulerPolicy::for_tier(
-                praevis_thetadata_client::Tier::Pro,
-            ))
-            .unwrap();
+        // No scheduler or rate limit (ADR-0021): 26 requests at once is fine.
+        let client = fixture_client(&server).await;
         let args = WorkloadArgs {
             common: entitlement_args(&[], 5).common,
             workloads: "W5c,S2".into(),
@@ -3227,14 +3222,8 @@ mod tests {
         // The fixture serves stock EOD only: every option RPC is refused
         // there, which is enough to see which path each one takes.
         let server = fixture::Fixture::start(fixture::Script::default());
-        // The fixture login has no tier (FREE: 20 a minute); query() is
-        // scheduled, so use PRO's limits.
-        let client = fixture_client(&server)
-            .await
-            .with_scheduler(praevis_thetadata_client::SchedulerPolicy::for_tier(
-                praevis_thetadata_client::Tier::Pro,
-            ))
-            .unwrap();
+        // No scheduler or rate limit (ADR-0021).
+        let client = fixture_client(&server).await;
         let flat_files = fixture_client_with_limit(&server, FLAT_FILE_PROBE_LIMIT).await;
         // 5 lists, 14 snapshots, 26 history and 2 at-time requests are value
         // checks; the 3 (or 4) flat files are probes.

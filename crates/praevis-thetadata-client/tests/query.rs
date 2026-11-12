@@ -203,7 +203,7 @@ async fn idle_timeout_and_cancellation_are_terminal() {
         pause_before: Some((1, Duration::from_secs(5))),
         ..Default::default()
     });
-    let config = ClientConfig::default().with_idle_timeout(Duration::from_millis(200));
+    let config = ClientConfig::default().with_idle_timeout(Some(Duration::from_millis(200)));
     let client = connect(&fixture, config).await;
     let mut stream = client.query(&request()).await.unwrap();
     assert_eq!(sizes(&mut stream).await, (vec![2], Err(QueryError::Idle)));

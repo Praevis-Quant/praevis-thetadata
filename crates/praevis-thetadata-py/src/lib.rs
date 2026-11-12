@@ -1,6 +1,6 @@
 //! Python bindings: a thin pass-through over Arrow (P1 PR 6a, plan D.2).
 //!
-//! Every query runs in Rust (scheduler, transport, decoding into Arrow) with
+//! Every query runs in Rust (planning, transport, decoding into Arrow) with
 //! the GIL released. Results leave through the Arrow PyCapsule interface
 //! (`__arrow_c_stream__`, `__arrow_c_array__`), so pyarrow, Polars and pandas
 //! import the buffers without copying and Python creates no object per row.
@@ -18,7 +18,7 @@ use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment};
 use praevis_thetadata_client::endpoints::Endpoint;
 use praevis_thetadata_client::{
     ClientConfig, JobStream, ParquetOutputError, QueryError, QueryStream, RequestOptions,
-    SchedulerPolicy, ThetaClient, Tier, plan as plan_parts,
+    ThetaClient, plan as plan_parts,
 };
 use pyo3::create_exception;
 use pyo3::exceptions::{PyException, PyStopIteration, PyValueError};
@@ -75,6 +75,7 @@ fn kind(error: QueryError) -> &'static str {
         QueryError::Cancelled => "cancelled",
         QueryError::NoData => "no_data",
         QueryError::SessionEnded => "session_ended",
+        QueryError::Busy => "busy",
         QueryError::Remote(_) => "remote",
         QueryError::Decode => "decode",
         QueryError::Schema => "schema",
@@ -90,6 +91,7 @@ fn query_error(error: QueryError) -> PyErr {
     let code = match error {
         QueryError::Remote(code) => Some(format!("{code:?}")),
         QueryError::SessionEnded => Some("Unauthenticated".to_owned()),
+        QueryError::Busy => Some("ResourceExhausted".to_owned()),
         _ => None,
     };
     let args = (kind(error), error.to_string(), code);
@@ -108,7 +110,7 @@ fn output_error(error: ParquetOutputError) -> PyErr {
 }
 
 /// Per-call options from Python keywords: seconds as floats, all optional.
-/// The timeout covers time queued for a slot (see `RequestOptions`).
+/// No timeout applies unless one is given here or on the client.
 fn request_options(
     timeout: Option<f64>,
     idle_timeout: Option<f64>,
@@ -123,8 +125,8 @@ fn request_options(
             ))),
         }
     };
-    if concurrency == Some(0) {
-        return Err(PyValueError::new_err("concurrency: expected at least 1"));
+    if concurrency.is_some_and(|c| !(1..=64).contains(&c)) {
+        return Err(PyValueError::new_err("concurrency: expected 1 to 64"));
     }
     Ok(RequestOptions::default()
         .with_timeout(seconds("timeout", timeout)?)
@@ -277,7 +279,7 @@ struct Client {
 #[pymethods]
 impl Client {
     #[new]
-    #[pyo3(signature = (*, api_key = None, email = None, password = None, creds_file = None, environment = "prod", concurrency = None, per_minute = None, retries = 3, request_timeout = 300.0, idle_timeout = 60.0, _auth_url = None, _endpoint = None))]
+    #[pyo3(signature = (*, api_key = None, email = None, password = None, creds_file = None, environment = "prod", request_timeout = None, idle_timeout = None, _auth_url = None, _endpoint = None))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         py: Python<'_>,
@@ -286,11 +288,8 @@ impl Client {
         password: Option<String>,
         creds_file: Option<std::path::PathBuf>,
         environment: &str,
-        concurrency: Option<usize>,
-        per_minute: Option<u32>,
-        retries: u32,
-        request_timeout: f64,
-        idle_timeout: f64,
+        request_timeout: Option<f64>,
+        idle_timeout: Option<f64>,
         _auth_url: Option<String>,
         _endpoint: Option<String>,
     ) -> PyResult<Self> {
@@ -315,11 +314,16 @@ impl Client {
             "stage" => Environment::Stage,
             _ => return Err(PyValueError::new_err("environment: 'prod' or 'stage'")),
         };
-        let seconds = |name: &str, value: f64| {
-            Duration::try_from_secs_f64(value)
-                .ok()
-                .filter(|d| !d.is_zero())
-                .ok_or_else(|| PyValueError::new_err(format!("{name}: positive seconds")))
+        // None (the default, as in the vendor package): no limit.
+        let seconds = |name: &str, value: Option<f64>| -> PyResult<Option<Duration>> {
+            value
+                .map(|v| {
+                    Duration::try_from_secs_f64(v)
+                        .ok()
+                        .filter(|d| !d.is_zero())
+                        .ok_or_else(|| PyValueError::new_err(format!("{name}: positive seconds")))
+                })
+                .transpose()
         };
         let mut config = ClientConfig::default()
             .with_request_timeout(seconds("request_timeout", request_timeout)?)
@@ -353,11 +357,9 @@ impl Client {
                 let session = auth.authenticate(&credentials).await.map_err(|_| {
                     QueryFailed::new_err(("authentication", "authentication failed"))
                 })?;
-                let client = ThetaClient::with_session(config, session)
+                ThetaClient::with_session(config, session)
                     .await
-                    .map_err(|_| query_error(QueryError::Connection))?;
-                let policy = scheduler_policy(client.tier(), concurrency, per_minute, retries);
-                client.with_scheduler(policy).map_err(query_error)
+                    .map_err(|_| query_error(QueryError::Connection))
             })
         })?;
         Ok(Self { inner })
@@ -370,12 +372,12 @@ impl Client {
         self.inner.tier().name()
     }
 
-    /// The scheduler limits in use: `(concurrency, per_minute)`, where
-    /// `per_minute` is `None` for no per-minute limit.
+    /// The tier's documented concurrent-request limit (FREE 1, VALUE 2,
+    /// STANDARD 4, PRO 8): the default `concurrency` of a planned call. The
+    /// client does not coordinate calls with each other.
     #[getter]
-    fn scheduler(&self) -> (usize, Option<u32>) {
-        let policy = self.inner.scheduler_policy();
-        (policy.concurrency, policy.per_minute)
+    fn default_concurrency(&self) -> usize {
+        self.inner.tier().concurrency()
     }
 
     /// Run `endpoint` (a vendor name such as `stock_history_eod`, or an RPC
@@ -654,26 +656,6 @@ fn loopback(url: &str) -> bool {
     host == "127.0.0.1" || host == "localhost"
 }
 
-/// The tier's limits with the caller's overrides: unset values come from
-/// the tier, and a `per_minute` of 0 removes the per-minute limit.
-fn scheduler_policy(
-    tier: Tier,
-    concurrency: Option<usize>,
-    per_minute: Option<u32>,
-    retries: u32,
-) -> SchedulerPolicy {
-    let base = SchedulerPolicy::for_tier(tier);
-    let per_minute = match per_minute {
-        None => base.per_minute,
-        Some(0) => None,
-        Some(limit) => Some(limit),
-    };
-    base.clone()
-        .with_concurrency(concurrency.unwrap_or(base.concurrency))
-        .with_per_minute(per_minute)
-        .with_retries(retries)
-}
-
 /// Test seam for `request_options`: the per-call options Python keywords
 /// make, as `(timeout_s, idle_timeout_s, concurrency)`, without logging in.
 #[pyfunction]
@@ -689,26 +671,6 @@ fn _request_options(
         options.idle_timeout.map(|d| d.as_secs_f64()),
         options.concurrency,
     ))
-}
-
-/// Test seam for `scheduler_policy`: `(concurrency, per_minute)` for a tier
-/// name, without logging in.
-#[pyfunction]
-#[pyo3(signature = (tier, concurrency = None, per_minute = None))]
-fn _scheduler_policy(
-    tier: &str,
-    concurrency: Option<usize>,
-    per_minute: Option<u32>,
-) -> PyResult<(usize, Option<u32>)> {
-    let tier = match tier {
-        "FREE" => Tier::Free,
-        "VALUE" => Tier::Value,
-        "STANDARD" => Tier::Standard,
-        "PRO" => Tier::Pro,
-        _ => return Err(PyValueError::new_err("tier: FREE, VALUE, STANDARD or PRO")),
-    };
-    let policy = scheduler_policy(tier, concurrency, per_minute, 3);
-    Ok((policy.concurrency, policy.per_minute))
 }
 
 /// Decode encoded `ResponseData` messages (one request's responses, as the
@@ -889,7 +851,6 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(endpoints, m)?)?;
     m.add_function(wrap_pyfunction!(_synthetic, m)?)?;
     m.add_function(wrap_pyfunction!(_decode_frames, m)?)?;
-    m.add_function(wrap_pyfunction!(_scheduler_policy, m)?)?;
     m.add_function(wrap_pyfunction!(_request_options, m)?)?;
     m.add_function(wrap_pyfunction!(_synthetic_frames, m)?)?;
     Ok(())

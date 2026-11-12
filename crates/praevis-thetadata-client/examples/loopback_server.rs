@@ -9,10 +9,14 @@
 //! Scenarios:
 //! - `partial`: every request streams two batches of two rows, then fails
 //!   with `INTERNAL`;
-//! - `slow`: every request streams 20 batches of three rows, 200 ms apart.
+//! - `slow`: every request streams 10 batches of three rows, 100 ms apart
+//!   (about 1 s a request);
+//! - `busy`: every request is refused with `RESOURCE_EXHAUSTED` at open;
+//! - `delayed`: every request's first answer waits 1.5 s, then two rows.
 //!
 //! It prints one JSON line, `{"auth_url": …, "endpoint": …}`, then serves
-//! until its standard input closes.
+//! until its standard input closes. A line `requests` on standard input
+//! prints `{"requests": N}`: the stock EOD requests received so far.
 #![allow(dead_code)] // The shared support module also serves the tests and benchmark.
 
 use std::io::{BufRead, Write};
@@ -38,8 +42,20 @@ fn script(scenario: &str) -> Option<support::Script> {
         "slow" => {
             let (batch, _) = support::table(support::Shape::Prices, 3);
             Some(support::Script {
-                messages: vec![Ok(support::response(&batch, false)); 20],
-                message_delay: Duration::from_millis(200),
+                messages: vec![Ok(support::response(&batch, false)); 10],
+                message_delay: Duration::from_millis(100),
+                ..Default::default()
+            })
+        }
+        "busy" => Some(support::Script {
+            initial_error: Some(tonic::Status::resource_exhausted("synthetic busy")),
+            ..Default::default()
+        }),
+        "delayed" => {
+            let (batch, _) = support::table(support::Shape::Prices, 2);
+            Some(support::Script {
+                messages: vec![Ok(support::response(&batch, false))],
+                header_delay: Duration::from_millis(1_500),
                 ..Default::default()
             })
         }
@@ -94,7 +110,7 @@ async fn auth_server(listener: tokio::net::TcpListener) {
 fn main() -> std::process::ExitCode {
     let scenario = std::env::args().nth(1).unwrap_or_default();
     let Some(script) = script(&scenario) else {
-        eprintln!("usage: loopback_server partial|slow");
+        eprintln!("usage: loopback_server partial|slow|busy|delayed");
         return std::process::ExitCode::FAILURE;
     };
     let fixture = support::Fixture::start(script);
@@ -122,7 +138,13 @@ fn main() -> std::process::ExitCode {
     );
     std::io::stdout().flush().expect("stdout");
     // Serve until standard input closes (the parent process ends or closes it).
-    for _ in std::io::stdin().lock().lines() {}
+    for line in std::io::stdin().lock().lines() {
+        if line.as_deref().is_ok_and(|l| l.trim() == "requests") {
+            let count = fixture.requests.lock().map_or(0, |r| r.len());
+            println!("{}", serde_json::json!({ "requests": count }));
+            std::io::stdout().flush().expect("stdout");
+        }
+    }
     drop(fixture);
     std::process::ExitCode::SUCCESS
 }

@@ -43,7 +43,7 @@ def main() -> int:
     report = {"run_id": args.run_id, "command": "options-memory", "host": host(),
               "packages": {"praevis-thetadata": pt.__version__, "polars": polars.__version__,
                            "pyarrow": pyarrow.__version__},
-              "tier": client.tier, "scheduler": list(client.scheduler),
+              "tier": client.tier, "default_concurrency": client.default_concurrency,
               "workload": args.workload, "mode": args.mode,
               "import_peak_rss_bytes": peak_rss_bytes(), "stopped": None}
     start = time.perf_counter_ns()

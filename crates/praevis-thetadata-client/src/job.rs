@@ -1,6 +1,7 @@
 //! Planned jobs (P1 PR 4b): one typed request split by date into requests
-//! within the vendor's limits, run through the client's scheduler and merged
-//! back, in date order, into one stream of Arrow batches.
+//! within the vendor's limits, run with the job's own concurrency and merged
+//! back, in date order, into one stream of Arrow batches. There is no
+//! coordination across jobs or callers (ADR-0021).
 //!
 //! Options phase: an all-strike tick or 1 s option quote request is also
 //! split per listed strike (see [`ThetaClient::job`]).
@@ -23,9 +24,12 @@ use tokio::{
     task::JoinHandle,
 };
 
+/// The largest concurrency a job accepts.
+pub(crate) const MAX_CONCURRENCY: usize = 64;
+
 /// How many parts a job keeps open (started and not yet read), as a
-/// multiple of the scheduler's concurrency. A part is only *sent* when a
-/// request slot is free; the window lets parts behind a slow head part run
+/// multiple of its concurrency. A part is only *sent* when fewer than the
+/// concurrency are running; the window lets parts behind a slow head part run
 /// and finish instead of waiting for it. Measured on 232 per-strike parts
 /// at 8 slots (`opt-split-002`, simulated from `opt-split-001`'s latencies):
 /// a window of 1x left slots idle (14.1 s against 9.1 s work-conserving);
@@ -210,15 +214,24 @@ type Shard = mpsc::Receiver<Result<RecordBatch, QueryError>>;
 
 impl ThetaClient {
     /// Run `request` as a planned job: split by date (EOD and at-time at 366
-    /// days, intraday history per day), each part a scheduled `query()`, with
-    /// at most the scheduler's concurrency in flight, merged in date order.
+    /// days, intraday history per day), each part a `query()`, with at most
+    /// the job's concurrency in flight, merged in date order.
+    ///
+    /// **Concurrency is per job.** The default is the account tier's
+    /// documented limit ([`Tier::concurrency`](crate::Tier::concurrency):
+    /// FREE 1, VALUE 2, STANDARD 4, PRO 8), so one job alone stays within the
+    /// plan; [`RequestOptions::concurrency`] sets it (1 to 64). Jobs and
+    /// queries running at the same time are not coordinated: together they
+    /// can exceed the plan, and the service may then answer
+    /// [`QueryError::Busy`], which is not retried. Coordinating many callers
+    /// is the caller's (or a shared service's) responsibility.
     ///
     /// **All-strike tick and 1 s option quotes are also split per strike.**
     /// An `option_history_quote` request for every strike (`*`) at a `tick`
     /// or `1s` interval, with one concrete expiration and no `strike_range`
     /// or `max_dte`, first lists the expiration's strikes (one extra
     /// `option_list_strikes` request), then sends each date part once per
-    /// strike, when the scheduler runs at least 2 requests at once (one at a
+    /// strike, when the job runs at least 2 requests at once (one at a
     /// time, the split is slower than the single request). The rows are the
     /// same as the single request's (verified exactly, `opt-split-001`). The order is date, then strike ascending,
     /// then the service's order within a strike; the single request's own
@@ -238,9 +251,10 @@ impl ThetaClient {
     }
 
     /// [`ThetaClient::job`] with per-call options. Batching, the timeout (per
-    /// part, covering its queue time) and the idle timeout apply to every
-    /// part. `concurrency` caps the parts holding a slot at once, at most the
-    /// scheduler's; the read-ahead window is that many times `READ_AHEAD`.
+    /// part, none unless set) and the idle timeout apply to every part.
+    /// `concurrency` caps the parts running at once (1 to 64, default the
+    /// tier's documented limit); the read-ahead window is that many times
+    /// `READ_AHEAD`.
     pub async fn job_with<E>(
         &self,
         request: &E,
@@ -249,14 +263,11 @@ impl ThetaClient {
     where
         E: Endpoint + Clone + Send + Sync + 'static,
     {
+        // Rejects a concurrency outside 1..=MAX_CONCURRENCY, never lowering it.
         options.validate()?;
-        let slots = self.scheduler.policy.concurrency;
-        let concurrency = match options.concurrency {
-            None => slots,
-            Some(wanted) if wanted <= slots => wanted,
-            // More than the scheduler has: refused, not silently lowered.
-            Some(_) => return Err(QueryError::Configuration),
-        };
+        let concurrency = options
+            .concurrency
+            .unwrap_or_else(|| self.tier().concurrency());
         let parts: VecDeque<E> = self.job_parts(request, concurrency).await?.into();
         let active = Arc::new(AtomicUsize::new(0));
         let wake = Arc::new(Notify::new());

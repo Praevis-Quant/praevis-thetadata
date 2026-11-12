@@ -18,8 +18,8 @@ async fn client(fixture: &Fixture, policy: EodPolicy, timeout: Duration) -> Thet
         ClientConfig::default()
             .with_endpoint(Some(fixture.endpoint.clone()))
             .with_allow_insecure(true)
-            .with_request_timeout(timeout)
-            .with_idle_timeout(Duration::from_secs(2)),
+            .with_request_timeout(Some(timeout))
+            .with_idle_timeout(Some(Duration::from_secs(2))),
         support::session().await,
         policy,
     )
@@ -206,7 +206,7 @@ async fn schema_empty_partial_not_found_and_idle_classification() {
         ClientConfig::default()
             .with_endpoint(Some(fixture.endpoint.clone()))
             .with_allow_insecure(true)
-            .with_idle_timeout(Duration::from_millis(20)),
+            .with_idle_timeout(Some(Duration::from_millis(20))),
         support::session().await,
         EodPolicy::default(),
     )
@@ -266,7 +266,7 @@ async fn invalid_policy_and_duration_fail_before_connecting() {
             ClientConfig::default()
                 .with_endpoint(Some(format!("http://{}", listener.local_addr().unwrap())))
                 .with_allow_insecure(true)
-                .with_request_timeout(request_timeout),
+                .with_request_timeout(Some(request_timeout)),
             session.clone(),
             policy,
         )

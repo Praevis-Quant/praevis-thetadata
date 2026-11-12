@@ -7,9 +7,9 @@
 //!   delivered when a later batch fails, and call the rows complete only after
 //!   a clean end of stream (`Ok(None)`);
 //! - **cancel mid-job:** drop a `JobStream` (or a `QueryStream`) to stop it.
-//!   Its in-flight requests are cancelled and their scheduler slots released,
-//!   so the next request starts at once. Cancellation is local: it does not
-//!   prove the service stopped its work at the same instant.
+//!   Its in-flight requests are cancelled and no further parts are sent.
+//!   Cancellation is local: it does not prove the service stopped its work
+//!   at the same instant.
 //!
 //! ```text
 //! cargo run -p praevis-thetadata-client --example query_consumer
@@ -17,10 +17,10 @@
 #![allow(dead_code)] // The shared support module also serves the tests and benchmark.
 
 use praevis_thetadata_client::{
-    ClientConfig, NaiveDate, QueryError, RequestOptions, SchedulerPolicy, Session, ThetaClient,
+    ClientConfig, NaiveDate, QueryError, RequestOptions, Session, ThetaClient,
     endpoints::StockHistoryEod,
 };
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 #[path = "../tests/support/mod.rs"]
 mod support;
@@ -52,24 +52,22 @@ pub async fn consume(
 }
 
 /// Cancellation: read the first batch of a long job, then stop. Dropping the
-/// job cancels its open parts and frees their slots. Returns the rows read
-/// before cancelling and how long the next request waited for a slot.
+/// job cancels its running parts, and it sends no more. Returns the rows read
+/// before cancelling. `settle` keeps this function running for as long as
+/// the job's running parts would take, so that a job that was not cancelled
+/// would have started its next parts by the time it returns.
 pub async fn cancel_midway(
     client: &ThetaClient,
     long: &StockHistoryEod,
-    next: &StockHistoryEod,
-) -> Result<(usize, Duration), QueryError> {
-    let mut job = client.job(long).await?;
+    settle: Duration,
+) -> Result<usize, QueryError> {
+    // Two parts at a time (a job's concurrency is its own).
+    let options = RequestOptions::default().with_concurrency(Some(2));
+    let mut job = client.job_with(long, options).await?;
     let first = job.next_batch().await?.map_or(0, |b| b.num_rows());
     drop(job); // the cancellation
-    let started = Instant::now();
-    // The timeout includes time queued for a slot: if the job still held it,
-    // this would fail with `Deadline` after 5 s instead of waiting.
-    let options = RequestOptions::default().with_timeout(Some(Duration::from_secs(5)));
-    let mut stream = client.query_with(next, options).await?;
-    let waited = started.elapsed();
-    while stream.next_batch().await?.is_some() {}
-    Ok((first, waited))
+    tokio::time::sleep(settle).await;
+    Ok(first)
 }
 
 fn day(text: &str) -> NaiveDate {
@@ -86,14 +84,6 @@ async fn client_for(fixture: &support::Fixture, session: Session) -> ThetaClient
     )
     .await
     .unwrap()
-    // One request at a time, so a request that is not cancelled would block
-    // the next one.
-    .with_scheduler(
-        SchedulerPolicy::default()
-            .with_concurrency(1)
-            .with_per_minute(None),
-    )
-    .unwrap()
 }
 
 /// Two batches of two rows, then a mid-stream failure.
@@ -109,12 +99,12 @@ fn failing_script() -> support::Script {
     }
 }
 
-/// Every request streams 20 slow batches (about 4 s each request).
+/// Every request streams 10 slow batches (about 1 s each request).
 fn slow_script() -> support::Script {
     let (batch, _) = support::table(support::Shape::Prices, 3);
     support::Script {
-        messages: vec![Ok(support::response(&batch, false)); 20],
-        message_delay: Duration::from_millis(200),
+        messages: vec![Ok(support::response(&batch, false)); 10],
+        message_delay: Duration::from_millis(100),
         ..Default::default()
     }
 }
@@ -139,10 +129,10 @@ async fn main() {
     let fixture = support::Fixture::start(slow_script());
     let client = client_for(&fixture, support::session().await).await;
     let long = StockHistoryEod::new("SYNTHETIC", day("2020-01-01"), day("2025-12-31"));
-    match cancel_midway(&client, &long, &one_day).await {
-        Ok((rows, waited)) => println!(
-            "cancelled a job after its first batch ({rows} rows); the next request got its slot after {} ms",
-            waited.as_millis()
+    match cancel_midway(&client, &long, Duration::from_millis(1_500)).await {
+        Ok(rows) => println!(
+            "cancelled a job after its first batch ({rows} rows); the server saw {} of its 6 parts",
+            fixture.requests.lock().unwrap().len()
         ),
         Err(error) => println!("failed: {error}"),
     }
@@ -173,17 +163,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn dropping_a_job_releases_its_slot() {
+    async fn dropping_a_job_cancels_it_and_sends_no_more_parts() {
         let fixture = support::Fixture::start(slow_script());
         let client = client_for(&fixture, support::session().await).await;
         let long = StockHistoryEod::new("SYNTHETIC", day("2020-01-01"), day("2025-12-31"));
-        let next = StockHistoryEod::new("SYNTHETIC", day("2026-01-15"), day("2026-01-15"));
-        let (rows, waited) = cancel_midway(&client, &long, &next).await.unwrap();
+        let rows = cancel_midway(&client, &long, Duration::from_millis(1_500))
+            .await
+            .unwrap();
         assert_eq!(rows, 3);
-        // Without the cancellation the next request would wait for the job's
-        // part to finish its remaining 19 slow batches (about 3.8 s).
-        assert!(waited < Duration::from_secs(1), "waited {waited:?}");
-        // The job planned several parts but sent only the first.
+        // Six yearly parts, two at a time. A job still running would have
+        // started parts 3 and 4 when the first two finished (about 1 s).
         assert_eq!(fixture.requests.lock().unwrap().len(), 2);
     }
 }

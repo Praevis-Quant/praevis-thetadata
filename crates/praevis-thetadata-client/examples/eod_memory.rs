@@ -834,11 +834,8 @@ fn measure_bound(endpoint: String, scenario: &str) -> Result<(), Failure> {
             support::session().await,
             EodPolicy::default(),
         )
-        .await?
-        // PRO's limits, so the 8 streams really run at once.
-        .with_scheduler(praevis_thetadata_client::SchedulerPolicy::for_tier(
-            praevis_thetadata_client::Tier::Pro,
-        ))?;
+        // No scheduler (ADR-0021): the 8 streams run at once.
+        .await?;
         tokio::time::sleep(Duration::from_millis(50)).await;
         let live = LIVE.load(Ordering::Relaxed);
         PEAK.store(live, Ordering::Relaxed);

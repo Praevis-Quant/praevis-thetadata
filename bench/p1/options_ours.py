@@ -1,7 +1,7 @@
 """Ours for the options workloads (options phase, step D2): the same
 workloads and calls as bench/python-baseline/options_vendor.py, through this
 package's vendor-named methods returning Polars frames, synchronously and
-threaded on one client (the client's tier scheduler: PRO 8).
+threaded on one client (up to PRO's documented 8 at once).
 
 Run by the Coordinator only. Timings, counts and peak memory; never values.
 """
@@ -46,7 +46,7 @@ def main() -> int:
     report = {"run_id": args.run_id, "command": "options-ours", "host": host(),
               "packages": {"praevis-thetadata": pt.__version__, "polars": polars.__version__,
                            "pyarrow": pyarrow.__version__},
-              "tier": client.tier, "scheduler": list(client.scheduler),
+              "tier": client.tier, "default_concurrency": client.default_concurrency,
               "settings": {k: str(v) for k, v in vars(args).items()},
               "import_peak_rss_bytes": peak_rss_bytes(), "results": [], "stopped": None}
     pacer = Pacer(args.min_interval)

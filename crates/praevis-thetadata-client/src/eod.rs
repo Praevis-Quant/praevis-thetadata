@@ -43,6 +43,13 @@ pub enum QueryError {
     /// client). EOD-L3-016.
     #[error("session is no longer valid; another login may have ended it")]
     SessionEnded,
+    /// The service answered `RESOURCE_EXHAUSTED`: the account is busy, for
+    /// example more requests at once than its plan allows. The library does
+    /// not retry: a caller (or a service that coordinates callers) may wait
+    /// and send the request again. At open nothing was delivered; mid-stream,
+    /// the rows before it are partial, as for any error.
+    #[error("the service is busy (RESOURCE_EXHAUSTED); not retried")]
+    Busy,
     #[error("query remote status: {0}")]
     Remote(tonic::Code),
     #[error("invalid response data")]
@@ -171,17 +178,37 @@ impl Pool {
     }
 }
 pub(crate) const STREAM_WINDOW: u32 = 2 << 20;
+/// "No limit" for an unset deadline or idle timeout: far enough never to fire
+/// (the far-future value tokio itself uses), without overflowing an `Instant`.
+pub(crate) const NO_LIMIT: Duration = Duration::from_secs(86_400 * 365 * 30);
 pub(crate) fn budgets(config: &ClientConfig) -> Result<(), EodError> {
-    for duration in [
-        config.connect_timeout,
+    let durations = [
+        Some(config.connect_timeout),
         config.request_timeout,
         config.idle_timeout,
-    ] {
+    ];
+    for duration in durations.into_iter().flatten() {
         if duration.is_zero() || Instant::now().checked_add(duration).is_none() {
             return Err(EodError::Configuration);
         }
     }
     Ok(())
+}
+/// The deadline of a request started now: `timeout` from now, or none.
+pub(crate) fn deadline_after(timeout: Option<Duration>) -> Result<Instant, EodError> {
+    Instant::now()
+        .checked_add(timeout.unwrap_or(NO_LIMIT))
+        .ok_or(EodError::Configuration)
+}
+/// Tell the server the remaining time, only when the caller set a deadline.
+pub(crate) fn set_grpc_timeout<T>(
+    request: &mut tonic::Request<T>,
+    timeout: Option<Duration>,
+    deadline: Instant,
+) {
+    if timeout.is_some() {
+        request.set_timeout(deadline.saturating_duration_since(Instant::now()));
+    }
 }
 impl ThetaClient {
     /// Configure a shared finite decode policy before opening the connection.
@@ -235,9 +262,7 @@ impl ThetaClient {
         table: bool,
     ) -> Result<EodBatchStream, EodError> {
         budgets(&self.config)?;
-        let deadline = Instant::now()
-            .checked_add(self.config.request_timeout)
-            .ok_or(EodError::Configuration)?;
+        let deadline = deadline_after(self.config.request_timeout)?;
         let pool = self.eod_pool.clone();
         let stream_lease = timeout_at(deadline, pool.streams.clone().acquire_owned())
             .await
@@ -256,7 +281,7 @@ impl ThetaClient {
             query_info: Some(self.query_info()),
             params: Some(request.wire()),
         });
-        request.set_timeout(deadline.saturating_duration_since(Instant::now()));
+        set_grpc_timeout(&mut request, self.config.request_timeout, deadline);
         let failure = framing::Failure::default();
         // Item 8, option 2a: the body assembles each message and parks it here.
         let parked = framing::ParkedFrame::default();
@@ -289,7 +314,7 @@ impl ThetaClient {
             inner: Some(Source::Grpc(inner)),
             pool,
             deadline,
-            idle: self.config.idle_timeout,
+            idle: self.config.idle_timeout.unwrap_or(NO_LIMIT),
             schema: None,
             schema_lease: Some(Arc::new(schema_lease)),
             terminal: false,
@@ -693,7 +718,7 @@ mod tests {
             ClientConfig {
                 endpoint: Some(server.endpoint.clone()),
                 allow_insecure: true,
-                request_timeout: deadline,
+                request_timeout: Some(deadline),
                 ..Default::default()
             },
             fixture::session().await,
@@ -826,8 +851,8 @@ mod tests {
                 ClientConfig {
                     endpoint: Some(server.endpoint.clone()),
                     allow_insecure: true,
-                    idle_timeout: Duration::from_millis(100),
-                    request_timeout: Duration::from_secs(5),
+                    idle_timeout: Some(Duration::from_millis(100)),
+                    request_timeout: Some(Duration::from_secs(5)),
                     ..Default::default()
                 },
                 fixture::session().await,
@@ -904,8 +929,8 @@ mod tests {
             ClientConfig {
                 endpoint: Some(server.endpoint.clone()),
                 allow_insecure: true,
-                idle_timeout: Duration::from_secs(5),
-                request_timeout: Duration::from_secs(20),
+                idle_timeout: Some(Duration::from_secs(5)),
+                request_timeout: Some(Duration::from_secs(20)),
                 ..Default::default()
             },
             fixture::session().await,
@@ -944,7 +969,7 @@ mod tests {
             ClientConfig {
                 endpoint: Some(server.endpoint.clone()),
                 allow_insecure: true,
-                request_timeout: Duration::from_millis(250),
+                request_timeout: Some(Duration::from_millis(250)),
                 ..Default::default()
             },
             fixture::session().await,

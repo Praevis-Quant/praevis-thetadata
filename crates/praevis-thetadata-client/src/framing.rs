@@ -48,6 +48,7 @@ impl Failure {
             3 => EodError::Unsupported,
             _ if status.code() == tonic::Code::NotFound => EodError::NoData,
             _ if status.code() == tonic::Code::Unauthenticated => EodError::SessionEnded,
+            _ if status.code() == tonic::Code::ResourceExhausted => EodError::Busy,
             _ => EodError::Remote(status.code()),
         }
     }
