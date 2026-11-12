@@ -2,13 +2,109 @@
 
 Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 (2026-11-01 US time), `0.1.0-alpha.2` on 2026-11-03 UTC and `0.1.0-alpha.3`
-on 2026-11-08 and `0.1.0-beta.1` on 2026-11-11, each after owner approval. From
+on 2026-11-08, `0.1.0-beta.1` on 2026-11-11 and `0.1.0-beta.2` on 2026-11-12,
+each after owner approval. From
 beta.1 the Python wheels are also on PyPI. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
 
+## Publication record: 0.1.0-beta.2
+
+**Published 2026-11-12,** approved by the user. One deliberate breaking change
+after the beta.1 freeze ([ADR-0021](adr/0021-per-call-library.md)).
+- **Source:** the owner ran `cargo publish` locally from clean `main` at
+  `3bf6266773457eb13f240baa3c68e67fd2de6e43` (#164).
+- **CI:** CI and Auth performance were green on that commit.
+- **Tokens** were never in argv or logs.
+
+**Pre-publication live smoke test (owner):** the CI `win_amd64` wheel on
+Python 3.12, against an options PRO account:
+- **Tier:** `PRO`, `default_concurrency` 8.
+- **Calls:** vendor-named `stock_history_eod` (5 rows); `query` of
+  `calendar_year` (12 rows); `batches` of `option_history_eod` for SPY,
+  2024-06-03 to 2024-06-07 (45,744 rows, 12.9 s); `to_parquet` with
+  `concurrency=2` and `timeout=120` (18,200 rows).
+- **The per-call timeout:** 1 ms failed as expected (`QueryFailed`).
+- **`twine check`** passed both wheels.
+
+**Crates:**
+- **Order:** proto, core, auth, arrow, client, cli, stream. Each was
+  "Published".
+- **Checksums:** all seven registry checksums match the local `.crate`
+  files.
+- **Not yanked:** none.
+- **Publisher:** `joey-huckabee`.
+
+| Crate | `.crate` SHA-256 (registry = local = downloaded) |
+| --- | --- |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.0-beta.2) | `008d5476139f3a1161ccc902798704d320ae4de7e8929152bdbbc7a7836f667e` |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.0-beta.2) | `35d5f99f9f11dc928692749987108f29dd5fd731de697460e05e1e109c67a920` |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.0-beta.2) | `bdb49582da640547edab9445d71f8db546f79d4c5e1d7f8bcfb5ba9ddc5d6f7c` |
+| [`praevis-thetadata-arrow`](https://crates.io/crates/praevis-thetadata-arrow/0.1.0-beta.2) | `1f6139461cb4bb205aae552e57bfd5b140223efa2b11405e39133e0258625803` |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.0-beta.2) | `55850795b19c7b2683229fe436bf622688045065a7f79b4c4d71c9a397227d0c` |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.0-beta.2) | `0ca0406bcfb9a195a21de62ad3fcb1fcb89c9d1e2533772586f7b50909586590` |
+| [`praevis-thetadata-stream`](https://crates.io/crates/praevis-thetadata-stream/0.1.0-beta.2) | `58d6b8768886808c8d805644eb0ab1e5e34b1a2150d0d4ede3151fcf98ad284f` |
+
+`praevis-thetadata-py` is not published to crates.io.
+
+**PyPI:**
+- **Release:** [`praevis-thetadata` 0.1.0b2](https://pypi.org/project/praevis-thetadata/0.1.0b2/).
+- **Upload:** `twine upload`, with the token from the environment only, of
+  the two wheels from `3bf6266`'s own CI run 43162656479. No sdist.
+- **PyPI's SHA-256 equals the CI artifacts:**
+
+| Wheel | SHA-256 |
+| --- | --- |
+| `praevis_thetadata-0.1.0b2-cp310-abi3-manylinux_2_28_x86_64.whl` | `49fc951895a1005dcd7c7634680186fd989d2f298dc60a8c35174ee6a5a15a59` |
+| `praevis_thetadata-0.1.0b2-cp310-abi3-win_amd64.whl` | `ec2063e44df42e63e4ec1a485d02e354de995210eb9ea956999d87058f94d72e` |
+
+**Tag and release:**
+- **Tag:** annotated `v0.1.0-beta.2`, tag object `95cbb53b50c0`, pointing
+  to `3bf6266`.
+- **Release:** the
+  [GitHub pre-release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-beta.2),
+  its body taken from the [release draft](release-draft-0.1.0-beta.2.md),
+  with the same two wheels attached.
+
+**Post-publication checks (owner):**
+- **The CLI:** `cargo install praevis-thetadata-cli --version 0.1.0-beta.2
+  --locked` printed the version.
+- **PyPI:** `pip install --pre praevis-thetadata` imported `0.1.0-beta.2` on
+  WSL Ubuntu 24.04 and on Windows, pinned and unpinned.
+- **Index lag:** the first Windows attempt, seconds after the upload,
+  resolved beta.1 because PyPI's index had not caught up. A retry a minute
+  later got beta.2.
+- **docs.rs** built proto, core, auth, arrow, client and stream. The CLI has
+  no documentation build, which is expected: it is binary-only.
+
+**Post-publication checks, Linux (the agent's sandbox, aarch64, 2026-11-12):**
+- **The crates:** all seven `.crate` files downloaded from crates.io match
+  the SHA-256 values above and the crates.io index's checksums, and none is
+  yanked.
+- **PyPI:** the JSON API lists exactly the two wheels above, with those
+  SHA-256 values, neither yanked.
+- **Tag and release:** the remote tag peels to `3bf6266`; the release is a
+  pre-release with the two wheels.
+- **Crates.io-only consumers:** copies of `tools/release-consumers`, with
+  the staging registry removed, resolved `0.1.0-beta.2` from crates.io,
+  built and ran. Each printed its check:
+  - `proto`: 100 RPCs;
+  - `core`;
+  - `auth`, and `auth-store` (the native store);
+  - `arrow`: an exact decimal and a typed all-null column;
+  - `client`: typed EOD validation, 100 endpoints, the job planner and the
+    tier's job concurrency, offline;
+  - `stream`: a parsed quote.
+
+  The default `auth` and `client` consumers resolve no keyring or D-Bus
+  packages.
+- **The CLI:** `cargo install praevis-thetadata-cli --version 0.1.0-beta.2
+  --locked` from crates.io built and printed `praevis-thetadata
+  0.1.0-beta.2`.
+
 ## Beta.2 publication checklist and order (prepared 2026-11-12)
 
-**Needs the user's approval.** The user publishes locally, with tokens never
+**Executed 2026-11-12** ([record above](#publication-record-010-beta2)). Kept as
+the preparation record. **Needs the user's approval.** The user publishes locally, with tokens never
 in argv, logs or shell history. Scope: one deliberate breaking change after
 the beta.1 freeze ([ADR-0021](adr/0021-per-call-library.md)); everything else
 is as published in beta.1.

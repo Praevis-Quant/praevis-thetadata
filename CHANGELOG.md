@@ -9,21 +9,26 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 `0.1.0-alpha.1` was the first published prerelease (crates.io, tag
 `v0.1.0-alpha.1`, 2026-11-02 UTC), followed by `0.1.0-alpha.2` (tag
 `v0.1.0-alpha.2`, 2026-11-03 UTC) and `0.1.0-alpha.3` (tag `v0.1.0-alpha.3`,
-2026-11-08). Each release heading covers the entries
+2026-11-08), then `0.1.0-beta.1` (2026-11-11) and `0.1.0-beta.2`
+(2026-11-12), both also on PyPI. Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
 
-## [0.1.0-beta.2] - pending
+## [0.1.0-beta.2] - 2026-11-12
 
-Prepared, not published: dated and tagged (`v0.1.0-beta.2`) at publication,
-after the user's approval. **One deliberate breaking change after the beta.1
+Published to crates.io from `3bf6266` (tag `v0.1.0-beta.2`), and to PyPI as
+[`praevis-thetadata` 0.1.0b2](https://pypi.org/project/praevis-thetadata/0.1.0b2/)
+(wheels only; the same wheels are attached to the
+[GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-beta.2)).
+**One deliberate breaking change after the beta.1
 freeze** ([ADR-0021](docs/adr/0021-per-call-library.md)): the library does
 what one caller asks, with no retry, scheduler, rate limit or default
 timeout, as in the vendor package. Everything else frozen at beta.1 is
 unchanged. See the
-[release-notes draft](docs/release-draft-0.1.0-beta.2.md).
+[release notes](docs/release-draft-0.1.0-beta.2.md) and the
+[publication record](docs/crates-io-release-plan.md#publication-record-010-beta2).
 
 ### Release
 
