@@ -75,7 +75,7 @@ run.
   and `plan=False` in Python.
 - **The cost:** one list request per job. One at a time, per-strike requests
   are slower than the single request (95.9 s), so `job()` splits only when
-  the scheduler runs at least 2 requests at once. On PRO (8) the split was
+  the job runs at least 2 requests at once. On PRO (8) the split was
   6.4-7.6× faster. STANDARD (4) is not measured.
 - **Order:** rows come by date, then strike ascending, then the service's
   order within a strike. The single request's order is not documented, so
@@ -84,9 +84,9 @@ run.
 ## Running requests at once
 
 If a request spends most of its time waiting, several requests running at once
-should overlap those waits. That is why the client has a scheduler and why tier
-concurrency (FREE 1, VALUE 2, STANDARD 4, PRO 8) should be the main speed lever
-for large jobs. The vendor Python package runs one request at a time.
+should overlap those waits. That is why `job()` runs its parts at once, up to
+its concurrency, which defaults to the tier's documented limit (FREE 1, VALUE 2,
+STANDARD 4, PRO 8). That limit is the main speed lever for large jobs. The vendor Python package runs one request at a time.
 
 **Measured since** ([D2 results](options-d2-results.md), one host, one date,
 3 rounds). For per-expiration option workloads, 8 requests at once finished
@@ -97,9 +97,10 @@ of size, and `job()` splits them per strike (above).
 
 ## How to get the best results
 
-- **Split large jobs and let the scheduler run them.** Use `client.job(...)` in
-  Rust, or `plan` in the Python methods. It splits by date and stays within your
-  tier's limits. Keep each request under about 1 million rows, as the
+- **Split large jobs and run one at a time.** Use `client.job(...)` in Rust,
+  or `plan` in the Python methods. It splits by date, and one job stays within
+  your tier's limits. The client does not coordinate several jobs at once
+  ([ADR-0021](../adr/0021-per-call-library.md)). Keep each request under about 1 million rows, as the
   [vendor recommends](https://thetadata.net/docs/Articles/Data-And-Requests/Request-Sizing.html).
 - **Keep end-of-day requests to one year or less.** 366 days was accepted and 731
   days was rejected with `INVALID_ARGUMENT` ([P0 results](p0-results.md)).
@@ -115,9 +116,9 @@ of size, and `job()` splits them per strike (above).
   fails with `SessionEnded`. Share a client instead: clone it in Rust, or pass
   `existing_authorized_client` in Python. This includes logins from the CLI and
   from the vendor's package.
-- **Set timeouts with the wait in mind.** A request can be silent for over a
-  minute before its first row. That wait counts against `request_timeout`
-  (default 300 s for the whole request). `idle_timeout` (default 60 s) applies
-  between messages once data is flowing: in the run above, a 71.8 s first wait
-  succeeded with the default 60 s idle timeout. Raise `request_timeout` for
-  requests you expect to take longer.
+- **If you set timeouts, set them with the wait in mind.** There is none by
+  default (from beta.2, as in the vendor package). A request can be silent
+  for over a minute before its first row, and that wait counts against
+  `request_timeout`. `idle_timeout` applies only between messages once data
+  is flowing: in the run above, a 71.8 s first wait did not trip a 60 s idle
+  timeout.

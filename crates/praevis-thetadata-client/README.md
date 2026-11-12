@@ -1,8 +1,8 @@
 # praevis-thetadata-client
 
 gRPC client for ThetaData market data: generated typed requests for all 100
-RPCs, exact Arrow `query()` and `job()` streams, a tier-aware scheduler and
-Parquet output, plus the typed stock end-of-day (EOD) stream. It reuses a
+RPCs, exact Arrow `query()` and `job()` streams, planned jobs and Parquet
+output, plus the typed stock end-of-day (EOD) stream. It reuses a
 session from `praevis-thetadata-auth`.
 
 > **Independent and unofficial.** This is an unofficial Rust project. It is not
@@ -53,33 +53,37 @@ session from `praevis-thetadata-auth`.
   ([apache/arrow-rs#12027](https://github.com/apache/arrow-rs/issues/12027),
   fixed by [#12028](https://github.com/apache/arrow-rs/pull/12028) but not
   yet released).
-- **Jobs and scheduling** (`ThetaClient::job`, `SchedulerPolicy`, unreleased P1
-  work): a request is split by date within the vendor's limits (EOD at 366
-  days, intraday history per day), and the parts are merged in order.
-  All-strike tick and 1 s option quote requests are also split per listed
-  strike (one extra `option_list_strikes` request) when the scheduler runs
-  at least 2 requests at once. The service waits about 60 s before answering
+- **Jobs** (`ThetaClient::job`): a request is split by date within the
+  vendor's limits (EOD at 366 days, intraday history per day), and the parts
+  are merged in order. All-strike tick and 1 s option quote requests are
+  also split per listed strike (one extra `option_list_strikes` request) when
+  the job runs at least 2 requests at once. The service waits about 60 s before answering
   them whole, and the split returned identical rows 6.4-7.6× sooner at 8
-  ([request timing](../../docs/performance/request-timing.md)). A job sends
-  a part whenever a request slot is free and reads parts in order. It keeps
-  at most 4× the concurrency parts open, each buffering at most 2 batches,
-  so a slow part does not hold back the others.
+  ([request timing](../../docs/performance/request-timing.md)). A job runs up
+  to its concurrency of parts at once and reads them in order. It keeps at
+  most 4× the concurrency parts open, each buffering at most 2 batches, so a
+  slow part does not hold back the others.
 - **Per-call options** (`query_with` and `job_with`, `RequestOptions`):
   - batching;
-  - an overall timeout per request (per part in a job). **It covers time
-    queued for a scheduler slot**, so a busy scheduler cannot hold a caller
-    past its budget; the request fails with `Deadline`;
+  - an overall timeout per request (per part in a job), which fails with
+    `Deadline`;
   - an idle timeout between messages;
-  - for jobs, a concurrency of at most the scheduler's, with the read-ahead
-    window scaling with it.
+  - for jobs, a concurrency of 1 to 64, with the read-ahead window scaling
+    with it.
 
-  Each option left unset uses the client's setting. Every
-  `query()` is admitted by the client's scheduler. By default it follows the
-  account's tier from the login response (`ThetaClient::tier`, the highest
-  subscription): FREE's documented 1 concurrent request and 20 per minute;
-  VALUE 2, STANDARD 4 and PRO 8 concurrent requests with no per-minute limit.
-  `with_scheduler` overrides it. Retry happens only on `RESOURCE_EXHAUSTED`
-  and `UNAVAILABLE` at open.
+  Each option left unset uses the client's setting (`ClientConfig`).
+- **No retry, scheduler, rate limit or default timeout**
+  ([ADR-0021](../../docs/adr/0021-per-call-library.md), from beta.2), as in
+  the vendor package:
+  - **Timeouts:** none unless set, per client or per call.
+  - **Retry:** a request is sent once. A busy account (`RESOURCE_EXHAUSTED`)
+    is `QueryError::Busy`, for the caller to handle.
+  - **Concurrency:** a job's default is the account tier's documented limit
+    (`ThetaClient::tier`, the highest subscription: FREE 1, VALUE 2,
+    STANDARD 4, PRO 8), so one job alone stays within the plan. Jobs and
+    queries running at the same time are not coordinated: together they can
+    exceed the plan. Coordinating them is the caller's job (or a shared
+    service's).
 - **One session per account** (confirmed live, `opt-session-001`): a new
   login for the account ends its earlier session, whose requests (on every
   query path, the stock EOD streams included) then fail with
@@ -97,7 +101,8 @@ session from `praevis-thetadata-auth`.
   | `Cancelled` | The caller cancelled | Synthetic tests |
   | `NoData` | The service answered `NOT_FOUND` | **Live (stock EOD, FREE, 2026-11-02):** an unknown symbol and a range with no trading days (a weekend, a holiday) both answer `NOT_FOUND` at the headers, so both are `NoData`. **They are indistinguishable** (`err-notfound-001`, main b37e62b, Windows, 2026-11-11): the same code, the same details and the same message. To tell them apart, check the symbol yourself, for example with `StockListSymbols`/`IndexListSymbols` (Python: `stock_list_symbols`, `index_list_symbols`). A stream that ends cleanly with no rows is **not** `NoData`. In a job, empty parts are skipped, and the job is `NoData` only if every part was |
   | `SessionEnded` | `UNAUTHENTICATED`: the session ended | **Live** (`opt-session-001`): a second login for the account ends the first session |
-  | `Remote(code)` | Any other gRPC status, with its code | **Live:** `PermissionDenied` for every tier refusal (it is never `NoData`), and `InvalidArgument` for one flat-file date. `Internal` was seen once, unexplained. `ResourceExhausted` and `Unavailable` are retried at open first |
+  | `Busy` | `RESOURCE_EXHAUSTED`: the account is busy, for example more requests at once than its plan allows. Not retried | Synthetic tests (from beta.2; it was `Remote(ResourceExhausted)`) |
+  | `Remote(code)` | Any other gRPC status, with its code | **Live:** `PermissionDenied` for every tier refusal (it is never `NoData`), and `InvalidArgument` for one flat-file date. `Internal` was seen once, unexplained. Nothing is retried |
   | `Decode`, `Schema`, `Unsupported`, `Resource` | The response broke a local rule: malformed data, a column changing type, an unsupported feature (a flat-file manifest), or a size limit | Synthetic tests and the adversarial corpus |
 
   **Python:** these become `QueryFailed(kind, detail, grpc_code)`, with
@@ -153,7 +158,7 @@ against a synthetic loopback server, with no credentials:
   - **Partial results:** keep the rows delivered before a failure, and call
     them complete only after `Ok(None)`. `collect()` is all-or-error.
   - **Cancellation:** drop a `JobStream` mid-way. Its requests are cancelled
-    and its scheduler slot is free at once.
+    and it sends no more parts.
 - **`eod_partial`:** the same partial-result pattern on the stock EOD stream.
 
 `cargo run -p praevis-thetadata-client --example query_consumer`

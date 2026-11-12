@@ -12,7 +12,8 @@ from the ThetaData Python 1.0.12 distribution and now tracks 1.0.17
 (`source_version` in the proto manifest). It provides a reusable authentication
 library, the `praevis-thetadata` CLI with optional (`auth --save`) Windows/Linux
 native session persistence, typed requests for all 100 RPCs, exact Arrow
-columns, a tier-aware scheduler, a Parquet sink and the Python package.
+columns, planned jobs, a Parquet sink and the Python package. It does what one
+caller asks: no retry, scheduler, rate limit or default deadline (ADR-0021).
 Authentication is the accepted requirements baseline. None of this is a claim of
 complete Python compatibility: per-endpoint live evidence is in
 [the coverage table](docs/endpoints/coverage.md).
@@ -69,7 +70,7 @@ crates/praevis-thetadata-auth/   HTTPS login, sessions, optional native persiste
 crates/praevis-thetadata-proto/  checked-in descriptor and generated gRPC bindings
 crates/praevis-thetadata-core/   exact prices, timestamps, values, tables
 crates/praevis-thetadata-arrow/  columnar decoding into Arrow; Parquet sink
-crates/praevis-thetadata-client/ gRPC, generated endpoints, query(), scheduler, jobs
+crates/praevis-thetadata-client/ gRPC, generated endpoints, query(), jobs, tier
 crates/praevis-thetadata-py/     Python bindings (pyo3 abi3, maturin)
 bench/python-baseline/           the only code allowed to run the vendor package
 bench/p1/                        Python-side live checks and comparison runners
@@ -434,7 +435,7 @@ one approved exception (2026-11-03, [plan C.1](docs/architecture/performance-pla
 Work follows the approved
 [performance architecture plan](docs/architecture/performance-plan.md)
 (2026-11-03). P0 (measurement) and P1 (generated endpoints, Arrow columns, the
-scheduler, Parquet and PyO3) are complete; see the
+scheduler, since removed by ADR-0021, Parquet and PyO3) are complete; see the
 [P1 exit record](docs/performance/p1-exit-results.md). The current work is the
 [options phase](docs/architecture/options-phase.md) on options PRO. ADR-0007
 (stock EOD as the first slice) and the slice-by-slice roadmap are superseded. ADRs

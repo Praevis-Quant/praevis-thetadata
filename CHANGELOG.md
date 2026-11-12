@@ -64,6 +64,20 @@ scheduler, rate limiter or default timeout either.
 
 ### Changed
 
+- **ADR-0021 records the per-call principle** (user decision 2026-11-12),
+  and the docs follow it.
+  - **The principle:** the library does what one caller asks, with no
+    retry, scheduler, rate limit or default deadline, as in the vendor
+    package.
+  - **Docs updated:** the user guide's differences table (timeouts, retry
+    and rate limits, concurrency), the client and Python READMEs, request
+    timing, AGENTS.md, and the ROADMAP's shared-service section (which now
+    owns scheduling, retry, rate limiting and default deadlines).
+  - **releases.md:** a beta.2 row, and a note on the beta.1 scope.
+  - **Evidence review:** the gaps "retry live" and "per-call timeout live"
+    become "removed" and "optional, caller-set".
+  - **Superseded notes,** not rewrites, in the P1 design (§5 and D5), the
+    performance plan and ADR-0010.
 - **CI tests the Python package on Python 3.10, 3.11, 3.12 and 3.13,** on
   Windows and Linux.
   - **How:** a new job reuses the abi3 wheel built once per OS (no

@@ -109,7 +109,8 @@ vendor throughput guarantee follows from this proposal.
 
 **Revised by what shipped with `query()`/`job()` (P1):**
 - **A shared scheduler** admits requests: the tier's concurrency and a
-  per-minute limit.
+  per-minute limit. *(Removed in beta.2, with the retry below and the default
+  timeouts: [ADR-0021](0021-per-call-library.md).)*
   - **Retry:** it retries only at open, before any data, and only on
     `RESOURCE_EXHAUSTED` and `UNAVAILABLE`. With nothing delivered, a retry
     cannot duplicate rows or leave a partial result.

@@ -112,7 +112,9 @@ first row equals the vendor's first-message time.
 - **Planner:** splits jobs into requests within vendor limits: EOD spans ≤ 366
   days (P0 §5), and per-day splits for tick data (vendor sizing guidance). It
   merges results in order, across shards, into one stream.
-- **Scheduler:**
+- **Scheduler:** *(superseded on 2026-11-12 by [ADR-0021](../adr/0021-per-call-library.md),
+  for beta.2: no scheduler, per-minute limiter or retry; a job's own
+  concurrency defaults to the tier's limit)*
   - a semaphore sized to the tier's concurrency;
   - a per-minute limiter (FREE default 20/min, the documented minimum; P0
     observed no limit at 40/min);
@@ -218,7 +220,7 @@ decides which generated endpoints get live checks in the later PRs.
 | D2 | **A separate `praevis-thetadata-arrow` crate** |
 | D3 | **PyPI name `praevis-thetadata`.** The Coordinator found it unregistered on 2026-11-04; checking does not reserve it |
 | D4 | **Minimum Python 3.10, `abi3` wheels** |
-| D5 | **FREE scheduler defaults to the documented limits:** 1 concurrent request, 20 per minute. The observed 3 and 40/min are available only as an explicit opt-in |
+| D5 | **FREE scheduler defaults to the documented limits:** 1 concurrent request, 20 per minute. The observed 3 and 40/min are available only as an explicit opt-in. *Superseded 2026-11-12 by [ADR-0021](../adr/0021-per-call-library.md): no scheduler or limiter; FREE's 1 remains a job's default concurrency* |
 | D6 | **FREE entitlement map approved** (§8): about 35 single requests, 3.5 s apart. The concurrency probe above 3 is **deferred** to a later user decision; it is not run |
 
 The proposed options, as recorded:

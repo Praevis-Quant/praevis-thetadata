@@ -13,8 +13,9 @@ CI tests the wheel on Python 3.10, 3.11, 3.12 and 3.13 on both platforms.
 There is no macOS or ARM wheel and no source distribution. The same wheels
 are attached to the GitHub release.
 
-- Queries run in Rust: the scheduler (the account tier's documented limits
-  by default, overridable), transport and decoding, with the GIL released.
+- Queries run in Rust (planning, transport and decoding), with the GIL
+  released. As in the vendor package, there is no retry, scheduler, rate
+  limit or default timeout ([ADR-0021](../../docs/adr/0021-per-call-library.md)).
 - Results are Arrow record batches shared through the Arrow PyCapsule
   interface (`__arrow_c_stream__`, `__arrow_c_array__`). `pyarrow.table(r)`,
   `r.to_polars()` and `r.to_pandas()` import them without copying and without
@@ -46,9 +47,12 @@ client.to_parquet("stock_history_eod", "aapl.parquet", symbol="AAPL",
 ```
 
 `query`, `batches` and `to_parquet` also take per-call keyword options:
-`timeout` and `idle_timeout` in seconds (the timeout includes time waiting for
-a free slot), and `concurrency` for planned jobs (at most the client's).
-Each defaults to the client's setting.
+`timeout` and `idle_timeout` in seconds (none unless set), and `concurrency`
+for planned jobs (1 to 64; by default `client.default_concurrency`, the
+tier's documented limit). `Client(request_timeout=…, idle_timeout=…)` sets
+timeouts for every call, the vendor-named methods included. Calls are not
+coordinated with each other, so several at once can exceed the plan. A busy
+account raises `QueryFailed` with kind `"busy"`; it is not retried.
 
 `to_parquet` keeps memory flat however large the file. Decimal (price)
 columns get no min/max statistics; every other column does.
