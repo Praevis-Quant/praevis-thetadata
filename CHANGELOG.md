@@ -17,6 +17,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **CI fails on CRLF in the index.** The Verify job, on both OSes, checks
+  `git ls-files --eol` for files stored as `i/crlf` or `i/mixed`.
+  `.gitattributes` already keeps text as LF, and no file is stored with CRLF
+  today; this keeps it that way. Working-tree CRLF on a Windows checkout is
+  not checked.
 - **W10 on Linux under WSL2 recorded** (`w10-wsl-*`, 2026-11-11, single
   runs, WSL label).
   - **No drops** at 10, 100 and 1,000 contracts, and on a 1,200 s full

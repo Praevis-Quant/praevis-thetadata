@@ -23,6 +23,18 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
+      - name: No CRLF line endings in the index
+        # .gitattributes keeps text as LF in the repository; a Windows checkout may
+        # still show CRLF in the working tree (w/crlf), which is fine. Only the
+        # stored (index) form is checked.
+        shell: bash
+        run: |
+          bad=$(git ls-files --eol | awk '$1 == "i/crlf" || $1 == "i/mixed"')
+          if [ -n "$bad" ]; then
+            echo "Files stored with CRLF line endings; renormalise them (git add --renormalize .):"
+            echo "$bad"
+            exit 1
+          fi
       - name: Repository and documentation checks
         run: |
           python tools/check_repository.py
