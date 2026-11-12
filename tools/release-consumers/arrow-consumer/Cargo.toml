@@ -7,6 +7,6 @@ publish = false
 [workspace]
 
 [dependencies]
-praevis-thetadata-arrow = { version = "=0.1.0-beta.1", registry = "praevis-staging" }
-praevis-thetadata-proto = { version = "=0.1.0-beta.1", registry = "praevis-staging" }
+praevis-thetadata-arrow = { version = "=0.1.0-beta.2", registry = "praevis-staging" }
+praevis-thetadata-proto = { version = "=0.1.0-beta.2", registry = "praevis-staging" }
 prost = "0.14"

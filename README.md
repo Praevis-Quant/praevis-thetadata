@@ -29,14 +29,16 @@ package name, and builds the `praevis-thetadata` executable. Cargo places build 
 the shared root `target/` directory; that does not make the CLI a root package.
 The selected naming and compatibility boundaries are recorded in
 [the naming decision](docs/project-naming.md). The packages are released
-together on crates.io as **`0.1.0-beta.1` prereleases**.
+together on crates.io as **`0.1.0-beta.2` prereleases**. Beta.2 makes one
+deliberate breaking change: no retry, scheduler or default timeout
+([ADR-0021](docs/adr/0021-per-call-library.md)).
 - **Frozen for beta.1** ([scope](docs/releases.md#beta1-scope-record-user-2026-11-10)):
   auth, core, arrow, the client (except raw access), the CLI and the Python
   package. There is no breaking change without a new prerelease version and
   release notes.
 - **Not frozen:** `praevis-thetadata-stream` stays experimental, and
   `praevis-thetadata-proto` and raw gRPC access stay unstable.
-- **Python:** `praevis-thetadata` `0.1.0b1` is on PyPI for Python 3.10 or
+- **Python:** `praevis-thetadata` `0.1.0b2` is on PyPI for Python 3.10 or
   newer, tested in CI on 3.10-3.13 (`pip install --pre praevis-thetadata`;
   Windows x86_64 and Linux x86_64 wheels only). The same wheels are
   attached to the GitHub release.
@@ -44,8 +46,8 @@ together on crates.io as **`0.1.0-beta.1` prereleases**.
   parity.
 
  Prereleases need an explicit version, for example
-`cargo install praevis-thetadata-cli --version 0.1.0-beta.1 --locked` or
-`praevis-thetadata-auth = "=0.1.0-beta.1"`. Publication is manual and
+`cargo install praevis-thetadata-cli --version 0.1.0-beta.2 --locked` or
+`praevis-thetadata-auth = "=0.1.0-beta.2"`. Publication is manual and
 owner-approved ([release plan](docs/crates-io-release-plan.md)); no workflow
 publishes.
 
@@ -185,7 +187,7 @@ second login ends the first session.
 
 ## Reuse in another Rust project
 
-Add `praevis-thetadata-auth = "=0.1.0-beta.1"` from crates.io (experimental prerelease), or a path dependency on `crates/praevis-thetadata-auth`. Authentication is explicit; the library never discovers environment variables or credentials on its own. By default the session lives in memory, as in the vendor Python package: clone it to reuse it within your process ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md)). The default build has no keyring or D-Bus dependencies.
+Add `praevis-thetadata-auth = "=0.1.0-beta.2"` from crates.io (experimental prerelease), or a path dependency on `crates/praevis-thetadata-auth`. Authentication is explicit; the library never discovers environment variables or credentials on its own. By default the session lives in memory, as in the vendor Python package: clone it to reuse it within your process ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md)). The default build has no keyring or D-Bus dependencies.
 
 ```rust,no_run
 use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials};

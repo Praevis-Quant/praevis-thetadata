@@ -10,10 +10,10 @@ import staging_registry as staging
 
 
 def crate(directory, name, manifest, extra=()):
-    path = Path(directory) / f"{name}-0.1.0-beta.1.crate"
+    path = Path(directory) / f"{name}-0.1.0-beta.2.crate"
     with tarfile.open(path, "w:gz") as tar:
         for member, data in [("Cargo.toml", manifest), ("LICENSE", "l"), ("NOTICE", "n"), ("README.md", "r"), *extra]:
-            info = tarfile.TarInfo(f"{name}-0.1.0-beta.1/{member}")
+            info = tarfile.TarInfo(f"{name}-0.1.0-beta.2/{member}")
             info.size = len(data.encode())
             tar.addfile(info, io.BytesIO(data.encode()))
     return path
@@ -21,18 +21,18 @@ def crate(directory, name, manifest, extra=()):
 
 MANIFEST = """[package]
 name = "praevis-thetadata-client"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 rust-version = "1.88"
 
 [dependencies.praevis-thetadata-auth]
-version = "=0.1.0-beta.1"
+version = "=0.1.0-beta.2"
 
 [dependencies.tokio]
 version = "1"
 features = ["macros"]
 
 [build-dependencies.praevis-thetadata-proto]
-version = "=0.1.0-beta.1"
+version = "=0.1.0-beta.2"
 
 [target."cfg(windows)".dependencies.keyring]
 version = "3.6.3"
@@ -59,7 +59,7 @@ class StagingRegistryTests(unittest.TestCase):
         self.assertEqual(deps["tokio"]["features"], ["macros"])
         self.assertEqual((deps["keyring"]["target"], deps["keyring"]["optional"]), ("cfg(windows)", True))
         self.assertEqual((entry["features"], entry["features2"]), ({}, {"native-store": ["dep:keyring"]}))
-        self.assertEqual((entry["vers"], entry["rust_version"]), ("0.1.0-beta.1", "1.88"))
+        self.assertEqual((entry["vers"], entry["rust_version"]), ("0.1.0-beta.2", "1.88"))
         json.dumps(entry)
 
     def test_every_published_crate_is_staged_once_in_dependency_order(self):
