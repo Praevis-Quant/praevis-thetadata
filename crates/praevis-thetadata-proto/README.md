@@ -7,7 +7,7 @@ covers Python **1.0.17**, with **100 RPCs**.
 
 > **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-beta.1` is a prerelease.
+> identifies the service it interoperates with. `0.1.0-beta.2` is a prerelease.
 > This crate stays **unstable** and outside the beta.1 freeze
 > ([scope](../../docs/releases.md#beta1-scope-record-user-2026-11-10)): its generated tonic types may change between
 > prereleases. It is **not** a full port of, or drop-in replacement for, the
@@ -36,7 +36,7 @@ Prereleases are never selected implicitly, so pin the version:
 
 ```toml
 [dependencies]
-praevis-thetadata-proto = "=0.1.0-beta.1"
+praevis-thetadata-proto = "=0.1.0-beta.2"
 ```
 
 ## Supported platforms

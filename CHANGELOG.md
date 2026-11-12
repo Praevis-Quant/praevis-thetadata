@@ -15,6 +15,64 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+## [0.1.0-beta.2] - pending
+
+Prepared, not published: dated and tagged (`v0.1.0-beta.2`) at publication,
+after the user's approval. **One deliberate breaking change after the beta.1
+freeze** ([ADR-0021](docs/adr/0021-per-call-library.md)): the library does
+what one caller asks, with no retry, scheduler, rate limit or default
+timeout, as in the vendor package. Everything else frozen at beta.1 is
+unchanged. See the
+[release-notes draft](docs/release-draft-0.1.0-beta.2.md).
+
+### Release
+
+- **Version `0.1.0-beta.2`** across the workspace: every crate version,
+  internal pin, release-consumer pin, README install line and the lockfile.
+  The Python wheel follows as `0.1.0b2`.
+- **The same publish set as beta.1:** seven crates on crates.io. The Python
+  wheels go to PyPI by hand (`twine`) and to the GitHub release. No sdist.
+- **`docs/crates-io-release-plan.md`** gains the beta.2 publication checklist
+  and order. **`docs/release-draft-0.1.0-beta.2.md`** drafts the GitHub
+  release text, with a migration section.
+
+### Migration
+
+**Rust (`praevis-thetadata-client`):**
+- **The scheduler is gone.**
+  - **`ThetaClient::with_scheduler(policy)`:** remove the call.
+  - **A job's concurrency:** pass it per job with
+    `RequestOptions::default().with_concurrency(Some(n))` (1-64; default
+    `client.tier().concurrency()`).
+  - **Staying within the plan across several jobs or queries at once:**
+    coordinate them yourself, for example by running one job at a time or
+    with a semaphore.
+- **`client.scheduler_policy().concurrency`** becomes
+  `client.tier().concurrency()`.
+- **`ClientConfig::request_timeout` and `idle_timeout`** are now
+  `Option<Duration>`, default `None`.
+  - **To keep the old bounds:** set
+    `.with_request_timeout(Some(Duration::from_secs(300)))` and
+    `.with_idle_timeout(Some(Duration::from_secs(60)))`.
+  - **Code that read these fields** must handle `None`.
+- **`RESOURCE_EXHAUSTED` is `QueryError::Busy`,** no longer
+  `Remote(ResourceExhausted)`, and it is not retried. To retry, wait and
+  send the request again. `UNAVAILABLE` is not retried either.
+- **An exhaustive `match` on `QueryError`** already needs a wildcard arm
+  (`#[non_exhaustive]`). Code matching `Remote(ResourceExhausted)` should
+  match `Busy`.
+
+**Python (`praevis-thetadata`):**
+- **`Client(concurrency=…, per_minute=…, retries=…)`** now raises
+  `TypeError`. Pass `concurrency=` per call to `query`, `batches` and
+  `to_parquet` instead.
+- **`Client.scheduler`** becomes `Client.default_concurrency` (an int).
+- **No default timeout.** To keep the old bounds, use
+  `Client(request_timeout=300, idle_timeout=60)`. That also applies to the
+  vendor-named methods.
+- **A busy account** raises `QueryFailed` with kind `"busy"` (it was
+  `"remote"`, code `"ResourceExhausted"`), and is not retried.
+
 ### Breaking
 
 For `0.1.0-beta.2` (user decision 2026-11-12, ADR-0021). The library does what

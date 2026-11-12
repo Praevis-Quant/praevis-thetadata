@@ -1942,7 +1942,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-arrow"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -1956,7 +1956,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-auth"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 dependencies = [
  "keyring",
  "reqwest",
@@ -1968,7 +1968,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-cli"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 dependencies = [
  "clap",
  "praevis-thetadata-auth",
@@ -1978,7 +1978,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-client"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 dependencies = [
  "chrono",
  "clap",
@@ -2005,7 +2005,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-core"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -2015,7 +2015,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-proto"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 dependencies = [
  "prost",
  "prost-types",
@@ -2026,7 +2026,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-py"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -2043,7 +2043,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-stream"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 dependencies = [
  "clap",
  "praevis-thetadata-client",

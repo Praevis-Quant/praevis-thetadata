@@ -7,8 +7,10 @@ session from `praevis-thetadata-auth`.
 
 > **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-beta.1` is a prerelease
-> whose public API is **frozen for beta.1**, except raw access
+> identifies the service it interoperates with. `0.1.0-beta.2` is a prerelease
+> whose public API is **frozen for beta.1**, apart from one deliberate change
+> in beta.2 (no retry, scheduler or default timeout:
+> [ADR-0021](../../docs/adr/0021-per-call-library.md)), and except raw access
 > (`raw_client`, `stream_raw`, `RawStream`), which stays low-level and unstable
 > ([scope](../../docs/releases.md#beta1-scope-record-user-2026-11-10)): no breaking
 > change without a new prerelease version and release notes. It is **not** a
@@ -120,7 +122,7 @@ Prereleases are never selected implicitly, so pin the version:
 
 ```toml
 [dependencies]
-praevis-thetadata-client = "=0.1.0-beta.1"
+praevis-thetadata-client = "=0.1.0-beta.2"
 ```
 
 ## Supported platforms

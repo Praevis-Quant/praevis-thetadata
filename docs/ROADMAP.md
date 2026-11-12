@@ -46,6 +46,9 @@ The [performance architecture plan](architecture/performance-plan.md)
   close run-up (2026-11-10, Windows), and under WSL2 (2026-11-11). Under
   WSL the p99 target was not met; native Linux remains (below).
 - **Releases:**
+  - **`0.1.0-beta.2` is prepared** (one deliberate breaking change:
+    [ADR-0021](adr/0021-per-call-library.md)); publication needs the user's
+    approval.
   - **`0.1.0-beta.1`, the API freeze, was published on 2026-11-11**
     ([record](crates-io-release-plan.md#publication-record-010-beta1)), on
     crates.io and, for the first time, on PyPI as

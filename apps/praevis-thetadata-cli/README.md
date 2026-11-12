@@ -6,7 +6,7 @@ library and the experimental market-data client. It has no market-data query com
 
 > **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-beta.1` is a prerelease.
+> identifies the service it interoperates with. `0.1.0-beta.2` is a prerelease.
 > Its commands, flags, exit codes and JSON output are **frozen for beta.1**
 > ([scope](https://github.com/Praevis-Quant/praevis-thetadata/blob/main/docs/releases.md#beta1-scope-record-user-2026-11-10)).
 > It is **not** a full port of the vendor Python package.
@@ -23,11 +23,11 @@ install. The package is `praevis-thetadata-cli`; the executable is
 
 ## Install
 
-The `0.1.0-beta.1` prerelease is on crates.io. Prereleases are
+The `0.1.0-beta.2` prerelease is on crates.io. Prereleases are
 never selected implicitly, so name the version:
 
 ```text
-cargo install praevis-thetadata-cli --version 0.1.0-beta.1 --locked
+cargo install praevis-thetadata-cli --version 0.1.0-beta.2 --locked
 praevis-thetadata --help
 ```
 
