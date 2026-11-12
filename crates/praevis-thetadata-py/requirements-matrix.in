@@ -1,0 +1,8 @@
+# Test dependencies of the Python package for the CI version matrix
+# (Python 3.10-3.13): the wheel is built once per OS by the "Python package"
+# job, so maturin is not needed here. Never the vendor package. Regenerate
+# requirements-matrix.txt with:
+#   uv pip compile --universal --generate-hashes --python-version 3.10 requirements-matrix.in -o requirements-matrix.txt
+pyarrow>=14
+polars>=1.0
+pandas>=2.2

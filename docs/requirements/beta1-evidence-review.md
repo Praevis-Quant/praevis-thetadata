@@ -60,6 +60,9 @@ None of these is hidden by the counts above.
   run, which is pending and outside the freeze. Linux is covered by CI's
   synthetic tests and by the alpha.3 install checks.
 - **Python 3.10 and 3.11:** the wheel claims them, but CI tests only 3.12.
+  **Closed after beta.1 (2026-11-12):** CI now installs the wheel into a
+  clean environment and runs the package tests on Python 3.10, 3.11, 3.12
+  and 3.13, on Windows and Linux.
 
 **Data semantics, unresolved** ([stock EOD semantics](stock-eod-evidence.md#observed-service-semantics-eod-l3-029)):
 - dividend and other corporate-action adjustment;
