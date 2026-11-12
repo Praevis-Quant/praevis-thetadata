@@ -13,9 +13,9 @@ It shows how to:
   later batch fails. ``query()`` is all-or-error: it raises and keeps nothing.
   Call the rows complete only when the iteration ends without an error.
 - **cancel mid-way:** ``cancel()`` the iterator (or drop it) to stop the
-  request. Its scheduler slot is released at once, so the next request starts
-  without waiting. Cancellation is local: it does not prove that the service
-  stopped its work at the same instant.
+  request: its running parts are cancelled and no more are sent.
+  Cancellation is local: it does not prove that the service stopped its work
+  at the same instant.
 
 The ``_auth_url`` and ``_endpoint`` keywords are a test seam for this loopback
 service only (plain HTTP on 127.0.0.1); real code passes credentials.
@@ -46,36 +46,47 @@ def keep_partial(client: pt.Client) -> tuple[str, int, str | None]:
     return "complete", rows, None
 
 
-def cancel_midway(client: pt.Client) -> tuple[int, float]:
-    """Read the first batch of a long job, cancel it, then time how long the
-    next request waits for its first batch."""
-    job = client.batches("stock_history_eod", symbol="SYNTHETIC", start_date="2020-01-01", end_date="2025-12-31")
+def cancel_midway(client: pt.Client, settle: float = 1.5) -> int:
+    """Read the first batch of a long planned job (six yearly parts, two at a
+    time), then cancel it. Returns the rows read before cancelling. ``settle``
+    waits for as long as the running parts would take, so a job that was not
+    cancelled would have started its next parts by then."""
+    job = client.batches(
+        "stock_history_eod", symbol="SYNTHETIC", start_date="2020-01-01", end_date="2025-12-31", concurrency=2
+    )
     first = len(next(job))
     job.cancel()  # the cancellation; dropping the iterator does the same
-    started = time.monotonic()
-    # A timeout includes time queued for a slot: if the job still held it,
-    # this would fail after 5 s instead of waiting.
-    following = client.batches(
-        "stock_history_eod", symbol="SYNTHETIC", start_date="2026-01-15", end_date="2026-01-15", timeout=5.0
-    )
-    next(following)
-    waited = time.monotonic() - started
-    following.cancel()
-    return first, waited
+    time.sleep(settle)
+    return first
+
+
+class Loopback:
+    """A running loopback service and a client of it."""
+
+    def __init__(self, process: subprocess.Popen, client: pt.Client) -> None:
+        self._process = process
+        self.client = client
+
+    def requests(self) -> int:
+        """The stock EOD requests the service has received so far."""
+        self._process.stdin.write("requests\n")
+        self._process.stdin.flush()
+        return json.loads(self._process.stdout.readline())["requests"]
 
 
 @contextlib.contextmanager
-def loopback(scenario: str, server: str | None = None) -> Iterator[pt.Client]:
-    """A client of a fresh loopback service running ``scenario``. One request
-    at a time, so a request that was not cancelled would block the next."""
+def loopback(scenario: str, server: str | None = None, **options) -> Iterator[Loopback]:
+    """A fresh loopback service running ``scenario``, and a client of it
+    (``options`` go to the client)."""
     server = server or os.environ["PRAEVIS_LOOPBACK_SERVER"]
     process = subprocess.Popen([server, scenario], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     try:
         urls = json.loads(process.stdout.readline())
-        yield pt.Client(
-            api_key="synthetic", concurrency=1, per_minute=0, dataframe_type="arrow",
-            _auth_url=urls["auth_url"], _endpoint=urls["endpoint"],
+        client = pt.Client(
+            api_key="synthetic", dataframe_type="arrow",
+            _auth_url=urls["auth_url"], _endpoint=urls["endpoint"], **options,
         )
+        yield Loopback(process, client)
     finally:
         process.stdin.close()  # the server stops when its input closes
         process.wait(timeout=30)
@@ -83,16 +94,17 @@ def loopback(scenario: str, server: str | None = None) -> Iterator[pt.Client]:
 
 
 def main() -> None:
-    with loopback("partial") as client:
+    with loopback("partial") as service:
+        client = service.client
         outcome, rows, kind = keep_partial(client)
         print(f"{outcome}: kept {rows} rows delivered before the failure ({kind}); not complete")
         try:
             client.query("stock_history_eod", symbol="SYNTHETIC", start_date="2026-01-15", end_date="2026-01-15")
         except pt.QueryFailed as error:
             print(f"query() is all-or-error: it raised {error.args[0]!r} and kept no rows")
-    with loopback("slow") as client:
-        first, waited = cancel_midway(client)
-        print(f"cancelled a job after its first batch ({first} rows); the next request's first batch came {waited * 1000:.0f} ms later")
+    with loopback("slow") as service:
+        first = cancel_midway(service.client)
+        print(f"cancelled a job after its first batch ({first} rows); the service saw {service.requests()} of its 6 parts")
 
 
 if __name__ == "__main__":

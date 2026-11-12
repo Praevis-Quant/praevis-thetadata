@@ -83,12 +83,12 @@ class CredentialOrder(unittest.TestCase):
         with self.assertRaises(ValueError):
             pt.Client(existing_authorized_client=first, api_key="k")
         with self.assertRaises(ValueError):
-            pt.Client(existing_authorized_client=first, concurrency=3)
+            pt.Client(existing_authorized_client=first, request_timeout=3.0)
 
     def test_options_reach_the_native_client(self):
         self.assertEqual(
-            self.chosen(api_key="k", concurrency=3, per_minute=40),
-            {"api_key": "k", "concurrency": 3, "per_minute": 40},
+            self.chosen(api_key="k", request_timeout=30.0, idle_timeout=5.0),
+            {"api_key": "k", "request_timeout": 30.0, "idle_timeout": 5.0},
         )
 
 

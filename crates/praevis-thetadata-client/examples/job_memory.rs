@@ -8,11 +8,11 @@
 //! `-- --sink` for the Parquet sink alone (the same batch written repeatedly,
 //! no network or job). `JOB_MEMORY_DECIMAL_STATISTICS=1` writes decimal
 //! min/max statistics (the opt-in), which makes the sink's memory grow with
-//! the file; `JOB_MEMORY_CONCURRENCY` sets the scheduler's concurrency
+//! the file; `JOB_MEMORY_CONCURRENCY` sets the job's concurrency
 //! (default 8). The fixture runs in a child process so only the client's
 //! heap is counted.
 use praevis_thetadata_client::endpoints::OptionHistoryQuote;
-use praevis_thetadata_client::{ClientConfig, ParquetOptions, SchedulerPolicy, ThetaClient};
+use praevis_thetadata_client::{ClientConfig, ParquetOptions, RequestOptions, ThetaClient};
 use praevis_thetadata_proto::endpoints::{
     DataTable, DataValue, DataValueList, Price, ZonedDateTime, data_value::DataType as Wire,
 };
@@ -209,18 +209,11 @@ async fn main() {
             support::session().await,
         )
         .await
-        .unwrap()
-        .with_scheduler(
-            SchedulerPolicy::default()
-                .with_concurrency(
-                    std::env::var("JOB_MEMORY_CONCURRENCY")
-                        .ok()
-                        .and_then(|c| c.parse().ok())
-                        .unwrap_or(8),
-                )
-                .with_per_minute(None),
-        )
         .unwrap();
+        let concurrency = std::env::var("JOB_MEMORY_CONCURRENCY")
+            .ok()
+            .and_then(|c| c.parse().ok())
+            .unwrap_or(8);
         let request = OptionHistoryQuote::new("SPY", "2024-06-21")
             .date(chrono::NaiveDate::from_ymd_opt(2024, 6, 14).unwrap())
             .interval("tick");
@@ -228,7 +221,8 @@ async fn main() {
             std::env::temp_dir().join(format!("job-memory-{}-{rows}.parquet", std::process::id()));
         let before = LIVE.load(Ordering::Relaxed);
         PEAK.store(before, Ordering::Relaxed);
-        let job = client.job(&request).await.unwrap();
+        let options = RequestOptions::default().with_concurrency(Some(concurrency));
+        let job = client.job_with(&request, options).await.unwrap();
         let parts = job.parts();
         let summary = job
             .to_parquet(

@@ -168,7 +168,9 @@ impl ThetaClient {
     }
     pub(crate) fn raw_request<T>(&self, params: T) -> tonic::Request<T> {
         let mut request = tonic::Request::new(params);
-        request.set_timeout(self.config.request_timeout);
+        if let Some(timeout) = self.config.request_timeout {
+            request.set_timeout(timeout);
+        }
         request
     }
 }

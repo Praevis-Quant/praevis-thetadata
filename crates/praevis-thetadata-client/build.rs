@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                      pub async fn {method_name}(&self, params: api::{request}Query) -> Result<ResponseStream, Error> {{\n\
                      let request = api::{request} {{ query_info: Some(self.query_info()), params: Some(params) }};\n\
                      let mut request = tonic::Request::new(request);\n\
-                     request.set_timeout(self.config.request_timeout);\n\
+                     if let Some(timeout) = self.config.request_timeout {{ request.set_timeout(timeout); }}\n\
                      let response = self.stub.clone().{stub_method}(request).await.map_err(Error::from)?;\n\
                      Ok(ResponseStream {{ inner: response.into_inner(), max_batch_bytes: self.config.max_batch_bytes, idle_timeout: self.config.idle_timeout }})\n\
                      }}\n"

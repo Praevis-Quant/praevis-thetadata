@@ -1,10 +1,10 @@
-//! Builds the README example and the frozen beta.1 client surface against the
+//! Builds the README example and the client surface (beta.2) against the
 //! staged client archive, and exercises offline behaviour. Nothing contacts
 //! ThetaData.
 use praevis_thetadata_client::endpoints::{self, Endpoint, StockHistoryEod};
 use praevis_thetadata_client::{
-    ClientConfig, NaiveDate, ParquetOptions, QueryError, RequestOptions, SchedulerPolicy, Session,
-    StockEodRequest, ThetaClient, Tier, plan, unify,
+    ClientConfig, NaiveDate, ParquetOptions, QueryError, RequestOptions, Session, StockEodRequest,
+    ThetaClient, Tier, plan, unify,
 };
 use std::time::Duration;
 
@@ -25,14 +25,14 @@ async fn readme_example(session: Session) -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
-/// The frozen client surface (beta.1): generated endpoints through `query()`
-/// and `job()`, per-call options, the scheduler and Parquet output. Compiled
-/// against the archive; it needs a session to run.
+/// The client surface: generated endpoints through `query()` and `job()`,
+/// per-call options (timeouts and a job's concurrency) and Parquet output.
+/// No scheduler, retry or default deadline (ADR-0021). Compiled against the
+/// archive; it needs a session to run.
 #[allow(dead_code)]
 async fn frozen_surface(session: Session) -> Result<(), Box<dyn std::error::Error>> {
-    let client = ThetaClient::with_session(ClientConfig::default(), session)
-        .await?
-        .with_scheduler(SchedulerPolicy::for_tier(Tier::Free))?;
+    let client = ThetaClient::with_session(ClientConfig::default(), session).await?;
+    let _ = client.tier().concurrency();
     let day = |d| NaiveDate::from_ymd_opt(2024, 1, d).unwrap();
     let request = StockHistoryEod::new("AAPL", day(2), day(5));
     let options = RequestOptions::default()
@@ -73,11 +73,13 @@ async fn main() {
         NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
     );
     assert_eq!(plan(&long).len(), 3);
-    // The tier's scheduler limits.
-    assert_eq!(SchedulerPolicy::for_tier(Tier::Pro).concurrency, 8);
-    assert_eq!(SchedulerPolicy::for_tier(Tier::Free).per_minute, Some(20));
-    let _: Option<QueryError> = None;
+    // The tier's documented limit: a job's default concurrency.
+    assert_eq!(Tier::Pro.concurrency(), 8);
+    assert_eq!(Tier::Free.concurrency(), 1);
+    // No timeout by default.
+    assert_eq!(ClientConfig::default().request_timeout, None);
+    let _: Option<QueryError> = Some(QueryError::Busy);
     println!(
-        "client-consumer: typed EOD validation, 100 generated endpoints, the job planner and the tier scheduler work from the staged archive"
+        "client-consumer: typed EOD validation, 100 generated endpoints, the job planner and the tier's job concurrency work from the staged archive"
     );
 }

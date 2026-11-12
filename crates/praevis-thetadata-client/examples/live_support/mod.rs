@@ -297,8 +297,8 @@ fn config(endpoint: Option<String>) -> ClientConfig {
         // Only our freshly bound loopback fixture supplies an endpoint.
         .with_allow_insecure(endpoint.is_some())
         .with_endpoint(endpoint)
-        .with_request_timeout(Duration::from_secs(120))
-        .with_idle_timeout(Duration::from_secs(30))
+        .with_request_timeout(Some(Duration::from_secs(120)))
+        .with_idle_timeout(Some(Duration::from_secs(30)))
         .with_max_batch_bytes(MAX_FRAME)
 }
 

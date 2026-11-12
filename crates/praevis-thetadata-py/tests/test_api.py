@@ -68,21 +68,32 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class SchedulerTests(unittest.TestCase):
-    def test_limits_follow_the_tier_unless_overridden(self):
+class NoPolicyTests(unittest.TestCase):
+    """ADR-0021: the client has no scheduler, retry, rate limit or default
+    timeout; those keywords are gone."""
+
+    def test_removed_client_options_are_refused_before_any_request(self):
         from praevis_thetadata import _native
 
-        tier = _native._scheduler_policy
-        self.assertEqual(tier("FREE"), (1, 20))
-        self.assertEqual(tier("VALUE"), (2, None))
-        self.assertEqual(tier("STANDARD"), (4, None))
-        self.assertEqual(tier("PRO"), (8, None))
-        self.assertEqual(tier("PRO", concurrency=3), (3, None))
-        self.assertEqual(tier("FREE", concurrency=3, per_minute=40), (3, 40))
-        self.assertEqual(tier("FREE", per_minute=0), (1, None))
-        self.assertEqual(tier("PRO", per_minute=100), (8, 100))
-        with self.assertRaises(ValueError):
-            tier("GOLD")
+        for removed in ({"concurrency": 3}, {"per_minute": 20}, {"retries": 3}):
+            with self.subTest(removed=removed), self.assertRaises(TypeError):
+                _native.Client(api_key="synthetic", **removed)
+        self.assertFalse(hasattr(pt.Client, "scheduler"))
+
+    def test_timeouts_default_to_none(self):
+        import inspect
+
+        signature = inspect.signature(pt.Client.query)
+        self.assertIsNone(signature.parameters["timeout"].default)
+        self.assertIsNone(signature.parameters["idle_timeout"].default)
+        self.assertIn("request_timeout=None", _native_signature())
+        self.assertIn("idle_timeout=None", _native_signature())
+
+
+def _native_signature() -> str:
+    from praevis_thetadata import _native
+
+    return _native.Client.__text_signature__ or ""
 
 
 class ErrorTests(unittest.TestCase):
@@ -121,7 +132,7 @@ class RequestOptionTests(unittest.TestCase):
         self.assertEqual(_native._request_options(), (None, None, None))
         self.assertEqual(_native._request_options(2.5, 0.25, 3), (2.5, 0.25, 3))
         for bad in ({"timeout": 0}, {"timeout": -1.0}, {"idle_timeout": float("nan")},
-                    {"timeout": float("inf")}, {"concurrency": 0}):
+                    {"timeout": float("inf")}, {"concurrency": 0}, {"concurrency": 65}):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 _native._request_options(**bad)
 

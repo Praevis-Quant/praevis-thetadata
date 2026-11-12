@@ -8,7 +8,7 @@ async fn client(fixture: &Fixture) -> ThetaClient {
         ClientConfig::default()
             .with_endpoint(Some(fixture.endpoint.clone()))
             .with_allow_insecure(true)
-            .with_idle_timeout(Duration::from_secs(5)),
+            .with_idle_timeout(Some(Duration::from_secs(5))),
         support::session().await,
     )
     .await
@@ -160,7 +160,7 @@ async fn idle_timeout_and_explicit_insecure_opt_in() {
         ClientConfig::default()
             .with_endpoint(Some(fixture.endpoint.clone()))
             .with_allow_insecure(true)
-            .with_idle_timeout(Duration::from_millis(20)),
+            .with_idle_timeout(Some(Duration::from_millis(20))),
         support::session().await,
     )
     .await

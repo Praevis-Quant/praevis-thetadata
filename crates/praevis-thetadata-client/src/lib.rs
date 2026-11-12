@@ -29,7 +29,7 @@ mod job;
 #[cfg(feature = "parquet")]
 mod output;
 mod query;
-mod scheduler;
+mod tier;
 #[cfg(test)]
 extern crate self as praevis_thetadata_client;
 #[cfg(test)]
@@ -49,7 +49,7 @@ pub use praevis_thetadata_arrow::{ParquetOptions, ParquetSummary, SinkError};
 pub use praevis_thetadata_arrow::{arrow_array, arrow_schema};
 pub use praevis_thetadata_core::{BatchValue, DataBatch, TimeZone, Timestamp};
 pub use query::{BatchPolicy, QueryStream, RequestOptions, unify};
-pub use scheduler::{SchedulerPolicy, Tier};
+pub use tier::Tier;
 
 pub use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, Session};
 pub use praevis_thetadata_core::{Table, Value};
@@ -104,8 +104,12 @@ pub struct ClientConfig {
     pub endpoint: Option<String>,
     pub allow_insecure: bool,
     pub connect_timeout: Duration,
-    pub request_timeout: Duration,
-    pub idle_timeout: Duration,
+    /// The overall deadline of each request, from the call until its stream
+    /// ends. `None` (the default, as in the vendor package): no deadline.
+    pub request_timeout: Option<Duration>,
+    /// The longest wait between messages once a stream has started. `None`
+    /// (the default): no limit.
+    pub idle_timeout: Option<Duration>,
     pub max_batch_bytes: usize,
 }
 
@@ -115,8 +119,8 @@ impl Default for ClientConfig {
             endpoint: None,
             allow_insecure: false,
             connect_timeout: Duration::from_secs(10),
-            request_timeout: Duration::from_secs(300),
-            idle_timeout: Duration::from_secs(60),
+            request_timeout: None,
+            idle_timeout: None,
             max_batch_bytes: 64 * 1024 * 1024,
         }
     }
@@ -129,17 +133,9 @@ pub struct ThetaClient {
     session: Session,
     config: ClientConfig,
     eod_pool: std::sync::Arc<eod::Pool>,
-    scheduler: std::sync::Arc<scheduler::Scheduler>,
 }
 
 impl ThetaClient {
-    /// Replace the request scheduler used by `query()` and `job()` (the
-    /// default is [`SchedulerPolicy::for_tier`] with the account's tier from
-    /// the login response). Clones made afterwards share it.
-    pub fn with_scheduler(mut self, policy: SchedulerPolicy) -> Result<Self, QueryError> {
-        self.scheduler = scheduler::Scheduler::new(policy)?;
-        Ok(self)
-    }
     /// Consume a session from the standalone auth crate without authenticating again.
     pub async fn with_session(config: ClientConfig, session: Session) -> Result<Self, Error> {
         Self::connect(
@@ -172,8 +168,8 @@ impl ThetaClient {
             return Err(Error::Config("batch limit must be between 1 and i32::MAX"));
         }
         if config.connect_timeout.is_zero()
-            || config.request_timeout.is_zero()
-            || config.idle_timeout.is_zero()
+            || config.request_timeout.is_some_and(|t| t.is_zero())
+            || config.idle_timeout.is_some_and(|t| t.is_zero())
         {
             return Err(Error::Config("timeouts must be positive"));
         }
@@ -225,7 +221,6 @@ impl ThetaClient {
         } else {
             (typed_endpoint.connect_lazy(), endpoint.connect().await?)
         };
-        let tier = Tier::of_account(session.user());
         let stub = api::beta_theta_terminal_client::BetaThetaTerminalClient::new(raw)
             .max_decoding_message_size(config.max_batch_bytes + 1024);
         Ok(Self {
@@ -234,18 +229,12 @@ impl ThetaClient {
             session,
             config,
             eod_pool,
-            scheduler: scheduler::Scheduler::new(SchedulerPolicy::for_tier(tier))
-                .expect("valid tier scheduler policy"),
         })
     }
     /// The account's tier as the login response reported it: the highest of
     /// its subscriptions ([`Tier::of_account`]).
     pub fn tier(&self) -> Tier {
         Tier::of_account(self.session.user())
-    }
-    /// The scheduler limits in use (the tier's, unless replaced).
-    pub fn scheduler_policy(&self) -> &SchedulerPolicy {
-        &self.scheduler.policy
     }
     pub fn session(&self) -> Session {
         self.session.clone()
@@ -271,15 +260,19 @@ include!(concat!(env!("OUT_DIR"), "/methods.rs"));
 pub struct ResponseStream {
     inner: tonic::Streaming<wire::ResponseData>,
     max_batch_bytes: usize,
-    idle_timeout: Duration,
+    /// `None`: no limit between messages.
+    idle_timeout: Option<Duration>,
 }
 
 impl ResponseStream {
     /// Read one bounded batch. Drop the stream to cancel the request.
     pub async fn next_batch(&mut self) -> Result<Option<Table>, Error> {
-        let response = tokio::time::timeout(self.idle_timeout, self.inner.message())
-            .await
-            .map_err(|_| Error::IdleTimeout)??;
+        let response = match self.idle_timeout {
+            Some(idle) => tokio::time::timeout(idle, self.inner.message())
+                .await
+                .map_err(|_| Error::IdleTimeout)??,
+            None => self.inner.message().await?,
+        };
         response
             .map(|response| decode::decode(response, self.max_batch_bytes))
             .transpose()
@@ -421,8 +414,8 @@ with_setters!(ClientConfig {
     with_endpoint => endpoint: Option<String>,
     with_allow_insecure => allow_insecure: bool,
     with_connect_timeout => connect_timeout: Duration,
-    with_request_timeout => request_timeout: Duration,
-    with_idle_timeout => idle_timeout: Duration,
+    with_request_timeout => request_timeout: Option<Duration>,
+    with_idle_timeout => idle_timeout: Option<Duration>,
     with_max_batch_bytes => max_batch_bytes: usize,
 });
 

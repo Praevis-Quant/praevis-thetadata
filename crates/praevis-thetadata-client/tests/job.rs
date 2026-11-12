@@ -1,13 +1,12 @@
-//! Planned jobs: date splitting, ordered scheduled parts, empty parts, errors
-//! and retry at open (P1 PR 4b), over the loopback fixture.
+//! Planned jobs: date splitting, ordered parts, empty parts, errors, the
+//! per-job concurrency, and no retry, scheduler or default deadline
+//! (ADR-0021), over the loopback fixture.
 #[allow(dead_code)]
 mod support;
 
 use chrono::NaiveDate;
 use praevis_thetadata_client::endpoints::{self, Endpoint};
-use praevis_thetadata_client::{
-    ClientConfig, QueryError, RequestOptions, SchedulerPolicy, ThetaClient, plan,
-};
+use praevis_thetadata_client::{ClientConfig, QueryError, RequestOptions, ThetaClient, Tier, plan};
 use praevis_thetadata_proto::endpoints::{
     self as wire, DataTable, DataValue, DataValueList, data_value::DataType as Wire,
 };
@@ -30,26 +29,32 @@ fn two_rows() -> wire::ResponseData {
     };
     support::response(&table, true)
 }
-async fn connect(fixture: &Fixture, policy: SchedulerPolicy) -> ThetaClient {
-    ThetaClient::with_session(
-        ClientConfig::default()
-            .with_endpoint(Some(fixture.endpoint.clone()))
-            .with_allow_insecure(true),
-        support::session().await,
+fn config(fixture: &Fixture) -> ClientConfig {
+    ClientConfig::default()
+        .with_endpoint(Some(fixture.endpoint.clone()))
+        .with_allow_insecure(true)
+}
+/// A client of an account with no recognised subscription: FREE, so a job
+/// runs one part at a time by default.
+async fn connect(fixture: &Fixture) -> ThetaClient {
+    ThetaClient::with_session(config(fixture), support::session().await)
+        .await
+        .unwrap()
+}
+/// A client of the observed PRO account (options 3, stocks and indices 0):
+/// a job runs up to 8 parts at a time by default.
+async fn connect_pro(fixture: &Fixture) -> ThetaClient {
+    let pro = support::session_with_user(
+        r#"{"email":"x","stockSubscription":0,"optionsSubscription":3,"indicesSubscription":0}"#,
     )
     .await
-    .unwrap()
-    .with_scheduler(policy)
-    .unwrap()
+    .0;
+    ThetaClient::with_session(config(fixture), pro)
+        .await
+        .unwrap()
 }
-/// 8 at a time with no per-minute limit, like PRO.
-fn parallel() -> SchedulerPolicy {
-    fast().with_concurrency(8).with_per_minute(None)
-}
-fn fast() -> SchedulerPolicy {
-    SchedulerPolicy::default()
-        .with_backoff(Duration::from_millis(5))
-        .with_max_backoff(Duration::from_millis(20))
+fn concurrency(n: usize) -> RequestOptions {
+    RequestOptions::default().with_concurrency(Some(n))
 }
 
 #[test]
@@ -88,7 +93,7 @@ async fn a_job_runs_its_parts_in_order_and_merges_their_rows() {
         messages: vec![Ok(two_rows())],
         ..Default::default()
     });
-    let client = connect(&fixture, fast()).await;
+    let client = connect(&fixture).await;
     let request = endpoints::StockHistoryEod::new("AAPL", day("2022-01-01"), day("2024-03-01"));
     let job = client.job(&request).await.unwrap();
     assert_eq!(job.parts(), 3);
@@ -120,7 +125,7 @@ async fn empty_parts_are_skipped_and_an_empty_job_has_no_data() {
         initial_error: Some(tonic::Status::not_found("synthetic")),
         ..Default::default()
     });
-    let client = connect(&fixture, fast()).await;
+    let client = connect(&fixture).await;
     let request = endpoints::StockHistoryEod::new("AAPL", day("2023-01-01"), day("2024-12-31"));
     let mut job = client.job(&request).await.unwrap();
     assert_eq!(job.next_batch().await, Err(QueryError::NoData));
@@ -133,101 +138,104 @@ async fn empty_parts_are_skipped_and_an_empty_job_has_no_data() {
         fail_first: 1,
         ..Default::default()
     });
-    let client = connect(&fixture, fast()).await;
+    let client = connect(&fixture).await;
     let batches = client.job(&request).await.unwrap().collect().await.unwrap();
     assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 2);
 }
 
 #[tokio::test]
-async fn only_resource_exhausted_and_unavailable_are_retried_at_open() {
-    for (status, fails, ok) in [
-        (tonic::Status::unavailable("synthetic"), 2, true),
-        (tonic::Status::resource_exhausted("synthetic"), 3, true),
-        (tonic::Status::resource_exhausted("synthetic"), 4, false), // retries exhausted
-        (tonic::Status::permission_denied("synthetic"), 1, false),
-        (tonic::Status::invalid_argument("synthetic"), 1, false),
+async fn a_busy_answer_is_busy_and_never_retried() {
+    for (status, expected) in [
+        (
+            tonic::Status::resource_exhausted("synthetic"),
+            QueryError::Busy,
+        ),
+        (
+            tonic::Status::unavailable("synthetic"),
+            QueryError::Remote(tonic::Code::Unavailable),
+        ),
     ] {
-        let code = status.code();
         let fixture = Fixture::start(Script {
             messages: vec![Ok(two_rows())],
             initial_error: Some(status),
-            fail_first: fails,
+            fail_first: 1,
             ..Default::default()
         });
-        let client = connect(&fixture, fast()).await;
+        let client = connect(&fixture).await;
         let request = endpoints::StockHistoryEod::new("AAPL", day("2024-06-14"), day("2024-06-14"));
-        let result = client.query(&request).await;
-        let calls = fixture.requests.lock().unwrap().len();
-        if ok {
-            assert!(result.is_ok(), "{code:?}");
-            assert_eq!(calls, fails + 1, "{code:?}");
-        } else {
-            assert_eq!(result.err(), Some(QueryError::Remote(code)));
-            assert_eq!(calls, fails.min(4), "{code:?}");
-        }
+        assert_eq!(client.query(&request).await.err(), Some(expected));
+        // One request: no retry, although the second would succeed.
+        assert_eq!(fixture.requests.lock().unwrap().len(), 1, "{expected:?}");
+        // A job ends with the same error, also without retrying.
+        let fixture = Fixture::start(Script {
+            messages: vec![Ok(two_rows())],
+            initial_error: Some(tonic::Status::resource_exhausted("synthetic")),
+            ..Default::default()
+        });
+        let client = connect(&fixture).await;
+        let mut job = client.job(&request).await.unwrap();
+        assert_eq!(job.next_batch().await, Err(QueryError::Busy));
+        assert_eq!(fixture.requests.lock().unwrap().len(), 1);
     }
 }
 
 #[tokio::test]
-async fn one_slot_holds_until_the_stream_ends_and_dropping_a_job_releases_it() {
+async fn queries_are_not_coordinated_and_a_dropped_job_cancels_its_part() {
     let fixture = Fixture::start(Script {
         messages: vec![Ok(two_rows()), Ok(two_rows())],
         pause_before: Some((1, Duration::from_secs(5))),
         ..Default::default()
     });
-    let client = connect(&fixture, fast()).await;
+    // A FREE account: the library still sends a second query while the first
+    // is open. Staying within the plan across calls is the caller's job.
+    let client = connect(&fixture).await;
     let request = endpoints::StockHistoryEod::new("AAPL", day("2024-06-14"), day("2024-06-14"));
     let mut first = client.query(&request).await.unwrap();
     assert!(first.next_batch().await.unwrap().is_some());
-    // FREE's default is one request at a time: a second waits.
-    assert!(
-        tokio::time::timeout(Duration::from_millis(200), client.query(&request))
-            .await
-            .is_err()
-    );
-    first.cancel();
-    assert!(client.query(&request).await.is_ok());
-    // A dropped job cancels its running part and frees the slot.
-    let client = connect(&fixture, fast()).await;
-    let mut job = client.job(&request).await.unwrap();
+    let second = tokio::time::timeout(Duration::from_millis(500), client.query(&request)).await;
+    assert!(matches!(second, Ok(Ok(_))), "the second query waited");
+    assert_eq!(fixture.requests.lock().unwrap().len(), 2);
+    drop(first);
+    // A dropped job cancels its running part.
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(two_rows()), Ok(two_rows())],
+        pause_before: Some((1, Duration::from_secs(30))),
+        ..Default::default()
+    });
+    let client = connect(&fixture).await;
+    let long = endpoints::StockHistoryEod::new("AAPL", day("2015-01-01"), day("2024-12-31"));
+    let mut job = client.job(&long).await.unwrap();
     assert!(job.next_batch().await.unwrap().is_some());
     drop(job);
-    assert!(
-        tokio::time::timeout(Duration::from_secs(2), client.query(&request))
-            .await
-            .is_ok()
-    );
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    // FREE runs one part at a time, and the dropped job started no other.
+    assert_eq!(fixture.requests.lock().unwrap().len(), 1);
 }
 
 #[tokio::test]
-async fn the_default_scheduler_follows_the_account_tier() {
-    let fixture = Fixture::start(Script::default());
-    let config = || {
-        ClientConfig::default()
-            .with_endpoint(Some(fixture.endpoint.clone()))
-            .with_allow_insecure(true)
-    };
-    // The observed PRO account: options 3, stocks and indices 0.
-    let pro = support::session_with_user(
-        r#"{"email":"x","stockSubscription":0,"optionsSubscription":3,"indicesSubscription":0}"#,
-    )
-    .await
-    .0;
-    let client = ThetaClient::with_session(config(), pro).await.unwrap();
-    assert_eq!(client.tier(), praevis_thetadata_client::Tier::Pro);
-    let policy = client.scheduler_policy();
-    assert_eq!((policy.concurrency, policy.per_minute), (8, None));
-    // An explicit policy overrides the tier.
-    let client = client.with_scheduler(SchedulerPolicy::default()).unwrap();
-    let policy = client.scheduler_policy();
-    assert_eq!((policy.concurrency, policy.per_minute), (1, Some(20)));
-    // No recognised subscription: FREE's documented limits.
-    let client = ThetaClient::with_session(config(), support::session().await)
-        .await
-        .unwrap();
-    assert_eq!(client.tier(), praevis_thetadata_client::Tier::Free);
-    let policy = client.scheduler_policy();
-    assert_eq!((policy.concurrency, policy.per_minute), (1, Some(20)));
+async fn the_default_job_concurrency_follows_the_account_tier() {
+    // Every request takes 400 ms; ten yearly parts.
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(two_rows())],
+        header_delay: Duration::from_millis(400),
+        ..Default::default()
+    });
+    let long = endpoints::StockHistoryEod::new("AAPL", day("2015-01-01"), day("2024-12-31"));
+    for (client, tier, parallel) in [
+        (connect_pro(&fixture).await, Tier::Pro, 8),
+        (connect(&fixture).await, Tier::Free, 1),
+    ] {
+        assert_eq!(client.tier(), tier);
+        assert_eq!(tier.concurrency(), parallel);
+        let before = fixture.requests.lock().unwrap().len();
+        let job = client.job(&long).await.unwrap();
+        let reader = tokio::spawn(job.collect());
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        // The tier's documented limit is the job's default concurrency.
+        let sent = fixture.requests.lock().unwrap().len() - before;
+        assert_eq!(sent, parallel, "{tier:?}");
+        reader.abort();
+    }
 }
 
 /// A fixture for the per-strike split: `option_list_strikes` lists the given
@@ -325,7 +333,7 @@ async fn strike_texts(
 async fn all_strike_fine_quotes_split_per_listed_strike_in_strike_order() {
     // 99.00 sorts before 540.00 by value, after it as text.
     let (fixture, seen) = strike_fixture(&[54250, 9900, 54000], "540.00", 2);
-    let client = connect(&fixture, parallel()).await;
+    let client = connect_pro(&fixture).await;
     let request = endpoints::OptionHistoryQuote::new("SPY", day("2024-06-21"))
         .date(day("2024-06-14"))
         .interval("tick");
@@ -354,7 +362,7 @@ async fn all_strike_fine_quotes_split_per_listed_strike_in_strike_order() {
 #[tokio::test]
 async fn other_quote_shapes_and_query_are_never_split() {
     let (fixture, seen) = strike_fixture(&[54000, 54250], "", 2);
-    let client = connect(&fixture, parallel()).await;
+    let client = connect_pro(&fixture).await;
     let base = || {
         endpoints::OptionHistoryQuote::new("SPY", day("2024-06-21"))
             .date(day("2024-06-14"))
@@ -384,14 +392,11 @@ async fn other_quote_shapes_and_query_are_never_split() {
     assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 1);
     assert_eq!(seen.lock().unwrap().last().map(String::as_str), Some("*"));
     // One request at a time: never split (slower than the single request).
-    let serial = client
-        .clone()
-        .with_scheduler(fast().with_concurrency(1))
-        .unwrap();
-    assert_eq!(serial.job(&base()).await.unwrap().parts(), 1);
+    let serial = client.job_with(&base(), concurrency(1)).await.unwrap();
+    assert_eq!(serial.parts(), 1);
     // No strikes listed: the job sends the request unsplit.
     let (fixture, _) = strike_fixture(&[], "", 2);
-    let client = connect(&fixture, parallel()).await;
+    let client = connect_pro(&fixture).await;
     let job = client.job(&base()).await.unwrap();
     assert_eq!(job.parts(), 1);
     assert_eq!(strike_texts(&client, &base()).await, ["*"]);
@@ -406,9 +411,9 @@ async fn a_slow_first_part_does_not_hold_the_other_slots() {
         delay_requests: vec![1],
         ..Default::default()
     });
-    let client = connect(&fixture, fast().with_concurrency(2).with_per_minute(None)).await;
+    let client = connect(&fixture).await;
     let eod = endpoints::StockHistoryEod::new("AAPL", day("2015-01-01"), day("2024-12-31"));
-    let job = client.job(&eod).await.unwrap();
+    let job = client.job_with(&eod, concurrency(2)).await.unwrap();
     assert_eq!(job.parts(), 10);
     let reader = tokio::spawn(job.collect());
     tokio::time::sleep(Duration::from_millis(1000)).await;
@@ -437,23 +442,54 @@ fn one_day() -> endpoints::StockHistoryEod {
 }
 
 #[tokio::test]
-async fn a_per_call_timeout_covers_time_queued_for_a_slot() {
-    // The first request holds the only slot while its headers are delayed.
+async fn no_deadline_applies_unless_one_is_set() {
+    // The response takes 1.5 s; the client sets no timeout, as the vendor's.
+    let fixture = Fixture::start(Script {
+        messages: vec![Ok(two_rows())],
+        header_delay: Duration::from_millis(1_500),
+        ..Default::default()
+    });
+    let client = connect(&fixture).await;
+    let batches = client
+        .query(&one_day())
+        .await
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 2);
+    // No grpc-timeout is sent unless the caller sets one.
+    client
+        .query_with(
+            &one_day(),
+            RequestOptions::default().with_timeout(Some(Duration::from_secs(20))),
+        )
+        .await
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    let sent = fixture.timeouts.lock().unwrap().clone();
+    assert_eq!(sent.len(), 2);
+    assert_eq!(sent[0], None);
+    assert!(sent[1].is_some(), "{sent:?}");
+}
+
+#[tokio::test]
+async fn a_per_call_timeout_ends_a_slow_request_and_nothing_queues() {
+    // Every response takes 3 s to start.
     let fixture = Fixture::start(Script {
         messages: vec![Ok(two_rows())],
         header_delay: Duration::from_secs(3),
-        delay_requests: vec![1],
         ..Default::default()
     });
-    let client = connect(&fixture, fast().with_concurrency(1).with_per_minute(None)).await;
+    let client = connect(&fixture).await;
+    // A slow query is open; another is not queued behind it.
     let holder = {
         let client = client.clone();
         tokio::spawn(async move { client.query(&one_day()).await.map(drop) })
     };
     tokio::time::sleep(Duration::from_millis(200)).await;
-    assert_eq!(fixture.requests.lock().unwrap().len(), 1);
-    // The client's own request timeout is the default 120 s; this call asks
-    // for 300 ms, all of it spent waiting for the slot.
     let started = std::time::Instant::now();
     let result = client
         .query_with(
@@ -471,8 +507,8 @@ async fn a_per_call_timeout_covers_time_queued_for_a_slot() {
         waited >= Duration::from_millis(250) && waited < Duration::from_secs(2),
         "{waited:?}"
     );
-    // It never reached the server: its budget ran out in the queue.
-    assert_eq!(fixture.requests.lock().unwrap().len(), 1);
+    // It reached the server at once, beside the open one: no queue.
+    assert_eq!(fixture.requests.lock().unwrap().len(), 2);
     holder.abort();
 }
 
@@ -483,8 +519,8 @@ async fn a_per_call_idle_timeout_overrides_the_clients() {
         message_delay: Duration::from_millis(500),
         ..Default::default()
     });
-    // The client allows 30 s between messages; this call allows 100 ms.
-    let client = connect(&fixture, parallel()).await;
+    // The client sets no idle limit; this call allows 100 ms.
+    let client = connect_pro(&fixture).await;
     let stream = client
         .query_with(
             &one_day(),
@@ -496,55 +532,43 @@ async fn a_per_call_idle_timeout_overrides_the_clients() {
 }
 
 #[tokio::test]
-async fn a_jobs_concurrency_is_checked_against_the_scheduler() {
+async fn a_jobs_concurrency_is_checked_but_not_tied_to_the_tier() {
     let fixture = Fixture::start(Script {
         messages: vec![Ok(two_rows())],
         ..Default::default()
     });
-    let client = connect(&fixture, parallel()).await;
-    for wanted in [0, 9] {
-        let result = client
-            .job_with(
-                &one_day(),
-                RequestOptions::default().with_concurrency(Some(wanted)),
-            )
-            .await;
+    // A FREE account (default 1): the caller may choose more, up to 64.
+    let client = connect(&fixture).await;
+    for wanted in [0, 65] {
+        let result = client.job_with(&one_day(), concurrency(wanted)).await;
         assert!(
             matches!(result, Err(QueryError::Configuration)),
             "{wanted}: {}",
             result.is_ok()
         );
     }
-    // At the scheduler's own limit it runs.
-    let job = client
-        .job_with(
-            &one_day(),
-            RequestOptions::default().with_concurrency(Some(8)),
-        )
-        .await
-        .unwrap();
-    assert_eq!(job.collect().await.unwrap().len(), 1);
+    for wanted in [9, 64] {
+        let job = client
+            .job_with(&one_day(), concurrency(wanted))
+            .await
+            .unwrap();
+        assert_eq!(job.collect().await.unwrap().len(), 1, "{wanted}");
+    }
 }
 
 #[tokio::test]
 async fn a_jobs_concurrency_caps_its_parts_in_flight() {
     // Every request takes 300 ms to answer. Eight yearly parts at two at a
-    // time need at least four rounds, however many slots the scheduler has.
+    // time need at least four rounds, although the PRO default would be 8.
     let fixture = Fixture::start(Script {
         messages: vec![Ok(two_rows())],
         header_delay: Duration::from_millis(300),
         ..Default::default()
     });
-    let client = connect(&fixture, parallel()).await;
+    let client = connect_pro(&fixture).await;
     let request = endpoints::StockHistoryEod::new("AAPL", day("2017-01-01"), day("2024-12-31"));
     let started = std::time::Instant::now();
-    let job = client
-        .job_with(
-            &request,
-            RequestOptions::default().with_concurrency(Some(2)),
-        )
-        .await
-        .unwrap();
+    let job = client.job_with(&request, concurrency(2)).await.unwrap();
     assert_eq!(job.parts(), 8);
     let batches = job.collect().await.unwrap();
     let elapsed = started.elapsed();

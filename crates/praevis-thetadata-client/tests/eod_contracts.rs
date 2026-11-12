@@ -51,7 +51,7 @@ async fn client(fixture: &Fixture, policy: EodPolicy) -> ThetaClient {
         ClientConfig::default()
             .with_endpoint(Some(fixture.endpoint.clone()))
             .with_allow_insecure(true)
-            .with_request_timeout(Duration::from_secs(10)),
+            .with_request_timeout(Some(Duration::from_secs(10))),
         support::session().await,
         policy,
     )
@@ -98,6 +98,7 @@ async fn every_remote_code_keeps_its_category_even_with_spoofed_text() {
         let expected = match code {
             NotFound => EodError::NoData,
             Unauthenticated => EodError::SessionEnded,
+            ResourceExhausted => EodError::Busy,
             _ => EodError::Remote(code),
         };
         for table_api in [false, true] {
@@ -591,7 +592,7 @@ async fn typed_queries_never_authenticate_again() {
         ClientConfig::default()
             .with_endpoint(Some(fixture.endpoint.clone()))
             .with_allow_insecure(true)
-            .with_request_timeout(Duration::from_secs(10)),
+            .with_request_timeout(Some(Duration::from_secs(10))),
         session,
         EodPolicy::default(),
     )
@@ -720,8 +721,8 @@ async fn all_duration_and_policy_configuration_failures_precede_connection() {
             let mut c = config.clone();
             match field {
                 0 => c.connect_timeout = value,
-                1 => c.request_timeout = value,
-                _ => c.idle_timeout = value,
+                1 => c.request_timeout = Some(value),
+                _ => c.idle_timeout = Some(value),
             }
             assert_eq!(
                 ThetaClient::with_eod_policy(c, session.clone(), EodPolicy::default())
@@ -790,16 +791,16 @@ async fn idle_deadline_and_pending_cancellation_match_before_and_after_delivery(
                     ClientConfig::default()
                         .with_endpoint(Some(fixture.endpoint.clone()))
                         .with_allow_insecure(true)
-                        .with_idle_timeout(if mode == 0 {
+                        .with_idle_timeout(Some(if mode == 0 {
                             Duration::from_millis(100)
                         } else {
                             Duration::from_secs(5)
-                        })
-                        .with_request_timeout(if mode == 1 {
+                        }))
+                        .with_request_timeout(Some(if mode == 1 {
                             Duration::from_millis(250)
                         } else {
                             Duration::from_secs(5)
-                        }),
+                        })),
                     support::session().await,
                     EodPolicy::default(),
                 )

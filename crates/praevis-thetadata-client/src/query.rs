@@ -8,8 +8,7 @@
 //! (no `ResponseData` or payload copy): inline below `inline_bytes`, on the
 //! blocking pool above it.
 use crate::endpoints::Endpoint;
-use crate::eod::{QueryError, budgets, check_deadline};
-use crate::scheduler::retryable;
+use crate::eod::{NO_LIMIT, QueryError, budgets, check_deadline, deadline_after, set_grpc_timeout};
 use crate::{ThetaClient, envelope, framing};
 use praevis_thetadata_arrow::arrow_array::{ArrayRef, RecordBatch, new_null_array};
 use praevis_thetadata_arrow::arrow_schema::{DataType, Field, Schema};
@@ -58,26 +57,32 @@ impl BatchPolicy {
 /// Per-call options for [`ThetaClient::query_with`] and
 /// [`ThetaClient::job_with`]. Each one left unset uses the client's setting.
 ///
-/// **The timeout covers time spent queued.** It is a wall-clock budget that
-/// starts when the request is submitted, before it waits for a scheduler
-/// slot, and ends when its stream ends. A request that never gets a slot
-/// fails with [`QueryError::Deadline`] when its budget runs out, so a busy
-/// scheduler cannot hold a caller longer than it asked for. In a job, each
-/// part has its own budget, from the moment the job submits it.
+/// **There is no deadline unless one is set** here or in
+/// [`ClientConfig`](crate::ClientConfig), as in the vendor package. A
+/// timeout is a wall-clock budget that starts when the request is submitted,
+/// including any wait for an in-process stream slot
+/// ([`EodPolicy::concurrent_streams`](crate::EodPolicy)), and ends when its
+/// stream ends. In a job, each part has its own budget, from the moment the
+/// job starts it. The library never retries and applies no account-wide
+/// scheduling or rate limit (ADR-0021).
 #[derive(Debug, Clone, Default)]
 #[non_exhaustive]
 pub struct RequestOptions {
     /// How rows are coalesced into batches.
     pub batch: BatchPolicy,
-    /// The overall deadline of a request (each part, in a job), including
-    /// time queued for a slot. Default: `ClientConfig::request_timeout`.
+    /// The overall deadline of a request (each part, in a job). Default:
+    /// `ClientConfig::request_timeout` (none unless set).
     pub timeout: Option<Duration>,
     /// The longest wait between messages once a request streams. Default:
-    /// `ClientConfig::idle_timeout`.
+    /// `ClientConfig::idle_timeout` (none unless set).
     pub idle_timeout: Option<Duration>,
-    /// Jobs only: parts holding a scheduler slot at once, from 1 to the
-    /// scheduler's concurrency; the read-ahead window scales with it.
-    /// Default: the scheduler's concurrency. `query_with` ignores it.
+    /// Jobs only: parts running at once, from 1 to 64; the read-ahead window
+    /// scales with it. Default: the account tier's documented limit
+    /// ([`Tier::concurrency`](crate::Tier::concurrency): FREE 1 to PRO 8), so
+    /// one job alone stays within the plan. It applies to this job only: jobs
+    /// and queries running at the same time are not coordinated, and
+    /// together they can exceed the plan (the service may then answer
+    /// [`QueryError::Busy`]). `query_with` ignores it.
     pub concurrency: Option<usize>,
 }
 with_setters!(RequestOptions {
@@ -91,7 +96,9 @@ impl RequestOptions {
         self.batch.validate()?;
         if self.timeout.is_some_and(|t| t.is_zero())
             || self.idle_timeout.is_some_and(|t| t.is_zero())
-            || self.concurrency == Some(0)
+            || self
+                .concurrency
+                .is_some_and(|c| !(1..=crate::job::MAX_CONCURRENCY).contains(&c))
         {
             return Err(QueryError::Configuration);
         }
@@ -146,11 +153,12 @@ impl ThetaClient {
             idle_timeout,
             ..
         } = options;
-        // The budget starts now, before admission: queue time counts.
-        let deadline = Instant::now()
-            .checked_add(timeout.unwrap_or(self.config.request_timeout))
-            .ok_or(QueryError::Configuration)?;
-        let idle = idle_timeout.unwrap_or(self.config.idle_timeout);
+        // The budget, if any, starts now: in-process admission waits count.
+        let timeout = timeout.or(self.config.request_timeout);
+        let deadline = deadline_after(timeout)?;
+        let idle = idle_timeout
+            .or(self.config.idle_timeout)
+            .unwrap_or(NO_LIMIT);
         let pool = self.eod_pool.clone();
         let decode = &pool.policy.decode;
         let limits = Limits::default()
@@ -172,28 +180,9 @@ impl ThetaClient {
             // Observed column kinds keep a column typed when a response leaves it
             // entirely null (ADR-0009 addendum).
             .with_column_kinds(E::COLUMNS);
-        // Admission and retry (P1 PR 4b): a scheduler slot is held from open
-        // to the end of the stream. Only RESOURCE_EXHAUSTED and UNAVAILABLE
-        // at open are retried; nothing has been delivered yet, so a retry
-        // cannot duplicate rows.
-        let scheduler = self.scheduler.clone();
-        let mut attempt = 0;
-        let (inner, failure, stream_lease, slot) = loop {
-            let slot = scheduler.admit(deadline).await?;
-            match self.open(request, deadline, &pool).await {
-                Ok((inner, failure, lease)) => break (inner, failure, lease, slot),
-                Err(error) if retryable(error) && attempt < scheduler.policy.retries => {
-                    drop(slot);
-                    attempt += 1;
-                    let resume = Instant::now() + scheduler.backoff(attempt);
-                    if resume >= deadline {
-                        return Err(error);
-                    }
-                    tokio::time::sleep_until(resume).await;
-                }
-                Err(error) => return Err(error),
-            }
-        };
+        // One attempt: a busy answer (RESOURCE_EXHAUSTED) is `Busy`, never
+        // retried here (ADR-0021).
+        let (inner, failure, stream_lease) = self.open(request, timeout, deadline, &pool).await?;
         Ok(QueryStream {
             inner: Some(inner),
             decoder: Some(Box::new(decoder)),
@@ -202,7 +191,7 @@ impl ThetaClient {
             idle,
             batch,
             failure,
-            leases: Some((stream_lease, slot)),
+            lease: Some(stream_lease),
             emitted: false,
             first_buffered: None,
             pending: None,
@@ -214,6 +203,7 @@ impl ThetaClient {
     async fn open<E: Endpoint>(
         &self,
         request: &E,
+        timeout: Option<Duration>,
         deadline: Instant,
         pool: &crate::eod::Pool,
     ) -> Result<
@@ -231,7 +221,7 @@ impl ThetaClient {
             .map_err(|_| QueryError::Cancelled)?;
         let mut grpc_request =
             tonic::Request::new(E::request(self.query_info(), request.to_query()));
-        grpc_request.set_timeout(deadline.saturating_duration_since(Instant::now()));
+        set_grpc_timeout(&mut grpc_request, timeout, deadline);
         let failure = framing::Failure::default();
         // Item 8, option 2a: the body assembles each message and parks it here.
         let parked = framing::ParkedFrame::default();
@@ -276,8 +266,8 @@ pub struct QueryStream {
     idle: Duration,
     batch: BatchPolicy,
     failure: framing::Failure,
-    /// The stream admission lease and the scheduler slot, released together.
-    leases: Option<(OwnedSemaphorePermit, OwnedSemaphorePermit)>,
+    /// The in-process stream admission lease.
+    lease: Option<OwnedSemaphorePermit>,
     /// A batch has been returned, so later rows coalesce.
     emitted: bool,
     /// When the oldest buffered row arrived.
@@ -299,7 +289,7 @@ impl QueryStream {
     pub fn cancel(&mut self) {
         self.inner = None;
         self.decoder = None;
-        self.leases = None;
+        self.lease = None;
         self.terminal = true;
     }
 
@@ -325,14 +315,14 @@ impl QueryStream {
             return Err(QueryError::Cancelled);
         };
         // Fields drop in order if this call is dropped: transport first.
-        let mut state = (inner, Some(decoder), self.leases.take());
+        let mut state = (inner, Some(decoder), self.lease.take());
         let result = self.next_inner(&mut state.0, &mut state.1).await;
         let result = check_deadline(self.deadline).and(result);
         match (result, state.1) {
             (Ok(Some(batch)), Some(decoder)) => {
                 self.inner = Some(state.0);
                 self.decoder = Some(decoder);
-                self.leases = state.2;
+                self.lease = state.2;
                 Ok(Some(batch))
             }
             (Ok(_), _) => {

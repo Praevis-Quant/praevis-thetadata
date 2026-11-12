@@ -142,12 +142,18 @@ class Client(VendorMethods):
     ``THETADATA_CREDENTIALS_FILE`` and ``./creds.txt``. They are never logged.
 
     ``dataframe_type`` (``"polars"``, the vendor default, ``"pandas"`` or
-    ``"arrow"``) is what the vendor-named methods return. The scheduler
-    follows the account's tier from the login response (``tier``): FREE 1
-    concurrent request and 20 per minute; VALUE 2, STANDARD 4 and PRO 8
-    concurrent requests with no per-minute limit. ``concurrency=`` and
-    ``per_minute=`` override it (``per_minute=0`` removes the limit);
-    ``scheduler`` shows the limits in use.
+    ``"arrow"``) is what the vendor-named methods return.
+
+    **No timeout, retry or rate limit by default, as in the vendor package**
+    (ADR-0021). ``request_timeout=`` and ``idle_timeout=`` (seconds) set
+    deadlines for every call; ``query``, ``batches`` and ``to_parquet`` also
+    take them per call. A busy answer from the service (``RESOURCE_EXHAUSTED``)
+    raises ``QueryFailed`` with kind ``"busy"`` and is not retried.
+
+    A planned call runs up to ``concurrency`` parts at once, by default the
+    account tier's documented limit (``default_concurrency``: FREE 1,
+    VALUE 2, STANDARD 4, PRO 8), so one call alone stays within the plan.
+    Calls are not coordinated with each other: several at once can exceed it.
 
     **One session per account** (confirmed by ``opt-session-001``). Each login
     starts a new session, and the service ends the account's earlier one: a
@@ -155,8 +161,8 @@ class Client(VendorMethods):
     the first one's requests fail with ``SessionEnded`` (gRPC
     ``UNAUTHENTICATED``). The client neither retries nor logs in again by
     itself. Log in once and share it: ``Client(existing_authorized_client=client,
-    dataframe_type="pandas")`` reuses ``client``'s session, connection and
-    scheduler, as in the vendor package.
+    dataframe_type="pandas")`` reuses ``client``'s session and connection, as
+    in the vendor package.
     """
 
     __slots__ = ("_native", "_dataframe_type")
@@ -177,7 +183,7 @@ class Client(VendorMethods):
         if existing_authorized_client is not None:
             if any(v is not None for v in (api_key, email, password, creds_file)) or options:
                 raise ValueError("existing_authorized_client shares a session: give no credentials or options")
-            # Same session, connection and scheduler; no second login.
+            # Same session and connection; no second login.
             self._native = existing_authorized_client._native
         else:
             credentials = _credentials(creds_file, api_key, email, password)
@@ -199,9 +205,10 @@ class Client(VendorMethods):
         return self._native.tier
 
     @property
-    def scheduler(self) -> tuple[int, int | None]:
-        """``(concurrency, per_minute)`` in use; ``None`` means no per-minute limit."""
-        return self._native.scheduler
+    def default_concurrency(self) -> int:
+        """The tier's documented concurrent-request limit: the default
+        ``concurrency`` of a planned call."""
+        return self._native.default_concurrency
 
     def query(
         self,
@@ -219,10 +226,10 @@ class Client(VendorMethods):
         date ranges are split within the vendor's limits and merged in order.
 
         Per-call options, each defaulting to the client's setting:
-        ``timeout`` (seconds per request, or per part with ``plan``; it
-        includes time waiting for a free slot), ``idle_timeout`` (seconds
-        between messages) and ``concurrency`` (with ``plan``: parts running at
-        once, at most the client's concurrency)."""
+        ``timeout`` (seconds per request, or per part with ``plan``; none
+        unless set), ``idle_timeout`` (seconds between messages; none unless
+        set) and ``concurrency`` (with ``plan``: parts running at once, 1 to
+        64, default ``default_concurrency``)."""
         return Result(self._native.query(
             endpoint, plan=plan, timeout=timeout, idle_timeout=idle_timeout,
             concurrency=concurrency, **params

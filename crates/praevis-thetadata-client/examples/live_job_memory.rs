@@ -318,7 +318,7 @@ async fn main() -> std::process::ExitCode {
         session.user().email.clone(),
     ];
     let config = ClientConfig::default()
-        .with_request_timeout(std::time::Duration::from_secs(cli.request_timeout_s));
+        .with_request_timeout(Some(std::time::Duration::from_secs(cli.request_timeout_s)));
     let client = match ThetaClient::with_session(config, session).await {
         Ok(c) => c,
         Err(_) => {
@@ -358,7 +358,7 @@ async fn main() -> std::process::ExitCode {
         "request_timeout_s": cli.request_timeout_s,
         "host": {"os": std::env::consts::OS, "arch": std::env::consts::ARCH},
         "tier": client.tier().name(),
-        "concurrency": client.scheduler_policy().concurrency,
+        "concurrency": client.tier().concurrency(),
         "rows": rows,
         "wall_ms": start.elapsed().as_millis(),
         "heap_peak_mib": (PEAK.load(Ordering::Relaxed) - idle_heap) as f64 / MIB,

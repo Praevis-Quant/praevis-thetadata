@@ -126,7 +126,7 @@ class Runners(unittest.TestCase):
                 return 1234
 
         class Stub:
-            tier, scheduler = "PRO", (8, None)
+            tier, default_concurrency = "PRO", 8
 
             def to_parquet(self, method, path, **kwargs):
                 Path(path).write_bytes(b"PAR1")

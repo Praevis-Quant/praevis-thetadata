@@ -323,7 +323,7 @@
     "id": "grpc-transport",
     "status": "supported",
     "section": "transport-and-errors",
-    "rationale": "query() and job() run on a tier-aware scheduler (PRO 8 concurrent, FREE 1 and 20 per minute by default, overridable), with deadlines, idle timeouts and cancellation; jobs split by date and, for all-strike fine quotes, by strike, with ordered read-ahead. Only RESOURCE_EXHAUSTED and UNAVAILABLE are retried, and only when a request opens. Measured live up to 8 concurrent on options PRO; behaviour above 8 and over the vendor's limits is not probed.",
+    "rationale": "query() and job() do what one caller asks, as the vendor package does: no retry, no account-wide scheduler or rate limit, and no deadline unless the caller sets one (ADR-0021, from 0.1.0-beta.2); optional per-call deadlines and idle timeouts, and cancellation. Jobs split by date and, for all-strike fine quotes, by strike, with ordered read-ahead and their own concurrency (default: the tier's documented limit, PRO 8). RESOURCE_EXHAUSTED is a distinct, unretried QueryError::Busy. Measured live up to 8 concurrent on options PRO.",
     "adrs": [
       "docs/adr/0010-stream-lifecycle-and-resource-bounds.md"
     ],
@@ -331,7 +331,7 @@
     "implementation": [
       "crates/praevis-thetadata-client/src/query.rs",
       "crates/praevis-thetadata-client/src/job.rs",
-      "crates/praevis-thetadata-client/src/scheduler.rs"
+      "crates/praevis-thetadata-client/src/tier.rs"
     ],
     "verification": [
       "crates/praevis-thetadata-client/tests/query.rs",

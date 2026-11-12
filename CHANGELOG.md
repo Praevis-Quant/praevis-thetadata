@@ -15,6 +15,53 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Breaking
+
+For `0.1.0-beta.2` (user decision 2026-11-12, ADR-0021). The library does what
+one caller asks, as fast as possible. Coordinating many callers, and policy
+over time, belongs in a shared data service. The vendor package has no retry,
+scheduler, rate limiter or default timeout either.
+
+- **Removed: retry at open.** `RESOURCE_EXHAUSTED` and `UNAVAILABLE` are no
+  longer retried with backoff.
+- **Removed: the account-wide scheduler and per-minute limiter.** Gone are
+  `SchedulerPolicy` (with `for_tier` and `free_observed`),
+  `ThetaClient::with_scheduler` and `scheduler_policy`. A query no longer
+  waits for a scheduler slot. `ThetaClient::tier()` stays, as information.
+- **Timeouts default to none.** `ClientConfig::request_timeout` and
+  `idle_timeout` become `Option<Duration>`, default `None`. They can still be
+  set there, or per call in `RequestOptions`. Without a timeout, no
+  `grpc-timeout` is sent. Login timeouts are unchanged.
+- **A job's concurrency is its own.** `RequestOptions::concurrency` takes 1
+  to 64, and defaults to the tier's documented limit (`Tier::concurrency()`:
+  FREE 1, VALUE 2, STANDARD 4, PRO 8), so one job alone stays within the
+  plan. Jobs and queries at the same time are not coordinated, and together
+  they can exceed the plan.
+- **New error: `QueryError::Busy`** for the service's `RESOURCE_EXHAUSTED`
+  (it was `Remote(ResourceExhausted)`). It is not retried. Python:
+  `QueryFailed` with kind `"busy"`, code `"ResourceExhausted"`.
+- **Python:**
+  - `Client(...)` no longer takes `concurrency`, `per_minute` or `retries`.
+  - `request_timeout` and `idle_timeout` default to `None`.
+  - `Client.scheduler` is replaced by `default_concurrency`.
+  - The vendor-named methods have no default timeout.
+- **Kept:** the in-process resource bounds: `EodPolicy::concurrent_streams`
+  admission, the shared byte budget, decode limits and receive windows.
+  These are memory and transport safety, not vendor-rate policy.
+- **Tests:**
+  - **Removed:** the scheduler and retry tests.
+  - **Added:**
+    - a busy answer is `Busy` after one request, in `query()`, `job()` and
+      Python;
+    - no deadline applies, and no `grpc-timeout` is sent, unless one is set;
+    - a per-call timeout still ends a slow request, which is sent at once;
+    - a job's concurrency follows the tier by default, is checked (1-64)
+      and caps its parts.
+  - **Mutation-checked:** a restored 1 s default deadline, and a job
+    concurrency pinned to 1.
+  - **The cancellation examples** now check that a cancelled job sends no
+    more parts. The loopback server reports its request count.
+
 ### Changed
 
 - **CI tests the Python package on Python 3.10, 3.11, 3.12 and 3.13,** on
