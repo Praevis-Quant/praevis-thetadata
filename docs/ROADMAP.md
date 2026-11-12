@@ -158,11 +158,16 @@ running the Terminal (Java 21) on an options PRO account.
 
 **The run, once unblocked:** the same as the WSL runs, during market hours,
 with the Terminal running and started by the user.
+- **Build:** release, as under WSL. The WSL builds were `cargo build
+  --release --locked -p praevis-thetadata-stream --features live-tests
+  --examples`, run as `target/release/examples/{discover_contracts,latency}`.
+  The `cargo run --release` commands below are equivalent.
+
 1. **Contracts:** `cargo run -p praevis-thetadata-stream --features
-   live-tests --release --example discover_contracts -- --confirm-live
+   live-tests --release --locked --example discover_contracts -- --confirm-live
    --seconds 60`. It writes the 10, 100 and 1,000 lists.
 2. **Quotes:** `cargo run -p praevis-thetadata-stream --features live-tests
-   --release --example latency -- --confirm-live --feed live --run-id
+   --release --locked --example latency -- --confirm-live --feed live --run-id
    <id> --contracts <list>`, once each at 10, 100 and 1,000 contracts.
 3. **Full stream:** the same with `--full-trades --seconds 1200` in place
    of `--contracts`.
@@ -179,18 +184,23 @@ Parity here means the vendor package's 81 wrappers, each with:
 Options are done. What remains:
 
 1. **Stocks (16 wrappers), indices (10), calendar (3) and interest rate (1):
-   live checks and value checks are missing.**
-   - Only the one-time FREE map touched them: 17 probed (6 entitled and 11
-     tier-denied), 13 not probed, none value-checked.
-   - The next step is a one-run sweep of all 30, like the option checks. The
-     user approved it on 2026-11-07, and it is being added to `live_p0`.
-   - Our account is stocks FREE and indices FREE, so most of these will
-     classify as tier-denied. Their values can only be checked on a higher
-     tier.
-2. **An endpoint-by-subscription table:** per wrapper, the minimum tier the
-   service names (FREE, VALUE, STANDARD or PRO, per product), from the FREE
-   map, the options PRO map and that sweep. Where no run has established it,
-   the table says unknown.
+   checked as far as this account allows.**
+   - **The sweep ran on 2026-11-10** as `sir-checks-001`, with
+     `sir-checks-py-001` for the Python package. It was the one run of all
+     30 that the user approved on 2026-11-07
+     (`live_p0 entitlements --set stock-index-rate`).
+   - **Entitled and value-checked:** the stock and index list and EOD
+     wrappers, every calendar request and the rate history.
+   - **Refused, naming the tier:** the other stock and index wrappers. The
+     account is stocks FREE and indices FREE.
+   - **Not probed:** the stock quote flat file, which is gated.
+   - **What remains needs a subscription:**
+     [Waiting on resources](#1-wrappers-seen-only-as-refusals).
+2. **An endpoint-by-subscription table: done.** The
+   [coverage table](endpoints/coverage.md) gives, per wrapper, the minimum
+   tier the service named (FREE, VALUE, STANDARD or PRO, per product), from
+   the FREE map, the options PRO map and that sweep. Where no run has
+   established it, the table says unknown.
 3. **Futures (17 RPCs) and corporate actions (2): descriptor-only.**
    - **Blocked:** they have no vendor wrapper, no public documentation, no
      symbology and no result schemas.
