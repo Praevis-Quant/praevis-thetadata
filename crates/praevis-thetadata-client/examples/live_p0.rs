@@ -127,6 +127,28 @@ enum Command {
     /// trading days. Two stock EOD requests, each through `query()` and the
     /// raw stub: are they told apart by anything but the vendor's text?
     NotFound(NotFoundArgs),
+    /// Evidence-review gaps (user-approved 2026-11-12): per-call timeouts
+    /// live, and retry at open after RESOURCE_EXHAUSTED, through ONE bounded
+    /// over-limit burst. Codes and timings only.
+    RetryTimeout(RetryTimeoutArgs),
+}
+
+#[derive(Args)]
+struct RetryTimeoutArgs {
+    #[command(flatten)]
+    common: Common,
+    /// Slots the queue-time check holds with slow requests: a clone of the
+    /// client (same session) whose scheduler has this concurrency.
+    #[arg(long, default_value_t = 2, value_parser = clap::value_parser!(u8).range(1..=8))]
+    hold_slots: u8,
+    /// The over-limit burst: this many tiny requests at once on a clone whose
+    /// scheduler allows them all (PRO is 8). The approval covers ONE burst of
+    /// at most 10.
+    #[arg(long, default_value_t = 10, value_parser = clap::value_parser!(u8).range(1..=10))]
+    burst: u8,
+    /// Skip the over-limit burst (part B).
+    #[arg(long)]
+    skip_burst: bool,
 }
 
 #[derive(Args)]
@@ -2443,6 +2465,258 @@ async fn not_found(client: &ThetaClient, report: &mut Report, pause: Duration) -
     Ok(())
 }
 
+/// Timings and sizes of the retry-timeout mode (the live run uses the
+/// defaults; the tests shorten them).
+struct RetryTimeoutPlan {
+    hold_slots: usize,
+    /// `None` skips the over-limit burst.
+    burst: Option<usize>,
+    timeout_first_row: Duration,
+    timeout_queued: Duration,
+    /// How long the slot holders run before the queued request is sent.
+    hold_for: Duration,
+    /// Between the parts.
+    pause: Duration,
+}
+
+/// The `QueryError` variant's name, or the gRPC code for a remote status.
+fn error_name(error: &EodError) -> String {
+    match error {
+        EodError::Remote(code) => status_name(*code),
+        other => format!("{other:?}"),
+    }
+}
+
+/// Every evidence-review gap of the retry and per-call timeouts, live. Codes
+/// and timings only, never text.
+/// - **A1:** a request whose first row takes about 60 s, with a 2 s
+///   timeout: expect `Deadline`, and when.
+/// - **A2:** every slot of a small scheduler (a clone: same session) held by
+///   slow requests, then a small request with a 3 s timeout: expect
+///   `Deadline` while all holders still run, so it never got a slot and
+///   never opened (a request opens only after admission). The holders are
+///   then dropped, and a follow-up request must succeed.
+/// - **A3:** the idle timeout, skipped: it applies between messages only,
+///   and no reliable gap between messages is known.
+/// - **B:** ONE burst of tiny requests at once, above the tier's
+///   concurrency, on a clone without library retries, so every attempt is
+///   visible. This run retries `RESOURCE_EXHAUSTED`/`UNAVAILABLE` itself with
+///   the library's default policy (3 retries, 1 s doubling to 30 s, full
+///   jitter). If the service never refuses, the burst is "not provoked":
+///   never raise it further.
+async fn retry_timeout<S, Q, T>(
+    client: &ThetaClient,
+    report: &mut Report,
+    plan: &RetryTimeoutPlan,
+    slow: &S,
+    small: &Q,
+    tiny: &T,
+) -> Result<(), Stop>
+where
+    S: Endpoint + Clone + Send + Sync + 'static,
+    Q: Endpoint + Clone + Send + Sync + 'static,
+    T: Endpoint + Clone + Send + Sync + 'static,
+{
+    use praevis_thetadata_client::{RequestOptions, SchedulerPolicy};
+    let options = |timeout| RequestOptions::default().with_timeout(Some(timeout));
+    let policy = |concurrency: usize| {
+        SchedulerPolicy::default()
+            .with_concurrency(concurrency)
+            .with_per_minute(None)
+            .with_retries(0)
+    };
+
+    // A1: the timeout ends a request still waiting for its first row.
+    let started = Instant::now();
+    let (outcome, phase) = match client
+        .query_with(slow, options(plan.timeout_first_row))
+        .await
+    {
+        Err(error) => (error_name(&error), "open"),
+        Ok(mut stream) => match stream.next_batch().await {
+            Err(error) => (error_name(&error), "first-batch"),
+            Ok(Some(_)) => ("rows".into(), "first-batch"),
+            Ok(None) => ("ended".into(), "first-batch"),
+        },
+    };
+    let a1 = serde_json::json!({"part": "A1-timeout-before-first-row", "rpc": S::RPC,
+        "timeout_ms": plan.timeout_first_row.as_millis(), "outcome": outcome, "phase": phase,
+        "elapsed_ms": started.elapsed().as_millis()});
+    eprintln!("A1: {a1}");
+    report.results.push(a1);
+    tokio::time::sleep(plan.pause).await;
+
+    // A2: queue time counts against the timeout.
+    let holders_client = client
+        .clone()
+        .with_scheduler(policy(plan.hold_slots))
+        .map_err(|e| Stop(error_name(&e)))?;
+    let holders: Vec<_> = (0..plan.hold_slots)
+        .map(|_| {
+            let c = holders_client.clone();
+            let s = slow.clone();
+            tokio::spawn(async move {
+                // Hold the slot until aborted (or until 120 s).
+                if let Ok(mut stream) = c.query_with(&s, options(Duration::from_secs(120))).await {
+                    while let Ok(Some(_)) = stream.next_batch().await {}
+                }
+            })
+        })
+        .collect();
+    tokio::time::sleep(plan.hold_for).await;
+    let started = Instant::now();
+    let queued = holders_client
+        .query_with(small, options(plan.timeout_queued))
+        .await;
+    let elapsed = started.elapsed();
+    let holding = holders.iter().filter(|h| !h.is_finished()).count();
+    for holder in &holders {
+        holder.abort();
+    }
+    for holder in holders {
+        let _ = holder.await;
+    }
+    let started = Instant::now();
+    let follow_up = match holders_client
+        .query_with(small, options(Duration::from_secs(60)))
+        .await
+    {
+        Ok(stream) => match stream.collect().await {
+            Ok(_) => "OK".to_owned(),
+            Err(error) => error_name(&error),
+        },
+        Err(error) => error_name(&error),
+    };
+    let a2 = serde_json::json!({"part": "A2-timeout-while-queued", "rpc": Q::RPC,
+        "slots": plan.hold_slots, "holders_running_at_timeout": holding,
+        "timeout_ms": plan.timeout_queued.as_millis(),
+        "outcome": queued.err().map_or("OK".into(), |e| error_name(&e)),
+        "elapsed_ms": elapsed.as_millis(),
+        // Admission precedes the open: with every slot still held, the
+        // queued request was never admitted, so it never reached the service.
+        "opened": holding < plan.hold_slots,
+        "follow_up_after_release": follow_up,
+        "follow_up_ms": started.elapsed().as_millis()});
+    eprintln!("A2: {a2}");
+    report.results.push(a2);
+
+    report.results.push(serde_json::json!({"part": "A3-idle-timeout", "outcome": "skipped",
+        "reason": "the idle timeout applies between messages only, and no reliable gap between messages is known (the ~60 s wait is before the first message)"}));
+    eprintln!("A3: skipped (no reliable gap between messages)");
+
+    // B: one bounded burst over the tier's concurrency.
+    let Some(burst) = plan.burst else {
+        report
+            .results
+            .push(serde_json::json!({"part": "B-retry-at-open", "outcome": "skipped"}));
+        return Ok(());
+    };
+    tokio::time::sleep(plan.pause).await;
+    let b = burst_retry(client, burst, tiny).await?;
+    report.results.push(b);
+    Ok(())
+}
+
+/// Part B of [`retry_timeout`]: `burst` tiny requests at once, retried here.
+async fn burst_retry<T>(
+    client: &ThetaClient,
+    burst: usize,
+    tiny: &T,
+) -> Result<serde_json::Value, Stop>
+where
+    T: Endpoint + Clone + Send + Sync + 'static,
+{
+    use praevis_thetadata_client::{RequestOptions, SchedulerPolicy};
+    let options = |timeout| RequestOptions::default().with_timeout(Some(timeout));
+    let burst_client = client
+        .clone()
+        .with_scheduler(
+            SchedulerPolicy::default()
+                .with_concurrency(burst)
+                .with_per_minute(None)
+                .with_retries(0),
+        )
+        .map_err(|e| Stop(error_name(&e)))?;
+    let gate = std::sync::Arc::new(tokio::sync::Barrier::new(burst));
+    let defaults = SchedulerPolicy::default();
+    let tasks: Vec<_> = (0..burst)
+        .map(|index| {
+            let c = burst_client.clone();
+            let t = tiny.clone();
+            let gate = gate.clone();
+            let (retries, base, max) = (defaults.retries, defaults.backoff, defaults.max_backoff);
+            tokio::spawn(async move {
+                gate.wait().await;
+                let start = Instant::now();
+                let mut attempts = Vec::new();
+                let clock = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_or(0, |d| d.subsec_nanos() as u64);
+                let mut seed = (clock ^ (index as u64 + 1).wrapping_mul(0x9E37_79B9_7F4A_7C15)) | 1;
+                let mut attempt = 0;
+                let outcome = loop {
+                    let at = start.elapsed();
+                    let result = match c.query_with(&t, options(Duration::from_secs(60))).await {
+                        Ok(stream) => stream.collect().await.map(|_| ()),
+                        Err(error) => Err(error),
+                    };
+                    let code = result.as_ref().err().map_or("OK".into(), error_name);
+                    let retryable = matches!(
+                        result,
+                        Err(EodError::Remote(
+                            tonic::Code::ResourceExhausted | tonic::Code::Unavailable
+                        ))
+                    );
+                    if retryable && attempt < retries {
+                        attempt += 1;
+                        // The library's policy: full jitter over 1 s doubling, capped.
+                        seed ^= seed << 13;
+                        seed ^= seed >> 7;
+                        seed ^= seed << 17;
+                        let cap = base.saturating_mul(1 << (attempt - 1)).min(max);
+                        let backoff = cap.mul_f64((seed % 10_000) as f64 / 10_000.0);
+                        attempts.push(serde_json::json!({"at_ms": at.as_millis(), "code": code,
+                            "backoff_ms": backoff.as_millis()}));
+                        tokio::time::sleep(backoff).await;
+                        continue;
+                    }
+                    attempts.push(serde_json::json!({"at_ms": at.as_millis(), "code": code}));
+                    break code;
+                };
+                serde_json::json!({"request": index, "attempts": attempts, "outcome": outcome,
+                    "total_ms": start.elapsed().as_millis()})
+            })
+        })
+        .collect();
+    let mut requests = Vec::new();
+    for task in tasks {
+        requests.push(
+            task.await
+                .unwrap_or_else(|_| serde_json::json!({"outcome": "task-failed"})),
+        );
+    }
+    let refused = |code: &str| {
+        requests.iter().any(|r| {
+            r["attempts"]
+                .as_array()
+                .is_some_and(|a| a.iter().any(|x| x["code"] == code))
+        })
+    };
+    let provoked = refused("ResourceExhausted") || refused("Unavailable");
+    let b = serde_json::json!({"part": "B-retry-at-open", "rpc": T::RPC, "burst": burst,
+        "tier_concurrency": client.scheduler_policy().concurrency,
+        "provoked": if provoked { "yes" } else { "not provoked" },
+        "requests": requests});
+    eprintln!(
+        "B: provoked {}; outcomes {:?}",
+        b["provoked"],
+        b["requests"]
+            .as_array()
+            .map(|r| r.iter().map(|x| x["outcome"].clone()).collect::<Vec<_>>())
+    );
+    Ok(b)
+}
+
 /// One endpoint, ONE request: every message of the same response decoded by
 /// the columnar decoder (the one `query()` uses) and by the legacy decoder,
 /// compared exactly. Unlike [`check`], the two sides see identical bytes, so
@@ -2732,6 +3006,7 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::OptionChecks(options) => (&options.common, "option-checks"),
         Command::IdleReconnect(options) => (&options.common, "idle-reconnect"),
         Command::NotFound(options) => (&options.common, "not-found"),
+        Command::RetryTimeout(options) => (&options.common, "retry-timeout"),
     };
     if !common.confirm_live || !common.api_key_env || std::env::var_os("CI").is_some() {
         eprintln!("live execution requires --confirm-live and --api-key-env, outside CI");
@@ -2800,6 +3075,29 @@ async fn run(cli: Cli) -> std::process::ExitCode {
         Command::SplitProbe(options) => split_probe(options, &client, &mut report).await,
         Command::IdleReconnect(options) => idle_reconnect(options, &client, &mut report).await,
         Command::NotFound(_) => not_found(&client, &mut report, Duration::from_secs(4)).await,
+        Command::RetryTimeout(options) => {
+            let exp = date("2024-06-21");
+            let day = date("2024-06-14");
+            // About 60 s to its first row (all strikes, tick quotes; request-timing record).
+            let slow = typed::OptionHistoryQuote::new("SPY", exp)
+                .date(day)
+                .interval("tick")
+                .right("call")
+                .start_time("10:00:00")
+                .end_time("10:01:00");
+            let small = typed::StockHistoryEod::new("AAPL", day, day);
+            // Tiny: one expiration's calls, one day, end of day.
+            let tiny = typed::OptionHistoryEod::new(day, day, "SPY", exp).right("call");
+            let plan = RetryTimeoutPlan {
+                hold_slots: options.hold_slots.into(),
+                burst: (!options.skip_burst).then_some(options.burst.into()),
+                timeout_first_row: Duration::from_secs(2),
+                timeout_queued: Duration::from_secs(3),
+                hold_for: Duration::from_secs(1),
+                pause: Duration::from_secs_f64(options.common.min_interval),
+            };
+            retry_timeout(&client, &mut report, &plan, &slow, &small, &tiny).await
+        }
         Command::OptionChecks(options) => {
             // Flat files through the capped client, as in the PRO map.
             match connect_with_limit(client.session(), FLAT_FILE_PROBE_LIMIT).await {
@@ -3513,6 +3811,101 @@ mod tests {
         assert_eq!(report.results[2]["idle_s"], 0);
         // query() and the raw stub each sent every request.
         assert_eq!(server.requests.lock().unwrap().len(), 6);
+    }
+
+    #[tokio::test]
+    async fn retry_timeout_part_a_times_out_queued_requests_without_opening_them() {
+        let (wire_table, _) = fixture::table(fixture::Shape::Prices, 3);
+        // Requests 1-3 (A1 and the two slot holders) wait 3 s for headers,
+        // like the ~60 s first-row wait; the follow-up (4) does not.
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire_table, true))],
+            header_delay: Duration::from_secs(3),
+            delay_requests: vec![1, 2, 3],
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let request = typed::StockHistoryEod::new("AAPL", date("2024-06-14"), date("2024-06-14"));
+        let plan = RetryTimeoutPlan {
+            hold_slots: 2,
+            burst: None,
+            timeout_first_row: Duration::from_millis(300),
+            timeout_queued: Duration::from_millis(400),
+            hold_for: Duration::from_millis(300),
+            pause: Duration::ZERO,
+        };
+        let mut report = Report::default();
+        retry_timeout(&client, &mut report, &plan, &request, &request, &request)
+            .await
+            .unwrap();
+        let a1 = &report.results[0];
+        assert_eq!(a1["outcome"], "Deadline");
+        assert!(a1["elapsed_ms"].as_u64().unwrap() < 2_000, "{a1}");
+        let a2 = &report.results[1];
+        assert_eq!(
+            (
+                &a2["outcome"],
+                &a2["holders_running_at_timeout"],
+                &a2["opened"],
+                &a2["follow_up_after_release"]
+            ),
+            (
+                &serde_json::json!("Deadline"),
+                &serde_json::json!(2),
+                &serde_json::json!(false),
+                &serde_json::json!("OK")
+            ),
+            "{a2}"
+        );
+        assert_eq!(report.results[2]["outcome"], "skipped");
+        assert_eq!(report.results[3]["outcome"], "skipped");
+        // A1, the two holders and the follow-up: the queued request never
+        // reached the server.
+        assert_eq!(server.requests.lock().unwrap().len(), 4);
+    }
+
+    #[tokio::test]
+    async fn retry_timeout_burst_records_every_attempt_and_retries_refusals() {
+        let (wire_table, _) = fixture::table(fixture::Shape::Prices, 3);
+        // The first three requests are refused at open, as over the limit.
+        let server = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire_table, true))],
+            initial_error: Some(tonic::Status::resource_exhausted("synthetic")),
+            fail_first: 3,
+            ..Default::default()
+        });
+        let client = fixture_client(&server).await;
+        let request = typed::StockHistoryEod::new("AAPL", date("2024-06-14"), date("2024-06-14"));
+        let b = burst_retry(&client, 4, &request).await.unwrap();
+        assert_eq!(b["provoked"], "yes");
+        let requests = b["requests"].as_array().unwrap();
+        assert!(requests.iter().all(|r| r["outcome"] == "OK"), "{b}");
+        let attempts: usize = requests
+            .iter()
+            .map(|r| r["attempts"].as_array().unwrap().len())
+            .sum();
+        assert_eq!(attempts, 7);
+        let refused: Vec<_> = requests
+            .iter()
+            .flat_map(|r| r["attempts"].as_array().unwrap())
+            .filter(|a| a["code"] == "ResourceExhausted")
+            .collect();
+        assert_eq!(refused.len(), 3);
+        // Full jitter over the first 1 s backoff.
+        assert!(
+            refused
+                .iter()
+                .all(|a| a["backoff_ms"].as_u64().unwrap() < 1_000)
+        );
+        assert_eq!(server.requests.lock().unwrap().len(), 7);
+        // Never refused: "not provoked".
+        let calm = fixture::Fixture::start(fixture::Script {
+            messages: vec![Ok(fixture::response(&wire_table, true))],
+            ..Default::default()
+        });
+        let calm_client = fixture_client(&calm).await;
+        let b = burst_retry(&calm_client, 3, &request).await.unwrap();
+        assert_eq!(b["provoked"], "not provoked");
     }
 
     #[tokio::test]

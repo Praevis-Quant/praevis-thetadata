@@ -185,6 +185,21 @@ once (the calendar per date and year), paced and sequential.
 - **Used:** the run was done on 2026-11-10 as `sir-checks-001` (Rust) and
   `sir-checks-py-001` (Python), with the stock quote flat file left gated.
 
+**Never exceed the account's limits on purpose.** Do not send more concurrent
+requests than the account's tier allows (PRO 8), and do not probe rate or
+subscription limits by load-testing; see
+[subscription testing](docs/subscription-testing.md).
+- **One exception, approved by the user on 2026-11-12, as one run:**
+  `live_p0 retry-timeout`'s part B. It is one burst of at most 10 tiny
+  requests at once (PRO 8 + 2), on a client clone without library retries.
+  It retries `RESOURCE_EXHAUSTED`/`UNAVAILABLE` itself with the library's
+  default policy, then stops.
+- **If the service never refuses** at 10, record "not provoked" and never
+  raise the burst further.
+- **Who and what:** the Coordinator runs it. The private report holds codes
+  and timings only.
+- **Any further over-limit run** needs approval again.
+
 **Flat files: probes are bounded, and full downloads are approved one file
 at a time.**
 - **Probes:** a flat-file probe or check reads at most one message of at

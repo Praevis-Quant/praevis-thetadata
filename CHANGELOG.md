@@ -15,6 +15,31 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Added
+
+- **`live_p0 retry-timeout`** (user-approved 2026-11-12): live checks for the
+  evidence-review gaps on retry and per-call timeouts. Codes and timings
+  only, in the private report.
+  - **A1:** a request whose first row takes about 60 s, with a 2 s timeout.
+    It expects `Deadline`, and records when.
+  - **A2:** every slot of a small scheduler is held by slow requests, then
+    a small request gets a 3 s timeout. It expects `Deadline`, and that the
+    request never opened. A follow-up after the holders are dropped must
+    succeed.
+  - **A3:** the idle timeout, skipped. It applies between messages only, and
+    no reliable gap between messages is known.
+  - **B:** one bounded over-limit burst of 10 tiny requests at once (PRO 8
+    + 2), retried with the library's policy. It records each attempt, its
+    code and its backoff, or "not provoked". AGENTS.md records this as the
+    one approved exception to the over-limit rule.
+  - **Tests:** loopback tests cover both parts, including that the
+    timed-out queued request never reaches the server.
+- **The user guide's differences table** states the timeouts. The vendor
+  package's high-level methods have none, while our vendor-named methods use
+  the client's defaults (300 s overall, 60 s idle). So a long call that
+  completes in the vendor package fails here after 300 s unless the timeouts
+  are raised. The defaults are unchanged.
+
 ### Changed
 
 - **CI tests the Python package on Python 3.10, 3.11, 3.12 and 3.13,** on

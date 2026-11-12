@@ -38,7 +38,9 @@ EOD tables disagree about FREE access. Do not turn those contradictions into
 hardcoded requirements. Our FREE results (January and June 2024 allowed, August 2020 denied)
 narrow but do not settle the page's differing descriptions of historical coverage. Record discrepancies
 and use modest sequential checks; never probe throttling or subscription limits
-by load-testing the public service without a separate agreed plan.
+by load-testing the public service without a separate agreed plan. The one
+agreed plan so far is a single bounded burst of 10 tiny requests on options PRO
+(`live_p0 retry-timeout`, user-approved 2026-11-12; see AGENTS.md).
 
 ## Cases required as each slice is selected
 

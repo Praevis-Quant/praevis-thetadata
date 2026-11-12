@@ -53,6 +53,9 @@ None of these is hidden by the counts above.
   probed, by policy.
 - **`RequestOptions` timeouts** have no live run of their own. Live runs
   used the defaults.
+- **Both gaps have a live check prepared** (2026-11-12, user-approved):
+  `live_p0 retry-timeout`, with one bounded over-limit burst for the retry.
+  This review will record its result.
 - **`Remote(Internal)`:** seen once on a second request, unexplained.
 
 **Platforms:**
