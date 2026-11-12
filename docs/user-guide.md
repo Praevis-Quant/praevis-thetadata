@@ -80,8 +80,9 @@ peaks of 103-182 MiB over 7 live runs).
 - raw access (`stream_raw`), which uses plain tonic.
 
 **The settings:**
-- `SchedulerPolicy` concurrency: the tier's by default, from FREE 1 to PRO 8;
-- `RequestOptions`, per call: concurrency, batch policy and timeouts;
+- `RequestOptions`, per call: a job's concurrency (by default the tier's
+  documented limit, from FREE 1 to PRO 8), batch policy and timeouts (none
+  unless set);
 - `DecodeLimits` and the arrow `Limits` (`encoded_bytes` defaults to 64 MiB).
 
 ## Compatibility with the vendor Python package
@@ -104,7 +105,9 @@ peaks of 103-182 MiB over 7 live runs).
 | No data (`NOT_FOUND`) | `NoDataFoundError` | `QueryFailed` with kind `"no_data"`. An unknown symbol and a range with no trading days are the same category. The service answers both identically (`err-notfound-001`), so check the symbol with `stock_list_symbols` or `index_list_symbols` if you need to know which |
 | Ended session | — | `SessionEnded`, a subclass of `QueryFailed`. No automatic re-login |
 | Long date ranges | Sent as one request | Split within the vendor's limits and merged in order (`plan=True`). `plan=False` sends as given |
-| Concurrency | The caller's threads | A scheduler at the tier's documented limits, with retry only at open on `RESOURCE_EXHAUSTED`/`UNAVAILABLE` |
+| Timeouts | None: the high-level methods take no timeout ([research](research/thetadata-1.0.12.md#transport-and-errors)) | None by default either (from beta.2). Set `Client(request_timeout=…, idle_timeout=…)` for every call, or `timeout=`/`idle_timeout=` per call on `query`, `batches` and `to_parquet` |
+| Retry and rate limits | None | None (from beta.2, [ADR-0021](adr/0021-per-call-library.md)). A busy account (`RESOURCE_EXHAUSTED`) raises `QueryFailed` with kind `"busy"`, not retried |
+| Concurrency | The caller's threads; one request per call | A planned call runs its parts at once, up to its `concurrency` (by default the tier's documented limit: FREE 1 to PRO 8). Calls are not coordinated with each other: several at once can exceed the plan |
 | Extras | — | `query`, `batches` (streaming) and `to_parquet` (written from Rust), with per-call `timeout`, `idle_timeout` and `concurrency` |
 
 **Not covered:**

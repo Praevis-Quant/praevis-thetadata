@@ -97,11 +97,18 @@ tests are planned here.**
 on this library. Several services would read from it, or tap a stream at
 the same time, without pulling more data from the vendor. **That project
 would own:**
-- scheduling across consumers;
+- scheduling across consumers, and keeping them within the account's plan;
+- retry, for example on the library's `Busy` (`RESOURCE_EXHAUSTED`);
+- rate limiting;
+- default deadlines, and how they run while requests wait in a queue;
 - a read-ahead budget shared across jobs;
 - fairness between consumers;
-- how deadlines run while requests wait in a queue;
 - session handling.
+
+**The library does what one caller asks** (user decision 2026-11-12,
+[ADR-0021](adr/0021-per-call-library.md), from `0.1.0-beta.2`): no retry,
+account-wide scheduler, rate limit or default deadline, as in the vendor
+package. A job's own concurrency defaults to the tier's documented limit.
 
 **The licence limits any such service to the licensee's own use.**
 ThetaData's subscriber agreement permits "internal personal use" only
@@ -112,16 +119,17 @@ therefore serve only the licensee and never other people
 
 **What this library does today, for that project to start from.** These
 observations come **from reading the code and are untested**:
-1. **A paused consumer holds its scheduler slot** from open to the end of
-   its stream (`query.rs`, around line 117). At PRO's 8 slots, eight slow
-   consumers stall everything else.
+1. **Nothing coordinates callers** (from beta.2). Jobs and queries running at
+   the same time can together exceed the account's plan; the service then
+   answers `RESOURCE_EXHAUSTED`, which the library reports as `Busy`.
 2. **The read-ahead is per job,** with no budget shared across jobs. Each
    job's configured worst case is 4 × concurrency parts × 2 batches × 8 MiB
    (32 × 2 × 8 MiB = 512 MiB at PRO), so many concurrent jobs multiply it.
-3. **There is no fairness between jobs.** Admission is one semaphore, and
-   one job with a deep read-ahead can take every slot.
-4. **Queued requests' deadlines run while they wait.** The deadline is
-   fixed before admission, so time spent queued counts against the request.
+3. **There is no fairness between jobs.** The only shared admission is the
+   in-process stream limit (`EodPolicy::concurrent_streams`, a memory bound),
+   and one job with a deep read-ahead can take most of it.
+4. **No deadline unless the caller sets one.** A set deadline still counts
+   time spent waiting for an in-process stream slot.
 5. **One session serves everything.** A single login, and a single point of
    failure if it ends (`SessionEnded`).
 6. **Many open streams can each assemble a message at once** (item 8 on
@@ -134,7 +142,7 @@ work, and none would change existing calls:
 - a cache key per request;
 - the per-strike split as a public planner;
 - part-level results from a job;
-- scheduler metrics;
+- request metrics (time to open, time to first row);
 - stream reconnect;
 - stock and index streaming;
 - reader-assigned `Event` sequence: #136, **closed and parked**

@@ -5,9 +5,9 @@ runs `test_p1.py` offline). The key comes from `THETADATA_API_KEY`, or the
 other ADR-0020 sources, and is never printed or stored. Reports hold timings,
 counts, statuses, schemas and peak memory: no row values, and the writer
 refuses a report that contains a credential. Reports and captures stay under
-the ignored `artifacts/`. Requests are paced 3.5 s apart, as in P0, and the
-client's scheduler keeps FREE's documented limits (1 concurrent request, 20
-per minute).
+the ignored `artifacts/`. Requests are paced 3.5 s apart, as in P0, which
+keeps within FREE's documented limits (1 concurrent request, 20 per minute);
+the client itself no longer limits them (ADR-0021).
 
 | Script | Measures | Criterion |
 | --- | --- | --- |

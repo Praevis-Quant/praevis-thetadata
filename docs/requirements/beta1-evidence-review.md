@@ -20,8 +20,8 @@ CI runs every synthetic test on Windows and Linux.
 | **Parquet sink** | `ParquetSink`, `ParquetOptions`, `ParquetSummary`, `to_parquet` on query and job streams | `arrow/tests/parquet.rs` (5), `parquet_memory.rs`; `client/tests/output.rs` (whole file or no file) | Three option flat files decoded whole to Parquet (#102). Job to Parquet: 7 runs, Rust heap peaks of 103-182 MiB ([W5 record](../architecture/options-phase.md#memory-bound-under-w5-planned)) |
 | **`query()`** | `query`, `query_with`, `QueryStream` (`next_batch`, `collect`), `unify`, `BatchPolicy` | `client/tests/query.rs` (9): coalescing, partial rows before an error, idle/cancel terminal, null-column typing. `query_consumer` example tests | Every live value check above goes through `query()` |
 | **`job()` and the planner** | `job`, `job_with`, `JobStream`, `plan` | `client/tests/job.rs` (13): split rules, order, empty parts, slot release on drop, concurrency caps | `job()` returned the same rows as single requests (`opt-split-003`). The W5 job runs |
-| **Scheduler** | `SchedulerPolicy`, `Tier`, `with_scheduler` | `scheduler.rs` unit tests; `job.rs`: tier default, retry only at open | PRO concurrency 8 used in the W5 and options runs. FREE pacing respected in the FREE map |
-| **Per-call options** | `RequestOptions` (batch, timeout including queue time, idle timeout, concurrency) | `job.rs`: the timeout covers queued time, the idle override, concurrency checks. The examples' 5 s timeout | None specific (see the gaps) |
+| **Scheduler** | `SchedulerPolicy`, `Tier`, `with_scheduler` | `scheduler.rs` unit tests; `job.rs`: tier default, retry only at open | PRO concurrency 8 used in the W5 and options runs. FREE pacing respected in the FREE map. **Removed in beta.2** ([ADR-0021](../adr/0021-per-call-library.md)): no scheduler or retry; `Tier` stays, and a job's own concurrency defaults to the tier's limit |
+| **Per-call options** | `RequestOptions` (batch, timeout including queue time, idle timeout, concurrency). From beta.2 the timeouts are optional and caller-set, with no default | `job.rs`: the timeout covers queued time, the idle override, concurrency checks. The examples' 5 s timeout | None specific (see the gaps) |
 | **Generated endpoints** | `endpoints::*` (100 requests), `Endpoint` (sealed), `ALL`, `EndpointInfo` | `tools/test_generate_endpoints.py`; `client/tests/endpoints.rs` (8): wire mapping against the vendor wrappers; `generate_endpoints.py --check` | See the [coverage table](../endpoints/coverage.md). Of 81 vendor wrappers: **60 value-checked live**, **20 seen only as tier refusals**, **1 gated, not probed** |
 | **Errors** | `QueryError` (and `EodError`), Python `QueryFailed`/`SessionEnded` | `query.rs` (opening errors), `eod_contracts.rs`, `eod_typed.rs` | `NOT_FOUND`, `PERMISSION_DENIED`, `UNAUTHENTICATED` and `INVALID_ARGUMENT` observed ([client README](../../crates/praevis-thetadata-client/README.md), Errors). An unknown symbol and no trading days are identical at the service: the same code, details and message (`err-notfound-001`) |
 | **Memory bound** | The stated Rust-heap bound (item 8) | `eod_memory -- bound` (#130, the memory-profile workflow); `parquet_memory.rs` | Largest real message 0.36 MiB (`opt-msgsize-001`). The W5 heap runs |
@@ -50,9 +50,11 @@ None of these is hidden by the counts above.
 **Behaviour:**
 - **Retry:** `RESOURCE_EXHAUSTED` and `UNAVAILABLE` were never observed
   live, so the retry has only synthetic evidence. Rate limits are not
-  probed, by policy.
+  probed, by policy. **Removed in beta.2:** the library no longer retries,
+  and `RESOURCE_EXHAUSTED` is `QueryError::Busy` ([ADR-0021](../adr/0021-per-call-library.md)).
 - **`RequestOptions` timeouts** have no live run of their own. Live runs
-  used the defaults.
+  used the defaults. **From beta.2 they are optional and caller-set:** no
+  timeout applies unless the caller sets one.
 - **`Remote(Internal)`:** seen once on a second request, unexplained.
 
 **Platforms:**
