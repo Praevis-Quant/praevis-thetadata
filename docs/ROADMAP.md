@@ -61,6 +61,115 @@ The [performance architecture plan](architecture/performance-plan.md)
     crates. Its wheels were on the GitHub release only, not on PyPI.
   - **Next:** `0.1.0`.
 
+## Waiting on resources (blocks 0.1.0 evidence)
+
+Two evidence items for `0.1.0` cannot run on what the user has today:
+- no stock or index subscription (the account is stocks FREE and indices
+  FREE);
+- no bare-metal Linux machine.
+
+**Release status:**
+- **Both are documented known gaps.** They do not block `0.1.0` unless the
+  user decides otherwise. **That decision is open.**
+- **If they ship as gaps,** the `0.1.0` release notes list them as they
+  stand below.
+
+### 1. Wrappers seen only as refusals
+
+**What is missing:** data-path evidence for 20 of the 81 vendor wrappers,
+and the one wrapper never probed
+([evidence review](requirements/beta1-evidence-review.md),
+[coverage table](endpoints/coverage.md)).
+- **19 tier refusals** on this account (`PermissionDenied`, `sir-checks-001`).
+  The tier is the one the service named:
+  - **stocks VALUE:** `stock_snapshot_ohlc`, `stock_snapshot_quote`,
+    `stock_history_ohlc`, `stock_history_quote` and `stock_at_time_quote`;
+  - **stocks STANDARD:** `stock_snapshot_trade`,
+    `stock_snapshot_market_value`, `stock_history_trade`,
+    `stock_history_trade_quote` and `stock_at_time_trade`;
+  - **stocks PRO:** `stock_flat_file_trade_quote` and `stock_flat_file_eod`;
+  - **indices VALUE:** `index_history_price` and `index_at_time_price`;
+  - **indices STANDARD:** `index_snapshot_ohlc`, `index_snapshot_price`,
+    `index_snapshot_market_value` and `index_history_ohlc`;
+  - **indices PRO:** `index_flat_file_eod`.
+- **The 20th, `option_flat_file_quote`:** an options PRO wrapper. It was
+  refused once with `InvalidArgument`, a classification that is uncertain.
+  A subscription would not help. A re-probe is gated on the user's
+  go-ahead because of the file's size (see
+  [Python parity](#python-parity)).
+- **Never probed:** `stock_flat_file_quote`. It is gated, because even a
+  probe may start the vendor's generation of a very large file. The tier
+  it needs is unknown; PRO is likely, like the other stock flat files.
+
+**Why it matters:**
+- These wrappers decode through the generic path. That path is checked on
+  other RPCs, but not on these responses.
+- Their column kinds are not in [`schemas.json`](endpoints/schemas.json),
+  so a column that is null throughout a response has no registered type.
+- `0.1.0` would ship them unverified against real data.
+
+**What unblocks it:** a stock and/or index subscription at the tier the
+refusal named:
+- VALUE or STANDARD for the snapshot, history and at-time wrappers;
+- PRO for the flat files.
+
+Either product alone unblocks its own wrappers. The stock quote flat file
+also needs the user's explicit approval to probe.
+
+**The run, once unblocked:** each re-run needs the user's approval.
+1. **Rust:** `cargo run -p praevis-thetadata-client --features live-tests
+   --example live_p0 -- entitlements --set stock-index-rate --confirm-live
+   --api-key-env --run-id <id> --flat-file-date <a date in the last 7 days>`.
+   The key comes from `THETADATA_API_KEY` only.
+   - It covers every stock, index, calendar and interest-rate wrapper once,
+     paced and sequential. Each response is decoded both ways and compared
+     value by value.
+   - The flat files are probes of at most 1 MiB.
+   - Add `--include-stock-quote-flat-file` only with that separate approval.
+2. **Python:** `python bench/p1/stock_index_rate_checks.py --run-id <id>`,
+   the same requests through the package's vendor-named methods.
+3. **Then:**
+   - classify the refusals and successes from the private reports;
+   - update [`status.json`](endpoints/status.json) and the subscription
+     table, then register the observed column kinds in `schemas.json`;
+   - regenerate with `tools/generate_endpoints.py`.
+
+   Only codes and classifications are committed.
+
+### 2. Native Linux W10 latency
+
+**What is missing:** the W10 latency target on native Linux. The
+p99 ≤ 50 µs target:
+- **Windows:** met (24-32 µs live, 2026-11-10).
+- **Linux under WSL2:** missed, at 61-68 µs (2026-11-11, `w10-wsl-*`;
+  [W10 above](#real-time-stream-w10-what-remains)).
+- **Native Linux:** never measured.
+
+Drops were 0 everywhere, so only the latency target is open.
+
+**Why it matters:**
+- Linux is a supported platform for the stream crate.
+- WSL2 virtualisation is the likely cause of the miss, but that is not
+  established.
+- Until a native run, the Linux p99 claim is unknown.
+
+**What unblocks it:** a bare-metal Linux x86_64 machine, not a VM or WSL,
+running the Terminal (Java 21) on an options PRO account.
+
+**The run, once unblocked:** the same as the WSL runs, during market hours,
+with the Terminal running and started by the user.
+1. **Contracts:** `cargo run -p praevis-thetadata-stream --features
+   live-tests --release --example discover_contracts -- --confirm-live
+   --seconds 60`. It writes the 10, 100 and 1,000 lists.
+2. **Quotes:** `cargo run -p praevis-thetadata-stream --features live-tests
+   --release --example latency -- --confirm-live --feed live --run-id
+   <id> --contracts <list>`, once each at 10, 100 and 1,000 contracts.
+3. **Full stream:** the same with `--full-trades --seconds 1200` in place
+   of `--contracts`.
+
+Record p50 to max, drops, heartbeat gaps, CPU and the Rust heap, as in the
+WSL table (ADR-0018 W10 record). Single runs are observations.
+
 ## Python parity
 
 Parity here means the vendor package's 81 wrappers, each with:
