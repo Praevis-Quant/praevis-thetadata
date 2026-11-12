@@ -14,7 +14,9 @@ says what is frozen and what is not.
 
 **Toolchains:**
 - **Rust:** 1.88 or later (`rust-version`, checked in CI).
-- **Python:** 3.10 or later (abi3 wheel); CI tests 3.12.
+- **Python:** 3.10 or later (one abi3 wheel). CI installs that wheel into a
+  clean environment and runs the package tests on Python 3.10, 3.11, 3.12
+  and 3.13, on Windows and Linux.
 - **Builds from source:**
   - Windows needs the Visual Studio C++ build tools.
   - Linux needs a C compiler, make and pkg-config: ZSTD always, and a

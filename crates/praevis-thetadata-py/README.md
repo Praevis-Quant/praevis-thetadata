@@ -8,7 +8,8 @@ pass-through over Arrow.
 > identifies the service it interoperates with.
 
 **Install** (a pre-release, so pass `--pre`): `pip install --pre praevis-thetadata`. Wheels exist for
-Windows x86_64 and Linux x86_64 (glibc 2.28 or newer), Python 3.10 or newer.
+Windows x86_64 and Linux x86_64 (glibc 2.28 or newer), Python 3.10 or newer;
+CI tests the wheel on Python 3.10, 3.11, 3.12 and 3.13 on both platforms.
 There is no macOS or ARM wheel and no source distribution. The same wheels
 are attached to the GitHub release.
 

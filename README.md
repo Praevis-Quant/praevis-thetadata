@@ -36,7 +36,8 @@ together on crates.io as **`0.1.0-beta.1` prereleases**.
   release notes.
 - **Not frozen:** `praevis-thetadata-stream` stays experimental, and
   `praevis-thetadata-proto` and raw gRPC access stay unstable.
-- **Python:** `praevis-thetadata` `0.1.0b1` is on PyPI (`pip install --pre praevis-thetadata`;
+- **Python:** `praevis-thetadata` `0.1.0b1` is on PyPI for Python 3.10 or
+  newer, tested in CI on 3.10-3.13 (`pip install --pre praevis-thetadata`;
   Windows x86_64 and Linux x86_64 wheels only). The same wheels are
   attached to the GitHub release.
 - **Scope:** it is independent and unofficial, and it is not full Python

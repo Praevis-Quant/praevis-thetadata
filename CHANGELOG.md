@@ -17,6 +17,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Changed
 
+- **CI tests the Python package on Python 3.10, 3.11, 3.12 and 3.13,** on
+  Windows and Linux.
+  - **How:** a new job reuses the abi3 wheel built once per OS (no
+    rebuild). It installs the wheel into a clean environment on each
+    version and runs the package tests, the loopback examples included.
+  - **Dependencies:** they come from a new hash-pinned lock,
+    `requirements-matrix.txt`, which resolves for Python 3.10 and later.
+  - **Unchanged:** the existing 3.12 job.
+  - **Closes** the evidence-review gap "CI tests Python 3.12 only".
 - **CI fails on CRLF in the index.** The Verify job, on both OSes, checks
   `git ls-files --eol` for files stored as `i/crlf` or `i/mixed`.
   `.gitattributes` already keeps text as LF, and no file is stored with CRLF

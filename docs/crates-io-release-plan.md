@@ -217,6 +217,9 @@ released wheels from the release URL on Windows and on Linux x86_64.
 - a PyPI install, before publication: from beta.1 the wheels go to PyPI by
   hand, and the post-publication checks install from it;
 - Python versions: the wheel declares Python ≥ 3.10, but CI tests 3.12 only.
+  **Closed 2026-11-12:** a matrix job installs the same wheel into a clean
+  environment and runs the package tests on 3.10, 3.11, 3.12 and 3.13, on
+  both platforms.
 
 ## Publication record: 0.1.0-alpha.3
 

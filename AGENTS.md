@@ -93,7 +93,8 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 
 # Python package (inside a virtual environment with
-# crates/praevis-thetadata-py/requirements-test.txt installed)
+# crates/praevis-thetadata-py/requirements-test.txt installed; CI's version
+# matrix installs requirements-matrix.txt, which resolves for Python 3.10+)
 maturin build --release --locked -m crates/praevis-thetadata-py/Cargo.toml -o dist
 python -m unittest discover -s crates/praevis-thetadata-py/tests
 

@@ -477,7 +477,8 @@ is frozen at `0.1.0-beta.1`.
       frozen area has its tests and live evidence.
       - **Gaps, listed:** 20 vendor wrappers seen only as refusals, and one
         gated; no live retry or `RequestOptions` timeout; live runs on
-        Windows only; Python 3.12 only in CI.
+        Windows only; Python 3.12 only in CI. (The Python gap closed after
+        beta.1, on 2026-11-12: CI tests 3.10-3.13.)
 - [x] **Partial-result and cancellation consumer examples** (2026-11-11).
       - **Rust:** `query_consumer` (`query()`/`job()`); its tests run in
         `cargo test`.
