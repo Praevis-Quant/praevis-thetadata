@@ -343,7 +343,8 @@ service compatibility.
 - **Preserve platform and wire behavior.** Exercise Windows and Linux for
   changes to native persistence or process behavior. Preserve descriptor bytes
   and follow `.gitattributes`; write Markdown/source as UTF-8 with LF to avoid
-  Windows newline churn. Do not rewrite the roadmap's verbatim review block,
+  Windows newline churn. CI fails if any file is stored with CRLF
+  (`git ls-files --eol` showing `i/crlf` or `i/mixed`). Do not rewrite the roadmap's verbatim review block,
   its table, or its historical citations.
 
 ## Performance work
