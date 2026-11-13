@@ -1,10 +1,10 @@
 """Runnable consumer patterns: partial results and cancellation.
 
-It runs against the synthetic loopback service (no credentials, no ThetaData
-traffic), started from the Rust example ``loopback_server``:
+It runs against the emulator (ADR-0022; no credentials, no ThetaData
+traffic), with one of its scripted faults:
 
-    cargo build -p praevis-thetadata-client --example loopback_server
-    PRAEVIS_LOOPBACK_SERVER=target/debug/examples/loopback_server \\
+    cargo build -p praevis-thetadata-emulator
+    PRAEVIS_EMULATOR=target/debug/praevis-thetadata-emulator \\
         python crates/praevis-thetadata-py/examples/consumer_patterns.py
 
 It shows how to:
@@ -68,7 +68,7 @@ class Loopback:
         self.client = client
 
     def requests(self) -> int:
-        """The stock EOD requests the service has received so far."""
+        """The requests the service has received so far."""
         self._process.stdin.write("requests\n")
         self._process.stdin.flush()
         return json.loads(self._process.stdout.readline())["requests"]
@@ -78,8 +78,10 @@ class Loopback:
 def loopback(scenario: str, server: str | None = None, **options) -> Iterator[Loopback]:
     """A fresh loopback service running ``scenario``, and a client of it
     (``options`` go to the client)."""
-    server = server or os.environ["PRAEVIS_LOOPBACK_SERVER"]
-    process = subprocess.Popen([server, scenario], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+    server = server or os.environ["PRAEVIS_EMULATOR"]
+    process = subprocess.Popen(
+        [server, "--profile", "free", "--fault", scenario], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
+    )
     try:
         urls = json.loads(process.stdout.readline())
         client = pt.Client(

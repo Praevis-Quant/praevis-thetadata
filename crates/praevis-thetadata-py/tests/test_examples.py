@@ -1,7 +1,8 @@
 """The runnable consumer examples, against the synthetic loopback service.
 
-Skipped unless ``PRAEVIS_LOOPBACK_SERVER`` names the built ``loopback_server``
-example; CI builds it and sets the variable, so there they always run.
+Skipped unless ``PRAEVIS_EMULATOR`` names the built emulator binary
+(``praevis-thetadata-emulator``); CI builds it and sets the variable, so there
+they always run.
 """
 import os
 import pathlib
@@ -13,10 +14,10 @@ import praevis_thetadata as pt
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "examples"))
 import consumer_patterns as examples  # noqa: E402
 
-SERVER = os.environ.get("PRAEVIS_LOOPBACK_SERVER")
+SERVER = os.environ.get("PRAEVIS_EMULATOR")
 
 
-@unittest.skipUnless(SERVER, "PRAEVIS_LOOPBACK_SERVER is not set")
+@unittest.skipUnless(SERVER, "PRAEVIS_EMULATOR is not set")
 class ConsumerExampleTests(unittest.TestCase):
     def test_a_failed_stream_keeps_its_rows_as_partial(self):
         with examples.loopback("partial") as service:
@@ -39,7 +40,7 @@ class ConsumerExampleTests(unittest.TestCase):
 ONE_DAY = dict(symbol="SYNTHETIC", start_date="2026-01-15", end_date="2026-01-15")
 
 
-@unittest.skipUnless(SERVER, "PRAEVIS_LOOPBACK_SERVER is not set")
+@unittest.skipUnless(SERVER, "PRAEVIS_EMULATOR is not set")
 class NoPolicyTests(unittest.TestCase):
     """ADR-0021: no retry, no default deadline; a caller's timeout still applies."""
 

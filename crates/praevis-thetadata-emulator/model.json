@@ -1,0 +1,20 @@
+{
+  "about": "The emulator's model (ADR-0022). Codes, tiers, sizes and timings only, each with the evidence that observed it; never market data. Column names and kinds come from docs/endpoints/schemas.json and refusals from docs/endpoints/status.json. Never updated automatically: a change is a reviewed pull request citing its run.",
+  "profiles": {
+    "free": {
+      "status": "free",
+      "user": {"stockSubscription": 0, "optionsSubscription": 0, "indicesSubscription": 0},
+      "evidence": "PROD login, FREE account: subscriptions 0 (CLI auth, 2026-11-01; docs/subscription-testing.md)"
+    },
+    "options-pro": {
+      "status": "pro",
+      "user": {"stockSubscription": 0, "optionsSubscription": 3, "indicesSubscription": 0},
+      "evidence": "PROD login, options PRO and stocks/indices FREE: options 3, others 0 (2026-11-04; docs/requirements/beta1-evidence-review.md)"
+    }
+  },
+  "response": {
+    "messages": 2,
+    "rows_per_message": 3,
+    "evidence": "synthetic default, not an observation: small enough for every test; the observed message sizes enter with the timing model (ADR-0022 part 1, behaviours)"
+  }
+}

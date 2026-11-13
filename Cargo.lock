@@ -2014,6 +2014,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "praevis-thetadata-emulator"
+version = "0.1.0-beta.2"
+dependencies = [
+ "heck",
+ "praevis-thetadata-client",
+ "praevis-thetadata-proto",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "zstd",
+]
+
+[[package]]
 name = "praevis-thetadata-proto"
 version = "0.1.0-beta.2"
 dependencies = [

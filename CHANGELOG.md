@@ -16,6 +16,32 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Added
+
+- **`praevis-thetadata-emulator`** ([ADR-0022](docs/adr/0022-emulator-and-dual-target-scenarios.md)):
+  a dev-only workspace crate (`publish = false`) emulating the documented
+  interfaces for tests. This first step is the gRPC side:
+  - **All 100 RPCs** of the checked-in descriptor, plus the HTTP login with
+    the profile's subscription fields, on 127.0.0.1 only.
+  - **Profiles:** FREE, and options PRO with stocks and indices FREE.
+    Refusals follow `docs/endpoints/status.json`, with the recorded code
+    and tier.
+  - **Rows:** synthetic values with the recorded columns from
+    `docs/endpoints/schemas.json`, in both ZSTD and NONE framing.
+  - **Evidence gaps:** an RPC with no recorded schema, or never probed on
+    the profile, is answered `UNIMPLEMENTED` naming the gap. No schema is
+    invented.
+  - **`model.json`** holds everything else, each entry with its evidence.
+
+### Changed
+
+- **The Python consumer examples and tests run against the emulator.**
+  - The `loopback_server` example is removed. Its four scenarios (`partial`,
+    `slow`, `busy`, `delayed`) are now the emulator's `--fault` option.
+  - `PRAEVIS_LOOPBACK_SERVER` is now `PRAEVIS_EMULATOR`.
+  - CI builds the emulator binary once per OS and hands it to the Python
+    version matrix.
+
 ## [0.1.0-beta.2] - 2026-11-12
 
 Published to crates.io from `3bf6266` (tag `v0.1.0-beta.2`), and to PyPI as
