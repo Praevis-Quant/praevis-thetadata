@@ -165,6 +165,36 @@ against a synthetic loopback server, with no credentials:
 
 `cargo run -p praevis-thetadata-client --example query_consumer`
 
+## Requests by name (`dispatch`)
+
+For a program that receives requests as data, `dispatch` builds the typed
+request from its name and parameters at runtime, and hands it to your
+`Runner`. An example is a service reading
+`{"endpoint": "option_history_open_interest", "params": {...}}`.
+
+```rust,ignore
+use praevis_thetadata_client::dispatch::{self, Params, Runner};
+
+let built = dispatch::dispatch("option_history_eod", my_params, my_runner)?;
+```
+
+- **Names:** the vendor wrapper name or the RPC name (`dispatch::ENDPOINTS`).
+- **Parameters:** you implement `Params` once for your source (`take` a name
+  and a kind, then `finish`, which rejects names that were not taken).
+  - **Values** are a closed `ParamValue`.
+  - **Whole numbers** are checked against the request's 32-bit fields:
+    rejected, never truncated.
+  - **An explicit `Null`** clears an optional default, as `None` does in the
+    vendor package.
+- **Metadata:** `dispatch::params(name)` lists each parameter's name, kind,
+  whether it is required, and the vendor default exactly as written. Use
+  it to validate before sending, or to treat an omitted parameter and its
+  default as the same request.
+- **Stability is unchanged by dispatch:** the 19 descriptor-only RPCs
+  answer by RPC name, but stay unstable (`dispatch::stability`).
+- **Python:** the Python package's calls go through the same generated
+  code.
+
 ## License
 
 Apache-2.0. The package includes `LICENSE` and `NOTICE`. Source, issues,

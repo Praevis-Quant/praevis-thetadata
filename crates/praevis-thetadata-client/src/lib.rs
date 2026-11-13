@@ -21,6 +21,7 @@ mod bounded;
 #[cfg(test)]
 mod corpus;
 mod decode;
+pub mod dispatch;
 pub mod endpoints;
 mod envelope;
 mod eod;

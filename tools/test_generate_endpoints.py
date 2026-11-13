@@ -65,10 +65,13 @@ class OutputTests(unittest.TestCase):
         self.assertEqual(gen.RUST_OUT.read_text(encoding="utf-8"), rust)
         self.assertEqual(gen.DOC_OUT.read_text(encoding="utf-8"), doc)
         self.assertEqual(rust.count("impl Endpoint for"), 100)
-        dispatch = gen.generate_python_dispatch()
-        self.assertEqual(gen.PY_OUT.read_text(encoding="utf-8"), dispatch)
-        # Every RPC is dispatched once, by RPC name and (when wrapped) vendor name.
+        dispatch = gen.generate_client_dispatch()
+        self.assertEqual(gen.DISPATCH_OUT.read_text(encoding="utf-8"), dispatch)
+        # Every RPC is dispatched once, by RPC name and (when wrapped) vendor name,
+        # with its parameters and stability described once each.
         self.assertEqual(dispatch.count("runner.run(r)"), 100)
+        self.assertEqual(dispatch.count("=> Some(&["), 100)
+        self.assertEqual(dispatch.count("::STABILITY),"), 100)
         aliases = gen.generate_vendor_aliases()
         self.assertEqual(gen.VENDOR_OUT.read_text(encoding="utf-8"), aliases)
         self.assertEqual(aliases.count('        return self._vendor("'), 81)

@@ -5,7 +5,6 @@
 //! (`__arrow_c_stream__`, `__arrow_c_array__`), so pyarrow, Polars and pandas
 //! import the buffers without copying and Python creates no object per row.
 #[rustfmt::skip]
-mod generated;
 mod kwargs;
 
 use arrow_array::ffi::to_ffi;
@@ -21,7 +20,7 @@ use praevis_thetadata_client::{
     ThetaClient, plan as plan_parts,
 };
 use pyo3::create_exception;
-use pyo3::exceptions::{PyException, PyStopIteration, PyValueError};
+use pyo3::exceptions::{PyException, PyStopIteration, PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyCapsule, PyDict, PyTuple};
 use std::sync::{Arc, Mutex, OnceLock};
@@ -140,6 +139,34 @@ pub(crate) trait Runner {
     fn run<E>(self, request: E) -> PyResult<Self::Output>
     where
         E: Endpoint + Clone + Send + Sync + 'static;
+}
+
+/// A [`Runner`] as the client's generated dispatch takes it.
+struct Run<R>(R);
+impl<R: Runner> praevis_thetadata_client::dispatch::Runner for Run<R> {
+    type Output = PyResult<R::Output>;
+    fn run<E>(self, request: E) -> PyResult<R::Output>
+    where
+        E: Endpoint + Clone + Send + Sync + 'static,
+    {
+        self.0.run(request)
+    }
+}
+
+/// Build the request named `endpoint` from keyword arguments, through the
+/// client's generated dispatch (the one generator for Rust and Python), and
+/// run it. Errors keep the bindings' Python types and messages.
+fn dispatch<R: Runner>(endpoint: &str, kwargs: Kwargs<'_, '_>, runner: R) -> PyResult<R::Output> {
+    use praevis_thetadata_client::dispatch::DispatchError;
+    match praevis_thetadata_client::dispatch::dispatch(endpoint, kwargs, Run(runner)) {
+        Ok(output) => output,
+        Err(DispatchError::UnknownEndpoint(name)) => {
+            Err(PyValueError::new_err(format!("unknown endpoint: {name}")))
+        }
+        Err(DispatchError::Source(error)) => Err(error),
+        Err(DispatchError::Param(error)) => Err(PyTypeError::new_err(error.to_string())),
+        Err(error) => Err(PyValueError::new_err(error.to_string())),
+    }
 }
 
 struct Collect<'a, 'py> {
@@ -401,7 +428,7 @@ impl Client {
             plan,
             options: request_options(timeout, idle_timeout, concurrency)?,
         };
-        generated::dispatch(endpoint, Kwargs::new(kwargs), runner)
+        dispatch(endpoint, Kwargs::new(kwargs), runner)
     }
 
     /// Like `query`, but returns an iterator of batches as they arrive.
@@ -423,7 +450,7 @@ impl Client {
             plan,
             options: request_options(timeout, idle_timeout, concurrency)?,
         };
-        generated::dispatch(endpoint, Kwargs::new(kwargs), runner)
+        dispatch(endpoint, Kwargs::new(kwargs), runner)
     }
 
     /// Write the result to a Parquet file from Rust. Returns
@@ -457,7 +484,7 @@ impl Client {
                 .with_decimal_statistics(decimal_statistics),
             request: request_options(timeout, idle_timeout, concurrency)?,
         };
-        generated::dispatch(endpoint, Kwargs::new(kwargs), runner)
+        dispatch(endpoint, Kwargs::new(kwargs), runner)
     }
 }
 
@@ -469,13 +496,13 @@ fn describe(
     plan: bool,
     kwargs: Option<&Bound<'_, PyDict>>,
 ) -> PyResult<(String, usize)> {
-    generated::dispatch(endpoint, Kwargs::new(kwargs), Describe { plan })
+    dispatch(endpoint, Kwargs::new(kwargs), Describe { plan })
 }
 
 /// Every endpoint as `(vendor_name or "", rpc_name)`.
 #[pyfunction]
 fn endpoints() -> Vec<(&'static str, &'static str)> {
-    generated::NAMES.to_vec()
+    praevis_thetadata_client::dispatch::ENDPOINTS.to_vec()
 }
 
 /// A whole result: Arrow record batches with one schema. Implements the
