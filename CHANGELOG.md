@@ -19,6 +19,25 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Fixed
 
+- **`job()` sent option Greeks EOD over every expiration as one request
+  over several days,** which the service refuses with `InvalidArgument`.
+  The same went for Python's planned calls and `describe`. The 2- and 5-day
+  ranges were refused and one day answered (2026-11-13,
+  [known issues](docs/endpoints/known-issues.md)).
+  - **The fix:** the planner now splits `OptionHistoryGreeksEod` one day at
+    a time when the expiration is `*`. A single expiration keeps the
+    366-day split.
+  - **API:** a new provided method on the sealed `Endpoint` trait,
+    `split(&self)`, defaults to `SPLIT`, so nothing breaks.
+  - **Untested look-alikes:** binomial Greeks EOD and at-time trade and
+    quote also take `*` with a 366-day split. They are listed as unverified,
+    not changed.
+- **The emulator plays the refusal** (`refusals_by_shape` in `model.json`).
+  The scenarios check it in both runners: the whole week is refused, and
+  the job answers in five parts. The drift check expects the refusal until
+  a live run stops seeing it. The emulator now also reads an option
+  request's expiration from its `contract_spec`, and treats an empty plain
+  string field as unset.
 - **`live_p0` panicked on a malformed date argument.** It now validates
   every date argument (`--date`, `--expiration`, `--snapshot-expiration`,
   `--flat-file-date`) while parsing.

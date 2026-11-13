@@ -199,6 +199,15 @@ struct Delay {
 }
 
 #[derive(Deserialize)]
+struct ShapeRefusal {
+    rpcs: Vec<String>,
+    expiration: String,
+    max_days: i64,
+    code: String,
+    message: String,
+}
+
+#[derive(Deserialize)]
 struct Sizes {
     messages: usize,
     /// (upper bound in bytes, messages observed in that bucket).
@@ -212,6 +221,7 @@ struct Model {
     flat_file: ResponseModel,
     not_found: NotFoundModel,
     first_row_delays: Vec<Delay>,
+    refusals_by_shape: Vec<ShapeRefusal>,
     message_sizes: Sizes,
     terminal: terminal::TerminalModel,
 }
@@ -361,6 +371,7 @@ struct Params {
     date: Option<String>,
     interval: Option<String>,
     strike: Option<String>,
+    expiration: Option<String>,
 }
 
 /// Days since 1970-01-01 of a `YYYY-MM-DD` or `YYYYMMDD` date.
@@ -405,6 +416,25 @@ fn not_found(p: &Params) -> Option<Status> {
         .iter()
         .any(|s| s.starts_with(&model.unknown_symbol_prefix));
     (unknown || no_trading_day(p)).then(|| Status::not_found(model.message.clone()))
+}
+
+/// A refusal the service gives this request shape whatever the tier, such
+/// as option Greeks EOD over every expiration for more than one day.
+fn shape_refusal(rpc: &str, p: &Params) -> Option<Status> {
+    let days = match (&p.start_date, &p.end_date) {
+        (Some(start), Some(end)) => day_number(end)? - day_number(start)? + 1,
+        _ => return None,
+    };
+    data()
+        .model
+        .refusals_by_shape
+        .iter()
+        .find(|r| {
+            r.rpcs.iter().any(|x| x == rpc)
+                && p.expiration.as_deref() == Some(r.expiration.as_str())
+                && days > r.max_days
+        })
+        .map(|r| Status::new(code(&r.code), r.message.clone()))
 }
 
 /// The recorded wait before the first data for this request shape.
@@ -561,6 +591,9 @@ impl Service {
                     ));
                 }
                 guard = Some(Open(self.open.clone()));
+                if let Some(status) = shape_refusal(rpc, &params) {
+                    return Err(status);
+                }
                 if let Some(status) = not_found(&params) {
                     return Err(status);
                 }

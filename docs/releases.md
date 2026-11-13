@@ -135,6 +135,11 @@ These are listed in the `0.1.0` release notes as they stand here.
   unexplained.
 - **Memory:** the bound covers the Rust heap only, never total process
   memory.
+- **Found after the release (2026-11-13):** `job()` and Python's planned
+  calls send option Greeks EOD over every expiration (`*`) and several days
+  as one request, which the service refuses with `InvalidArgument`. It is
+  fixed for `0.1.1`; the workaround is one day per request
+  ([known issues](endpoints/known-issues.md)).
 
 ### Release-candidate evidence for 0.1.0
 

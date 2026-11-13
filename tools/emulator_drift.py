@@ -27,10 +27,14 @@ MODEL = ROOT / "crates" / "praevis-thetadata-emulator" / "model.json"
 TIERS = {0: "FREE", 1: "VALUE", 2: "STANDARD", 3: "PRO"}
 
 
-def expected_code(rpc: str, scenario: str, status: dict, column: str) -> str | None:
+def expected_code(rpc: str, scenario: str, status: dict, column: str, shape: str | None = None,
+                  model: dict | None = None) -> str | None:
     """The gRPC code the emulator gives ``rpc`` in ``scenario``, or None."""
     if scenario.startswith("not-found"):
         return "NotFound"
+    if shape == "every-expiration-multi-day":
+        refused = any(rpc in r["rpcs"] and r["expiration"] == "*" for r in (model or {}).get("refusals_by_shape", []))
+        return "InvalidArgument" if refused else "OK"
     observed = status.get(rpc, {}).get(column)
     if observed is None:
         return None
@@ -72,7 +76,7 @@ def drift(reports: list[dict], schemas: dict, status: dict, model: dict, profile
                 elif seen != [list(c) for c in registered]:
                     finding(report, name, f"{rpc}: columns", seen, registered)
             if rpc and "code" in observed:
-                expected = expected_code(rpc, name, status, column)
+                expected = expected_code(rpc, name, status, column, observed.get("shape"), model)
                 if expected is None:
                     finding(report, name, f"{rpc}: never probed on the {profile} profile", observed["code"], None)
                 elif observed["code"] != expected:

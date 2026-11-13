@@ -36,6 +36,16 @@
     "message": "emulator: no data found",
     "evidence": "NOT_FOUND before data for an unknown symbol and for a range with no trading days, with the same code, details and message (err-notfound-001, 2026-11-11; weekend and holiday ranges, *-a2-001, 2026-11-02). The emulator treats a symbol starting with the prefix as unknown, and a range of weekend days only as empty (holidays are not modelled)"
   },
+  "refusals_by_shape": [
+    {
+      "rpcs": ["GetOptionHistoryGreeksEod"],
+      "expiration": "*",
+      "max_days": 1,
+      "code": "InvalidArgument",
+      "message": "emulator: every expiration over more than one day is refused (praevis-data ingest, 2026-11-13)",
+      "evidence": "option_history_greeks_eod, SPY, expiration *: 2026-11-02..06 and 2026-11-05..06 refused with InvalidArgument (with or without strike *, right both, rate_type sofr, version latest); 2026-11-06 alone answered 12,952 rows. option_history_eod with expiration * over the same 5 days answered 63,626 rows, so it is not listed. Windows, options PRO, praevis-data's first ingest with package 0.1.0b2, about 17:45 UTC 2026-11-13. Other RPCs of this shape (binomial Greeks EOD, at-time trade and quote) are untested and not inferred"
+    }
+  ],
   "first_row_delays": [
     {
       "rpcs": ["GetOptionHistoryQuote"],
