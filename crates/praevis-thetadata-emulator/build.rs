@@ -22,7 +22,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 service.push_str(&format!(
                     "type {rpc}Stream = Responses;\n\
                      async fn {stub}(&self, request: tonic::Request<api::{request}>) -> Result<tonic::Response<Responses>, tonic::Status> {{\n\
-                     self.serve(\"{rpc}\", prost::Message::encode_to_vec(request.get_ref())).await\n}}\n"
+                     let timeout = grpc_timeout(&request);\n\
+                     self.serve(\"{rpc}\", prost::Message::encode_to_vec(request.get_ref()), timeout).await\n}}\n"
                 ));
                 names.push_str(&format!("    \"{rpc}\",\n"));
             }
