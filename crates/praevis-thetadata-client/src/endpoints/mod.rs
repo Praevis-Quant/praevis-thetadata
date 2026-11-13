@@ -135,6 +135,13 @@ pub trait Endpoint: sealed::Sealed {
     fn request(query_info: api::QueryInfo, query: Self::Query) -> Self::Request;
     /// How the planner may split this request (P1 PR 4b).
     const SPLIT: Split = Split::Whole;
+    /// How the planner splits this particular request: [`Self::SPLIT`],
+    /// unless a request shape the service refuses over a longer range needs
+    /// a smaller split (for example option Greeks EOD over every expiration,
+    /// one day at a time; `docs/endpoints/known-issues.md`).
+    fn split(&self) -> Split {
+        Self::SPLIT
+    }
     /// The inclusive date range a split applies to, if this request has one.
     fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {
         None

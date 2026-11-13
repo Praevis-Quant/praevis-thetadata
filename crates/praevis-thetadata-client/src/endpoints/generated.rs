@@ -5081,6 +5081,14 @@ impl Endpoint for OptionHistoryGreeksEod {
             ..self.clone()
         })
     }
+    /// Per day when every expiration is asked for: expiration `*` over 2 or 5 days was refused with InvalidArgument, one day answered (praevis-data first ingest, 2026-11-13).
+    fn split(&self) -> Split {
+        if matches!(&self.expiration, Expiration::Text(e) if e == "*") {
+            Split::Days(1)
+        } else {
+            Self::SPLIT
+        }
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryGreeksEodRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {

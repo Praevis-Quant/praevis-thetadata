@@ -49,11 +49,11 @@ impl Drop for Running {
     }
 }
 
-/// Split `request` by its date range according to its [`Split`] rule, in
-/// date order. A request without a range, or with an inverted one, is sent
-/// whole (the service judges it).
+/// Split `request` by its date range according to its [`Split`] rule
+/// ([`Endpoint::split`]), in date order. A request without a range, or with
+/// an inverted one, is sent whole (the service judges it).
 pub fn plan<E: Endpoint + Clone>(request: &E) -> Vec<E> {
-    let (Split::Days(days), Some((start, end))) = (E::SPLIT, request.date_range()) else {
+    let (Split::Days(days), Some((start, end))) = (request.split(), request.date_range()) else {
         return vec![request.clone()];
     };
     if start > end || days == 0 {

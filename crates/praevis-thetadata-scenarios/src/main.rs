@@ -372,6 +372,51 @@ async fn anytime(
         })
         .await;
     }
+    // Option Greeks EOD over every expiration: the service refuses more
+    // than one day in one request (InvalidArgument, 2026-11-13), so the
+    // whole week is refused and the job's per-day plan answers.
+    if options != Some(Tier::Pro) {
+        skip(out, "greeks-eod-every-expiration", "options are not PRO");
+    } else {
+        let week =
+            endpoints::OptionHistoryGreeksEod::new("SPY", "*", day(2026, 11, 2), day(2026, 11, 6));
+        run(out, "greeks-eod-every-expiration-whole", async {
+            match client.query(&week).await {
+                Err(e) if code_of(&e) == "InvalidArgument" => Ok((
+                    "the whole week is refused with InvalidArgument, as recorded".into(),
+                    json!({"rpc": "GetOptionHistoryGreeksEod", "code": "InvalidArgument",
+                           "shape": "every-expiration-multi-day"}),
+                )),
+                Err(e) => Err(format!("expected InvalidArgument, got {}", code_of(&e))),
+                // The service may lift the limit: a finding for the drift check.
+                Ok(_) => Ok((
+                    "the whole week answered: the recorded limit no longer holds".into(),
+                    json!({"rpc": "GetOptionHistoryGreeksEod", "code": "OK",
+                           "shape": "every-expiration-multi-day"}),
+                )),
+            }
+        })
+        .await;
+        run(out, "greeks-eod-every-expiration-job", async {
+            let mut job = client.job(&week).await.map_err(|e| format!("{e:?}"))?;
+            let parts = job.parts();
+            let mut rows = 0;
+            while let Some(batch) = job.next_batch().await.map_err(|e| format!("{e:?}"))? {
+                rows += batch.num_rows();
+            }
+            if parts != 5 {
+                return Err(format!("planned {parts} parts, expected 5 (one a day)"));
+            }
+            if rows == 0 {
+                return Err("no rows".into());
+            }
+            Ok((
+                format!("{rows} rows from {parts} one-day parts"),
+                json!({"rpc": "GetOptionHistoryGreeksEod", "code": "OK", "parts": parts}),
+            ))
+        })
+        .await;
+    }
     let Some(emulator) = emulator else {
         skip(
             out,

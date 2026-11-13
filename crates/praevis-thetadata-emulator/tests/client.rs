@@ -230,3 +230,33 @@ async fn a_test_can_opt_into_the_observed_free_limit_of_three() {
         task.await.unwrap();
     }
 }
+
+#[tokio::test]
+async fn greeks_eod_over_every_expiration_is_refused_whole_and_answered_per_day() {
+    // Recorded live 2026-11-13 (model.json refusals_by_shape).
+    let emulator = Emulator::start(Config::default());
+    let client = connect(&emulator).await;
+    let week = endpoints::OptionHistoryGreeksEod::new(
+        "SPY",
+        "*",
+        NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(),
+        NaiveDate::from_ymd_opt(2026, 11, 6).unwrap(),
+    );
+    let whole = rows(&client, &week).await;
+    assert!(
+        matches!(whole, Err(QueryError::Remote(tonic::Code::InvalidArgument))),
+        "{whole:?}"
+    );
+    // The planner splits it per day, so a job answers.
+    let batches = client.job(&week).await.unwrap().collect().await.unwrap();
+    let total: usize = batches.iter().map(|b| b.num_rows()).sum();
+    assert_eq!(total, 5 * 6, "five one-day parts");
+    // One expiration over the week is not refused.
+    let one = endpoints::OptionHistoryGreeksEod::new(
+        "SPY",
+        NaiveDate::from_ymd_opt(2026, 11, 21).unwrap(),
+        NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(),
+        NaiveDate::from_ymd_opt(2026, 11, 6).unwrap(),
+    );
+    assert!(rows(&client, &one).await.is_ok());
+}

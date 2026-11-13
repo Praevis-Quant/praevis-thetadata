@@ -87,6 +87,29 @@ fn plans_split_by_the_endpoint_rule_in_date_order() {
     assert_eq!(plan(&inverted).len(), 1);
 }
 
+#[test]
+fn greeks_eod_over_every_expiration_is_planned_one_day_at_a_time() {
+    // The service refused expiration `*` over 2 and 5 days with
+    // InvalidArgument and answered one day (2026-11-13, praevis-data's first
+    // ingest), while option EOD over the same 5 days answered whole.
+    let week = (day("2026-11-02"), day("2026-11-06"));
+    let wildcard = endpoints::OptionHistoryGreeksEod::new("SPY", "*", week.0, week.1);
+    let days: Vec<_> = plan(&wildcard)
+        .iter()
+        .map(|p| p.date_range().unwrap())
+        .collect();
+    assert_eq!(days.len(), 5);
+    assert!(days.iter().all(|(s, e)| s == e));
+    assert_eq!(days[0].0, week.0);
+    assert_eq!(days[4].1, week.1);
+    // One expiration keeps the 366-day split: no refusal was seen there.
+    let one = endpoints::OptionHistoryGreeksEod::new("SPY", day("2026-11-21"), week.0, week.1);
+    assert_eq!(plan(&one), std::slice::from_ref(&one));
+    // Option EOD over every expiration answered 5 days whole: unchanged.
+    let eod = endpoints::OptionHistoryEod::new(week.0, week.1, "SPY", "*");
+    assert_eq!(plan(&eod), std::slice::from_ref(&eod));
+}
+
 #[tokio::test]
 async fn a_job_runs_its_parts_in_order_and_merges_their_rows() {
     let fixture = Fixture::start(Script {

@@ -7,7 +7,14 @@ use prost_types::{DescriptorProto, field_descriptor_proto::Label};
 use std::{collections::HashMap, env, fs, path::PathBuf};
 
 /// The query fields the behaviours read, by name.
-const FIELDS: &[&str] = &["symbol", "start_date", "end_date", "date", "interval"];
+const FIELDS: &[&str] = &[
+    "symbol",
+    "start_date",
+    "end_date",
+    "date",
+    "interval",
+    "expiration",
+];
 
 /// Code that copies `field` of `from` into `Params` (`p`).
 fn copy(field: &prost_types::FieldDescriptorProto, from: &str) -> String {
@@ -24,7 +31,10 @@ fn copy(field: &prost_types::FieldDescriptorProto, from: &str) -> String {
     } else if name == "symbol" {
         format!("p.symbol.push({from}.{name}.clone());\n")
     } else {
-        format!("p.{target} = Some({from}.{name}.clone());\n")
+        // An empty plain string is an unset field: never let it overwrite
+        // a value already read (an option request's expiration sits in its
+        // contract_spec, with an empty top-level twin).
+        format!("if !{from}.{name}.is_empty() {{ p.{target} = Some({from}.{name}.clone()); }}\n")
     }
 }
 
@@ -63,7 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         extract.push_str(&copy(field, "q"));
                     } else if field.name() == "contract_spec" {
                         extract.push_str(
-                            "if let Some(c) = &q.contract_spec { p.symbol.push(c.symbol.clone()); p.strike = c.strike.clone(); }\n",
+                            "if let Some(c) = &q.contract_spec { p.symbol.push(c.symbol.clone()); p.strike = c.strike.clone(); if !c.expiration.is_empty() { p.expiration = Some(c.expiration.clone()); } }\n",
                         );
                     }
                 }

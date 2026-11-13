@@ -67,6 +67,16 @@ class DriftTests(unittest.TestCase):
         self.assertIn(f"{unprobed}: never probed on the options-pro profile", whats)
         self.assertIn("GetNoSuchRpc: no registered schema", whats)
 
+    def test_the_greeks_eod_refusal_is_expected_until_it_changes(self):
+        recorded = live(passed("greeks-eod-every-expiration-whole",
+                               {"rpc": "GetOptionHistoryGreeksEod", "code": "InvalidArgument",
+                                "shape": "every-expiration-multi-day"}))
+        self.assertEqual(findings(recorded), [])
+        lifted = live(passed("greeks-eod-every-expiration-whole",
+                             {"rpc": "GetOptionHistoryGreeksEod", "code": "OK",
+                              "shape": "every-expiration-multi-day"}))
+        self.assertEqual([f["what"] for f in findings(lifted)], ["GetOptionHistoryGreeksEod: code"])
+
     def test_an_emulator_report_is_not_evidence(self):
         report = {"run_id": "ci", "target": "emulator", "scenarios": []}
         self.assertEqual([f["what"] for f in findings(report)], ["not a live report"])
