@@ -59,7 +59,8 @@ The [performance architecture plan](architecture/performance-plan.md)
   - `0.1.0-alpha.1`, `0.1.0-alpha.2` and `0.1.0-alpha.3` (2026-11-08) came
     before it ([releases](releases.md)). Alpha.3 added the arrow and stream
     crates. Its wheels were on the GitHub release only, not on PyPI.
-  - **Next:** `0.1.0`.
+  - **Next:** `0.1.0`, the beta.1 surface as amended by beta.2, with the
+    known gaps listed ([scope record](releases.md#010-scope-record-user-2026-11-12)).
 
 ## Waiting on resources (blocks 0.1.0 evidence)
 
@@ -69,10 +70,11 @@ Two evidence items for `0.1.0` cannot run on what the user has today:
 - no bare-metal Linux machine.
 
 **Release status:**
-- **Both are documented known gaps.** They do not block `0.1.0` unless the
-  user decides otherwise. **That decision is open.**
-- **If they ship as gaps,** the `0.1.0` release notes list them as they
-  stand below.
+- **Decided (user, 2026-11-12): both ship in `0.1.0` as documented known
+  gaps.** They do not block it. Native Linux W10 latency concerns only the
+  experimental stream crate.
+- **The `0.1.0` release notes list them as they stand below**
+  ([0.1.0 scope record](releases.md#010-scope-record-user-2026-11-12)).
 
 ### 1. Wrappers seen only as refusals
 
