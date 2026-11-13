@@ -7,4 +7,4 @@ publish = false
 [workspace]
 
 [dependencies]
-praevis-thetadata-stream = { version = "=0.1.0", registry = "praevis-staging" }
+praevis-thetadata-stream = { version = "=0.1.1", registry = "praevis-staging" }

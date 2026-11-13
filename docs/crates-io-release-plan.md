@@ -4,9 +4,63 @@ Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 (2026-11-01 US time), `0.1.0-alpha.2` on 2026-11-03 UTC and `0.1.0-alpha.3`
 on 2026-11-08, `0.1.0-beta.1` on 2026-11-11, `0.1.0-beta.2` on 2026-11-12 and
 `0.1.0`, the first supported release, on 2026-11-13, each after owner
-approval. From
+approval. `0.1.1` is prepared below, awaiting approval. From
 beta.1 the Python wheels are also on PyPI. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
+
+## 0.1.1 publication checklist and order (prepared 2026-11-13)
+
+**Not approved yet: publishing a patch needs the user's approval.** The
+approval of 2026-11-13 was for `0.1.0`. The user publishes locally, with
+tokens never in argv, logs or shell history.
+- **Scope:** one fix to published code. `job()`, the Python planned calls
+  and `describe()` split option Greeks EOD over every expiration one day
+  per request ([known issues](endpoints/known-issues.md)).
+- **API:** a new provided method on the sealed `Endpoint` trait. No
+  supported API breaks.
+- **Unpublished since `0.1.0`:** the `live_p0` date parsing, the live
+  script's ISO dates, the emulator and the scenarios.
+
+**Same set as `0.1.0`:** seven crates on crates.io. The proto crate stays
+unstable and the stream crate experimental. Two abi3 wheels (`0.1.1`) go
+to PyPI and to the GitHub release. No sdist.
+
+**Before publishing:**
+1. **This release PR is merged,** with Verify, the Python package job and
+   its 3.10-3.13 matrix, and the packaging rehearsal green on Windows and
+   Linux.
+2. **Archive review:** as for `0.1.0`, with no `tests/` in the client or
+   stream archive.
+3. **Approval:** the maintainer's review of the merged commit, then the
+   user's approval of that exact commit.
+4. **Optional, recommended:** the live scenarios
+   (`scripts/live/run.sh --part anytime`), which now include the Greeks EOD
+   wildcard week: refused whole, and answered by the job in five parts.
+
+**Publish** in the same four waves as `0.1.0` (proto, core and auth; arrow;
+client; CLI and stream), each waiting until the index serves the previous
+crates.
+
+**Then PyPI** (the user, by hand, after wave 4):
+- **What:** `twine check`, then `twine upload` of the two wheels from the
+  published commit's CI run:
+  - `praevis_thetadata-0.1.1-cp310-abi3-win_amd64.whl`;
+  - `praevis_thetadata-0.1.1-cp310-abi3-manylinux_2_28_x86_64.whl`.
+- **The token** comes from the environment only.
+- **No sdist,** and nothing in CI uploads.
+
+**After publishing:**
+1. **Tag:** an annotated tag `v0.1.1` on the published commit.
+2. **GitHub release:** from the [draft](release-draft-0.1.1.md), not a
+   pre-release, marked latest, with the same two wheels attached.
+3. **Checks:**
+   - `cargo install praevis-thetadata-cli --locked` prints `0.1.1`;
+   - `pip install --upgrade praevis-thetadata` gets `0.1.1`;
+   - `pt.describe("option_history_greeks_eod", symbol="SPY", expiration="*",
+     start_date=…, end_date=…)` over five weekdays plans 5 parts;
+   - the crate hashes, the consumers and docs.rs, as for `0.1.0`.
+4. **Records:** a "Publication record: 0.1.1" section here, the CHANGELOG
+   section dated, and the `0.1.1` row of `releases.md` marked released.
 
 ## Publication record: 0.1.0
 
