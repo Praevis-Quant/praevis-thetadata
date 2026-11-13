@@ -4,17 +4,49 @@
     "free": {
       "status": "free",
       "user": {"stockSubscription": 0, "optionsSubscription": 0, "indicesSubscription": 0},
-      "evidence": "PROD login, FREE account: subscriptions 0 (CLI auth, 2026-11-01; docs/subscription-testing.md)"
+      "evidence": "PROD login, FREE account: subscriptions 0 (CLI auth, 2026-11-01; docs/subscription-testing.md)",
+      "concurrency": {
+        "limit": 1,
+        "evidence": "the vendor's documented FREE limit. Stricter than observed: p0 served 3 simultaneous tiny requests on FREE and never probed above 3 (docs/performance/p0-results.md); RESOURCE_EXHAUSTED over a limit was never observed live"
+      }
     },
     "options-pro": {
       "status": "pro",
       "user": {"stockSubscription": 0, "optionsSubscription": 3, "indicesSubscription": 0},
-      "evidence": "PROD login, options PRO and stocks/indices FREE: options 3, others 0 (2026-11-04; docs/requirements/beta1-evidence-review.md)"
+      "evidence": "PROD login, options PRO and stocks/indices FREE: options 3, others 0 (2026-11-04; docs/requirements/beta1-evidence-review.md)",
+      "concurrency": {
+        "limit": 8,
+        "evidence": "the vendor's documented PRO limit (Tier::concurrency). RESOURCE_EXHAUSTED over it was never observed live: the over-limit probe was dropped (ADR-0021)"
+      }
     }
   },
   "response": {
     "messages": 2,
     "rows_per_message": 3,
-    "evidence": "synthetic default, not an observation: small enough for every test; the observed message sizes enter with the timing model (ADR-0022 part 1, behaviours)"
+    "evidence": "synthetic default, not an observation: small enough for every test. Config::recorded_sizes uses message_sizes instead"
+  },
+  "flat_file": {
+    "messages": 20,
+    "rows_per_message": 50,
+    "evidence": "a flat file streams as data throughout, with no manifest and no error (step G, 2026-11-05, docs/architecture/options-phase.md). The live files held 2.0-13.8 million rows; these counts are scaled down"
+  },
+  "not_found": {
+    "unknown_symbol_prefix": "NOSUCH",
+    "message": "emulator: no data found",
+    "evidence": "NOT_FOUND before data for an unknown symbol and for a range with no trading days, with the same code, details and message (err-notfound-001, 2026-11-11; weekend and holiday ranges, *-a2-001, 2026-11-02). The emulator treats a symbol starting with the prefix as unknown, and a range of weekend days only as empty (holidays are not modelled)"
+  },
+  "first_row_delays": [
+    {
+      "rpcs": ["GetOptionHistoryQuote"],
+      "all_strikes": true,
+      "intervals": ["tick", "1s"],
+      "seconds": 60,
+      "evidence": "every strike x tick or 1 s quotes: 59.4-71.8 s before the first data, whatever the window or row count (opt-sizes-002, 2026-11-05, docs/architecture/options-phase.md)"
+    }
+  ],
+  "message_sizes": {
+    "messages": 20,
+    "histogram": [[65536, 1711], [262144, 39], [1048576, 70]],
+    "evidence": "1,820 messages of options W5c and W6c, none above 1 MiB, the largest 378,470 bytes (opt-msgsize-001, 2026-11-10, docs/performance/eod-transport-buffering.md). Each bucket is served at its middle size"
   }
 }

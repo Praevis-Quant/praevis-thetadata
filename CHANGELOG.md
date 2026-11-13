@@ -32,6 +32,23 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     the profile, is answered `UNIMPLEMENTED` naming the gap. No schema is
     invented.
   - **`model.json`** holds everything else, each entry with its evidence.
+  - **Behaviours** (`model.json`, each with its evidence), outside scripts
+    and faults:
+    - **one session per account:** each login issues a new session and
+      ends the earlier one (`UNAUTHENTICATED`, `opt-session-001`);
+    - **busy above the tier's documented concurrency:** FREE 1, PRO 8,
+      `RESOURCE_EXHAUSTED` at open. This is stricter than observed: FREE
+      served 3 at once, and an over-limit refusal was never seen live.
+      `Config::hold` is a test control, not a model claim: it holds every
+      answer open so a test can sit at the limit deterministically;
+    - **`NOT_FOUND`,** identical for an unknown symbol (`NOSUCH…`) and for a
+      range of weekend days (`err-notfound-001`);
+    - **flat files** stream many messages of data (step G);
+    - **the recorded first-row delay:** about 60 s for all-strike tick or
+      1 s option quotes (`opt-sizes-002`), scaled by `time_scale`
+      (`--time-scale`);
+    - **optional message sizes** after the recorded histogram
+      (`opt-msgsize-001`, `--recorded-sizes on`).
 
 ### Changed
 

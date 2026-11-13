@@ -3,6 +3,7 @@
 //!
 //! ```text
 //! praevis-thetadata-emulator [--profile free|options-pro] [--fault partial|slow|busy|delayed]
+//!     [--time-scale F] [--recorded-sizes on]
 //! ```
 //!
 //! It prints one JSON line, `{"auth_url": …, "endpoint": …}`, then serves
@@ -12,7 +13,7 @@ use praevis_thetadata_emulator::{Config, Emulator, Fault, Profile};
 use std::io::{BufRead, Write};
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: praevis-thetadata-emulator [--profile free|options-pro] [--fault partial|slow|busy|delayed]";
+const USAGE: &str = "usage: praevis-thetadata-emulator [--profile free|options-pro] [--fault partial|slow|busy|delayed] [--time-scale F] [--recorded-sizes on]";
 
 fn main() -> ExitCode {
     let mut config = Config::default();
@@ -22,6 +23,12 @@ fn main() -> ExitCode {
         let ok = match flag.as_str() {
             "--profile" => Profile::parse(&value).map(|p| config.profile = p),
             "--fault" => Fault::parse(&value).map(|f| config.fault = Some(f)),
+            "--time-scale" => value
+                .parse::<f64>()
+                .ok()
+                .filter(|f| f.is_finite() && *f >= 0.0)
+                .map(|f| config.time_scale = f),
+            "--recorded-sizes" => (value == "on").then(|| config.recorded_sizes = true),
             _ => None,
         };
         if ok.is_none() {
