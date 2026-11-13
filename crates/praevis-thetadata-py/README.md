@@ -3,11 +3,14 @@
 Python bindings for the independent praevis-thetadata Rust client: a thin
 pass-through over Arrow.
 
-> **Independent and experimental.** This is an unofficial project. It is not
+> **Independent and unofficial.** This is an unofficial project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with.
+> identifies the service it interoperates with. `0.1.0` is the first
+> supported release: the vendor-named methods plus `query`, `batches` and
+> `to_parquet`, with no breaking change without a new minor version and
+> release notes. It is not full parity with the vendor package.
 
-**Install** (a pre-release, so pass `--pre`): `pip install --pre praevis-thetadata`. Wheels exist for
+**Install:** `pip install praevis-thetadata`. Wheels exist for
 Windows x86_64 and Linux x86_64 (glibc 2.28 or newer), Python 3.10 or newer;
 CI tests the wheel on Python 3.10, 3.11, 3.12 and 3.13 on both platforms.
 There is no macOS or ARM wheel and no source distribution. The same wheels

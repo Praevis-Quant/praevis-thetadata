@@ -5,9 +5,9 @@ persistence so separate processes can reuse a saved session.
 
 > **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-beta.2` is a prerelease
-> whose public API is **frozen for beta.1** ([scope](../../docs/releases.md#beta1-scope-record-user-2026-11-10)): no breaking
-> change without a new prerelease version and release notes. It is **not** a
+> identifies the service it interoperates with. `0.1.0` is the first supported
+> release ([declared surface](../../docs/releases.md#010-scope-record-user-2026-11-12)): no breaking
+> change without a new minor version and release notes. It is **not** a
 > full port of, or drop-in replacement for, the vendor Python package. The Rust version is
 > independent of the tracked Python compatibility baseline (currently 1.0.17).
 
@@ -30,11 +30,11 @@ persistence so separate processes can reuse a saved session.
 
 ## Install
 
-Prereleases are never selected implicitly, so pin the version:
+Add it from crates.io:
 
 ```toml
 [dependencies]
-praevis-thetadata-auth = "=0.1.0-beta.2"
+praevis-thetadata-auth = "0.1"
 ```
 
 ## Supported platforms
@@ -58,7 +58,7 @@ async fn session() -> Result<Session, Box<dyn std::error::Error>> {
 }
 ```
 
-With `praevis-thetadata-auth = { version = "=0.1.0-beta.2", features = ["native-store"] }`:
+With `praevis-thetadata-auth = { version = "0.1", features = ["native-store"] }`:
 
 ```rust,ignore
 use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials, Environment, Session, SessionStore};

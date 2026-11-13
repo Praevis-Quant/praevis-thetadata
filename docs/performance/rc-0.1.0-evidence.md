@@ -3,7 +3,9 @@
 The evidence planned in the
 [0.1.0 scope record](../releases.md#release-candidate-evidence-for-010).
 **The candidate is `main` at `78c95dd`, before the version bump.** Its code
-is beta.2's (`3bf6266`); only documents changed since then.
+is beta.2's (`3bf6266`); only documents changed since then. Before release,
+the published code changed only in packaging (see the
+[0.1.0 checklist](../crates-io-release-plan.md#010-publication-checklist-and-order-prepared-2026-11-13)).
 - (a) the W5c speed comparison against the vendor package: **done
   2026-11-13**, below.
 - (b) the live option-checks report: **to come.**
@@ -82,5 +84,15 @@ the vendor's fastest:
 
 ## (b) Live option-checks report
 
-To come: the Rust `option-checks --same-response` run and the Python
-`option_checks.py` run, during US market hours on 2026-11-13.
+> **PLACEHOLDER: to be filled by the Coordinator from the 2026-11-13
+> market-hours run, before publication.** Record:
+> - the run ids, commit, host and times;
+> - the Rust `option-checks --same-response` result per RPC class
+>   (entitled, refused or no data, with gRPC codes), and how many values
+>   were equal on the same response;
+> - the Python `option_checks.py` result;
+> - any finding, and whether it blocks the release. A problem is fixed and
+>   re-tested the same day.
+>
+> Codes and classifications only: no row values and no vendor message
+> text.

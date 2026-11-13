@@ -7,13 +7,13 @@ session from `praevis-thetadata-auth`.
 
 > **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
-> identifies the service it interoperates with. `0.1.0-beta.2` is a prerelease
-> whose public API is **frozen for beta.1**, apart from one deliberate change
-> in beta.2 (no retry, scheduler or default timeout:
-> [ADR-0021](../../docs/adr/0021-per-call-library.md)), and except raw access
-> (`raw_client`, `stream_raw`, `RawStream`), which stays low-level and unstable
-> ([scope](../../docs/releases.md#beta1-scope-record-user-2026-11-10)): no breaking
-> change without a new prerelease version and release notes. It is **not** a
+> identifies the service it interoperates with. `0.1.0` is the first supported
+> release ([declared surface](../../docs/releases.md#010-scope-record-user-2026-11-12)):
+> `query()`, `job()`, `RequestOptions` and the generated endpoints, with no
+> retry, scheduler, rate limit or default timeout
+> ([ADR-0021](../../docs/adr/0021-per-call-library.md)). Raw access
+> (`raw_client`, `stream_raw`, `RawStream`) stays low-level and unstable. No
+> breaking change without a new minor version and release notes. It is **not** a
 > full port of, or drop-in replacement for, the vendor Python package. The Rust version is
 > independent of the tracked Python compatibility baseline (currently 1.0.17).
 
@@ -118,11 +118,11 @@ session from `praevis-thetadata-auth`.
 
 ## Install
 
-Prereleases are never selected implicitly, so pin the version:
+Add it from crates.io:
 
 ```toml
 [dependencies]
-praevis-thetadata-client = "=0.1.0-beta.2"
+praevis-thetadata-client = "0.1"
 ```
 
 ## Supported platforms

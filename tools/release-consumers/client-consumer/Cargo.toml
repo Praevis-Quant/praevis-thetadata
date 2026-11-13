@@ -7,5 +7,5 @@ publish = false
 [workspace]
 
 [dependencies]
-praevis-thetadata-client = { version = "=0.1.0-beta.2", registry = "praevis-staging" }
+praevis-thetadata-client = { version = "=0.1.0", registry = "praevis-staging" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

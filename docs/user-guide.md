@@ -1,7 +1,9 @@
 # User guide: platforms, prerequisites, resources and compatibility
 
-For `0.1.0-beta.2`. The [beta.1 scope record](releases.md#beta1-scope-record-user-2026-11-10)
-says what is frozen and what is not.
+For `0.1.0`, the first supported release. The
+[0.1.0 scope record](releases.md#010-scope-record-user-2026-11-12) says what is
+supported and what is not, and lists the
+[known gaps](releases.md#known-gaps-shipped-in-010).
 
 ## Supported platforms
 
@@ -23,9 +25,10 @@ says what is frozen and what is not.
     vendored D-Bus library with the native store.
   - Neither Python nor `protoc` is needed for the Rust crates.
 
-**Distribution:** the crates are on crates.io as prereleases, so pin the exact
-version. The Python package is on PyPI as `praevis-thetadata` from
-`0.1.0b1` (now `0.1.0b2`), a pre-release, so install it with `pip install --pre praevis-thetadata`. There are wheels only
+**Distribution:** the crates are on crates.io as `0.1.0`. Pin the unstable
+`praevis-thetadata-proto` and the experimental `praevis-thetadata-stream`
+exactly (`=0.1.0`). The Python package is on PyPI as `praevis-thetadata`
+`0.1.0` (`pip install praevis-thetadata`). There are wheels only
 (Windows x86_64, and Linux x86_64 with glibc 2.28 or later) and no source
 distribution. The same wheels are attached to the GitHub release.
 
