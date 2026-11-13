@@ -64,6 +64,24 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     - **The REST list request** answers 200 until another login ends the
       Terminal's historical session, then 478 (`w10-conflict-001`).
 
+- **`praevis-thetadata-scenarios`** ([ADR-0022](docs/adr/0022-emulator-and-dual-target-scenarios.md)
+  part 2): one set of end-to-end scenarios run against
+  `--target emulator` or `--target live`, in Rust (the crate's binary) and
+  in Python (`python/scenarios.py`, through the package).
+  - **What they cover:** login and tier, `query`, `job` with its
+    concurrency, Parquet output, the vendor-named methods and `batches`,
+    the tier refusal, identical `NOT_FOUND` for an unknown symbol and an
+    empty range, and cancellation. Rust also covers busy above the limit
+    and a second login (emulator only), and the full trade stream.
+  - **They assert properties, never values:** rows arrive, columns equal
+    `schemas.json`, error kinds are as expected, the stream does not drop.
+  - **The report** holds outcomes, codes, column kinds and timings, under
+    the ignored `artifacts/`, for the drift check.
+  - **The emulator target runs in CI** on Linux and Windows. **The live
+    target never does:** it needs `--confirm-live`, takes the key from
+    `THETADATA_API_KEY` only, and skips the emulator-only scenarios
+    (no over-limit requests, no second login, no gated flat files).
+
 ### Changed
 
 - **The Python consumer examples and tests run against the emulator.**

@@ -54,6 +54,8 @@ jobs:
         run: cargo clippy --locked -p praevis-thetadata-stream --features live-tests --examples -- -D warnings
       - name: Tests
         run: cargo test --workspace --locked
+      - name: End-to-end scenarios against the emulator (ADR-0022; the live target never runs in CI)
+        run: cargo run --locked -p praevis-thetadata-scenarios -- --target emulator --run-id ci --report target/scenarios-ci.json
       - name: Minimum supported Rust version (rust-version 1.88)
         if: runner.os == 'Linux'
         run: |
@@ -184,6 +186,8 @@ jobs:
           # Later steps run the example tests against it too (never skipped in CI).
           echo "PRAEVIS_EMULATOR=$server" >> "$GITHUB_ENV"
           PRAEVIS_EMULATOR="$server" python crates/praevis-thetadata-py/examples/consumer_patterns.py
+      - name: End-to-end scenarios through the package, against the emulator (ADR-0022)
+        run: python crates/praevis-thetadata-scenarios/python/scenarios.py --target emulator --run-id ci-py --report target/scenarios-ci-py.json
       - name: Offline tests and D.2 gates
         run: python -m unittest discover -s crates/praevis-thetadata-py/tests -v
       - name: P1 exit runners, offline
