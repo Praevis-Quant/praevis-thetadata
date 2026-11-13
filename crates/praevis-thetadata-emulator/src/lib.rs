@@ -112,10 +112,24 @@ pub struct Config {
     /// Size the messages after the recorded message-size histogram instead
     /// of the small synthetic default.
     pub recorded_sizes: bool,
+    /// Which concurrency limit the profile enforces.
+    pub concurrency: Concurrency,
     /// A test control, not a claim about the service: every model answer
     /// waits this long before its first message, counted as open, so a
     /// test can hold requests at the limit deterministically.
     pub hold: Duration,
+}
+
+/// The concurrency limit a profile enforces before answering busy.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Concurrency {
+    /// The vendor's documented limit (FREE 1, PRO 8). Stricter than any
+    /// live run showed, which is the safe direction for tests.
+    #[default]
+    Documented,
+    /// The most a live run served at once, where one was recorded (FREE 3,
+    /// p0); the documented limit otherwise.
+    Observed,
 }
 
 impl Default for Config {
@@ -127,6 +141,7 @@ impl Default for Config {
             tls: None,
             time_scale: 1.0,
             recorded_sizes: false,
+            concurrency: Concurrency::Documented,
             hold: Duration::ZERO,
         }
     }
@@ -157,7 +172,10 @@ struct ProfileModel {
 
 #[derive(Deserialize)]
 struct Limit {
+    /// The vendor's documented limit: the default.
     limit: usize,
+    /// The most served at once in a live run, where one was recorded.
+    observed: Option<usize>,
 }
 
 #[derive(Deserialize)]
@@ -531,9 +549,11 @@ impl Service {
                     return Err(status);
                 }
                 // More requests at once than the account's limit: busy at open.
-                let limit = data().model.profiles[self.config.profile.key()]
-                    .concurrency
-                    .limit;
+                let limit = &data().model.profiles[self.config.profile.key()].concurrency;
+                let limit = match self.config.concurrency {
+                    Concurrency::Documented => limit.limit,
+                    Concurrency::Observed => limit.observed.unwrap_or(limit.limit),
+                };
                 if self.open.fetch_add(1, Ordering::SeqCst) >= limit {
                     self.open.fetch_sub(1, Ordering::SeqCst);
                     return Err(Status::resource_exhausted(

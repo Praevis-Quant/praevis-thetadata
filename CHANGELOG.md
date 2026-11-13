@@ -37,10 +37,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     - **one session per account:** each login issues a new session and
       ends the earlier one (`UNAUTHENTICATED`, `opt-session-001`);
     - **busy above the tier's documented concurrency:** FREE 1, PRO 8,
-      `RESOURCE_EXHAUSTED` at open. This is stricter than observed: FREE
-      served 3 at once, and an over-limit refusal was never seen live.
-      `Config::hold` is a test control, not a model claim: it holds every
-      answer open so a test can sit at the limit deterministically;
+      `RESOURCE_EXHAUSTED` at open. This is the default, and it is stricter
+      than observed: FREE served 3 at once, and an over-limit refusal was
+      never seen live. A test can opt into the observed FREE 3 with
+      `Concurrency::Observed` (`--concurrency observed`). `Config::hold`
+      is a test control, not a model claim: it holds every answer open so
+      a test can sit at the limit deterministically;
     - **`NOT_FOUND`,** identical for an unknown symbol (`NOSUCH…`) and for a
       range of weekend days (`err-notfound-001`);
     - **flat files** stream many messages of data (step G);
