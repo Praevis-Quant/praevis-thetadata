@@ -8,7 +8,9 @@ in the [protocol manifest](../crates/praevis-thetadata-proto/schema/manifest.jso
 
 The first supported release was planned to cover authentication and one stock EOD
 slice. On 2026-11-10 the user widened it to the
-[beta.1 scope](#beta1-scope-record-user-2026-11-10).
+[beta.1 scope](#beta1-scope-record-user-2026-11-10), amended by beta.2
+([ADR-0021](adr/0021-per-call-library.md)). That is the
+[0.1.0 declared surface](#010-scope-record-user-2026-11-12).
 Generated bindings for 100 RPCs (Python 1.0.17 baseline) do not make 100 supported features. Every release
 must state its supported surface and distinguish experimental raw bindings.
 Maintainers own release decisions; client/core owners own EOD acceptance;
@@ -23,7 +25,7 @@ the account holder operates the optional live checks.
 | `0.1.0-alpha.3` | **Released 2026-11-08** ([publication record](crates-io-release-plan.md#publication-record-010-alpha3), tag `v0.1.0-alpha.3`; wheels on the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-alpha.3), not PyPI). The hardening work plus everything built since alpha.2 (generated endpoints, `query()`/`job()`, the scheduler, the arrow and stream crates, the schema registry), still experimental. See the [scope record](#alpha3-scope-record-2026-11-08) | Deferred items 1-4, 6 and 7 closed; item 8 open by user decision A (a beta.1 / `0.1.0` gate); packaging rehearsal green on Windows and Linux; abi3 wheels built and smoke-imported in CI; published after the user's approval | Alpha.2. Next: beta.1 (API freeze), with items 5 and 8 |
 | `0.1.0-beta.1` | **API freeze of the [beta.1 scope](#beta1-scope-record-user-2026-11-10)** (user decision 2026-11-10): auth, core, arrow (with the Parquet sink), the client's `query()`/`job()`, scheduler, `RequestOptions` and generated endpoints, the Python package (vendor-named methods plus `query`/`batches`/`to_parquet`), and the auth CLI (commands, flags, exit codes and JSON output). The stream crate stays experimental; raw gRPC access and the proto crate stay low-level and unstable. Runnable consumer examples and troubleshooting | The [API-freeze checklist](#beta1-api-freeze-checklist): ADRs accepted, revised or superseded; requirement-to-test/evidence review of the frozen surface; partial-result and cancellation examples; install/build outside the workspace; supported platforms, native-store prerequisites, resource policy and compatibility boundaries documented; error categories reviewed against service semantics. Deferred items 5 and 8 are done | Alpha.3. **Released 2026-11-11** ([publication record](crates-io-release-plan.md#publication-record-010-beta1), tag `v0.1.0-beta.1` on `c0c3dbe`): seven crates on crates.io, and [`praevis-thetadata` 0.1.0b1 on PyPI](https://pypi.org/project/praevis-thetadata/0.1.0b1/), with the same wheels on the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-beta.1). Next: `0.1.0` |
 | `0.1.0-beta.2` | **A deliberate breaking change after the beta.1 freeze** (user decision 2026-11-12, [ADR-0021](adr/0021-per-call-library.md)): the library does what one caller asks. Removed: retry at open, the account-wide scheduler and per-minute limiter (`SchedulerPolicy`, `with_scheduler`), and the default timeouts. Added: `QueryError::Busy` for `RESOURCE_EXHAUSTED`; a job's own concurrency, defaulting to the tier's documented limit. Kept: the in-process resource bounds, and everything else frozen at beta.1 | Release notes with a migration section; CI green on Windows and Linux; packaging rehearsal and wheels; the user's approval to publish (crates.io and PyPI, as for beta.1) | Beta.1. Scheduling, retry, rate limits and default deadlines move to the out-of-scope shared data service ([ROADMAP](ROADMAP.md#out-of-scope-a-shared-data-service-for-many-consumers)). **Released 2026-11-12** ([publication record](crates-io-release-plan.md#publication-record-010-beta2), tag `v0.1.0-beta.2` on `3bf6266`): seven crates on crates.io, and [`praevis-thetadata` 0.1.0b2 on PyPI](https://pypi.org/project/praevis-thetadata/0.1.0b2/), with the same wheels on the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0-beta.2). Next: `0.1.0` |
-| `0.1.0` | Supported auth + single-symbol stock EOD libraries and auth CLI | No unresolved blocker for the declared surface; green synthetic Windows/Linux checks; maintainer-reviewed manual PROD report on the release candidate; retained benchmark comparison and calibrated acceptance decision; signed-off release checklist below; **every item in [Deferred from alpha.2](#deferred-from-alpha2) closed** | Beta.1. This is not full Python parity and makes no flat-file/real-time promise. |
+| `0.1.0` | **The first supported release: the [0.1.0 declared surface](#010-scope-record-user-2026-11-12)**, which is the beta.1 freeze scope as amended by beta.2. Supported: auth; core; arrow, including the Parquet sink; the client's `query()`, `job()`, `RequestOptions` and generated endpoints, with the per-call behaviour of [ADR-0021](adr/0021-per-call-library.md); the CLI; and the Python package. Proto is unstable, the stream crate is experimental, and raw gRPC access is low-level. Shipped with the [known gaps](#known-gaps-shipped-in-010) listed | No unresolved blocker for the declared surface; green synthetic Windows/Linux checks; a maintainer-reviewed live report on the release candidate ([evidence plan](#release-candidate-evidence-for-010)); a retained benchmark comparison and calibrated acceptance decision, re-checked against the vendor package without the scheduler that beta.2 removed; the signed-off [release checklist](#checklist-for-every-release-candidate). Every item in [Deferred from alpha.2](#deferred-from-alpha2) is closed (all eight, by beta.1) | Beta.2. This is not full Python parity. It makes no flat-file or real-time promise beyond what is listed. **Next:** the release-candidate evidence on `main` as it is, then the release PR (version `0.1.0`, wheel `0.1.0`); publishing needs the user's explicit approval |
 | `0.2.0` | Typed stock discovery, snapshots, OHLC/trade/quote history and at-time slices, delivered in small prereleases | Define per-slice ADRs and L1/L2/L3 first; reconcile inventory entries, wire presence, bounded output and account entitlements; synthetic/fault tests, optional manual live evidence and before/after data-path benchmarks for each newly supported slice | Stable first slice; select endpoint order from consumer needs. Raw bindings remain experimental until individually accepted. |
 | `0.3.0` | Typed option/index slices, calendars and interest-rate history | Explicit option-contract identity, expiration/strike semantics, precise values and endpoint-specific output/resource requirements; each selected inventory item gains implementation and verification links | Stock patterns established; research unresolved contracts before implementation. Publish the exact supported endpoint list. |
 | `0.4.0` | Flat-file downloads as a separately bounded interface | Dedicated ADRs for signed URLs, download lifecycle, retries/resume, integrity, credentials, storage and cancellation; entitlement verification; fault injection and manual service checks | Do not route manifests through the table decoder. Corporate-action support requires separate source/contract evidence before selection. |
@@ -72,6 +74,81 @@ new prerelease version and release notes.
   alternative.
 - **This supersedes, for beta.1,** the alpha.3 decision of 2026-11-07
   ("crates.io only"; [alpha.3 scope record](#alpha3-scope-record-2026-11-08)).
+
+## 0.1.0 scope record (user, 2026-11-12)
+
+**The user decided to proceed to `0.1.0`,** with both resource-blocked
+items shipped as documented known gaps
+([Waiting on resources](ROADMAP.md#waiting-on-resources-blocks-010-evidence)).
+
+**The declared surface** is the
+[beta.1 freeze scope](#beta1-scope-record-user-2026-11-10) as amended by
+beta.2.
+
+**Supported:**
+- `praevis-thetadata-auth`;
+- `praevis-thetadata-core`;
+- `praevis-thetadata-arrow`, including the Parquet sink;
+- `praevis-thetadata-client`: `query()`, `job()`, `RequestOptions` and the
+  generated endpoints, with the behaviour of
+  [ADR-0021](adr/0021-per-call-library.md):
+  - no retry, scheduler, rate limit or default timeout;
+  - `QueryError::Busy` for `RESOURCE_EXHAUSTED`;
+  - a job's own concurrency, defaulting to the tier's documented limit;
+  - the in-process resource bounds kept;
+- `praevis-thetadata-cli`: its commands, flags, exit codes and JSON output;
+- the Python package `praevis-thetadata`: the vendor-named methods, plus
+  `query`, `batches` and `to_parquet`.
+
+**Not supported:**
+- **`praevis-thetadata-proto` is unstable:** it exposes generated tonic
+  types.
+- **`praevis-thetadata-stream` is experimental.**
+- **Raw gRPC access is low-level:** `stream_raw`, `raw_client` and
+  `RawStream`.
+
+**Supported means:** no breaking change without a deliberate new minor
+version before 1.0, with release notes.
+
+### Known gaps shipped in 0.1.0
+
+These are listed in the `0.1.0` release notes as they stand here.
+- **Endpoints without data-path evidence:** 20 of the 81 vendor wrappers.
+  - **19** were refused on the test account, naming VALUE, STANDARD or PRO
+    stocks or indices.
+  - **The option quote flat file** was refused once with `InvalidArgument`
+    (uncertain). A re-probe is gated by its size.
+
+  They decode through the generic path, which is checked on other RPCs, but
+  not on their own responses
+  ([list](ROADMAP.md#1-wrappers-seen-only-as-refusals)).
+- **Never probed:** the stock quote flat file (gated).
+- **Native Linux W10 latency is unmeasured.** The p99 ≤ 50 µs target is
+  met on Windows and missed under WSL2 (61-68 µs), with no drops on either
+  ([details](ROADMAP.md#2-native-linux-w10-latency)). It concerns only the
+  experimental stream crate.
+- **Accounts:** paid stock and index tiers, and the STAGE environment,
+  were never run.
+- **`Busy`** has synthetic evidence only: the service's `RESOURCE_EXHAUSTED`
+  was never observed live.
+- **`Remote(Internal)`** was seen once on a second request and is
+  unexplained.
+- **Memory:** the bound covers the Rust heap only, never total process
+  memory.
+
+### Release-candidate evidence for 0.1.0
+
+**The candidate is `main` as it is, before the version bump.** The user
+approved "the live checks on the release candidate" as part of this plan.
+- **Speed:** one vendor comparison on W5c (tick trades, one request per
+  expiration): ours against the vendor package 1.0.17, synchronous and
+  threaded, at the same concurrency. The published
+  [D2 ratios](performance/options-d2-results.md) were measured with the
+  scheduler that beta.2 removed, so this re-checks them.
+- **Live report:** the option value checks (or the smallest equivalent),
+  plus a Python smoke run, reviewed by the maintainer.
+
+The results are recorded in the `0.1.0` release PR.
 
 ## Deferred from alpha.2
 
@@ -280,7 +357,7 @@ flowchart TD
     F --> J[Review scoped Python performance claims]
     G --> J
     I --> K[beta.1 API freeze and consumer examples]
-    K --> L[0.1.0 supported auth and single-symbol EOD]
+    K --> L[0.1.0 the beta.1 surface as amended by beta.2]
 ```
 
 The Python comparison is a selected demonstration objective. It does not add an
