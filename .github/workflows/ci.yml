@@ -140,7 +140,15 @@ jobs:
           docker run --rm -v "$PWD:/io" -w /io -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
             quay.io/pypa/manylinux_2_28_x86_64:2026.11.07-1@sha256:9555ba6c479fa69a2aa80ad1dc57154a60d562b19df159361d9379a02beb1e36 \
             bash -euo pipefail -c '
-              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+              # A dropped connection to sh.rustup.rs failed a run (curl 35,
+              # 2026-11-13). The curl 7.61 in this image retries neither TLS
+              # connect errors nor resets, so retry the download here.
+              for attempt in 1 2 3 4 5; do
+                curl --proto "=https" --tlsv1.2 -sSf -o /tmp/rustup-init.sh https://sh.rustup.rs && break
+                [ "$attempt" = 5 ] && exit 1
+                sleep $((attempt * 5))
+              done
+              sh /tmp/rustup-init.sh -y --profile minimal --default-toolchain stable
               . "$HOME/.cargo/env"
               /opt/python/cp312-cp312/bin/python -m pip install --quiet --require-hashes -r .maturin-requirements.txt
               /opt/python/cp312-cp312/bin/maturin build --release --locked --compatibility manylinux_2_28 \
