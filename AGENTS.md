@@ -73,6 +73,7 @@ crates/praevis-thetadata-arrow/  columnar decoding into Arrow; Parquet sink
 crates/praevis-thetadata-client/ gRPC, generated endpoints, query(), jobs, tier
 crates/praevis-thetadata-py/     Python bindings (pyo3 abi3, maturin)
 crates/praevis-thetadata-emulator/ dev-only emulator of the documented interfaces (ADR-0022)
+crates/praevis-thetadata-scenarios/ dev-only scenarios, --target emulator (CI) or live (manual)
 bench/python-baseline/           the only code allowed to run the vendor package
 bench/p1/                        Python-side live checks and comparison runners
 tools/                           repository checks, generators, research tooling

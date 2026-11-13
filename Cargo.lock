@@ -2063,6 +2063,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "praevis-thetadata-scenarios"
+version = "0.1.0-beta.2"
+dependencies = [
+ "clap",
+ "praevis-thetadata-client",
+ "praevis-thetadata-emulator",
+ "praevis-thetadata-stream",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "praevis-thetadata-stream"
 version = "0.1.0-beta.2"
 dependencies = [

@@ -1,0 +1,18 @@
+[package]
+name = "praevis-thetadata-scenarios"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Dev-only end-to-end scenarios against the emulator or the live service (ADR-0022); never published"
+# Test infrastructure only (ADR-0022): never published.
+publish = false
+
+[dependencies]
+clap.workspace = true
+praevis-thetadata-client.workspace = true
+praevis-thetadata-emulator.workspace = true
+praevis-thetadata-stream = { path = "../praevis-thetadata-stream" }
+serde_json.workspace = true
+tokio.workspace = true
