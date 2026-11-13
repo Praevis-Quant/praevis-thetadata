@@ -16,6 +16,78 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+## [0.1.0] - pending
+
+**The first supported release.** Prepared, not published: dated and tagged
+(`v0.1.0`) at publication. The user approved it on 2026-11-13, as for the
+betas, and the release-candidate evidence passed the same day. The
+[declared surface](docs/releases.md#010-scope-record-user-2026-11-12) is the
+beta.1 freeze scope as amended by beta.2, and it ships with the
+[known gaps](docs/releases.md#known-gaps-shipped-in-010) listed. See the
+[release-notes draft](docs/release-draft-0.1.0.md) and the
+[release-candidate evidence](docs/performance/rc-0.1.0-evidence.md).
+
+### Release
+
+- **Version `0.1.0`** across the workspace: every crate version, internal
+  pin, release-consumer pin, README install line and the lockfile. The
+  Python wheel follows as `0.1.0`. A final release needs no `--pre` and no
+  exact pin, except for the unstable proto crate and the experimental
+  stream crate, which the READMEs say to pin exactly (`=0.1.0`).
+- **The same publish set as the betas:** seven crates on crates.io. The two
+  Python wheels go to PyPI by hand (`twine`) and to the GitHub release. No
+  sdist. The emulator and scenario crates are `publish = false`.
+- **Supported, not frozen-for-beta:** the READMEs, the user guide and the
+  crate descriptions now state the supported surface. There is no breaking
+  change without a new minor version and release notes.
+- **Wording sweep:** no scheduler, retry or default timeout left in what
+  users read.
+  - The client's crates.io description said "a tier-aware scheduler" and
+    "Experimental".
+  - `options-phase.md` cited a 300 s default timeout.
+  - Requirement EOD-L3-018 and the EOD evidence table stated the former
+    300 s and 60 s defaults.
+  - The docs index described the P1 scheduler without its removal.
+- **`docs/crates-io-release-plan.md`** gains the 0.1.0 publication checklist,
+  and **`docs/release-draft-0.1.0.md`** drafts the GitHub release text.
+
+### Summary since 0.1.0-alpha.3
+
+- **beta.1 (2026-11-11), the API freeze:**
+  - **Scope:** auth, core, arrow with Parquet, the client's
+    `query()`/`job()`/`RequestOptions`/endpoints, the CLI and the Python
+    package.
+  - **The deferred items closed:**
+    - item 5, `Price::numeric_cmp` and `numeric_eq`;
+    - item 8, transport buffering: the client assembles each message
+      itself, so the Rust heap is bounded by configuration plus the
+      messages in flight.
+  - **Evidence for the frozen surface:** an evidence review, a user guide,
+    runnable examples for partial results and cancellation, install
+    outside the workspace, and a review of the error categories.
+  - **First on PyPI:** `praevis-thetadata` was published to PyPI for the
+    first time.
+  - **Fixed:** closing a stream no longer loses its unsubscribes.
+- **beta.2 (2026-11-12), one deliberate breaking change**
+  ([ADR-0021](docs/adr/0021-per-call-library.md)):
+  - **Removed:** retry, the account-wide scheduler and rate limit, and the
+    default timeouts.
+  - **Added:** `QueryError::Busy`.
+  - **Changed:** a job's concurrency is its own, defaulting to the tier's
+    documented limit.
+- **0.1.0:**
+  - **The declared surface and known gaps,** recorded with the user's
+    decision of 2026-11-12.
+  - **The release-candidate evidence:** the vendor speed comparison was
+    re-checked without the scheduler. At 8, ours is 10.8x (Python) and 8.8x
+    (Rust) the synchronous vendor package, and 5.4x and 4.4x the threaded
+    one.
+  - **Test infrastructure, none of it published**
+    ([ADR-0022](docs/adr/0022-emulator-and-dual-target-scenarios.md), below):
+    an emulator of the documented interfaces, one scenario suite for the
+    emulator and live targets, a drift check, and a scheduled live run
+    with its runbook.
+
 ### Added
 
 - **`praevis-thetadata-emulator`** ([ADR-0022](docs/adr/0022-emulator-and-dual-target-scenarios.md)):

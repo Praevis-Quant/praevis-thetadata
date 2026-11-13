@@ -7,4 +7,4 @@ publish = false
 [workspace]
 
 [dependencies]
-praevis-thetadata-auth = { version = "=0.1.0-beta.2", registry = "praevis-staging" }
+praevis-thetadata-auth = { version = "=0.1.0", registry = "praevis-staging" }

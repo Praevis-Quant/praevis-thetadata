@@ -474,10 +474,11 @@ each Parquet file deleted after measuring.
   fields that is about 87 bytes per row, which matches. Our 297.8 MB is
   ZSTD-compressed columnar Parquet, about 21.6 bytes per row, roughly 4×
   smaller. We did not record the gRPC bytes on the wire.
-- **The default timeout is enough:** the largest file took 38.1 s, well
-  inside the client's default 300 s request timeout. The vendor's "about 3
-  minutes" is for its Terminal REST path. The runner's 1800 s was not
-  needed, and the library default stays.
+- **Time:** the largest file took 38.1 s. The vendor's "about 3 minutes"
+  is for its Terminal REST path. The runner's 1800 s was not needed.
+  *(Since beta.2 the client has no default timeout at all, as in the
+  vendor package; [ADR-0021](../adr/0021-per-call-library.md). This run
+  was under the former 300 s default, well inside it.)*
 - **Memory:** one stream with no split peaked at 14-33 MiB of heap, and the
   heap after each run was 0.1-0.2 MiB.
 - **Still not run:** the option quote file (about 38 GB) needs the user's

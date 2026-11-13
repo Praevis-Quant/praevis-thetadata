@@ -3,9 +3,87 @@
 Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 (2026-11-01 US time), `0.1.0-alpha.2` on 2026-11-03 UTC and `0.1.0-alpha.3`
 on 2026-11-08, `0.1.0-beta.1` on 2026-11-11 and `0.1.0-beta.2` on 2026-11-12,
-each after owner approval. From
+each after owner approval. `0.1.0` is prepared below. From
 beta.1 the Python wheels are also on PyPI. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
+
+## 0.1.0 publication checklist and order (prepared 2026-11-13)
+
+**Approved by the user on 2026-11-13** (crates.io, PyPI and GitHub, as for the
+betas), to publish the same day once the release-candidate evidence is in.
+The user publishes locally, with tokens never in argv, logs or shell
+history.
+- **Scope:** the
+  [0.1.0 declared surface](releases.md#010-scope-record-user-2026-11-12),
+  with its [known gaps](releases.md#known-gaps-shipped-in-010).
+- **No supported API changed since beta.2.**
+- **Published code since the release candidate (`78c95dd`)** changed only
+  in packaging:
+  - the client's build script no longer generates the test fixture;
+  - the client and stream archives exclude `tests/`;
+  - the emulator is a path-only dev-dependency, stripped from the
+    published manifests.
+
+**Same set as the betas:**
+- **crates.io:** seven crates. `praevis-thetadata-stream` stays
+  experimental and `praevis-thetadata-proto` unstable.
+- **Not on crates.io:** `praevis-thetadata-py`, and the `publish = false`
+  emulator and scenario crates.
+- **Python:** two abi3 wheels (`0.1.0`) go to PyPI and to the GitHub
+  release. No sdist.
+
+**Before publishing:**
+1. **The release-candidate evidence is complete:** done 2026-11-13.
+   Section (b) of [the evidence record](performance/rc-0.1.0-evidence.md)
+   passed: 47 option wrappers in Python, and 50 option RPCs with equal
+   values in Rust.
+2. **This release PR is merged,** with Verify, the Python package job and
+   its 3.10-3.13 matrix, and the packaging rehearsal green on Windows and
+   Linux.
+3. **Archive review:** the rehearsal's file lists and hashes, the license
+   files, no forbidden inputs, and no `tests/` in the client or stream
+   archive.
+4. **Approval:** the maintainer's final review of the merged commit. The
+   user approved publishing it.
+
+**Publish, in dependency order,** each step waiting until the index serves
+the previous crates:
+
+| Wave | Crates | Depends on |
+| ---: | --- | --- |
+| 1 | `praevis-thetadata-proto`, `praevis-thetadata-core`, `praevis-thetadata-auth` | — |
+| 2 | `praevis-thetadata-arrow` | core, proto |
+| 3 | `praevis-thetadata-client` | auth, arrow, core, proto |
+| 4 | `praevis-thetadata-cli`, `praevis-thetadata-stream` | auth; none (the client is only a stream dev-dependency) |
+
+**Then PyPI** (the user, by hand, after wave 4):
+- **What:** `twine check`, then `twine upload` of the two wheels from the
+  published commit's CI run (artifacts `wheel-windows-latest` and
+  `wheel-ubuntu-latest`):
+  - `praevis_thetadata-0.1.0-cp310-abi3-win_amd64.whl`;
+  - `praevis_thetadata-0.1.0-cp310-abi3-manylinux_2_28_x86_64.whl`.
+- **The token** comes from the environment (`TWINE_USERNAME=__token__`,
+  `TWINE_PASSWORD`). It is never in argv, logs or shell history.
+- **No sdist,** and nothing in CI uploads.
+- **A PyPI version can be yanked but never replaced.**
+
+**After publishing:**
+1. **Tag:** an annotated tag `v0.1.0` on the published commit.
+2. **GitHub release:** from the [draft](release-draft-0.1.0.md), **not**
+   marked as a prerelease (the latest release), with the same two wheels
+   attached.
+3. **Checks on Windows and Linux:**
+   - `cargo install praevis-thetadata-cli --locked` (no version needed now)
+     prints `praevis-thetadata 0.1.0`;
+   - the crates.io-only consumers build and run;
+   - the downloaded `.crate` hashes match the index, and none is yanked;
+   - docs.rs builds the six library crates;
+   - `pip install praevis-thetadata` (no `--pre`) resolves `0.1.0` in a clean
+     venv and imports, with PyPI's SHA-256 equal to the CI artifacts.
+     Allow a minute for the index, as on beta.2.
+4. **Records:** a "Publication record: 0.1.0" section here, the CHANGELOG
+   section dated, the `0.1.0` row of `releases.md` marked released, and the
+   ROADMAP updated.
 
 ## Publication record: 0.1.0-beta.2
 

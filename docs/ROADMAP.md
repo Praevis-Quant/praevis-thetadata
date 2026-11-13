@@ -59,8 +59,10 @@ The [performance architecture plan](architecture/performance-plan.md)
   - `0.1.0-alpha.1`, `0.1.0-alpha.2` and `0.1.0-alpha.3` (2026-11-08) came
     before it ([releases](releases.md)). Alpha.3 added the arrow and stream
     crates. Its wheels were on the GitHub release only, not on PyPI.
-  - **Next:** `0.1.0`, the beta.1 surface as amended by beta.2, with the
-    known gaps listed ([scope record](releases.md#010-scope-record-user-2026-11-12)).
+  - **`0.1.0` is prepared** (the beta.1 surface as amended by beta.2, with
+    the known gaps listed: [scope record](releases.md#010-scope-record-user-2026-11-12)).
+    The user approved publishing it on 2026-11-13. The release-candidate
+    evidence passed the same day.
 
 ## Waiting on resources (blocks 0.1.0 evidence)
 

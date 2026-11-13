@@ -29,35 +29,41 @@ package name, and builds the `praevis-thetadata` executable. Cargo places build 
 the shared root `target/` directory; that does not make the CLI a root package.
 The selected naming and compatibility boundaries are recorded in
 [the naming decision](docs/project-naming.md). The packages are released
-together on crates.io as **`0.1.0-beta.2` prereleases**. Beta.2 makes one
-deliberate breaking change: no retry, scheduler or default timeout
-([ADR-0021](docs/adr/0021-per-call-library.md)).
-- **Frozen for beta.1** ([scope](docs/releases.md#beta1-scope-record-user-2026-11-10)):
-  auth, core, arrow, the client (except raw access), the CLI and the Python
-  package. There is no breaking change without a new prerelease version and
-  release notes.
-- **Not frozen:** `praevis-thetadata-stream` stays experimental, and
-  `praevis-thetadata-proto` and raw gRPC access stay unstable.
-- **Python:** `praevis-thetadata` `0.1.0b2` is on PyPI for Python 3.10 or
-  newer, tested in CI on 3.10-3.13 (`pip install --pre praevis-thetadata`;
+together on crates.io as **`0.1.0`, the first supported release**
+([declared surface](docs/releases.md#010-scope-record-user-2026-11-12)).
+- **Supported:** auth, core, arrow (with the Parquet sink), the client's
+  `query()`, `job()`, `RequestOptions` and generated endpoints, the CLI and
+  the Python package. The library does what one caller asks: no retry,
+  scheduler, rate limit or default timeout, as in the vendor package
+  ([ADR-0021](docs/adr/0021-per-call-library.md)). There is no breaking
+  change without a new minor version (`0.2.0`) and release notes.
+- **Not supported:** `praevis-thetadata-stream` is experimental, and
+  `praevis-thetadata-proto` and raw gRPC access are unstable.
+- **Known gaps** are listed with the release
+  ([0.1.0 known gaps](docs/releases.md#known-gaps-shipped-in-010)), among them
+  20 vendor wrappers never seen to return data on the test account.
+- **Python:** `praevis-thetadata` `0.1.0` is on PyPI for Python 3.10 or
+  newer, tested in CI on 3.10-3.13 (`pip install praevis-thetadata`;
   Windows x86_64 and Linux x86_64 wheels only). The same wheels are
   attached to the GitHub release.
 - **Scope:** it is independent and unofficial, and it is not full Python
   parity.
 
- Prereleases need an explicit version, for example
-`cargo install praevis-thetadata-cli --version 0.1.0-beta.2 --locked` or
-`praevis-thetadata-auth = "=0.1.0-beta.2"`. Publication is manual and
-owner-approved ([release plan](docs/crates-io-release-plan.md)); no workflow
-publishes.
+Install from crates.io, for example
+`cargo install praevis-thetadata-cli --locked` or
+`praevis-thetadata-auth = "0.1"`. Publication is manual and owner-approved
+([release plan](docs/crates-io-release-plan.md)); no workflow publishes.
 
 | Package | Responsibility | Status |
 | --- | --- | --- |
-| `praevis-thetadata-auth` | HTTP authentication, credentials, in-memory sessions; optional (`native-store`) Windows/Linux session persistence | First deliverable |
-| `praevis-thetadata-cli` (`praevis-thetadata`) | Credential discovery, `auth` (in memory) or `auth --save`, status and logout | First deliverable |
-| `praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for all 100 RPCs | Foundation |
-| `praevis-thetadata-core` | Transport-independent prices, timestamps, values, tables | Foundation |
-| `praevis-thetadata-client` | gRPC requests, ZSTD decoding, batch streaming with limits on accounted decode allocations (not total memory) | Experimental typed EOD; one PROD query verified, broader acceptance open |
+| `praevis-thetadata-auth` | HTTP authentication, credentials, in-memory sessions; optional (`native-store`) Windows/Linux session persistence | Supported |
+| `praevis-thetadata-cli` (`praevis-thetadata`) | Credential discovery, `auth` (in memory) or `auth --save`, status and logout | Supported (commands, flags, exit codes, JSON output) |
+| `praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for all 100 RPCs | Unstable (exposes generated tonic types) |
+| `praevis-thetadata-core` | Transport-independent prices, timestamps, values, tables | Supported |
+| `praevis-thetadata-arrow` | Exact columnar decoding into Arrow; optional streaming Parquet sink | Supported |
+| `praevis-thetadata-client` | gRPC requests for all 100 RPCs, exact Arrow `query()` and `job()` streams, Parquet output. The Rust heap is bounded by configuration, plus the messages in flight; not total memory | Supported (raw gRPC access unstable) |
+| `praevis-thetadata-stream` | Real-time option events from an operator-run Theta Terminal's local WebSocket | Experimental |
+| `praevis-thetadata` (Python, PyPI) | The vendor-named methods plus `query`, `batches` and `to_parquet`, over the client | Supported |
 
 Dependency direction:
 
@@ -187,7 +193,7 @@ second login ends the first session.
 
 ## Reuse in another Rust project
 
-Add `praevis-thetadata-auth = "=0.1.0-beta.2"` from crates.io (experimental prerelease), or a path dependency on `crates/praevis-thetadata-auth`. Authentication is explicit; the library never discovers environment variables or credentials on its own. By default the session lives in memory, as in the vendor Python package: clone it to reuse it within your process ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md)). The default build has no keyring or D-Bus dependencies.
+Add `praevis-thetadata-auth = "0.1"` from crates.io, or a path dependency on `crates/praevis-thetadata-auth`. Authentication is explicit; the library never discovers environment variables or credentials on its own. By default the session lives in memory, as in the vendor Python package: clone it to reuse it within your process ([ADR-0020](docs/adr/0020-in-memory-sessions-and-optional-persistence.md)). The default build has no keyring or D-Bus dependencies.
 
 ```rust,no_run
 use praevis_thetadata_auth::{AuthClient, AuthConfig, Credentials};
