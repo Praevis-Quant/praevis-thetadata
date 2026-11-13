@@ -44,6 +44,14 @@
       "evidence": "every strike x tick or 1 s quotes: 59.4-71.8 s before the first data, whatever the window or row count (opt-sizes-002, 2026-11-05, docs/architecture/options-phase.md)"
     }
   ],
+  "terminal": {
+    "heartbeat_ms": 1000,
+    "first_event_ms": 1032,
+    "quotes_per_contract_per_second": 168,
+    "full_trades_per_second": 481,
+    "full_trade_contracts": 100,
+    "evidence": "heartbeats about once per second (vendor documentation; ADR-0018). First quote 1,032 ms after a single-contract subscribe, live (2026-11-10; a dev bulk subscribe took 1.5 s). Quotes: 1,682/s over 10 contracts on the dev feed (w10-dev-10-001). Full trade stream: 481 trades/s across the close run-up, each with a quote and an OHLC (w10-live-full-close-001; dev feed counts QUOTE/OHLC/TRADE). Every stream request, unsubscribes included, answered REQ_RESPONSE SUBSCRIBED (2026-11-10). REST answers 200, then 478 once another login ends the Terminal's historical session (w10-conflict-001). full_trade_contracts is synthetic"
+  },
   "message_sizes": {
     "messages": 20,
     "histogram": [[65536, 1711], [262144, 39], [1048576, 70]],

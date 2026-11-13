@@ -1,40 +1,15 @@
-//! The stream against a loopback WebSocket server standing in for the
-//! Terminal: requests, event order, counters, the overflow policy and the
+//! The stream against the emulator's one-connection test servers standing
+//! in for the Terminal (ADR-0022): requests, event order, counters, the overflow policy and the
 //! end of the stream.
+use praevis_thetadata_emulator::terminal;
 use praevis_thetadata_stream::{
     Contract, Kind, Options, Overflow, Right, Root, Status, Stream, StreamError,
 };
-use std::net::TcpListener;
 use std::sync::mpsc;
 use std::time::Duration;
-use tungstenite::Message;
 
 const QUOTE: &str = r#"{"header":{"status":"CONNECTED","type":"QUOTE"},"contract":{"security_type":"OPTION","root":"SPY","expiration":20261106,"strike":570000,"right":"C"},"quote":{"ms_of_day":36000000,"bid_size":10,"bid_exchange":5,"bid":1.25,"bid_condition":50,"ask_size":12,"ask_exchange":5,"ask":1.27,"ask_condition":50,"date":20261106}}"#;
 const HEARTBEAT: &str = r#"{"header":{"type":"STATUS","status":"CONNECTED"}}"#;
-
-/// A one-connection server: it reports the requests it reads, waits for
-/// `wait_for` of them, sends `frames`, then closes.
-fn server(frames: Vec<String>, wait_for: usize) -> (String, mpsc::Receiver<String>) {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let url = format!("ws://{}/v1/events", listener.local_addr().unwrap());
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
-        let (tcp, _) = listener.accept().unwrap();
-        let mut socket = tungstenite::accept(tcp).unwrap();
-        for _ in 0..wait_for {
-            if let Ok(Message::Text(text)) = socket.read() {
-                tx.send(text.as_str().to_owned()).unwrap();
-            }
-        }
-        for frame in frames {
-            socket.send(Message::text(frame)).unwrap();
-        }
-        let _ = socket.close(None);
-        // Let the close handshake finish.
-        while socket.read().is_ok() {}
-    });
-    (url, rx)
-}
 
 fn spy() -> Contract {
     Contract {
@@ -53,7 +28,7 @@ fn requests_events_and_counters() {
         "not json".into(),
         HEARTBEAT.into(),
     ];
-    let (url, requests) = server(frames, 2);
+    let (url, requests) = terminal::scripted(frames, 2);
     let stream = Stream::connect(Options::default().with_url(url)).unwrap();
     assert_eq!(stream.subscribe_quotes(&spy()).unwrap(), 0);
     assert_eq!(stream.unsubscribe_quotes(&spy()).unwrap(), 1);
@@ -100,7 +75,7 @@ fn requests_events_and_counters() {
 #[test]
 fn a_full_queue_drops_the_newest_and_counts_by_default() {
     let frames: Vec<String> = (0..20).map(|_| QUOTE.to_owned()).collect();
-    let (url, _) = server(frames.clone(), 0);
+    let (url, _) = terminal::scripted(frames.clone(), 0);
     let stream = Stream::connect(
         Options::default()
             .with_url(url)
@@ -125,7 +100,7 @@ fn a_full_queue_drops_the_newest_and_counts_by_default() {
     }
     assert_eq!(received, 3);
     // Block (tests only) delivers every event.
-    let (url, _) = server(frames, 0);
+    let (url, _) = terminal::scripted(frames, 0);
     let stream = Stream::connect(
         Options::default()
             .with_url(url)
@@ -160,7 +135,7 @@ fn only_a_local_ws_url_is_accepted() {
         Err(StreamError::Configuration)
     ));
     // Nothing listening: a connection error, not a hang.
-    let port = TcpListener::bind("127.0.0.1:0")
+    let port = std::net::TcpListener::bind("127.0.0.1:0")
         .unwrap()
         .local_addr()
         .unwrap()
@@ -174,7 +149,7 @@ fn only_a_local_ws_url_is_accepted() {
 #[test]
 fn the_full_trade_stream_request_and_trade_events() {
     let trade = r#"{"header":{"status":"CONNECTED","type":"TRADE"},"contract":{"security_type":"OPTION","root":"QQQ","expiration":20231110,"strike":360000,"right":"P"},"trade":{"ms_of_day":49531278,"sequence":-563040482,"size":5,"condition":18,"price":1.06,"exchange":65,"date":20231103}}"#;
-    let (url, requests) = server(vec![trade.into()], 2);
+    let (url, requests) = terminal::scripted(vec![trade.into()], 2);
     let stream = Stream::connect(Options::default().with_url(url)).unwrap();
     assert_eq!(stream.subscribe_full_trades().unwrap(), 0);
     assert_eq!(stream.unsubscribe_full_trades().unwrap(), 1);
@@ -194,31 +169,6 @@ fn the_full_trade_stream_request_and_trade_events() {
     assert_eq!(stream.close().trades, 1);
 }
 
-/// A server that records every request until the client's close frame,
-/// then reports "CLOSE".
-fn recording_server() -> (String, mpsc::Receiver<String>) {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let url = format!("ws://{}/v1/events", listener.local_addr().unwrap());
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
-        let (tcp, _) = listener.accept().unwrap();
-        let mut socket = tungstenite::accept(tcp).unwrap();
-        loop {
-            match socket.read() {
-                Ok(Message::Text(text)) => tx.send(text.as_str().to_owned()).unwrap(),
-                Ok(Message::Close(_)) => {
-                    tx.send("CLOSE".into()).unwrap();
-                    while socket.read().is_ok() {}
-                    return;
-                }
-                Ok(_) => {}
-                Err(_) => return,
-            }
-        }
-    });
-    (url, rx)
-}
-
 /// Every request the server saw, up to and including "CLOSE".
 fn requests_until_close(rx: &mpsc::Receiver<String>) -> Vec<String> {
     let mut seen = Vec::new();
@@ -233,7 +183,7 @@ fn requests_until_close(rx: &mpsc::Receiver<String>) -> Vec<String> {
 }
 
 fn subscribe_and_end(close: bool) -> Vec<String> {
-    let (url, requests) = recording_server();
+    let (url, requests) = terminal::recording();
     let stream = Stream::connect(Options::default().with_url(url)).unwrap();
     let qqq = Contract {
         root: Root::new("QQQ").unwrap(),
@@ -291,7 +241,7 @@ const _: () = {
 #[test]
 fn one_thread_subscribes_while_another_waits_for_events() {
     // The server waits for the subscription, then sends a quote.
-    let (url, requests) = server(vec![QUOTE.into()], 1);
+    let (url, requests) = terminal::scripted(vec![QUOTE.into()], 1);
     let (control, events) = Stream::connect(Options::default().with_url(url))
         .unwrap()
         .split();
@@ -315,7 +265,7 @@ fn one_thread_subscribes_while_another_waits_for_events() {
 
 #[test]
 fn dropping_the_events_closes_the_stream_and_unsubscribes_first() {
-    let (url, requests) = recording_server();
+    let (url, requests) = terminal::recording();
     let (control, events) = Stream::connect(Options::default().with_url(url))
         .unwrap()
         .split();
@@ -336,7 +286,7 @@ fn dropping_the_events_closes_the_stream_and_unsubscribes_first() {
 
 #[test]
 fn closing_through_a_control_handle_unsubscribes_before_the_close_frame() {
-    let (url, requests) = recording_server();
+    let (url, requests) = terminal::recording();
     let (control, _events) = Stream::connect(Options::default().with_url(url))
         .unwrap()
         .split();
@@ -349,56 +299,13 @@ fn closing_through_a_control_handle_unsubscribes_before_the_close_frame() {
     assert_eq!(seen[2], "CLOSE");
 }
 
-/// A busy Terminal: it sends bursts of quotes and reads requests only
-/// between them, like a server that is writing most of the time. It reports
-/// the requests it read, and how the connection ended: `CLOSE` for a close
-/// frame, `RESET` if a send failed first (the peer reset the connection).
-fn busy_server() -> (String, mpsc::Receiver<Vec<String>>) {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let url = format!("ws://{}/v1/events", listener.local_addr().unwrap());
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
-        let (tcp, _) = listener.accept().unwrap();
-        let mut socket = tungstenite::accept(tcp).unwrap();
-        socket
-            .get_ref()
-            .set_read_timeout(Some(Duration::from_millis(1)))
-            .unwrap();
-        let mut seen = Vec::new();
-        'serve: loop {
-            for _ in 0..2_000 {
-                if socket.send(Message::text(QUOTE)).is_err() {
-                    seen.push("RESET".to_owned());
-                    break 'serve;
-                }
-            }
-            std::thread::sleep(Duration::from_millis(20));
-            loop {
-                match socket.read() {
-                    Ok(Message::Text(text)) => seen.push(text.as_str().to_owned()),
-                    Ok(Message::Close(_)) => {
-                        // Answer the close frame and finish the handshake.
-                        let _ = socket.flush();
-                        seen.push("CLOSE".to_owned());
-                        break 'serve;
-                    }
-                    Ok(_) => {}
-                    Err(_) => break,
-                }
-            }
-        }
-        let _ = tx.send(seen);
-    });
-    (url, rx)
-}
-
 #[test]
 fn closing_while_data_arrives_finishes_the_close_handshake() {
     // Dropping a socket with data unread resets the connection, and a
     // Terminal can lose the unsubscribes sent just before (live 2026-11-10:
     // the full trade stream kept flowing into the next program).
     for _ in 0..5 {
-        let (url, ended) = busy_server();
+        let (url, ended) = terminal::busy(QUOTE);
         let stream = Stream::connect(Options::default().with_url(url)).unwrap();
         stream.subscribe_full_trades().unwrap();
         std::thread::sleep(Duration::from_millis(50));

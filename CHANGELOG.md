@@ -49,6 +49,18 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
       (`--time-scale`);
     - **optional message sizes** after the recorded histogram
       (`opt-msgsize-001`, `--recorded-sizes on`).
+  - **The Terminal side** (`praevis_thetadata_emulator::terminal`), its
+    documented interfaces only, with no JAR internals and no FPSS:
+    - **WebSocket `/v1/events`:**
+      - every stream request, unsubscribes included, is answered
+        `REQ_RESPONSE` `SUBSCRIBED`;
+      - quotes for subscribed contracts;
+      - the full trade stream, with a quote and an OHLC per trade;
+      - heartbeats about once a second, and the close handshake.
+    - **Rates and delays are the recorded ones,** with the first-event delay
+      and the heartbeat scaled by `time_scale`.
+    - **The REST list request** answers 200 until another login ends the
+      Terminal's historical session, then 478 (`w10-conflict-001`).
 
 ### Changed
 
@@ -71,6 +83,9 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     the unpublished emulator, like `examples/`, which was already
     excluded. The emulator dev-dependency is path-only, so cargo strips it
     from the published manifest.
+- **The stream crate's tests use the emulator's Terminal test servers**
+  (scripted, recording, busy), moved from `tests/loopback.rs`. Its
+  crates.io archive no longer ships `tests/` either.
 
 ## [0.1.0-beta.2] - 2026-11-12
 
