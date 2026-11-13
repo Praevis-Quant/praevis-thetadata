@@ -8,7 +8,7 @@ the published code changed only in packaging (see the
 [0.1.0 checklist](../crates-io-release-plan.md#010-publication-checklist-and-order-prepared-2026-11-13)).
 - (a) the W5c speed comparison against the vendor package: **done
   2026-11-13**, below.
-- (b) the live option-checks report: **to come.**
+- (b) the live option-checks report: **passed 2026-11-13**, below.
 
 ## (a) W5c speed comparison (2026-11-13)
 
@@ -84,15 +84,53 @@ the vendor's fastest:
 
 ## (b) Live option-checks report
 
-> **PLACEHOLDER: to be filled by the Coordinator from the 2026-11-13
-> market-hours run, before publication.** Record:
-> - the run ids, commit, host and times;
-> - the Rust `option-checks --same-response` result per RPC class
->   (entitled, refused or no data, with gRPC codes), and how many values
->   were equal on the same response;
-> - the Python `option_checks.py` result;
-> - any finding, and whether it blocks the release. A problem is fixed and
->   re-tested the same day.
->
-> Codes and classifications only: no row values and no vendor message
-> text.
+**Both halves pass.** Windows, options PRO (stocks and indices FREE), PROD,
+on `main` at `62b947c`. That is the release candidate plus the test
+infrastructure and docs merged since; no published code differs from the
+candidate's except in packaging. Both runs were during US market hours on
+2026-11-13, with the snapshot expiration 2026-11-13 (SPY). Counts and
+classifications only.
+
+**Python, `bench/p1/option_checks.py`** (`rc010-opt-checks-py-001`,
+14:45-14:46 UTC): **all 47 option wrappers answered OK with rows.**
+
+| Group | Rows per request |
+| --- | --- |
+| Lists | 15,858 / 502 / 2,170 / 232 / 4,028 |
+| Snapshots | 156-171 |
+| History: EOD, open interest, Greeks EOD | 226 |
+| History: OHLC | 846 |
+| History: quote, Greeks | 1,356 |
+| History: trade, trade Greeks | 172 |
+| At-time: trade / quote | 73 / 226 |
+
+**Rust, `live_p0 option-checks --same-response`**
+(`rc010-opt-checks-002`, 16:31 UTC, `--flat-file-date 2026-11-12`, the
+Terminal stopped during the run): **all 50 option RPCs returned data.**
+That is every option RPC except the gated quote flat file.
+- **Equal values:** the columnar and legacy decoders gave equal values on
+  the same response, for every RPC.
+- **Flat files:** the three bounded flat-file probes (EOD, open interest,
+  trade-quote) read one message of 8,192 rows each, equal both ways.
+- **No refusals and no errors.**
+
+**One operator error, not a library one.** The first Rust attempt
+(`rc010-opt-checks-001`, 14:45 UTC) stopped at startup.
+- **The cause:** the operator's script passed `--snapshot-expiration` as
+  `20261113`, while `live_p0` expects ISO dates. It panicked
+  (`live_p0.rs:375`, "workload dates are ISO") before sending any request.
+- **The re-run** with `2026-11-13` is the result above.
+
+**Follow-ups after the release (not in 0.1.0):**
+- `live_p0` should reject a malformed date with exit code 2 and a clear
+  message instead of panicking.
+- It should accept or reject `yyyymmdd` consistently with
+  `option_checks.py`, which accepted `20261113`.
+
+`scripts/live/run.sh` had the same `yyyymmdd` date. It is fixed in its own
+pull request.
+
+**Reading: the live report passes, so the 0.1.0 gates are met.**
+- **(a):** the speed re-check holds without the scheduler.
+- **(b):** every option RPC on the declared surface returned data, with
+  equal values through both decoders and the Python package.

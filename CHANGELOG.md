@@ -19,8 +19,8 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 ## [0.1.0] - pending
 
 **The first supported release.** Prepared, not published: dated and tagged
-(`v0.1.0`) at publication, after the release-candidate evidence and the
-user's approval (granted 2026-11-13, as for the betas). The
+(`v0.1.0`) at publication. The user approved it on 2026-11-13, as for the
+betas, and the release-candidate evidence passed the same day. The
 [declared surface](docs/releases.md#010-scope-record-user-2026-11-12) is the
 beta.1 freeze scope as amended by beta.2, and it ships with the
 [known gaps](docs/releases.md#known-gaps-shipped-in-010) listed. See the

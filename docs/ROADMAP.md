@@ -61,8 +61,8 @@ The [performance architecture plan](architecture/performance-plan.md)
     crates. Its wheels were on the GitHub release only, not on PyPI.
   - **`0.1.0` is prepared** (the beta.1 surface as amended by beta.2, with
     the known gaps listed: [scope record](releases.md#010-scope-record-user-2026-11-12)).
-    The user approved publishing it on 2026-11-13, once the
-    release-candidate evidence is in.
+    The user approved publishing it on 2026-11-13. The release-candidate
+    evidence passed the same day.
 
 ## Waiting on resources (blocks 0.1.0 evidence)
 

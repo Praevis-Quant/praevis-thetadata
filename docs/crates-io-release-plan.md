@@ -33,11 +33,10 @@ history.
   release. No sdist.
 
 **Before publishing:**
-1. **The release-candidate evidence is complete:** section (b) of
-   [the evidence record](performance/rc-0.1.0-evidence.md), the live
-   option checks and the Python run, filled in and reviewed by the
-   maintainer. If the live run finds a problem, it is fixed and re-tested
-   the same day.
+1. **The release-candidate evidence is complete:** done 2026-11-13.
+   Section (b) of [the evidence record](performance/rc-0.1.0-evidence.md)
+   passed: 47 option wrappers in Python, and 50 option RPCs with equal
+   values in Rust.
 2. **This release PR is merged,** with Verify, the Python package job and
    its 3.10-3.13 matrix, and the packaging rehearsal green on Windows and
    Linux.

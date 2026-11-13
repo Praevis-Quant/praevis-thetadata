@@ -1,7 +1,7 @@
 # GitHub release draft: v0.1.0 (not published)
 
 Status: **draft.** The user approved publication on 2026-11-13, as for the
-betas, once the release-candidate evidence is in
+betas; the release-candidate evidence passed the same day
 ([checklist](crates-io-release-plan.md#010-publication-checklist-and-order-prepared-2026-11-13)).
 Nothing is tagged or published yet.
 
