@@ -57,7 +57,10 @@ def drift(reports: list[dict], schemas: dict, status: dict, model: dict, profile
         for scenario in report.get("scenarios", []):
             name, observed = scenario["name"], scenario.get("observed") or {}
             if scenario["status"] == "fail":
-                finding(report, name, "scenario failed", scenario.get("detail"), "pass")
+                # Only the error's kind and code, never the detail text: it
+                # can carry the service's message, which stays in the
+                # private scenario report.
+                finding(report, name, "scenario failed", scenario.get("error"), "pass")
             if "tier" in observed and observed["tier"] != tier:
                 finding(report, name, "account tier", observed["tier"], tier)
             rpc = observed.get("rpc")

@@ -91,6 +91,10 @@ git. It holds:
 - the scenario reports and `drift.json`;
 - the W10 latency JSONs.
 
+**Failures are recorded by kind and gRPC code only.** `summary.txt` holds
+exit codes, and `drift.json` holds kinds and codes. The service's message
+text can appear in a check's own private report, never in these two.
+
 The checks' own private reports stay where they always were
 (`artifacts/p0`, `artifacts/p1`). Nothing in it is committed. A person
 reviews it, and records codes, classifications and timings in the docs as
@@ -106,6 +110,12 @@ request citing the run.
 Copy [`scripts/live/settings.example.env`](../scripts/live/settings.example.env)
 to `scripts/live/settings.env` (ignored by git) and fill in this machine's
 paths.
+- **It is read as data, never executed** (`scripts/live/settings.sh`):
+  - one `KEY=VALUE` per line, with the value taken literally, so spaces
+    and backslashes need no quotes;
+  - one pair of surrounding quotes is removed;
+  - a leading `~/` or `$HOME/` means the home folder;
+  - an unknown key or any other line stops the run with its line number.
 - **No key goes there.** The key comes from `THETADATA_API_KEY` in the
   environment only: never a file, never the command line, never printed.
 - **No personal path is committed.**

@@ -43,9 +43,15 @@ class DriftTests(unittest.TestCase):
             passed("query-stock-eod", {"rpc": "GetStockHistoryEod", "code": "OK", "columns": changed}),
             passed("tier-refusal", {"rpc": "GetStockSnapshotOhlc", "code": "OK"}),
             passed("stream-full-trades", {"first_trade_ms": 60_000}),
-            {"name": "cancel-midway", "status": "fail", "detail": "no first batch", "observed": None},
+            {"name": "cancel-midway", "status": "fail", "detail": "QueryFailed: the service's own words",
+             "observed": None, "error": {"kind": "remote", "code": "PermissionDenied"}},
         )
-        whats = sorted(f["what"] for f in findings(report))
+        found = findings(report)
+        # A failure is recorded by kind and code only, never its detail text.
+        failed = next(f for f in found if f["what"] == "scenario failed")
+        self.assertEqual(failed["observed"], {"kind": "remote", "code": "PermissionDenied"})
+        self.assertNotIn("own words", json.dumps(found))
+        whats = sorted(f["what"] for f in found)
         self.assertEqual(whats, sorted([
             "account tier", "GetStockHistoryEod: columns", "GetStockSnapshotOhlc: code",
             "first stream event (ms)", "scenario failed",

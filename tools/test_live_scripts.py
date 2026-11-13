@@ -5,6 +5,7 @@ import re
 import pathlib
 import shutil
 import subprocess
+import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -46,6 +47,53 @@ class LiveScriptTests(unittest.TestCase):
         # Only the placeholder user, never a real one.
         self.assertEqual(re.findall(r"Users\\([^\\\s]+)", text), ["<you>"])
         self.assertIn("scripts/live/settings.env", (ROOT / ".gitignore").read_text())
+
+
+def load(text):
+    """Loads ``text`` as a settings file; returns (exit code, values, stderr)."""
+    with tempfile.TemporaryDirectory() as directory:
+        path = pathlib.Path(directory) / "settings.env"
+        path.write_bytes(text.encode())
+        marker = pathlib.Path(directory) / "executed"
+        script = (f'. "{(LIVE / "settings.sh").as_posix()}"; load_settings "$1" || exit $?; '
+                  'for k in THETA_JAVA THETA_TERMINAL_DIR THETA_REST WSL_REPO; do printf "%s=%s\\n" "$k" "${!k-<unset>}"; done')
+        result = subprocess.run([BASH, "-c", script, "bash", path.as_posix()], capture_output=True, text=True,
+                                env={**os.environ, "HOME": "/home/emulated"}, cwd=directory, timeout=30)
+        values = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
+        return result.returncode, values, result.stderr, marker.exists()
+
+
+@unittest.skipUnless(BASH, "bash is not available")
+class SettingsTests(unittest.TestCase):
+    def test_a_path_with_spaces_and_backslashes_is_taken_literally(self):
+        java = r"C:\Program Files\Eclipse Adoptium\jdk-21\bin\javaw.exe"
+        code, values, err, _ = load(f"# comment\n\nTHETA_JAVA={java}\r\nTHETA_TERMINAL_DIR='C:\\Users\\<you>\\.thetadata'\n")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(values["THETA_JAVA"], java)
+        self.assertEqual(values["THETA_TERMINAL_DIR"], r"C:\Users\<you>\.thetadata")
+
+    def test_quotes_and_the_home_folder(self):
+        code, values, err, _ = load('THETA_REST="127.0.0.1:25503"\nWSL_REPO=~/praevis-thetadata\n'
+                                    'THETA_TERMINAL_DIR=$HOME/thetadata\n')
+        self.assertEqual(code, 0, err)
+        self.assertEqual(values["THETA_REST"], "127.0.0.1:25503")
+        self.assertEqual(values["WSL_REPO"], "/home/emulated/praevis-thetadata")
+        self.assertEqual(values["THETA_TERMINAL_DIR"], "/home/emulated/thetadata")
+
+    def test_nothing_in_the_file_is_executed(self):
+        code, values, err, executed = load("THETA_JAVA=$(touch executed)\nTHETA_REST=`touch executed`\n")
+        self.assertEqual(code, 0, err)
+        self.assertFalse(executed)
+        self.assertEqual(values["THETA_JAVA"], "$(touch executed)")
+
+    def test_a_bad_line_or_an_unknown_setting_stops_with_its_line(self):
+        code, _, err, executed = load("THETA_REST=127.0.0.1:25503\ntouch executed\n")
+        self.assertEqual(code, 1)
+        self.assertIn(":2: not KEY=VALUE", err)
+        self.assertFalse(executed)
+        code, _, err, _ = load("PATH=/tmp\n")
+        self.assertEqual(code, 1)
+        self.assertIn("unknown setting PATH", err)
 
 
 if __name__ == "__main__":
