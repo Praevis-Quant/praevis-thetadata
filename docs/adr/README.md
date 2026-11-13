@@ -25,6 +25,7 @@ Records identify their own date and status. “Accepted” records the implement
 | [0019](0019-timestamp-precision.md) | Accepted | Mixed | Reject sub-millisecond or unknown timestamp precision (Python 1.0.16+ fields) as unsupported instead of truncating |
 | [0020](0020-in-memory-sessions-and-optional-persistence.md) | Accepted | Mixed | In-memory sessions by default, Python-order CLI credentials, and native persistence as an optional feature and `auth --save` opt-in |
 | [0021](0021-per-call-library.md) | Accepted (2026-11-12, beta.2) | Mixed | Do what one caller asks: no retry, account-wide scheduler, rate limit or default deadline; a job's concurrency defaults to the tier's limit; a busy answer is its own error |
+| [0022](0022-emulator-and-dual-target-scenarios.md) | Accepted (2026-11-13) | Rust enhancement | An emulator of the documented interfaces driven by recorded evidence, one scenario suite for emulator and live targets, a drift check, and a scheduled live run |
 
 ADRs 0008-0018 were reviewed against what shipped for beta.1 on 2026-11-11.
 Each record keeps its original rationale and ends with a "Beta.1 review"

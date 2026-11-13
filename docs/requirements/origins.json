@@ -103,6 +103,7 @@
     {"path": "docs/adr/0014-performance-first-data-path.md", "origin": "rust-enhancement", "rationale": "Numeric fast path with explicit compatibility conversion and measured acceptance."},
     {"path": "docs/adr/0015-upstream-and-enhancement-contracts.md", "origin": "rust-enhancement", "rationale": "Independent enhancement registry and upstream-update reconciliation."},
     {"path": "docs/adr/0016-optional-batch-transforms.md", "origin": "rust-enhancement", "rationale": "Optional local typed filtering and projection."},
-    {"path": "docs/adr/0021-per-call-library.md", "origin": "mixed", "rationale": "No retry, scheduler, rate limit or default deadline, as in the vendor package; the per-job concurrency default and the distinct busy error are Rust enhancements."}
+    {"path": "docs/adr/0021-per-call-library.md", "origin": "mixed", "rationale": "No retry, scheduler, rate limit or default deadline, as in the vendor package; the per-job concurrency default and the distinct busy error are Rust enhancements."},
+    {"path": "docs/adr/0022-emulator-and-dual-target-scenarios.md", "origin": "rust-enhancement", "rationale": "Test infrastructure: an emulator of the documented interfaces, dual-target scenarios, a drift check and the live schedule; the vendor package has none."}
   ]
 }
