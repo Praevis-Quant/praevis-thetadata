@@ -188,6 +188,25 @@ once (the calendar per date and year), paced and sequential.
 - **Used:** the run was done on 2026-11-10 as `sir-checks-001` (Rust) and
   `sir-checks-py-001` (Python), with the stock quote flat file left gated.
 
+**Standing approval for the scheduled live run (user, 2026-11-13; ADR-0022).**
+The weekly market-hours run and the run before every release, through
+`scripts/live/run.sh` ([live runbook](docs/live-runbook.md)), may re-run
+without asking again:
+- the live scenarios (Rust and Python);
+- `live_p0 option-checks --same-response` and `bench/p1/option_checks.py`;
+- `live_p0 entitlements --set stock-index-rate` and
+  `bench/p1/stock_index_rate_checks.py`;
+- their bounded flat-file probes (one message of at most 1 MiB);
+- the stream scenario, discovery, latency at 10/100/1,000 contracts and the
+  full trade stream.
+
+**Never included:** requests above the account's concurrency, a second
+login, the gated quote flat files (option and stock), full flat-file
+downloads, and the vendor speed comparison. Those still need their own
+approval. **Never in CI.** The Coordinator schedules it (a Windows task
+plus a Cloudroom reminder); `--terminal live|dev` restarts the operator's
+Terminal and is passed only for these agreed runs.
+
 **Flat files: probes are bounded, and full downloads are approved one file
 at a time.**
 - **Probes:** a flat-file probe or check reads at most one message of at

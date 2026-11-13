@@ -2066,12 +2066,16 @@ dependencies = [
 name = "praevis-thetadata-scenarios"
 version = "0.1.0-beta.2"
 dependencies = [
+ "chrono",
+ "chrono-tz",
  "clap",
  "praevis-thetadata-client",
  "praevis-thetadata-emulator",
+ "praevis-thetadata-proto",
  "praevis-thetadata-stream",
  "serde_json",
  "tokio",
+ "tonic",
 ]
 
 [[package]]

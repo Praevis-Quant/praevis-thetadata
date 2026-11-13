@@ -61,6 +61,7 @@ Baseline date: 2026-10-03. Scope: reusable authentication, Windows/Linux session
 | [Release milestones](releases.md) | Versioned scope, exit gates, owners and release evidence checklist |
 | [Release execution chart](releases.md#immediate-execution-order) | Ordered packaging, benchmark and EOD acceptance work toward alpha and stable releases |
 | [Rust and Python comparison plan](performance/python-comparison.md) | Pinned comparator, equivalent consumer work, measurement protocol and performance claim gates; no results yet |
+| [Live runbook](live-runbook.md) | ADR-0022 part 4: the one live command (`scripts/live/run.sh`), weekly and before every release; what it is approved to include; Windows, WSL and Linux settings; the drift check |
 | [Manual live verification](live-verification.md) | Explicit PROD/STAGE credentialed runs, private captures and offline comparison; outside CI |
 | [Connection points and SVG](connections.md) | Direct HTTPS/gRPC versus planned Terminal REST/JAR and WebSocket paths, distinct errors and lifecycle |
 | [Connection requirements](requirements/connections.md) | CONN L1/L2/L3 explicit modes, optional process ownership and adapter verification |
