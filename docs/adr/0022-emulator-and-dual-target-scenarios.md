@@ -167,9 +167,12 @@ the scheduled and pre-release runs.
 1. This ADR.
 2. **The emulator:**
    1. the gRPC side: all 100 RPCs, login, the profiles and the model file.
-      The client's fixtures and `loopback_server` move onto it.
+      `loopback_server` moves onto it.
    2. the behaviours: concurrency, sessions, `NOT_FOUND`, flat files and
-      the time factor.
+      the time factor. The client's test fixture (`tests/support`) moves
+      onto it here, with the scripted behaviours its tests need (delays,
+      failing the first requests, pauses), so they are not ported twice.
+      *Reordered from step 1 (Coordinator, 2026-11-13).*
    3. the Terminal WebSocket and REST. The stream crate's fake Terminal
       moves onto it.
 3. **The scenario suite:** Rust and Python, with the emulator target in CI.
