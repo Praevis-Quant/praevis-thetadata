@@ -32,7 +32,7 @@ STATUS = ROOT / "docs/endpoints/status.json"
 SCHEMAS = ROOT / "docs/endpoints/schemas.json"
 RUST_OUT = ROOT / "crates/praevis-thetadata-client/src/endpoints/generated.rs"
 DOC_OUT = ROOT / "docs/endpoints/coverage.md"
-PY_OUT = ROOT / "crates/praevis-thetadata-py/src/generated.rs"
+DISPATCH_OUT = ROOT / "crates/praevis-thetadata-client/src/dispatch/generated.rs"
 VENDOR_OUT = ROOT / "crates/praevis-thetadata-py/python/praevis_thetadata/_vendor.py"
 RUST_KEYWORDS = {"type", "match", "ref", "self", "fn", "move", "use", "loop", "where", "async", "await"}
 
@@ -736,28 +736,37 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS,
     return rust, "\n".join(doc) + "\n"
 
 
-# Rust types the Python bindings extract (crates/praevis-thetadata-py/src/kwargs.rs).
-PY_KINDS = {"String", "f64", "i32", "bool", "NaiveDate", "Expiration", "TimeOfDay", "Symbols",
-            "Vec<String>"}
+# Request field types and their dispatch kinds (crates/praevis-thetadata-client/src/dispatch).
+PARAM_KINDS = {"String": "Str", "f64": "Float", "i32": "Int", "bool": "Bool", "NaiveDate": "Date",
+               "Expiration": "Expiration", "TimeOfDay": "Time", "Symbols": "Symbols", "Vec<String>": "StrList"}
 
 
-def generate_python_dispatch(inventory: Path = INVENTORY) -> str:
-    """Name-to-request dispatch for the Python bindings (P1 PR 6a). Keyword
-    arguments are vendor parameter names for wrapped RPCs and request field
-    names for unstable ones; an explicit None clears an optional field, as
-    passing None to the vendor wrapper does. Unknown keywords are errors."""
+def rust_str(text: str) -> str:
+    """A Rust string literal for `text`."""
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def generate_client_dispatch(inventory: Path = INVENTORY) -> str:
+    """Name-to-request dispatch, parameter metadata and stability for every
+    endpoint (praevis_thetadata_client::dispatch; the Python bindings use it
+    too). Parameters are vendor parameter names for wrapped RPCs and request
+    field names for descriptor-only ones; an explicit Null clears an optional
+    field, as passing None to the vendor wrapper does. Unknown names are
+    errors, through the source's finish()."""
     rpcs, messages, wrappers = load(inventory)
-    arms, names = [], []
+    arms, names, infos, stabilities = [], [], [], []
     for rpc in rpcs:
         _, _, fields = query_fields(rpc, messages)
+        params = []  # (name, kind, required, vendor default)
         if rpc["name"] in wrappers:
             w = translate_wrapper(rpc, wrappers[rpc["name"]], fields)
             for p in w.params:
-                if p.kind not in PY_KINDS:
-                    raise GenerationError(f"{w.python}: no Python extraction for {p.kind}")
-            args = ", ".join(f'kw.required::<{p.kind}>("{p.name}")?' for p in w.params if p.required)
+                if p.kind not in PARAM_KINDS:
+                    raise GenerationError(f"{w.python}: no dispatch kind for {p.kind}")
+                params.append((p.name, p.kind, p.required, p.vendor_default))
+            args = ", ".join(f'required::<{p.kind}, _>(&mut p, "{p.name}")?' for p in w.params if p.required)
             body = [f"let mut r = endpoints::{w.struct}::new({args});"]
-            body += [f'if let Some(v) = kw.optional::<{p.kind}>("{p.name}")? {{ r.{ident(p.name)} = v; }}'
+            body += [f'if let Some(v) = optional::<{p.kind}, _>(&mut p, "{p.name}")? {{ r.{ident(p.name)} = v; }}'
                      for p in w.params if not p.required]
             labels, struct = f'"{w.python}" | "{rpc["name"]}"', w.struct
             names.append(f'    ("{w.python}", "{rpc["name"]}"),')
@@ -767,32 +776,47 @@ def generate_python_dispatch(inventory: Path = INVENTORY) -> str:
             for f in fields:
                 inner = f.scalar
                 if inner == "wire::ContractSpec":
-                    continue  # not settable from Python yet
+                    continue  # not settable by name yet
                 if f.rust_type.startswith("Option<"):
-                    body.append(f'if let Some(v) = kw.optional::<{inner}>("{f.name}")? {{ r.{ident(f.name)} = v; }}')
+                    body.append(f'if let Some(v) = optional::<{inner}, _>(&mut p, "{f.name}")? {{ r.{ident(f.name)} = v; }}')
+                    params.append((f.name, inner, False, None))
                 else:
-                    body.append(f'if let Some(v) = kw.value::<{f.rust_type}>("{f.name}")? {{ r.{ident(f.name)} = v; }}')
+                    body.append(f'if let Some(v) = value::<{f.rust_type}, _>(&mut p, "{f.name}")? {{ r.{ident(f.name)} = v; }}')
+                    params.append((f.name, f.rust_type, False, None))
             labels = f'"{rpc["name"]}"'
             names.append(f'    ("", "{rpc["name"]}"),')
         arms.append("\n".join([f"        {labels} => {{", *[f"            {line}" for line in body],
-                                "            kw.finish()?;", "            runner.run(r)", "        }"]))
+                                "            finish(p)?;", "            Ok(runner.run(r))", "        }"]))
+        entries = [f"ParamInfo {{ name: {rust_str(n)}, kind: ParamKind::{PARAM_KINDS[k]}, required: {str(req).lower()}, "
+                   f"default: {'Some(' + rust_str(d) + ')' if d is not None else 'None'} }}" for n, k, req, d in params]
+        infos.append(f"        {labels} => Some(&[{', '.join(entries)}]),")
+        stabilities.append(f"        {labels} => Some(<endpoints::{struct} as Endpoint>::STABILITY),")
     header = ["// @generated by tools/generate_endpoints.py from docs/research/python-1.0.17-inventory.json.",
               "// Do not edit by hand; run `python tools/generate_endpoints.py`.",
               "#![allow(unused_mut, clippy::all)]",
-              "use crate::kwargs::Kwargs;",
-              "use crate::Runner;",
+              "use super::{DispatchError, ParamInfo, ParamKind, Params, Runner, finish, optional, required, value};",
+              "use crate::endpoints::{self, Endpoint, Expiration, Stability, Symbols, TimeOfDay};",
               "use chrono::NaiveDate;",
-              "use praevis_thetadata_client::endpoints::{self, Expiration, Symbols, TimeOfDay};",
-              "use pyo3::PyResult;",
               "",
-              "/// (vendor Python name or \"\", RPC name) of every endpoint, in descriptor order.",
-              "pub(crate) const NAMES: &[(&str, &str)] = &[", *names, "];",
+              "/// `(vendor wrapper name or \"\", RPC name)` of every endpoint [`dispatch`]",
+              "/// accepts, in descriptor order. An empty wrapper name marks a",
+              "/// descriptor-only RPC: reachable by its RPC name, and unstable.",
+              "pub const ENDPOINTS: &[(&str, &str)] = &[", *names, "];",
               "",
-              "/// Build the typed request named `name` from keyword arguments and run it.",
-              "pub(crate) fn dispatch<R: Runner>(name: &str, mut kw: Kwargs<'_, '_>, runner: R) -> PyResult<R::Output> {",
+              "/// Build the typed request named `name` (a vendor wrapper name or an RPC",
+              "/// name) from `params`, then run it with `runner`. Unknown names, and",
+              "/// parameters the request cannot take, are errors; nothing is sent then.",
+              "pub fn dispatch<P: Params, R: Runner>(name: &str, mut p: P, runner: R) -> Result<R::Output, DispatchError<P::Error>> {",
               "    match name {"]
-    footer = ["        _ => Err(pyo3::exceptions::PyValueError::new_err(format!(\"unknown endpoint: {name}\"))),",
-              "    }", "}"]
+    footer = ["        _ => Err(DispatchError::UnknownEndpoint(name.to_owned())),", "    }", "}", "",
+              "/// The parameters of endpoint `name` (a vendor wrapper name or an RPC name),",
+              "/// in the vendor wrapper's order, or `None` for an unknown name.",
+              "pub fn params(name: &str) -> Option<&'static [ParamInfo]> {",
+              "    match name {", *infos, "        _ => None,", "    }", "}", "",
+              "/// The stability of endpoint `name`: its request's `STABILITY` constant.",
+              "/// Descriptor-only RPCs are unstable, however they are reached.",
+              "pub fn stability(name: &str) -> Option<Stability> {",
+              "    match name {", *stabilities, "        _ => None,", "    }", "}"]
     return "\n".join(header + arms + footer) + "\n"
 
 
@@ -868,12 +892,12 @@ def main() -> int:
     args = parser.parse_args()
     try:
         rust, doc = generate()
-        dispatch = generate_python_dispatch()
+        dispatch = generate_client_dispatch()
         aliases = generate_vendor_aliases()
     except GenerationError as error:
         print(f"generation failed: {error}", file=sys.stderr)
         return 2
-    outputs = {RUST_OUT: rust, DOC_OUT: doc, PY_OUT: dispatch, VENDOR_OUT: aliases}
+    outputs = {RUST_OUT: rust, DOC_OUT: doc, DISPATCH_OUT: dispatch, VENDOR_OUT: aliases}
     if args.check:
         stale = [str(p.relative_to(ROOT)) for p, text in outputs.items()
                  if not p.exists() or p.read_text(encoding="utf-8") != text]

@@ -17,6 +17,31 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Added
+
+- **`praevis_thetadata_client::dispatch`: requests by name at runtime**
+  (asked for by the `praevis-data` service). This is additive public API,
+  for `0.1.2`.
+  - **`dispatch(name, params, runner)`** builds the typed request from a
+    vendor wrapper name or an RPC name, and runs it with your **`Runner`**.
+  - **`Params`** is a non-Python parameter source: `take(name, kind)` returns
+    a closed `ParamValue`, and `finish()` rejects unknown names. Whole
+    numbers are range-checked to the requests' 32-bit fields, never
+    truncated.
+  - **`params(name)`** gives each parameter's name, kind, whether it is
+    required, and the vendor default as written.
+  - **`stability(name)`** keeps the 19 descriptor-only RPCs unstable however
+    they are reached.
+  - **`ENDPOINTS`** lists the names.
+  - **Non-exhaustive:** `ParamValue`, `ParamKind`, `ParamInfo`,
+    `ParamError` and `DispatchError` are `#[non_exhaustive]`.
+  - **One generator:** it produces this module, and the Python bindings now
+    use it (their own generated dispatch is gone). Their conversions and
+    error messages are unchanged.
+  - **Left out:** a value-changing versus selector flag per parameter. The
+    vendor wrappers carry nothing that says which is which, and classifying
+    by name would be a guess.
+
 ## [0.1.1] - pending
 
 **A patch release with one fix to published code.** Prepared, not

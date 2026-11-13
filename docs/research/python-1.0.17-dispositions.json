@@ -259,7 +259,7 @@
       "crates/praevis-thetadata-client/src/endpoints/generated.rs",
       "crates/praevis-thetadata-client/src/query.rs",
       "crates/praevis-thetadata-py/python/praevis_thetadata/_vendor.py",
-      "crates/praevis-thetadata-py/src/generated.rs"
+      "crates/praevis-thetadata-client/src/dispatch/generated.rs"
     ],
     "verification": [
       "crates/praevis-thetadata-client/tests/endpoints.rs",

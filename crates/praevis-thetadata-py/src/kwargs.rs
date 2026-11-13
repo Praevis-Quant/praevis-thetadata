@@ -2,6 +2,7 @@
 //! `YYYY-MM-DD`; times accept `datetime.time` or vendor text; expirations a
 //! date or text (such as `*`); symbol lists a string or a list of strings.
 use chrono::{NaiveDate, NaiveTime};
+use praevis_thetadata_client::dispatch::{ParamKind, ParamValue, Params};
 use praevis_thetadata_client::endpoints::{Expiration, Symbols, TimeOfDay};
 use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
@@ -112,33 +113,8 @@ impl<'a, 'py> Kwargs<'a, 'py> {
             None => Ok(None),
         }
     }
-    /// A required argument; `None` is not allowed.
-    pub(crate) fn required<T: FromKw>(&mut self, name: &str) -> PyResult<T> {
-        match self.get(name)? {
-            Some(value) if !value.is_none() => T::from_kw(name, &value),
-            _ => Err(PyTypeError::new_err(format!(
-                "missing required argument: {name}"
-            ))),
-        }
-    }
-    /// An optional argument: absent keeps the default (`None`), an explicit
-    /// `None` clears it (`Some(None)`).
-    pub(crate) fn optional<T: FromKw>(&mut self, name: &str) -> PyResult<Option<Option<T>>> {
-        match self.get(name)? {
-            None => Ok(None),
-            Some(value) if value.is_none() => Ok(Some(None)),
-            Some(value) => T::from_kw(name, &value).map(|v| Some(Some(v))),
-        }
-    }
-    /// A plain field: absent or `None` keeps the default.
-    pub(crate) fn value<T: FromKw>(&mut self, name: &str) -> PyResult<Option<T>> {
-        match self.get(name)? {
-            Some(value) if !value.is_none() => T::from_kw(name, &value).map(Some),
-            _ => Ok(None),
-        }
-    }
     /// Unknown keywords are errors, as in the vendor wrappers.
-    pub(crate) fn finish(self) -> PyResult<()> {
+    fn unknown(self) -> PyResult<()> {
         let Some(dict) = self.dict else {
             return Ok(());
         };
@@ -156,5 +132,40 @@ impl<'a, 'py> Kwargs<'a, 'py> {
                 unknown.join(", ")
             )))
         }
+    }
+}
+
+/// Keyword arguments as the client's generated dispatch reads them: the same
+/// Python conversions and error messages as the bindings always had.
+impl Params for Kwargs<'_, '_> {
+    type Error = PyErr;
+    fn take(&mut self, name: &str, kind: ParamKind) -> PyResult<Option<ParamValue>> {
+        let Some(value) = self.get(name)? else {
+            return Ok(None);
+        };
+        if value.is_none() {
+            return Ok(Some(ParamValue::Null));
+        }
+        let value = &value;
+        Ok(Some(match kind {
+            ParamKind::Str => ParamValue::Str(String::from_kw(name, value)?),
+            // Extracted as i32, as before: an out-of-range int is "expected int".
+            ParamKind::Int => ParamValue::Int(i64::from(i32::from_kw(name, value)?)),
+            ParamKind::Float => ParamValue::Float(f64::from_kw(name, value)?),
+            ParamKind::Bool => ParamValue::Bool(bool::from_kw(name, value)?),
+            ParamKind::Date => ParamValue::Date(NaiveDate::from_kw(name, value)?),
+            ParamKind::Time => ParamValue::Time(TimeOfDay::from_kw(name, value)?),
+            ParamKind::Expiration => ParamValue::Expiration(Expiration::from_kw(name, value)?),
+            ParamKind::Symbols => ParamValue::Strings(Symbols::from_kw(name, value)?.0),
+            ParamKind::StrList => ParamValue::Strings(Vec::<String>::from_kw(name, value)?),
+            other => {
+                return Err(PyTypeError::new_err(format!(
+                    "{name}: unsupported parameter kind {other:?}"
+                )));
+            }
+        }))
+    }
+    fn finish(self) -> PyResult<()> {
+        self.unknown()
     }
 }
