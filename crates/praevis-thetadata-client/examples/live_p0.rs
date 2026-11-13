@@ -149,18 +149,18 @@ struct OptionChecksArgs {
     #[command(flatten)]
     common: Common,
     /// Historical trading day for history, at-time and list requests.
-    #[arg(long, default_value = "2024-06-14")]
+    #[arg(long, default_value = "2024-06-14", value_parser = iso_date)]
     date: String,
     /// An option expiration listed on `--date`.
-    #[arg(long, default_value = "2024-06-21")]
+    #[arg(long, default_value = "2024-06-21", value_parser = iso_date)]
     expiration: String,
     /// A SPY expiration listed today, for the snapshots (run during US
     /// market hours).
-    #[arg(long)]
+    #[arg(long, value_parser = iso_date)]
     snapshot_expiration: String,
     /// A past trading day within the vendor's 7 most recent calendar days,
     /// for the flat files (bounded probes: one message of at most 1 MiB).
-    #[arg(long)]
+    #[arg(long, value_parser = iso_date)]
     flat_file_date: String,
     /// Also probe the option quote flat file (about 38 GB, about 30 minutes
     /// to generate). Needs the user's explicit go-ahead.
@@ -226,10 +226,10 @@ struct ChecksArgs {
     #[command(flatten)]
     common: Common,
     /// Historical trading day inside the FREE window.
-    #[arg(long, default_value = "2024-06-14")]
+    #[arg(long, default_value = "2024-06-14", value_parser = iso_date)]
     date: String,
     /// An option expiration listed on `--date`.
-    #[arg(long, default_value = "2024-06-21")]
+    #[arg(long, default_value = "2024-06-21", value_parser = iso_date)]
     expiration: String,
 }
 
@@ -238,10 +238,10 @@ struct EntitlementsArgs {
     #[command(flatten)]
     common: Common,
     /// Historical trading day inside the FREE window.
-    #[arg(long, default_value = "2024-06-14")]
+    #[arg(long, default_value = "2024-06-14", value_parser = iso_date)]
     date: String,
     /// An option expiration listed on `--date`.
-    #[arg(long, default_value = "2024-06-21")]
+    #[arg(long, default_value = "2024-06-21", value_parser = iso_date)]
     expiration: String,
     /// Messages read per request before the stream is dropped.
     #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u32).range(1..=20))]
@@ -258,7 +258,7 @@ struct EntitlementsArgs {
     set: String,
     /// A date among the 7 most recent calendar days, for the flat files
     /// (`options-pro` and `stock-index-rate`).
-    #[arg(long)]
+    #[arg(long, value_parser = iso_date)]
     flat_file_date: Option<String>,
     /// `stock-index-rate` only: also probe the stock quote flat file. Off by
     /// default: if entitled, even a probe can start the vendor's generation
@@ -273,7 +273,7 @@ struct SessionArgs {
     #[command(flatten)]
     common: Common,
     /// Historical trading day inside the FREE stock window.
-    #[arg(long, default_value = "2024-06-14")]
+    #[arg(long, default_value = "2024-06-14", value_parser = iso_date)]
     date: String,
 }
 
@@ -373,6 +373,25 @@ impl Pacer {
 
 fn date(value: &str) -> NaiveDate {
     NaiveDate::parse_from_str(value, "%Y-%m-%d").expect("workload dates are ISO")
+}
+
+/// A date argument: `YYYY-MM-DD` or `YYYYMMDD` (as Python's
+/// `date.fromisoformat` accepts, so the Python runners take the same
+/// values), normalised to `YYYY-MM-DD`. Anything else is a usage error:
+/// clap names the argument and exits with code 2, instead of a panic later
+/// (the 0.1.0 release-candidate run passed `20261113`).
+fn iso_date(value: &str) -> Result<String, String> {
+    // Exactly one of the two forms: the value must read back unchanged,
+    // which rejects unpadded fields such as 2026-1-3.
+    ["%Y-%m-%d", "%Y%m%d"]
+        .iter()
+        .find_map(|format| {
+            NaiveDate::parse_from_str(value, format)
+                .ok()
+                .filter(|day| day.format(format).to_string() == value)
+        })
+        .map(|day| day.format("%Y-%m-%d").to_string())
+        .ok_or_else(|| format!("not a date: use YYYY-MM-DD or YYYYMMDD, got {value:?}"))
 }
 
 /// The raw request each workload sends, mirroring the Python wrapper's fields.
@@ -2891,6 +2910,51 @@ mod fixture;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn date_arguments_take_iso_or_basic_dates_and_reject_the_rest() {
+        assert_eq!(iso_date("2026-11-13").as_deref(), Ok("2026-11-13"));
+        assert_eq!(iso_date("20261113").as_deref(), Ok("2026-11-13"));
+        for bad in [
+            "2026-1-3",
+            "13/11/2026",
+            "2026-11-31",
+            "",
+            "20261113x",
+            "2026111",
+        ] {
+            assert!(iso_date(bad).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn a_bad_date_is_a_usage_error_not_a_panic() {
+        let args = |snapshot: &str| {
+            Cli::try_parse_from([
+                "live_p0",
+                "option-checks",
+                "--confirm-live",
+                "--api-key-env",
+                "--run-id",
+                "t",
+                "--snapshot-expiration",
+                snapshot,
+                "--flat-file-date",
+                "20261112",
+            ])
+        };
+        // The release-candidate run's yyyymmdd value now parses, normalised.
+        let Command::OptionChecks(options) = args("20261113").unwrap().command else {
+            panic!("not option-checks")
+        };
+        assert_eq!(options.snapshot_expiration, "2026-11-13");
+        assert_eq!(options.flat_file_date, "2026-11-12");
+        // Anything else stops at argument parsing, with exit code 2.
+        let error = args("13/11/2026").err().expect("refused");
+        assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
+        assert_eq!(error.exit_code(), 2);
+        assert!(error.to_string().contains("--snapshot-expiration"));
+    }
     #[tokio::test]
     async fn breakdown_pipeline_runs_against_the_loopback_fixture() {
         let (wire_table, _) = fixture::table(fixture::Shape::Mixed, 50);

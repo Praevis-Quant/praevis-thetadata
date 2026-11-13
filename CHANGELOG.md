@@ -19,6 +19,16 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Fixed
 
+- **`live_p0` panicked on a malformed date argument.** It now validates
+  every date argument (`--date`, `--expiration`, `--snapshot-expiration`,
+  `--flat-file-date`) while parsing.
+  - **Accepted:** `YYYY-MM-DD` and `YYYYMMDD`, as Python's
+    `date.fromisoformat` does, so the Python runners take the same values.
+    Dates are normalised to ISO.
+  - **Anything else** is a usage error naming the argument, with exit code
+    2, instead of a panic. The 0.1.0 release-candidate run hit that panic
+    on `20261113`. A manual runner, not published code.
+
 - **`scripts/live/run.sh` passed today's snapshot expiration as `yyyymmdd`.**
   `live_p0` requires ISO dates and panicked on it, as the operator's script
   did in the 0.1.0 release-candidate run (a live script, not published code). It now passes `YYYY-MM-DD`, as
