@@ -167,23 +167,23 @@ jobs:
           name: wheel-${{ matrix.os }}
           path: dist/*.whl
           if-no-files-found: error
-      - name: Build the loopback service for the consumer examples
-        run: cargo build --release --locked -p praevis-thetadata-client --example loopback_server
-      - name: Keep the loopback service (for the Python version matrix)
+      - name: Build the emulator for the consumer examples (ADR-0022)
+        run: cargo build --release --locked -p praevis-thetadata-emulator
+      - name: Keep the emulator (for the Python version matrix)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: loopback-${{ matrix.os }}
-          path: target/release/examples/loopback_server${{ runner.os == 'Windows' && '.exe' || '' }}
+          name: emulator-${{ matrix.os }}
+          path: target/release/praevis-thetadata-emulator${{ runner.os == 'Windows' && '.exe' || '' }}
           if-no-files-found: error
           retention-days: 3
-      - name: Consumer examples (partial results, cancellation) against the loopback service
+      - name: Consumer examples (partial results, cancellation) against the emulator
         run: |
           set -euo pipefail
-          server="$PWD/target/release/examples/loopback_server"
+          server="$PWD/target/release/praevis-thetadata-emulator"
           if [ "$RUNNER_OS" = Windows ]; then server="$(cygpath -w "$server.exe")"; fi
           # Later steps run the example tests against it too (never skipped in CI).
-          echo "PRAEVIS_LOOPBACK_SERVER=$server" >> "$GITHUB_ENV"
-          PRAEVIS_LOOPBACK_SERVER="$server" python crates/praevis-thetadata-py/examples/consumer_patterns.py
+          echo "PRAEVIS_EMULATOR=$server" >> "$GITHUB_ENV"
+          PRAEVIS_EMULATOR="$server" python crates/praevis-thetadata-py/examples/consumer_patterns.py
       - name: Offline tests and D.2 gates
         run: python -m unittest discover -s crates/praevis-thetadata-py/tests -v
       - name: P1 exit runners, offline
@@ -192,7 +192,7 @@ jobs:
   python-versions:
     # The abi3 wheel built once per OS above, installed into a clean virtual
     # environment and tested on every supported Python version: no rebuild, only
-    # the package tests (with the loopback examples). Test dependencies come from
+    # the package tests (with the emulator examples). Test dependencies come from
     # a hash-pinned lock that resolves for Python 3.10 and later.
     name: Python ${{ matrix.python }} (${{ matrix.os }})
     needs: python-package
@@ -217,8 +217,8 @@ jobs:
           path: dist
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: loopback-${{ matrix.os }}
-          path: loopback
+          name: emulator-${{ matrix.os }}
+          path: emulator
       - name: Install the wheel into a clean environment and run the package tests
         run: |
           set -euo pipefail
@@ -227,9 +227,9 @@ jobs:
           "$py" -m pip install --quiet --require-hashes -r crates/praevis-thetadata-py/requirements-matrix.txt
           "$py" -m pip install --quiet --no-index --no-deps dist/*.whl
           "$py" -c "import sys, praevis_thetadata as pt; print(sys.version.split()[0], 'praevis_thetadata', pt.__version__)"
-          server="$PWD/loopback/loopback_server"
+          server="$PWD/emulator/praevis-thetadata-emulator"
           if [ "$RUNNER_OS" = Windows ]; then server="$(cygpath -w "$server.exe")"; else chmod +x "$server"; fi
-          PRAEVIS_LOOPBACK_SERVER="$server" "$py" -m unittest discover -s crates/praevis-thetadata-py/tests -v
+          PRAEVIS_EMULATOR="$server" "$py" -m unittest discover -s crates/praevis-thetadata-py/tests -v
 
   packaging-rehearsal:
     # Builds the seven published archives at the workspace version, stages them in a local file://

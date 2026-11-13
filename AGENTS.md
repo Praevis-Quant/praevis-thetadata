@@ -72,6 +72,7 @@ crates/praevis-thetadata-core/   exact prices, timestamps, values, tables
 crates/praevis-thetadata-arrow/  columnar decoding into Arrow; Parquet sink
 crates/praevis-thetadata-client/ gRPC, generated endpoints, query(), jobs, tier
 crates/praevis-thetadata-py/     Python bindings (pyo3 abi3, maturin)
+crates/praevis-thetadata-emulator/ dev-only emulator of the documented interfaces (ADR-0022)
 bench/python-baseline/           the only code allowed to run the vendor package
 bench/p1/                        Python-side live checks and comparison runners
 tools/                           repository checks, generators, research tooling
@@ -213,6 +214,7 @@ at a time.**
 | `crates/praevis-thetadata-core` | Prices, timestamps, values, tables | Transport-independent data types |
 | `crates/praevis-thetadata-py` | Python bindings (pyo3 abi3, maturin wheel `praevis-thetadata`): a thin pass-through over Arrow | Depends on the client and arrow crates; never published as a crate. Builds without a Python interpreter (abi3); its tests are Python tests |
 | `crates/praevis-thetadata-arrow` | Exact columnar decoding of `ResponseData` into coalesced Arrow batches; optional streaming Parquet sink | Core, proto and arrow-rs (`arrow-array`, `arrow-schema`; `parquet` with only `arrow` and `zstd` behind the `parquet` feature) only; keeps Arrow out of auth, core and proto. Not published yet |
+| `crates/praevis-thetadata-emulator` | Dev-only emulator of the documented interfaces for tests ([ADR-0022](docs/adr/0022-emulator-and-dual-target-scenarios.md)): all 100 RPCs and the login, driven by `schemas.json`, `status.json` and its `model.json`; synthetic values only | `publish = false`; proto plus crates already in the graph; never a dependency of a published crate's normal build |
 | `crates/praevis-thetadata-client` | gRPC requests, ZSTD decoding, batch streaming | Composes auth, core, and proto; still a foundation |
 
 Keep credential discovery in the CLI. The auth library accepts explicit
