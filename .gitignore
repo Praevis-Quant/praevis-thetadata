@@ -17,3 +17,4 @@ __pycache__/
 /crates/praevis-thetadata-py/python/praevis_thetadata/*.pyd
 /.venv-p1/
 /dist/
+/scripts/live/settings.env

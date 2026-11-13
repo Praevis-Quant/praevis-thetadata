@@ -92,6 +92,23 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **What it never does:** it never changes the model. It treats a
     report from the emulator target as no evidence, and it exits 0
     unless `--strict`.
+- **The live runbook and one command** ([`docs/live-runbook.md`](docs/live-runbook.md),
+  `scripts/live/run.sh`; ADR-0022 part 4). It generalises the Coordinator's
+  ad-hoc scripts.
+  - **What it runs:** the live scenarios, the option and the stock, index,
+    calendar and interest-rate checks, the stream (discovery, latency,
+    full trades), then the drift check. One private report folder per run.
+  - **Parts:** `--part anytime|market|all`. The dev replay feed is allowed
+    for the stream off-hours.
+  - **The Terminal** is restarted only with `--terminal live|dev`.
+  - **The order:** login-based steps first, because our login turns the
+    Terminal's REST to 478.
+  - **Settings:** machine paths come from `scripts/live/settings.env`
+    (ignored; see `settings.example.env`).
+  - **Platforms:** Windows and WSL steps are separate. `scripts/live/wsl.sh`
+    hands the account to a WSL Terminal and back.
+  - **Approval:** AGENTS.md records the user's standing approval for the
+    weekly and pre-release runs, and what stays excluded.
 
 ### Changed
 
