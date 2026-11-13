@@ -1,6 +1,7 @@
 # ADR-0022: an end-to-end emulator, dual-target scenarios and a scheduled live run
 
-Status: Accepted, 2026-11-13 (user decision). Does not block `0.1.0`.
+Status: Accepted, 2026-11-13 (user decision; its choices confirmed by the
+Coordinator the same day). Does not block `0.1.0`.
 Origin: **Rust enhancement**: test infrastructure of this project. The vendor
 package has no emulator.
 Owner: praevis-thetadata maintainers; the Coordinator owns the live schedule.
@@ -157,7 +158,9 @@ the scheduled and pre-release runs.
 
   Anything else is asked for first.
 - **CI cost:** the Python job must build the emulator binary as well as
-  the wheel. It is measured in part 2, and kept to one build per job.
+  the wheel, kept to one build per job. The scenario-suite pull request
+  reports the added CI time. If it is large, it proposes the full set on
+  one OS and a smoke subset on the other.
 
 ## Pull-request order (rule 3, one step per pull request)
 
