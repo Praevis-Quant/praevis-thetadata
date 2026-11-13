@@ -16,6 +16,13 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Fixed
+
+- **`scripts/live/run.sh` passed today's snapshot expiration as `yyyymmdd`.**
+  `live_p0` requires ISO dates and panicked on it, as the operator's script
+  did in the 0.1.0 release-candidate run (a live script, not published code). It now passes `YYYY-MM-DD`, as
+  the flat-file date already did.
+
 ## [0.1.0] - pending
 
 **The first supported release.** Prepared, not published: dated and tagged

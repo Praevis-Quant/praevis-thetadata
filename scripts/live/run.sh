@@ -94,7 +94,10 @@ step() {
     return "$rc"
 }
 
-TODAY=$(date -u +%Y%m%d)
+# Today's SPY expiration for the option snapshots, as an ISO date: live_p0
+# requires ISO (a yyyymmdd date panicked it in the 0.1.0 RC run). During US
+# market hours the UTC date is New York's date.
+TODAY=$(date -u +%Y-%m-%d)
 # The flat files: a recent weekday within the vendor's 7 calendar days.
 FLAT_DATE=$(date -u -d "yesterday" +%Y-%m-%d)
 case "$(date -u -d "$FLAT_DATE" +%u)" in

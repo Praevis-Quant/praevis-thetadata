@@ -41,6 +41,14 @@ class LiveScriptTests(unittest.TestCase):
         self.assertEqual(run("--run-id", "../x", key="not-used").returncode, 2)
         self.assertEqual(run("--run-id", "x", "--terminal", "restart", key="not-used").returncode, 2)
 
+    def test_dates_passed_to_the_checks_are_iso(self):
+        # live_p0 parses --snapshot-expiration and --flat-file-date as
+        # YYYY-MM-DD; a yyyymmdd value panicked it (0.1.0 RC run).
+        text = (LIVE / "run.sh").read_text()
+        self.assertIn("TODAY=$(date -u +%Y-%m-%d)", text)
+        self.assertNotIn("+%Y%m%d", text)
+        self.assertIn('FLAT_DATE=$(date -u -d "yesterday" +%Y-%m-%d)', text)
+
     def test_the_settings_template_holds_no_key_or_personal_path(self):
         text = (LIVE / "settings.example.env").read_text()
         self.assertNotIn("THETADATA_API_KEY=", text)
