@@ -202,6 +202,10 @@ These come from the first live run of `scripts/live/run.sh`
   - **Now:** it uses option EOD over 18 months (two parts at 366 days).
     Rust runs it only on options PRO and otherwise skips with a reason.
     Python, which sees only the account's highest tier, skips on a refusal.
+- **`scripts/live/run.sh` passed today's snapshot expiration as `yyyymmdd`.**
+  `live_p0` requires ISO dates and panicked on it, as the operator's script
+  did in the 0.1.0 release-candidate run. It now passes `YYYY-MM-DD`, as
+  the flat-file date already did.
 - **Failed scenarios are reported by kind and gRPC code only.** That covers
   the Python scenario report's detail and the drift check's findings,
   never the service's message text.
