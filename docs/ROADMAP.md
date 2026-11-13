@@ -220,17 +220,32 @@ replaces the official ThetaData Python package: one program's client,
 with no target of many concurrent workloads in one process. **No load
 tests are planned here.**
 
-**A future, separate project** may build a persistent shared data service
-on this library. Several services would read from it, or tap a stream at
-the same time, without pulling more data from the vendor. **That project
-would own:**
-- scheduling across consumers, and keeping them within the account's plan;
-- retry, for example on the library's `Busy` (`RESOURCE_EXHAUSTED`);
-- rate limiting;
-- default deadlines, and how they run while requests wait in a queue;
-- a read-ahead budget shared across jobs;
-- fairness between consumers;
-- session handling.
+**The shared data service is a separate project: the private repository
+`Praevis-Quant/praevis-data`,** with its own agent. It builds a persistent
+service on this library, so that several services can read from it, or tap
+a stream at the same time, without pulling more data from the vendor.
+
+**The split, decided by the user (2026-11-13):**
+
+| Lives in the service (`praevis-data`) | Lives in this library |
+| --- | --- |
+| cache keys and de-duplication | one caller's requests, as fast as possible (ADR-0021) |
+| backfill progress, resume and persistence | the in-process resource bounds |
+| stream reconnect and resubscribe | the Terminal stream and its close handshake |
+| fan-out to many consumers | |
+| scheduling across consumers, within the account's plan | a job's own concurrency |
+| retry (for example on `Busy`) and rate limits | `QueryError::Busy`, never retried |
+| default deadlines, a shared read-ahead budget, fairness, session handling | per-call deadlines when the caller sets one |
+
+**Additions to this library, only when the service asks for them,** each
+additive (no existing call changes) and in its own pull request. **None
+of them is in `0.1.0`:**
+- calling an endpoint by name at runtime from Rust (dispatch from data);
+- public job planning: the date splits and the per-strike split;
+- a getter for the stream's current subscriptions;
+- stock and index streaming, if a real need appears;
+- #136 (a reader-assigned `Event` sequence), only if the service needs gap
+  detection.
 
 **The library does what one caller asks** (user decision 2026-11-12,
 [ADR-0021](adr/0021-per-call-library.md), from `0.1.0-beta.2`): no retry,
@@ -263,18 +278,17 @@ observations come **from reading the code and are untested**:
    the query path: up to streams × `encoded_bytes` while messages are in
    flight; closed for this project as a stated, tested bound).
 
-**Possible additive API for that project.** These are not part of this
-work, and none would change existing calls:
-- dispatch of a request by its RPC or vendor name, from data;
-- a cache key per request;
-- the per-strike split as a public planner;
-- part-level results from a job;
-- request metrics (time to open, time to first row);
-- stream reconnect;
-- stock and index streaming;
-- reader-assigned `Event` sequence: #136, **closed and parked**
-  (2026-11-11; not rejected, its commits are kept and it can be reopened).
-  Its 10-contract p99.9 was unexplained in a 6-round desktop comparison.
+**Earlier ideas, now settled by the split above:**
+- **Become library additions, on request:** dispatch by name, the public
+  planner, and stock and index streaming.
+- **Moved to the service:** a cache key per request, and stream reconnect.
+- **Not planned in the library unless the service asks:** part-level
+  results from a job, and request metrics (time to open, time to first
+  row).
+- **#136 stays closed and parked** (2026-11-11; not rejected, its commits
+  are kept and it can be reopened). It comes back only if the service needs
+  gap detection. Its 10-contract p99.9 was unexplained in a 6-round desktop
+  comparison.
 
 **Limits by design:**
 - the stream reads a Terminal on the same machine only;
