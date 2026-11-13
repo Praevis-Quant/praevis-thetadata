@@ -148,7 +148,11 @@ approved "the live checks on the release candidate" as part of this plan.
 - **Live report:** the option value checks (or the smallest equivalent),
   plus a Python smoke run, reviewed by the maintainer.
 
-The results are recorded in the `0.1.0` release PR.
+**Results:** [0.1.0 release-candidate evidence](performance/rc-0.1.0-evidence.md).
+- **(a) Speed: done 2026-11-13. The gate holds without the scheduler.**
+  At 8, ours is 10.8× (Python) and 8.8× (Rust) the synchronous vendor
+  package, and 5.4× and 4.4× the threaded one.
+- **(b) The live report:** to come.
 
 ## Deferred from alpha.2
 

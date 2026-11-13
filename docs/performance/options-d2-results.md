@@ -1,5 +1,9 @@
 # Options baselines D2 (2026-11-05)
 
+**Re-checked for 0.1.0 (2026-11-13), without the scheduler that beta.2
+removed:** W5c still meets both targets
+([release-candidate evidence](rc-0.1.0-evidence.md#a-w5c-speed-comparison-2026-11-13)).
+
 The first head-to-head comparison of the options phase
 ([plan](../architecture/options-phase.md)). Whole workloads were timed into
 Polars by three runners, synchronously and 8 at a time:
