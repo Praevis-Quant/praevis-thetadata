@@ -3,17 +3,17 @@
 //!
 //! ```text
 //! praevis-thetadata-emulator [--profile free|options-pro] [--fault partial|slow|busy|delayed]
-//!     [--time-scale F] [--recorded-sizes on]
+//!     [--time-scale F] [--recorded-sizes on] [--concurrency documented|observed]
 //! ```
 //!
 //! It prints one JSON line, `{"auth_url": …, "endpoint": …}`, then serves
 //! until its standard input closes. A line `requests` on standard input
 //! prints `{"requests": N}`: the RPC requests received so far.
-use praevis_thetadata_emulator::{Config, Emulator, Fault, Profile};
+use praevis_thetadata_emulator::{Concurrency, Config, Emulator, Fault, Profile};
 use std::io::{BufRead, Write};
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: praevis-thetadata-emulator [--profile free|options-pro] [--fault partial|slow|busy|delayed] [--time-scale F] [--recorded-sizes on]";
+const USAGE: &str = "usage: praevis-thetadata-emulator [--profile free|options-pro] [--fault partial|slow|busy|delayed] [--time-scale F] [--recorded-sizes on] [--concurrency documented|observed]";
 
 fn main() -> ExitCode {
     let mut config = Config::default();
@@ -29,6 +29,12 @@ fn main() -> ExitCode {
                 .filter(|f| f.is_finite() && *f >= 0.0)
                 .map(|f| config.time_scale = f),
             "--recorded-sizes" => (value == "on").then(|| config.recorded_sizes = true),
+            "--concurrency" => match value.as_str() {
+                "documented" => Some(Concurrency::Documented),
+                "observed" => Some(Concurrency::Observed),
+                _ => None,
+            }
+            .map(|c| config.concurrency = c),
             _ => None,
         };
         if ok.is_none() {

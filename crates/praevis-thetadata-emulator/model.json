@@ -7,7 +7,8 @@
       "evidence": "PROD login, FREE account: subscriptions 0 (CLI auth, 2026-11-01; docs/subscription-testing.md)",
       "concurrency": {
         "limit": 1,
-        "evidence": "the vendor's documented FREE limit. Stricter than observed: p0 served 3 simultaneous tiny requests on FREE and never probed above 3 (docs/performance/p0-results.md); RESOURCE_EXHAUSTED over a limit was never observed live"
+        "observed": 3,
+        "evidence": "limit: the vendor's documented FREE limit, the default (Coordinator, 2026-11-13: stricter than observed is the safe direction for tests). observed: p0 served 3 simultaneous tiny requests on FREE and never probed above 3 (docs/performance/p0-results.md); a test opts in with Concurrency::Observed. RESOURCE_EXHAUSTED over a limit was never observed live"
       }
     },
     "options-pro": {

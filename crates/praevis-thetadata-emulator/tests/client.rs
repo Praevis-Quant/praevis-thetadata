@@ -4,7 +4,7 @@ use praevis_thetadata_client::{
     AuthClient, AuthConfig, ClientConfig, Credentials, NaiveDate, QueryError, ThetaClient, Tier,
     endpoints,
 };
-use praevis_thetadata_emulator::{Config, Emulator, Profile, schema};
+use praevis_thetadata_emulator::{Concurrency, Config, Emulator, Profile, schema};
 
 async fn connect(emulator: &Emulator) -> ThetaClient {
     let session = AuthClient::new(
@@ -212,4 +212,21 @@ async fn recorded_sizes_follow_the_histogram() {
     let client = connect(&emulator).await;
     let eod = endpoints::StockHistoryEod::new("EMU", day(3), day(7));
     assert!(rows(&client, &eod).await.unwrap() > 1_000);
+}
+
+#[tokio::test]
+async fn a_test_can_opt_into_the_observed_free_limit_of_three() {
+    let emulator = Emulator::start(Config {
+        profile: Profile::Free,
+        concurrency: Concurrency::Observed,
+        hold: std::time::Duration::from_millis(500),
+        ..Config::default()
+    });
+    let client = connect(&emulator).await;
+    let eod = endpoints::StockHistoryEod::new("EMU", day(3), day(7));
+    let held = hold(&emulator, &client, 3).await;
+    assert!(matches!(rows(&client, &eod).await, Err(QueryError::Busy)));
+    for task in held {
+        task.await.unwrap();
+    }
 }
