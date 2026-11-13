@@ -64,7 +64,7 @@ async fn an_entitled_rpc_streams_rows_with_its_recorded_schema() {
 async fn a_recorded_tier_refusal_and_an_evidence_gap_are_errors() {
     let emulator = Emulator::start(Config {
         profile: Profile::Free,
-        fault: None,
+        ..Config::default()
     });
     let client = connect(&emulator).await;
     assert_eq!(client.tier(), Tier::Free);

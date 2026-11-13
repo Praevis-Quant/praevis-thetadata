@@ -41,6 +41,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - `PRAEVIS_LOOPBACK_SERVER` is now `PRAEVIS_EMULATOR`.
   - CI builds the emulator binary once per OS and hands it to the Python
     version matrix.
+- **The client's tests and benchmarks are served by the emulator.**
+  - The fixture in `tests/support` (scripted stock EOD answers, synthetic
+    tables, the one-shot login peer and the TLS variant) moved into the
+    emulator as `praevis_thetadata_emulator::fixture`, with the same API.
+    `tests/support` re-exports it.
+  - Scripted runs keep the former fixture's single-threaded server, so
+    benchmark numbers taken through it are unchanged in kind.
+  - The client's build script no longer generates the fixture's server
+    trait, and the client drops its `tokio-stream` dev-dependency.
+  - **The client's crates.io archive no longer ships `tests/`.** They need
+    the unpublished emulator, like `examples/`, which was already
+    excluded. The emulator dev-dependency is path-only, so cargo strips it
+    from the published manifest.
 
 ## [0.1.0-beta.2] - 2026-11-12
 

@@ -1988,6 +1988,7 @@ dependencies = [
  "praevis-thetadata-arrow",
  "praevis-thetadata-auth",
  "praevis-thetadata-core",
+ "praevis-thetadata-emulator",
  "praevis-thetadata-proto",
  "prost",
  "prost-types",
@@ -1997,7 +1998,6 @@ dependencies = [
  "sha2",
  "thiserror",
  "tokio",
- "tokio-stream",
  "tonic",
  "tracing",
  "zstd",
@@ -2018,7 +2018,9 @@ name = "praevis-thetadata-emulator"
 version = "0.1.0-beta.2"
 dependencies = [
  "heck",
+ "praevis-thetadata-auth",
  "praevis-thetadata-client",
+ "praevis-thetadata-core",
  "praevis-thetadata-proto",
  "prost",
  "prost-types",

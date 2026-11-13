@@ -11,6 +11,8 @@ description = "Dev-only emulator of ThetaData's documented interfaces for tests 
 publish = false
 
 [dependencies]
+praevis-thetadata-auth.workspace = true
+praevis-thetadata-core.workspace = true
 praevis-thetadata-proto.workspace = true
 prost.workspace = true
 serde.workspace = true

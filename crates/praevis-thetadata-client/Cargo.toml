@@ -13,7 +13,8 @@ keywords = ["thetadata", "grpc", "market-data", "finance", "eod"]
 categories = ["api-bindings", "finance", "network-programming"]
 # Checkout-only targets: the EOD benchmark and the manual live runner include sibling
 # sources, the workspace lockfile and live-capture paths, so they are not self-contained.
-exclude = ["examples/"]
+# The tests run against the unpublished emulator (ADR-0022), so they are checkout-only too.
+exclude = ["examples/", "tests/"]
 
 [features]
 default = ["parquet"]
@@ -75,7 +76,9 @@ prost-types.workspace = true
 heck = "0.5"
 
 [dev-dependencies]
-tokio-stream = { version = "0.1", features = ["net"] }
+# The tests' and benchmarks' synthetic service (ADR-0022). Path only: never in
+# the published manifest.
+praevis-thetadata-emulator.workspace = true
 clap.workspace = true
 serde.workspace = true
 sha2 = "0.10"
