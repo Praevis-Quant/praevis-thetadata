@@ -81,6 +81,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     target never does:** it needs `--confirm-live`, takes the key from
     `THETADATA_API_KEY` only, and skips the emulator-only scenarios
     (no over-limit requests, no second login, no gated flat files).
+- **`tools/emulator_drift.py`** (ADR-0022 part 3): compares live scenario
+  reports with the emulator's model (`schemas.json`, `status.json` and
+  `model.json`).
+  - **What it checks:** column kinds, gRPC codes, the account's tier,
+    failed scenarios, and the first stream event's timing (within a
+    factor, default 5).
+  - **What it reports:** every difference is a finding for a person to
+    review, printed and written under the ignored `artifacts/drift/`.
+  - **What it never does:** it never changes the model. It treats a
+    report from the emulator target as no evidence, and it exits 0
+    unless `--strict`.
 
 ### Changed
 
