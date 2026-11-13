@@ -1,9 +1,10 @@
-# GitHub release draft: v0.1.0 (not published)
+# GitHub release draft: v0.1.0 (published)
 
-Status: **draft.** The user approved publication on 2026-11-13, as for the
-betas; the release-candidate evidence passed the same day
-([checklist](crates-io-release-plan.md#010-publication-checklist-and-order-prepared-2026-11-13)).
-Nothing is tagged or published yet.
+Status: **published 2026-11-13** as the
+[v0.1.0 release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.0) (not a pre-release; the latest release), its body
+taken from this text, with the two wheels from CI run 43468071990 on
+`d056e83` ([publication record](crates-io-release-plan.md#publication-record-010)).
+The text below is kept as drafted.
 
 **To fill in at publication:**
 - the date;
