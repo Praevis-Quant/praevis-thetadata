@@ -30,7 +30,7 @@ class LiveScriptTests(unittest.TestCase):
     def test_help_lists_the_options(self):
         result = run("--help")
         self.assertEqual(result.returncode, 0)
-        for option in ("--run-id", "--part", "--terminal", "--full-trades-seconds"):
+        for option in ("--run-id", "--part", "--terminal", "--full-trades-seconds", "--force-off-hours"):
             self.assertIn(option, result.stdout)
 
     def test_it_refuses_without_the_key_or_a_valid_run(self):

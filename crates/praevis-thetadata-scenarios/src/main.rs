@@ -61,6 +61,52 @@ struct Cli {
     /// Live only: the Terminal's WebSocket, default the documented one.
     #[arg(long)]
     terminal_url: Option<String>,
+    /// Only check whether US equity markets are open now, from the
+    /// service's own `calendar_open_today`: exit 0 if open, 3 if closed,
+    /// 4 if it cannot tell. Runs no scenario and writes no report.
+    #[arg(long)]
+    market_open_check: bool,
+}
+
+/// Whether the market is open now: today's `open` and `close` times are
+/// both present and New York's time is between them. A closed day has
+/// null times (or no data at all); the `type` text is not relied on.
+async fn market_open(client: &ThetaClient) -> Result<bool, String> {
+    use praevis_thetadata_client::arrow_array::{Array, StringArray};
+    let batches = match client.query(&endpoints::CalendarOpenToday::new()).await {
+        Ok(stream) => stream.collect().await,
+        Err(e) => Err(e),
+    };
+    let batches = match batches {
+        Ok(batches) => batches,
+        Err(QueryError::NoData) => return Ok(false),
+        Err(e) => return Err(format!("calendar_open_today failed: {e:?}")),
+    };
+    let batch = batches.first().ok_or("calendar_open_today: no rows")?;
+    let column = |name: &str| -> Result<Option<chrono::NaiveTime>, String> {
+        let index = batch
+            .schema()
+            .index_of(name)
+            .map_err(|_| format!("no {name} column"))?;
+        let values = batch
+            .column(index)
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .ok_or(format!("{name} is not text"))?;
+        if values.is_null(0) {
+            return Ok(None);
+        }
+        chrono::NaiveTime::parse_from_str(values.value(0), "%H:%M:%S")
+            .map(Some)
+            .map_err(|_| format!("{name} is not a time"))
+    };
+    let (Some(open), Some(close)) = (column("open")?, column("close")?) else {
+        return Ok(false);
+    };
+    let now = chrono::Utc::now()
+        .with_timezone(&chrono_tz::America::New_York)
+        .time();
+    Ok(open <= now && now < close)
 }
 
 /// One scenario's result, for the report.
@@ -433,6 +479,42 @@ async fn main() -> std::process::ExitCode {
             ..Config::default()
         })
     });
+    if cli.market_open_check {
+        let session = match login(emulator.as_ref().map(|e| e.auth_url.as_str())).await {
+            Ok(session) => session,
+            Err(e) => {
+                eprintln!("{e}");
+                return std::process::ExitCode::from(4);
+            }
+        };
+        let mut config = ClientConfig::default();
+        if let Some(emulator) = &emulator {
+            config = config
+                .with_endpoint(Some(emulator.endpoint.clone()))
+                .with_allow_insecure(true);
+        }
+        let client = match ThetaClient::with_session(config, session).await {
+            Ok(client) => client,
+            Err(e) => {
+                eprintln!("connect failed: {e:?}");
+                return std::process::ExitCode::from(4);
+            }
+        };
+        return match market_open(&client).await {
+            Ok(true) => {
+                eprintln!("market open now (calendar_open_today)");
+                std::process::ExitCode::SUCCESS
+            }
+            Ok(false) => {
+                eprintln!("market closed now (calendar_open_today)");
+                std::process::ExitCode::from(3)
+            }
+            Err(e) => {
+                eprintln!("cannot tell whether the market is open: {e}");
+                std::process::ExitCode::from(4)
+            }
+        };
+    }
     let mut out = Vec::new();
     if cli.part != Part::Market {
         let session = match login(emulator.as_ref().map(|e| e.auth_url.as_str())).await {
@@ -494,5 +576,72 @@ async fn main() -> std::process::ExitCode {
         std::process::ExitCode::SUCCESS
     } else {
         std::process::ExitCode::FAILURE
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use praevis_thetadata_emulator::fixture::{self, Fixture, Script};
+    use praevis_thetadata_proto::endpoints::{
+        DataTable, DataValue, DataValueList, data_value::DataType as Wire,
+    };
+
+    /// A calendar answer: `open` and `close` as text, or null.
+    fn calendar(times: Option<(&'static str, &'static str)>) -> Fixture {
+        let handler: fixture::Handler = std::sync::Arc::new(move |rpc: &str, _| {
+            assert_eq!(rpc, "GetCalendarOpenToday");
+            let text = |v: &str| DataValue {
+                data_type: Some(Wire::Text(v.into())),
+            };
+            let null = DataValue {
+                data_type: Some(Wire::NullValue(0)),
+            };
+            let values = match times {
+                Some((open, close)) => vec![text("open"), text(open), text(close)],
+                None => vec![text("full_close"), null.clone(), null],
+            };
+            let table = DataTable {
+                headers: vec!["type".into(), "open".into(), "close".into()],
+                data_table: vec![DataValueList { values }],
+            };
+            Ok(vec![fixture::response(&table, false)])
+        });
+        Fixture::start(Script {
+            other: Some(handler),
+            ..Default::default()
+        })
+    }
+
+    async fn client(fixture: &Fixture) -> ThetaClient {
+        ThetaClient::with_session(
+            ClientConfig::default()
+                .with_endpoint(Some(fixture.endpoint.clone()))
+                .with_allow_insecure(true),
+            fixture::session().await,
+        )
+        .await
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn open_only_between_todays_open_and_close() {
+        let all_day = calendar(Some(("00:00:00", "23:59:59")));
+        assert_eq!(market_open(&client(&all_day).await).await, Ok(true));
+        let never = calendar(Some(("00:00:00", "00:00:00")));
+        assert_eq!(market_open(&client(&never).await).await, Ok(false));
+        let closed = calendar(None);
+        assert_eq!(market_open(&client(&closed).await).await, Ok(false));
+    }
+
+    #[tokio::test]
+    async fn no_data_is_closed() {
+        let handler: fixture::Handler =
+            std::sync::Arc::new(|_: &str, _| Err(tonic::Status::not_found("no data")));
+        let fixture = Fixture::start(Script {
+            other: Some(handler),
+            ..Default::default()
+        });
+        assert_eq!(market_open(&client(&fixture).await).await, Ok(false));
     }
 }

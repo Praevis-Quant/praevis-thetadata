@@ -5,7 +5,7 @@
 #
 #   scripts/live/run.sh --run-id ID [--part anytime|market|all]
 #       [--terminal none|live|dev] [--platform windows|wsl|linux]
-#       [--full-trades-seconds N] [--no-build]
+#       [--full-trades-seconds N] [--no-build] [--force-off-hours]
 #
 # The key comes from THETADATA_API_KEY in the environment only: never a
 # file, never the command line, never printed. Machine paths come from
@@ -15,14 +15,20 @@
 # Terminal: the market part then needs one already running. --terminal live
 # or dev restarts it on that config (live market, or the dev replay feed
 # off-hours). Only pass it when the operator has agreed to that.
+#
+# The market part first asks the service's calendar_open_today whether US
+# markets are open now. If not (a weekend, a holiday, after the close), it
+# is refused, because snapshots would be empty and latency misleading,
+# unless --force-off-hours. With --terminal dev, the dev-feed stream still
+# runs off-hours (labelled dev) and only the option checks are skipped.
 set -u
 
 usage() {
-    sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
-RUN_ID="" PART=all TERMINAL=none PLATFORM="" FULL_SECONDS=1200 BUILD=1
+RUN_ID="" PART=all TERMINAL=none PLATFORM="" FULL_SECONDS=1200 BUILD=1 FORCE_OFF_HOURS=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --run-id) RUN_ID="${2:-}"; shift 2 ;;
@@ -31,6 +37,7 @@ while [ $# -gt 0 ]; do
         --platform) PLATFORM="${2:-}"; shift 2 ;;
         --full-trades-seconds) FULL_SECONDS="${2:-}"; shift 2 ;;
         --no-build) BUILD=0; shift ;;
+        --force-off-hours) FORCE_OFF_HOURS=1; shift ;;
         -h|--help) usage 0 ;;
         *) echo "unknown option: $1" >&2; usage 2 ;;
     esac
@@ -189,10 +196,31 @@ fi
 
 # ---- market hours: snapshots, then the stream ------------------------------
 
+MARKET=0 OPTION_CHECKS=0
 if [ "$PART" != anytime ]; then
+    "$SCEN" --target live --confirm-live --market-open-check 2>&1 | tee -a "$LOG"
+    case "${PIPESTATUS[0]}" in
+        0) MARKET=1 OPTION_CHECKS=1 ;;
+        3) log "markets are closed now (calendar_open_today)" ;;
+        *) log "cannot tell whether markets are open; treated as closed" ;;
+    esac
+    if [ "$MARKET" = 0 ] && [ "$FORCE_OFF_HOURS" = 1 ]; then
+        log "--force-off-hours: running the market part anyway"
+        MARKET=1 OPTION_CHECKS=1
+    elif [ "$MARKET" = 0 ] && [ "$TERMINAL" = dev ]; then
+        log "off-hours on the dev feed: the stream runs, the option checks (snapshots) are skipped"
+        MARKET=1
+        echo "option checks: skipped (off-hours, dev feed)" >> "$SUMMARY"
+    elif [ "$MARKET" = 0 ]; then
+        echo "market part: refused (markets closed; --force-off-hours overrides)" >> "$SUMMARY"
+    fi
+fi
+if [ "$MARKET" = 1 ] && [ "$OPTION_CHECKS" = 1 ]; then
     step option-checks-rust "$P0" option-checks --confirm-live --api-key-env --run-id "$RUN_ID-opt" --same-response \
         --snapshot-expiration "$TODAY" --flat-file-date "$FLAT_DATE"
     step option-checks-python "$PY" bench/p1/option_checks.py --run-id "$RUN_ID-opt-py" --snapshot-expiration "$TODAY"
+fi
+if [ "$MARKET" = 1 ]; then
     if [ "$TERMINAL" != none ]; then
         terminal_start || log "the Terminal did not become ready"
     fi

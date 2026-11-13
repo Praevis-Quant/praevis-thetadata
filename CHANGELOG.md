@@ -101,6 +101,11 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **Parts:** `--part anytime|market|all`. The dev replay feed is allowed
     for the stream off-hours.
   - **The Terminal** is restarted only with `--terminal live|dev`.
+  - **Market hours are checked:** before the market part it asks the
+    service's `calendar_open_today` (the scenarios binary's
+    `--market-open-check`). Off-hours, the market part is refused unless
+    `--force-off-hours`. On the dev feed, only the option checks are
+    skipped.
   - **The order:** login-based steps first, because our login turns the
     Terminal's REST to 478.
   - **Settings:** machine paths come from `scripts/live/settings.env`

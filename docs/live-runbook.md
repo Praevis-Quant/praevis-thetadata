@@ -60,7 +60,22 @@ scripts/live/run.sh --run-id weekly-20261120 --part all --terminal live
 | `--terminal live` or `dev` | Restart the Terminal on that config: the live market, or the dev replay feed off-hours (allowed for the stream checks) |
 | `--full-trades-seconds N` | The full trade stream's length (default 1,200; 0 skips it) |
 | `--no-build` | Skip the release builds and the wheel |
+| `--force-off-hours` | Run the market part even when markets are closed (see below) |
 | `--platform` | `windows`, `wsl` or `linux`; detected when omitted |
+
+**Market hours are checked, not assumed.** Before the market part, the
+command asks the service's own `calendar_open_today`, through the library,
+whether US markets are open now.
+- **The rule:** they are open only when today's `open` and `close` times
+  are both present and New York's time falls between them. A closed day
+  has null times, or no data at all. The `type` text is not relied on.
+- **If they are closed** (a weekend, a holiday, after the close), the
+  market part is refused and the summary says so. Snapshots would be
+  empty and latency misleading. **`--force-off-hours`** overrides this.
+- **With `--terminal dev`, off-hours,** the dev-feed stream still runs
+  (labelled `dev`), and only the option checks, whose snapshots need the
+  market, are skipped.
+- **If the calendar can't be read,** the market counts as closed.
 
 **The order matters.** Our gRPC login ends the Terminal's REST session
 (478, `w10-conflict-001`). So every login-based step runs first, and the
@@ -146,8 +161,8 @@ is the W10 run still open
 - **`--part anytime`** runs any time.
 - **The stream** may use the dev replay feed (`--terminal dev`). Its
   latency results are labelled `--feed dev`.
-- **The option checks' snapshots need market hours.** Off-hours, run
-  `--part anytime` only.
+- **The option checks' snapshots need market hours.** Off-hours, the
+  command skips them by itself (see *Market hours are checked*).
 
 ## What it does not do
 
