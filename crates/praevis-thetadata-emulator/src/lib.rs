@@ -110,6 +110,10 @@ pub struct Config {
     /// Size the messages after the recorded message-size histogram instead
     /// of the small synthetic default.
     pub recorded_sizes: bool,
+    /// A test control, not a claim about the service: every model answer
+    /// waits this long before its first message, counted as open, so a
+    /// test can hold requests at the limit deterministically.
+    pub hold: Duration,
 }
 
 impl Default for Config {
@@ -121,6 +125,7 @@ impl Default for Config {
             tls: None,
             time_scale: 1.0,
             recorded_sizes: false,
+            hold: Duration::ZERO,
         }
     }
 }
@@ -558,7 +563,7 @@ impl Service {
                 (
                     messages,
                     Duration::ZERO,
-                    first_row_delay(rpc, &params, self.config.time_scale),
+                    first_row_delay(rpc, &params, self.config.time_scale) + self.config.hold,
                     None,
                 )
             }

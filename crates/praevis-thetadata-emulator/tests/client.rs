@@ -115,28 +115,46 @@ async fn a_second_login_ends_the_first_session() {
     assert_eq!(rows(&second, &eod).await.unwrap(), 6);
 }
 
+/// Starts `n` requests that the emulator holds open (`Config::hold`), and
+/// waits until it has them all.
+async fn hold(
+    emulator: &Emulator,
+    client: &ThetaClient,
+    n: usize,
+) -> Vec<tokio::task::JoinHandle<()>> {
+    let before = emulator.requests().len();
+    let held: Vec<_> = (0..n)
+        .map(|_| {
+            let client = client.clone();
+            tokio::spawn(async move {
+                let eod = endpoints::StockHistoryEod::new("EMU", day(3), day(7));
+                let _ = rows(&client, &eod).await;
+            })
+        })
+        .collect();
+    while emulator.requests().len() < before + n {
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    held
+}
+
 #[tokio::test]
 async fn more_requests_at_once_than_the_tier_allows_are_busy() {
     let emulator = Emulator::start(Config {
         profile: Profile::Free,
+        hold: std::time::Duration::from_millis(500),
         ..Config::default()
     });
     let client = connect(&emulator).await;
     let eod = endpoints::StockHistoryEod::new("EMU", day(3), day(7));
-    // FREE allows one request at once: hold one stream open, unread.
-    let held = client.query(&eod).await.unwrap();
+    // FREE's documented limit is one request at once.
+    let held = hold(&emulator, &client, 1).await;
     assert!(matches!(rows(&client, &eod).await, Err(QueryError::Busy)));
-    drop(held);
-    // Its place is freed once the emulator sees the stream dropped.
-    let mut freed = false;
-    for _ in 0..50 {
-        if rows(&client, &eod).await.is_ok() {
-            freed = true;
-            break;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    // Its place is freed once the held request ends.
+    for task in held {
+        task.await.unwrap();
     }
-    assert!(freed);
+    assert_eq!(rows(&client, &eod).await.unwrap(), 6);
 }
 
 #[tokio::test]
