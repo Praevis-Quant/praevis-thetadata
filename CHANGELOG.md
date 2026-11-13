@@ -17,6 +17,29 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+## [0.1.1] - pending
+
+**A patch release with one fix to published code.** Prepared, not
+published: dated and tagged (`v0.1.1`) at publication, which needs the
+user's approval (the approval of 2026-11-13 was for `0.1.0`). See the
+[release-notes draft](docs/release-draft-0.1.1.md).
+- **The fix:** `job()`, Python's planned calls and `describe()` split option
+  Greeks EOD over every expiration one day per request. The service refuses
+  it over several days ([known issues](docs/endpoints/known-issues.md)).
+- **API:** a new provided method on the sealed `Endpoint` trait,
+  `split(&self)`, defaults to `SPLIT`. Nothing that compiled against
+  `0.1.0` breaks.
+- **Everything else below** concerns unpublished tooling: the live runner,
+  the live script, the emulator and the scenarios.
+
+### Release
+
+- **Version `0.1.1`** across the workspace, with the wheel at `0.1.1`. The
+  READMEs' exact pins for proto and stream move to `=0.1.1`.
+- **The same publish set and order as `0.1.0`:** seven crates, then the
+  two wheels to PyPI by hand, then a tag and a GitHub release that is not
+  a pre-release ([checklist](docs/crates-io-release-plan.md#011-publication-checklist-and-order-prepared-2026-11-13)).
+
 ### Fixed
 
 - **`job()` sent option Greeks EOD over every expiration as one request
