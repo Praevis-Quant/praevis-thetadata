@@ -21,6 +21,9 @@ tokio = { workspace = true, features = ["sync"] }
 tokio-stream = { version = "0.1", features = ["net"] }
 tonic.workspace = true
 zstd.workspace = true
+# The Terminal side's WebSocket server. Already in the graph: approved for the
+# stream crate on 2026-11-05.
+tungstenite = { version = "0.30", default-features = false, features = ["handshake"] }
 
 [build-dependencies]
 # The descriptor comes from the proto package, as in the client's build script.
@@ -31,3 +34,4 @@ heck = "0.5"
 
 [dev-dependencies]
 praevis-thetadata-client.workspace = true
+praevis-thetadata-stream = { path = "../praevis-thetadata-stream" }

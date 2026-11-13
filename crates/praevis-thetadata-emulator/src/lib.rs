@@ -3,7 +3,9 @@
 //!
 //! It serves, on 127.0.0.1 only:
 //! - **gRPC:** all 100 RPCs of the checked-in descriptor;
-//! - **the HTTP login,** with the profile's subscription fields.
+//! - **the HTTP login,** with the profile's subscription fields;
+//! - **the Terminal's WebSocket `/v1/events` and its REST call**
+//!   ([`terminal`]).
 //!
 //! **Driven by repository data, never by market data:**
 //! - column names and kinds from `docs/endpoints/schemas.json`, with
@@ -131,6 +133,7 @@ impl Default for Config {
 }
 
 pub mod fixture;
+pub mod terminal;
 
 #[derive(Deserialize)]
 struct Schema {
@@ -192,6 +195,7 @@ struct Model {
     not_found: NotFoundModel,
     first_row_delays: Vec<Delay>,
     message_sizes: Sizes,
+    terminal: terminal::TerminalModel,
 }
 
 struct Data {
@@ -660,6 +664,8 @@ pub struct Emulator {
     /// Raw `grpc-timeout` metadata per stock EOD request (scripted runs).
     pub timeouts: Arc<Mutex<Vec<Option<String>>>>,
     logins: Arc<AtomicUsize>,
+    /// The Terminal side: WebSocket `/v1/events` and its REST call.
+    pub terminal: terminal::Terminal,
     shutdown: Option<oneshot::Sender<()>>,
     thread: Option<std::thread::JoinHandle<()>>,
 }
@@ -684,6 +690,7 @@ impl Emulator {
         let logins = Arc::new(AtomicUsize::new(0));
         let profile = config.profile;
         let tls = config.tls.clone();
+        let terminal = terminal::Terminal::start(logins.clone(), config.time_scale);
         let service = Service {
             config,
             requests: requests.clone(),
@@ -740,6 +747,7 @@ impl Emulator {
             eod_requests,
             timeouts,
             logins,
+            terminal,
             shutdown: Some(shutdown),
             thread: Some(thread),
         }
