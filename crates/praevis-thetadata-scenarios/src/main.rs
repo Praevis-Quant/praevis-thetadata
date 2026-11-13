@@ -21,7 +21,7 @@ use clap::{Parser, ValueEnum};
 use praevis_thetadata_client::arrow_schema::{DataType, Schema};
 use praevis_thetadata_client::{
     AuthClient, AuthConfig, ClientConfig, Credentials, NaiveDate, QueryError, RequestOptions,
-    ThetaClient, endpoints,
+    ThetaClient, Tier, endpoints,
 };
 use praevis_thetadata_emulator::{Config, Emulator, schema};
 use praevis_thetadata_stream::{Kind, Options, Stream};
@@ -232,7 +232,12 @@ async fn login(auth_url: Option<&str>) -> Result<praevis_thetadata_client::Sessi
         .map_err(|e| format!("login failed: {e:?}"))
 }
 
-async fn anytime(out: &mut Vec<Outcome>, client: &ThetaClient, emulator: Option<&Emulator>) {
+async fn anytime(
+    out: &mut Vec<Outcome>,
+    client: &ThetaClient,
+    options: Option<Tier>,
+    emulator: Option<&Emulator>,
+) {
     let week = (day(2024, 6, 3), day(2024, 6, 7));
     run(out, "login-tier", async {
         let tier = client.tier();
@@ -330,27 +335,43 @@ async fn anytime(out: &mut Vec<Outcome>, client: &ThetaClient, emulator: Option<
         }
     })
     .await;
-    run(out, "cancel-midway", async {
-        // Two years of EOD: the planner splits it; read one batch, drop.
-        let request = endpoints::StockHistoryEod::new("AAPL", day(2022, 1, 3), day(2023, 12, 29));
-        let mut job = client.job(&request).await.map_err(|e| format!("{e:?}"))?;
-        let parts = job.parts();
-        let first = job
-            .next_batch()
-            .await
-            .map_err(|e| format!("{e:?}"))?
-            .map_or(0, |b| b.num_rows());
-        job.cancel();
-        drop(job);
-        if first == 0 {
-            return Err("no first batch".into());
-        }
-        Ok((
-            format!("{first} rows of the first of {parts} parts, then cancelled"),
-            json!({"parts": parts}),
-        ))
-    })
-    .await;
+    // A long request this account is entitled to: option EOD over 18
+    // months (split at 366 days into two parts) needs options history
+    // deeper than FREE's, so it runs on options PRO only. Stock EOD that
+    // long fell outside FREE's history depth (first live run, 2026-11-13).
+    if options != Some(Tier::Pro) {
+        skip(
+            out,
+            "cancel-midway",
+            "no long-range request known to be entitled: options are not PRO",
+        );
+    } else {
+        run(out, "cancel-midway", async {
+            let request = endpoints::OptionHistoryEod::new(
+                day(2023, 1, 3),
+                day(2024, 6, 28),
+                "SPY",
+                day(2024, 12, 20),
+            );
+            let mut job = client.job(&request).await.map_err(|e| format!("{e:?}"))?;
+            let parts = job.parts();
+            let first = job
+                .next_batch()
+                .await
+                .map_err(|e| format!("{e:?}"))?
+                .map_or(0, |b| b.num_rows());
+            job.cancel();
+            drop(job);
+            if first == 0 {
+                return Err("no first batch".into());
+            }
+            Ok((
+                format!("{first} rows of the first of {parts} parts, then cancelled"),
+                json!({"rpc": "GetOptionHistoryEod", "code": "OK", "parts": parts}),
+            ))
+        })
+        .await;
+    }
     let Some(emulator) = emulator else {
         skip(
             out,
@@ -530,6 +551,7 @@ async fn main() -> std::process::ExitCode {
                 .with_endpoint(Some(emulator.endpoint.clone()))
                 .with_allow_insecure(true);
         }
+        let options = Tier::from_subscription(&session.user().options_subscription);
         let client = match ThetaClient::with_session(config, session).await {
             Ok(client) => client,
             Err(e) => {
@@ -537,7 +559,7 @@ async fn main() -> std::process::ExitCode {
                 return std::process::ExitCode::FAILURE;
             }
         };
-        anytime(&mut out, &client, emulator.as_ref()).await;
+        anytime(&mut out, &client, options, emulator.as_ref()).await;
     }
     if cli.part != Part::Anytime {
         let url = match &emulator {

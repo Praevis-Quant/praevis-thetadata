@@ -30,6 +30,10 @@ SCHEMAS = json.loads((ROOT / "docs" / "endpoints" / "schemas.json").read_text())
 WEEK = {"start_date": dt.date(2024, 6, 3), "end_date": dt.date(2024, 6, 7)}
 
 
+class Skip(Exception):
+    """A scenario that does not apply to this account, with the reason."""
+
+
 def registered(rpc: str) -> list[str]:
     return [name for name, _ in SCHEMAS[rpc]["columns"]]
 
@@ -91,13 +95,21 @@ def scenarios(client: pt.Client) -> list[tuple[str, object]]:
         return "both no_data", {"rpc": "GetStockHistoryEod", "code": "NotFound"}
 
     def cancel_midway():
-        iterator = client.batches("stock_history_eod", symbol="AAPL",
-                                  start_date=dt.date(2022, 1, 3), end_date=dt.date(2023, 12, 29))
-        first = len(next(iter(iterator)))
+        # A long request split in two (option EOD, 366 days a part). It needs
+        # options history deeper than FREE's; the package exposes only the
+        # account's highest tier, so a refusal means "not entitled": skipped.
+        try:
+            iterator = client.batches("option_history_eod", symbol="SPY", expiration=dt.date(2024, 12, 20),
+                                      start_date=dt.date(2023, 1, 3), end_date=dt.date(2024, 6, 28))
+            first = len(next(iter(iterator)))
+        except pt.QueryFailed as error:
+            if error.args[2] == "PermissionDenied":
+                raise Skip("no long-range request entitled on this account (PermissionDenied)") from None
+            raise
         iterator.cancel()
         if first == 0:
             raise AssertionError("no first batch")
-        return f"{first} rows of the first batch, then cancelled", {}
+        return f"{first} rows of the first batch, then cancelled", {"rpc": "GetOptionHistoryEod", "code": "OK"}
 
     return [("login-tier", login_tier), ("vendor-named-method", vendor_named), ("query-planned", query_job),
             ("batches", batches), ("to-parquet", to_parquet), ("tier-refusal", tier_refusal),
@@ -135,15 +147,25 @@ def main() -> int:
     try:
         for name, scenario in scenarios(client):
             started = time.monotonic()
+            error_codes = None
             try:
                 detail, observed = scenario()
                 status = "pass"
+            except Skip as reason:
+                detail, observed, status = str(reason), None, "skip"
+            except pt.QueryFailed as error:
+                # Only the kind and the gRPC code: the detail can carry the
+                # service's message text, which stays out of every report.
+                error_codes = {"kind": error.args[0], "code": error.args[2] if len(error.args) > 2 else None}
+                detail = f"QueryFailed kind={error_codes['kind']} code={error_codes['code']}"
+                observed, status = None, "fail"
             except Exception as error:  # a scenario's failure is its result
                 detail, observed, status = f"{type(error).__name__}: {error}", None, "fail"
             if observed is not None:
                 observed = {**observed, "ms": round((time.monotonic() - started) * 1000)}
             print(f"{status:4} {name}: {detail}", file=sys.stderr)
-            results.append({"name": name, "status": status, "detail": detail, "observed": observed})
+            results.append({"name": name, "status": status, "detail": detail, "observed": observed,
+                            "error": error_codes})
     finally:
         if process is not None:
             process.stdin.close()

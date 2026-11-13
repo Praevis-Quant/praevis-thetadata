@@ -115,6 +115,25 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   - **Approval:** AGENTS.md records the user's standing approval for the
     weekly and pre-release runs, and what stays excluded.
 
+### Fixed
+
+These come from the first live run of `scripts/live/run.sh`
+(`first-anytime-001`, 2026-11-13).
+- **`settings.env` was sourced by bash,** so an unquoted path with spaces
+  (`C:\Program Files\...`) ran a word of it as a command and left the
+  setting unset.
+  - **The fix:** the file is now read as data (`scripts/live/settings.sh`):
+    `KEY=VALUE` lines, values taken literally, known keys only, and an error
+    with the line number otherwise. Nothing in it is executed.
+- **The `cancel-midway` scenario failed live** with `PermissionDenied`. Its
+  two years of stock EOD fell outside stocks FREE's history depth.
+  - **Now:** it uses option EOD over 18 months (two parts at 366 days).
+    Rust runs it only on options PRO and otherwise skips with a reason.
+    Python, which sees only the account's highest tier, skips on a refusal.
+- **Failed scenarios are reported by kind and gRPC code only.** That covers
+  the Python scenario report's detail and the drift check's findings,
+  never the service's message text.
+
 ### Changed
 
 - **The Python consumer examples and tests run against the emulator.**

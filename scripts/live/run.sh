@@ -53,9 +53,10 @@ if [ -z "${THETADATA_API_KEY:-}" ]; then
 fi
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-SETTINGS="$ROOT/scripts/live/settings.env"
-# shellcheck source=/dev/null
-[ -f "$SETTINGS" ] && . "$SETTINGS"
+# The settings file is read as data, never executed (settings.sh).
+# shellcheck source=settings.sh
+. "$ROOT/scripts/live/settings.sh"
+load_settings "${PRAEVIS_LIVE_SETTINGS:-$ROOT/scripts/live/settings.env}" || exit 2
 THETA_REST="${THETA_REST:-127.0.0.1:25503}"
 THETA_SETTLE="${THETA_SETTLE:-60}"
 

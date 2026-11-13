@@ -10,8 +10,10 @@
 # The key passes to WSL through WSLENV only, never on a command line.
 set -u
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-# shellcheck source=/dev/null
-[ -f "$ROOT/scripts/live/settings.env" ] && . "$ROOT/scripts/live/settings.env"
+# The settings file is read as data, never executed (settings.sh).
+# shellcheck source=settings.sh
+. "$ROOT/scripts/live/settings.sh"
+load_settings "${PRAEVIS_LIVE_SETTINGS:-$ROOT/scripts/live/settings.env}" || exit 2
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) ;; *) echo "run this from Git Bash on Windows" >&2; exit 2 ;; esac
 [ -n "${THETADATA_API_KEY:-}" ] || { echo "THETADATA_API_KEY is not set" >&2; exit 2; }
 for v in THETA_JAVA THETA_TERMINAL_DIR; do
