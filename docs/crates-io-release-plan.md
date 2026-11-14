@@ -4,15 +4,107 @@ Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 (2026-11-01 US time), `0.1.0-alpha.2` on 2026-11-03 UTC and `0.1.0-alpha.3`
 on 2026-11-08, `0.1.0-beta.1` on 2026-11-11, `0.1.0-beta.2` on 2026-11-12 and
 `0.1.0`, the first supported release, on 2026-11-13, and the patch
-`0.1.1` on 2026-11-14, each after owner approval. `0.1.2` is prepared
-below, awaiting approval. From
+`0.1.1` and `0.1.2` on 2026-11-14, each after owner approval. From
 beta.1 the Python wheels are also on PyPI. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
 
+## Publication record: 0.1.2
+
+**Published 2026-11-14:** the crates from 22:51:33 (proto) to 22:53:22 UTC
+(stream), then PyPI, and the GitHub release at 22:53:49 UTC. Approved by
+the user. It adds requests by name to the client (`dispatch`, #188 and
+#191), after `praevis-data` tried it on `main`.
+- **Source:** the owner ran `cargo publish` locally from clean `main` at
+  `938fa9e78aeedeeab73113da1ef4e9e94ba14a48` (#192). Every crate's
+  `.cargo_vcs_info.json` names that commit, not dirty.
+- **CI:** CI (run 43616528303) and Auth performance (43616528160) were green
+  on that commit.
+- **Live run before publishing** (`pre-012-anytime-001`, at that commit,
+  `--part anytime`): all seven steps exited 0. The scenarios passed: Rust 9
+  passed and 2 skipped, Python 9 passed. The emulator drift check was
+  clean.
+- **Tokens** were never in argv or logs.
+
+**Crates:**
+- **Order:** proto, core, auth, arrow, client, cli, stream.
+- **Checksums:** all seven `.crate` files downloaded from crates.io match
+  the index's checksums.
+- **Not yanked:** none.
+- **Publisher:** `joey-huckabee`.
+
+| Crate | `.crate` SHA-256 (index = downloaded) |
+| --- | --- |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.2) | `d480a672692de41a3dcf71b48573420025cdd032323bdd5fb41bc0a01910b268` |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.2) | `8bb1b9aefbf2079a7a23d054af43c9452735c8578ef761f5e9500f2249ad2825` |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.2) | `e881169d8e86e1d5e7b641a0d8ab1bad5cdb0ccaf89e48d7f0a757e1c5929077` |
+| [`praevis-thetadata-arrow`](https://crates.io/crates/praevis-thetadata-arrow/0.1.2) | `96453d4983c0e08a712d3b552d5eeec54762e60932e251951118bbffa6977a23` |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.2) | `afb4e9f1d7c7e980fad29cd13cd94bed33a71af78b1fcf50c92d7569a1b8539c` |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.2) | `d287b3a543c5541e5f4f7ce8fe825bf3e33151dbc84d7c8303ff646a3dc8a4e7` |
+| [`praevis-thetadata-stream`](https://crates.io/crates/praevis-thetadata-stream/0.1.2) | `057c828e5b7978739e73e7160afba3a4e78502757be1a430489dfca5eaa87974` |
+
+`praevis-thetadata-py` is not published to crates.io, and neither are the
+`publish = false` emulator and scenario crates.
+
+**PyPI:**
+- **Release:** [`praevis-thetadata` 0.1.2](https://pypi.org/project/praevis-thetadata/0.1.2/).
+- **Upload:** `twine check` passed, then `twine upload` of the two wheels
+  from `938fa9e`'s own CI run 43616528303. No sdist.
+- **PyPI's SHA-256 equals the CI artifacts:**
+
+| Wheel | SHA-256 |
+| --- | --- |
+| `praevis_thetadata-0.1.2-cp310-abi3-manylinux_2_28_x86_64.whl` | `9e796640b73b1b041c51963403153fcafad5e5b37834acbda5d733e3b005ce87` |
+| `praevis_thetadata-0.1.2-cp310-abi3-win_amd64.whl` | `349736a5b4e16ee41625505e4ec71c752eb4181b61bc8e766634aa7b1a005232` |
+
+**Tag and release:**
+- **Tag:** annotated `v0.1.2`, tag object `f6d667519bfe`, pointing to
+  `938fa9e`.
+- **Release:** the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.2), **not** a pre-release and marked
+  latest, its body taken from the [release draft](release-draft-0.1.2.md),
+  with the same two wheels attached.
+
+**Post-publication checks (owner):**
+- **Archives:** no `tests/` in the client or stream archive.
+- **PyPI:** `pip install praevis-thetadata==0.1.2` installed `0.1.2`. An
+  unpinned install right after the upload still got `0.1.1`, from the
+  index's lag, as with beta.2.
+- **The `0.1.1` fix:** `describe()` of option Greeks EOD with expiration
+  `*` over five days plans 5 parts.
+- **crates.io:** `cargo search` shows `0.1.2` for all seven crates.
+
+**Post-publication checks, Linux (the agent's sandbox, 2026-11-14):**
+- **The crates:** the hashes above, each archive's commit, and none is
+  yanked. The client archive contains the `dispatch` module.
+- **Archives:** the client and stream archives contain no `tests/`. The
+  arrow and CLI archives keep their own tests, as before.
+- **PyPI:** the JSON API lists exactly the two wheels above, with those
+  SHA-256 values, neither yanked, and `0.1.2` is the project's latest
+  version.
+- **Tag and release:** the remote tag peels to `938fa9e`. The release is
+  not a pre-release, it is the repository's latest, and it carries the two
+  wheels.
+- **docs.rs** built proto, core, auth, arrow, client and stream. The CLI is
+  binary-only.
+- **Crates.io-only consumers:** copies of `tools/release-consumers`, with
+  the staging registry removed, resolved `0.1.2` from crates.io, built and
+  ran. Each printed its check:
+  - `proto`: 100 RPCs;
+  - `core`;
+  - `auth`, and `auth-store` (the native store);
+  - `arrow`: an exact decimal and a typed all-null column;
+  - `client`: typed EOD validation, 100 endpoints, the job planner, the
+    tier's job concurrency and, new in `0.1.2`, a request by name planned
+    in parts with a typed default read, offline;
+  - `stream`: a parsed quote.
+
+  The default `auth` and `client` consumers resolve no keyring or D-Bus
+  packages. The CLI was not installed here; the owner's `cargo search`
+  covers it.
 ## 0.1.2 publication checklist and order (prepared 2026-11-14)
 
-**Not approved yet: publishing `0.1.2` needs the user's approval.** The
-user publishes locally, with tokens never in argv, logs or shell history.
+**Executed 2026-11-14** ([record above](#publication-record-012)). Kept as
+the preparation record, approved by the user. The user publishes locally,
+with tokens never in argv, logs or shell history.
 - **Scope:** one addition to published code, the client's `dispatch`
   module (requests by name, #188 and #191). The Python package's calls go
   through it, with no Python API change.
