@@ -3,7 +3,7 @@ members = ["crates/praevis-thetadata-auth", "crates/praevis-thetadata-proto", "c
 resolver = "3"
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 # Verified with `cargo +1.88 check --all-targets` and `cargo +1.88 test` on the locked graph;
 # tonic 0.14 and ICU 2.x dependencies require 1.88.
@@ -15,11 +15,11 @@ publish = ["crates-io"]
 repository = "https://github.com/Praevis-Quant/praevis-thetadata"
 
 [workspace.dependencies]
-praevis-thetadata-auth = { path = "crates/praevis-thetadata-auth", version = "=0.1.1" }
-praevis-thetadata-proto = { path = "crates/praevis-thetadata-proto", version = "=0.1.1" }
-praevis-thetadata-core = { path = "crates/praevis-thetadata-core", version = "=0.1.1" }
-praevis-thetadata-arrow = { path = "crates/praevis-thetadata-arrow", version = "=0.1.1" }
-praevis-thetadata-client = { path = "crates/praevis-thetadata-client", version = "=0.1.1" }
+praevis-thetadata-auth = { path = "crates/praevis-thetadata-auth", version = "=0.1.2" }
+praevis-thetadata-proto = { path = "crates/praevis-thetadata-proto", version = "=0.1.2" }
+praevis-thetadata-core = { path = "crates/praevis-thetadata-core", version = "=0.1.2" }
+praevis-thetadata-arrow = { path = "crates/praevis-thetadata-arrow", version = "=0.1.2" }
+praevis-thetadata-client = { path = "crates/praevis-thetadata-client", version = "=0.1.2" }
 # Dev-only (ADR-0022): no version, so cargo strips it from published manifests.
 praevis-thetadata-emulator = { path = "crates/praevis-thetadata-emulator" }
 chrono = { version = "0.4", features = ["serde"] }

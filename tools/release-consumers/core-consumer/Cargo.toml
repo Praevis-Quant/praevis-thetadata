@@ -7,4 +7,4 @@ publish = false
 [workspace]
 
 [dependencies]
-praevis-thetadata-core = { version = "=0.1.1", registry = "praevis-staging" }
+praevis-thetadata-core = { version = "=0.1.2", registry = "praevis-staging" }

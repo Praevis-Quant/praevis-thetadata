@@ -7,7 +7,7 @@ supported surface (W10; see the ADR-0018 design note), so pin it exactly. It is
 an independent, unofficial project, not affiliated with Theta Data Inc.
 
 ```toml
-praevis-thetadata-stream = "=0.1.1"
+praevis-thetadata-stream = "=0.1.2"
 ```
 
 - **Official path only:** it connects to the Terminal you run, on this

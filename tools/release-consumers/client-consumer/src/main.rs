@@ -1,6 +1,7 @@
 //! Builds the README example and the client surface (beta.2) against the
 //! staged client archive, and exercises offline behaviour. Nothing contacts
 //! ThetaData.
+use praevis_thetadata_client::dispatch::{self, ParamKind, ParamValue, Params, Runner};
 use praevis_thetadata_client::endpoints::{self, Endpoint, StockHistoryEod};
 use praevis_thetadata_client::{
     ClientConfig, NaiveDate, ParquetOptions, QueryError, RequestOptions, Session, StockEodRequest,
@@ -57,6 +58,29 @@ async fn frozen_surface(session: Session) -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
+/// Requests by name (0.1.2): a map of parameters, as a service reading JSON
+/// would have.
+struct Map(Vec<(&'static str, ParamValue)>);
+impl Params for Map {
+    type Error = String;
+    fn take(&mut self, name: &str, _: ParamKind) -> Result<Option<ParamValue>, String> {
+        let at = self.0.iter().position(|(n, _)| *n == name);
+        Ok(at.map(|i| self.0.remove(i).1))
+    }
+    fn finish(self) -> Result<(), String> {
+        self.0.first().map_or(Ok(()), |(n, _)| Err(format!("unknown: {n}")))
+    }
+}
+
+/// Plans the dispatched request as `job()` would, and counts the parts.
+struct Parts;
+impl Runner for Parts {
+    type Output = (&'static str, usize);
+    fn run<E: Endpoint + Clone + Send + Sync + 'static>(self, request: E) -> Self::Output {
+        (E::RPC, plan(&request).len())
+    }
+}
+
 #[tokio::main]
 async fn main() {
     let day = |d| NaiveDate::from_ymd_opt(2026, 10, d).unwrap();
@@ -79,7 +103,24 @@ async fn main() {
     // No timeout by default.
     assert_eq!(ClientConfig::default().request_timeout, None);
     let _: Option<QueryError> = Some(QueryError::Busy);
+    // Requests by name, offline.
+    assert_eq!(dispatch::ENDPOINTS.len(), 100);
+    let named = Map(vec![
+        ("symbol", ParamValue::Str("AAPL".into())),
+        ("start_date", ParamValue::Str("2022-01-01".into())),
+        ("end_date", ParamValue::Str("2024-03-01".into())),
+    ]);
+    assert_eq!(
+        dispatch::dispatch("stock_history_eod", named, Parts).unwrap(),
+        ("GetStockHistoryEod", 3)
+    );
+    let venue = dispatch::params("stock_history_quote")
+        .unwrap()
+        .iter()
+        .find(|p| p.name == "venue")
+        .unwrap();
+    assert_eq!(venue.default_value(), Some(ParamValue::Str("nqb".into())));
     println!(
-        "client-consumer: typed EOD validation, 100 generated endpoints, the job planner and the tier's job concurrency work from the staged archive"
+        "client-consumer: typed EOD validation, 100 generated endpoints, the job planner, the tier's job concurrency and requests by name work from the staged archive"
     );
 }

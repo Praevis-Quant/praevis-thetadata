@@ -29,10 +29,11 @@ package name, and builds the `praevis-thetadata` executable. Cargo places build 
 the shared root `target/` directory; that does not make the CLI a root package.
 The selected naming and compatibility boundaries are recorded in
 [the naming decision](docs/project-naming.md). The packages are released
-together on crates.io as **`0.1.1`**, a patch of `0.1.0`, the first supported release
+together on crates.io as **`0.1.2`**, which adds requests by name
+(`dispatch`) to `0.1.0`, the first supported release
 ([declared surface](docs/releases.md#010-scope-record-user-2026-11-12)).
 - **Supported:** auth, core, arrow (with the Parquet sink), the client's
-  `query()`, `job()`, `RequestOptions` and generated endpoints, the CLI and
+  `query()`, `job()`, `RequestOptions`, generated endpoints and `dispatch`, the CLI and
   the Python package. The library does what one caller asks: no retry,
   scheduler, rate limit or default timeout, as in the vendor package
   ([ADR-0021](docs/adr/0021-per-call-library.md)). There is no breaking
@@ -42,7 +43,7 @@ together on crates.io as **`0.1.1`**, a patch of `0.1.0`, the first supported re
 - **Known gaps** are listed with the release
   ([0.1.0 known gaps](docs/releases.md#known-gaps-shipped-in-010)), among them
   20 vendor wrappers never seen to return data on the test account.
-- **Python:** `praevis-thetadata` `0.1.1` is on PyPI for Python 3.10 or
+- **Python:** `praevis-thetadata` `0.1.2` is on PyPI for Python 3.10 or
   newer, tested in CI on 3.10-3.13 (`pip install praevis-thetadata`;
   Windows x86_64 and Linux x86_64 wheels only). The same wheels are
   attached to the GitHub release.

@@ -11,17 +11,38 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 `v0.1.0-alpha.2`, 2026-11-03 UTC) and `0.1.0-alpha.3` (tag `v0.1.0-alpha.3`,
 2026-11-08), then `0.1.0-beta.1` (2026-11-11) and `0.1.0-beta.2`
 (2026-11-12), both also on PyPI, **`0.1.0`, the first supported
-release (2026-11-13)**, and the patch `0.1.1` (2026-11-14). Each release heading covers the entries
+release (2026-11-13)**, and the patch `0.1.1` (2026-11-14). `0.1.2` is
+prepared, not published. Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
 
+## [0.1.2] - pending
+
+**Requests by name, additive.** Prepared, not published: dated and tagged
+(`v0.1.2`) at publication, which needs the user's approval. See the
+[release-notes draft](docs/release-draft-0.1.2.md).
+- **Published code:** the client gains `dispatch`. The Python package's
+  calls now go through it, with no change to the Python API, its
+  conversions or its messages.
+- **Nothing else changes** in published code since `0.1.1`; the rest is
+  tooling and records.
+
+### Release
+
+- **Version `0.1.2`** across the workspace, with the wheel at `0.1.2`. The
+  READMEs' exact pins for proto and stream move to `=0.1.2`.
+- **The same publish set and order as `0.1.1`:** seven crates, then the
+  two wheels to PyPI by hand, then a tag and a GitHub release that is not
+  a pre-release ([checklist](docs/crates-io-release-plan.md#012-publication-checklist-and-order-prepared-2026-11-14)).
+- **The client release consumer** also dispatches a request by name, plans
+  it, and reads a typed default, so the archive check covers `dispatch`.
+
 ### Added
 
 - **`praevis_thetadata_client::dispatch`: requests by name at runtime**
-  (asked for by the `praevis-data` service). This is additive public API,
-  for `0.1.2`.
+  (asked for by the `praevis-data` service). This is additive public API.
   - **`dispatch(name, params, runner)`** builds the typed request from a
     vendor wrapper name or an RPC name, and runs it with your **`Runner`**.
   - **`Params`** is a non-Python parameter source: `take(name, kind)` returns
