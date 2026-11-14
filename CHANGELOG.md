@@ -10,8 +10,8 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 `v0.1.0-alpha.1`, 2026-11-02 UTC), followed by `0.1.0-alpha.2` (tag
 `v0.1.0-alpha.2`, 2026-11-03 UTC) and `0.1.0-alpha.3` (tag `v0.1.0-alpha.3`,
 2026-11-08), then `0.1.0-beta.1` (2026-11-11) and `0.1.0-beta.2`
-(2026-11-12), both also on PyPI, and **`0.1.0`, the first supported
-release (2026-11-13)**. Each release heading covers the entries
+(2026-11-12), both also on PyPI, **`0.1.0`, the first supported
+release (2026-11-13)**, and the patch `0.1.1` (2026-11-14). Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
@@ -42,12 +42,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     vendor wrappers carry nothing that says which is which, and classifying
     by name would be a guess.
 
-## [0.1.1] - pending
+## [0.1.1] - 2026-11-14
 
-**A patch release with one fix to published code.** Prepared, not
-published: dated and tagged (`v0.1.1`) at publication, which needs the
-user's approval (the approval of 2026-11-13 was for `0.1.0`). See the
-[release-notes draft](docs/release-draft-0.1.1.md).
+**A patch release with one fix to published code.** Published with the
+user's approval to crates.io from `2f5d8fe` (tag `v0.1.1`), and to PyPI as
+[`praevis-thetadata` 0.1.1](https://pypi.org/project/praevis-thetadata/0.1.1/) (wheels only; the same wheels are
+attached to the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.1)). See the
+[publication record](docs/crates-io-release-plan.md#publication-record-011).
+The `Unreleased` dispatch API above is not in it.
 - **The fix:** `job()`, Python's planned calls and `describe()` split option
   Greeks EOD over every expiration one day per request. The service refuses
   it over several days ([known issues](docs/endpoints/known-issues.md)).

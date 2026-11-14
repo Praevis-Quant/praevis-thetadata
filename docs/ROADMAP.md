@@ -59,10 +59,11 @@ The [performance architecture plan](architecture/performance-plan.md)
   - `0.1.0-alpha.1`, `0.1.0-alpha.2` and `0.1.0-alpha.3` (2026-11-08) came
     before it ([releases](releases.md)). Alpha.3 added the arrow and stream
     crates. Its wheels were on the GitHub release only, not on PyPI.
-  - **`0.1.1` is prepared, not published** (a patch: option Greeks EOD over
-    every expiration is planned one day per request;
-    [known issues](endpoints/known-issues.md)). Publishing it needs the user's
-    approval.
+  - **`0.1.1`, a patch, was published on 2026-11-14**
+    ([record](crates-io-release-plan.md#publication-record-011)): option
+    Greeks EOD over every expiration is planned one day per request
+    ([known issues](endpoints/known-issues.md)). The dispatch API on `main`
+    is not in it; `0.1.2` is on hold until the user decides.
   - **`0.1.0`, the first supported release, was published on 2026-11-13**
     ([record](crates-io-release-plan.md#publication-record-010)), on
     crates.io and on PyPI as [`praevis-thetadata` 0.1.0](https://pypi.org/project/praevis-thetadata/0.1.0/). It is the

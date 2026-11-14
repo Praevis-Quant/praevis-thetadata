@@ -3,16 +3,108 @@
 Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 (2026-11-01 US time), `0.1.0-alpha.2` on 2026-11-03 UTC and `0.1.0-alpha.3`
 on 2026-11-08, `0.1.0-beta.1` on 2026-11-11, `0.1.0-beta.2` on 2026-11-12 and
-`0.1.0`, the first supported release, on 2026-11-13, each after owner
-approval. `0.1.1` is prepared below, awaiting approval. From
+`0.1.0`, the first supported release, on 2026-11-13, and the patch
+`0.1.1` on 2026-11-14, each after owner approval. From
 beta.1 the Python wheels are also on PyPI. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
 
+## Publication record: 0.1.1
+
+**Published 2026-11-14:** the crates from 04:56:39 (proto) to 05:00:02 UTC
+(stream), then PyPI and the GitHub release within minutes. Approved by
+the user. A
+patch of `0.1.0` with one fix: option Greeks EOD over every expiration is
+planned one day per request ([known issues](endpoints/known-issues.md)).
+- **Source:** the owner ran `cargo publish` locally from clean `main` at
+  `2f5d8fea7b7fe0723cb016565461844da5b362ac` (#187). Every crate's
+  `.cargo_vcs_info.json` names that commit, not dirty. The dispatch API
+  (#188, for `0.1.2`) came later and is not in it.
+- **CI:** CI (run 43516604053) and Auth performance (43516604147) were green
+  on that commit.
+- **Live run before publishing** (`pre-011-anytime-001`, at that commit,
+  `--part anytime`): all seven steps exited 0. The scenarios passed: Rust 9
+  passed and 2 skipped, Python 9 passed, including
+  `greeks-eod-every-expiration` whole and as a job. The emulator drift check
+  was clean.
+- **Tokens** were never in argv or logs.
+
+**Crates:**
+- **Order:** proto, core, auth, arrow, client, cli, stream, published
+  04:56:39 to 05:00:02 UTC.
+- **Checksums:** all seven `.crate` files downloaded from crates.io match
+  the index's checksums.
+- **Not yanked:** none.
+- **Publisher:** `joey-huckabee`.
+
+| Crate | `.crate` SHA-256 (index = downloaded) |
+| --- | --- |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.1) | `9baeb522f9634792aa507efc1904f9ab74b79e3e17312331a2ca6c22386bc8a1` |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.1) | `0b0ee04fc3458ffd4bc4cd1272e796aaca99774f2955ddbd2faec595a7b60b2d` |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.1) | `3c7dcbe7714afd7661bc505cf25b4edf188ae046ca38c49982d06b60454b4f85` |
+| [`praevis-thetadata-arrow`](https://crates.io/crates/praevis-thetadata-arrow/0.1.1) | `b52df521b6115a4a72f7b6e3cbf2d726f6d09066de52435250f29ff47468f07b` |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.1) | `e6ffcf189bbfd872b36db9e5510831b3bb8954f432f12d5f67afe21ea8c04329` |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.1) | `2dcf7f2acb9d67e01273a5ec26fb825decdc05f48194206414162206e23e4b05` |
+| [`praevis-thetadata-stream`](https://crates.io/crates/praevis-thetadata-stream/0.1.1) | `be0085149d8cc7931e5a88dcb55c09cb9687ce694154b66c1a7a742788ece8c5` |
+
+`praevis-thetadata-py` is not published to crates.io, and neither are the
+`publish = false` emulator and scenario crates.
+
+**PyPI:**
+- **Release:** [`praevis-thetadata` 0.1.1](https://pypi.org/project/praevis-thetadata/0.1.1/).
+- **Upload:** `twine check` passed, then `twine upload` of the two wheels
+  from `2f5d8fe`'s own CI run 43516604053. No sdist.
+- **PyPI's SHA-256 equals the CI artifacts:**
+
+| Wheel | SHA-256 |
+| --- | --- |
+| `praevis_thetadata-0.1.1-cp310-abi3-manylinux_2_28_x86_64.whl` | `ce464265526cc5f1e8a6ba30ca51b5609d8600245ad4a245ddf06e5feb95cd31` |
+| `praevis_thetadata-0.1.1-cp310-abi3-win_amd64.whl` | `76fb48a61eacaf3001ddb39ab927b41c4d6449af8fde629b1e15188269f4342e` |
+
+**Tag and release:**
+- **Tag:** annotated `v0.1.1`, tag object `fe0061693905`, pointing to
+  `2f5d8fe`.
+- **Release:** the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.1), **not** a pre-release and marked
+  latest, its body taken from the [release draft](release-draft-0.1.1.md),
+  with the same two wheels attached.
+
+**Post-publication checks (owner):**
+- **PyPI:** a fresh `pip install praevis-thetadata` got `0.1.1`.
+- **The fix:** `describe()` of option Greeks EOD with expiration `*` over
+  2026-11-09 to 2026-11-13 plans 5 parts.
+- **crates.io:** `cargo search` shows `0.1.1` for all seven crates.
+
+**Post-publication checks, Linux (the agent's sandbox, 2026-11-14):**
+- **The crates:** the hashes above, and none is yanked.
+- **Archives:** the client and stream archives contain no `tests/`, as for
+  `0.1.0`. The arrow and CLI archives keep their own tests, as before.
+- **PyPI:** the JSON API lists exactly the two wheels above, with those
+  SHA-256 values, neither yanked, and `0.1.1` is the project's latest
+  version.
+- **Tag and release:** the remote tag peels to `2f5d8fe`. The release is
+  not a pre-release, it is the repository's latest, and it carries the two
+  wheels.
+- **docs.rs** built proto, core, auth, arrow, client and stream. The CLI is
+  binary-only.
+- **Crates.io-only consumers:** copies of `tools/release-consumers`, with
+  the staging registry removed, resolved `0.1.1` from crates.io, built and
+  ran. Each printed its check:
+  - `proto`: 100 RPCs;
+  - `core`;
+  - `auth`, and `auth-store` (the native store);
+  - `arrow`: an exact decimal and a typed all-null column;
+  - `client`: typed EOD validation, 100 endpoints, the job planner and the
+    tier's job concurrency, offline;
+  - `stream`: a parsed quote.
+
+  The default `auth` and `client` consumers resolve no keyring or D-Bus
+  packages. The CLI was not installed here; the owner's `cargo search`
+  covers it.
+
 ## 0.1.1 publication checklist and order (prepared 2026-11-13)
 
-**Not approved yet: publishing a patch needs the user's approval.** The
-approval of 2026-11-13 was for `0.1.0`. The user publishes locally, with
-tokens never in argv, logs or shell history.
+**Executed 2026-11-14** ([record above](#publication-record-011)). Kept as
+the preparation record, approved by the user. The user publishes locally, with tokens never in argv, logs
+or shell history.
 - **Scope:** one fix to published code. `job()`, the Python planned calls
   and `describe()` split option Greeks EOD over every expiration one day
   per request ([known issues](endpoints/known-issues.md)).
