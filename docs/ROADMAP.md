@@ -70,6 +70,27 @@ The [performance architecture plan](architecture/performance-plan.md)
     beta.1 surface as amended by beta.2, with the known gaps listed
     ([scope record](releases.md#010-scope-record-user-2026-11-12)).
 
+## Decisions waiting on the user (2026-11-14)
+
+Nothing below is prepared or scheduled until the user decides.
+
+1. **Publish `0.1.2`: the dispatch API** (#188, on `main`, not in `0.1.1`).
+   Not prepared: no version bump, release notes or checklist.
+   - **Recommended first:** `praevis-data` tries `dispatch` on a branch,
+     through a git dependency on `main`, before the API is published. A
+     published API can only grow, so any change it asks for is cheaper now.
+2. **Add binomial Greeks EOD, at-time trade and at-time quote to the weekly
+   live run** ([live runbook](live-runbook.md#what-a-run-is-approved-to-include)).
+   They plan like Greeks EOD did before `0.1.1`, but none has been sent
+   expiration `*` over several days
+   ([known issues](endpoints/known-issues.md)).
+   - **Recommended: yes.** The run would settle each one, and adding them
+     extends what a run is approved to include.
+3. **Optionally, a typed `ParamInfo::default`.** Today it is the vendor
+   default as written, as text. A parsed value could be added beside it
+   without breaking anything (`ParamInfo` is non-exhaustive), so it can
+   come later.
+
 ## Waiting on resources (blocks 0.1.0 evidence)
 
 Two evidence items for `0.1.0` cannot run on what the user has today:
