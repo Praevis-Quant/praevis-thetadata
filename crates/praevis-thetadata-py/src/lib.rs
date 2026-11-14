@@ -502,7 +502,11 @@ fn describe(
 /// Every endpoint as `(vendor_name or "", rpc_name)`.
 #[pyfunction]
 fn endpoints() -> Vec<(&'static str, &'static str)> {
-    praevis_thetadata_client::dispatch::ENDPOINTS.to_vec()
+    // The published Python form: "" for a descriptor-only RPC's wrapper.
+    praevis_thetadata_client::dispatch::ENDPOINTS
+        .iter()
+        .map(|e| (e.wrapper.unwrap_or(""), e.rpc))
+        .collect()
 }
 
 /// A whole result: Arrow record batches with one schema. Implements the
