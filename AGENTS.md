@@ -19,7 +19,7 @@ complete Python compatibility: per-endpoint live evidence is in
 [the coverage table](docs/endpoints/coverage.md).
 
 The workspace uses Rust edition 2024, currently declares version
-`0.1.1`, and sets `publish = ["crates-io"]`. Publication is manual
+`0.1.2`, and sets `publish = ["crates-io"]`. Publication is manual
 and owner-approved; never add `cargo publish` to a workflow. From beta.1 the
 Python wheels also go to PyPI (`praevis-thetadata`), uploaded by the user with
 `twine`; never add a PyPI upload to a workflow, and never run it yourself. The Rust crate version and the tracked Python version

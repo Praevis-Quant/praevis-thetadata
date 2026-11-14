@@ -63,7 +63,8 @@ The [performance architecture plan](architecture/performance-plan.md)
     ([record](crates-io-release-plan.md#publication-record-011)): option
     Greeks EOD over every expiration is planned one day per request
     ([known issues](endpoints/known-issues.md)). The dispatch API on `main`
-    is not in it; `0.1.2` is on hold until the user decides.
+    is not in it. `0.1.2`, which adds it, is prepared and awaits the
+    user's approval.
   - **`0.1.0`, the first supported release, was published on 2026-11-13**
     ([record](crates-io-release-plan.md#publication-record-010)), on
     crates.io and on PyPI as [`praevis-thetadata` 0.1.0](https://pypi.org/project/praevis-thetadata/0.1.0/). It is the
@@ -74,13 +75,16 @@ The [performance architecture plan](architecture/performance-plan.md)
 
 Nothing below is prepared or scheduled until the user decides.
 
-1. **Publish `0.1.2`: the dispatch API** (#188, on `main`, not in `0.1.1`).
-   Not prepared: no version bump, release notes or checklist.
+1. **Publish `0.1.2`: the dispatch API** (#188 and #191, on `main`, not in
+   `0.1.1`). **Prepared, not approved**
+   ([checklist](crates-io-release-plan.md#012-publication-checklist-and-order-prepared-2026-11-14),
+   [release-notes draft](release-draft-0.1.2.md)); publishing needs the
+   user's approval.
    - **Recommended first:** `praevis-data` tries `dispatch` on a branch,
      through a git dependency on `main`, before the API is published. A
      published API can only grow, so any change it asks for is cheaper now.
    - **The trial ran** (2026-11-14, at `4fa1395`): dispatch worked end to
-     end. Its four findings are being fixed before `0.1.2` (#191): the
+     end. Its four findings were fixed before `0.1.2` (#191): the
      descriptor-only RPCs' empty wrapper name in `ENDPOINTS`, a typed
      vendor default, the canonical time form, and planning a dispatched
      request.
@@ -91,10 +95,8 @@ Nothing below is prepared or scheduled until the user decides.
    ([known issues](endpoints/known-issues.md)).
    - **Recommended: yes.** The run would settle each one, and adding them
      extends what a run is approved to include.
-3. **Optionally, a typed `ParamInfo::default`.** Today it is the vendor
-   default as written, as text. A parsed value could be added beside it
-   without breaking anything (`ParamInfo` is non-exhaustive), so it can
-   come later.
+3. ~~Optionally, a typed `ParamInfo::default`.~~ Done in #191, from the
+   trial: `ParamInfo::default_value()`.
 
 ## Waiting on resources (blocks 0.1.0 evidence)
 
