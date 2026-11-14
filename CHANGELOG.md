@@ -11,18 +11,19 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 `v0.1.0-alpha.2`, 2026-11-03 UTC) and `0.1.0-alpha.3` (tag `v0.1.0-alpha.3`,
 2026-11-08), then `0.1.0-beta.1` (2026-11-11) and `0.1.0-beta.2`
 (2026-11-12), both also on PyPI, **`0.1.0`, the first supported
-release (2026-11-13)**, and the patch `0.1.1` (2026-11-14). `0.1.2` is
-prepared, not published. Each release heading covers the entries
+release (2026-11-13)**, then `0.1.1` and `0.1.2` (both 2026-11-14). Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
 
-## [0.1.2] - pending
+## [0.1.2] - 2026-11-14
 
-**Requests by name, additive.** Prepared, not published: dated and tagged
-(`v0.1.2`) at publication, which needs the user's approval. See the
-[release-notes draft](docs/release-draft-0.1.2.md).
+**Requests by name, additive.** Published with the user's approval to
+crates.io from `938fa9e` (tag `v0.1.2`), and to PyPI as
+[`praevis-thetadata` 0.1.2](https://pypi.org/project/praevis-thetadata/0.1.2/) (wheels only; the same wheels are
+attached to the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.2)). See the
+[publication record](docs/crates-io-release-plan.md#publication-record-012).
 - **Published code:** the client gains `dispatch`. The Python package's
   calls now go through it, with no change to the Python API, its
   conversions or its messages.
