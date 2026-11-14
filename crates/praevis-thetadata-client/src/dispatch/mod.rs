@@ -10,10 +10,24 @@
 //!   [`Params`] source, rejects unknown parameter names, and hands the
 //!   typed request to the [`Runner`].
 //! - [`params`] describes each endpoint's parameters (name, kind, whether
-//!   required, and the vendor default as written), so a caller can validate
-//!   a request before sending anything, and treat an omitted parameter and
-//!   its explicit vendor default as the same request.
-//! - [`ENDPOINTS`] lists every name `dispatch` accepts.
+//!   required, and the vendor default, as a value and as written), so a
+//!   caller can validate a request before sending anything, and treat an
+//!   omitted parameter and its explicit vendor default as the same request
+//!   ([`ParamInfo::default_value`]).
+//! - [`ENDPOINTS`] lists every endpoint, with its wrapper name if it has one
+//!   and its RPC name ([`EndpointName`]).
+//!
+//! **One request, as given.** `dispatch` builds one typed request and does
+//! not split it: a multi-day tick request goes to the [`Runner`] whole. To
+//! plan it as [`job`](crate::ThetaClient::job) does, run it as a job, or
+//! split it with [`plan`](crate::plan) in the runner.
+//!
+//! **Values are sent as given, as the vendor package sends them.** Nothing
+//! is normalised: a time of `09:30` and the default `09:30:00` are different
+//! requests on the wire. The vendor defaults' form,
+//! which [`ParamInfo::default_value`] returns, is the canonical one: time
+//! text as `HH:MM:SS`. A service that compares or caches requests should
+//! bring values to that form before dispatching.
 //!
 //! **Stability is unchanged by dispatch.** The 19 descriptor-only RPCs are
 //! reachable by their RPC names, with their request fields as parameter
@@ -28,11 +42,33 @@ use chrono::NaiveDate;
 
 #[rustfmt::skip]
 mod generated;
+
+/// One endpoint [`dispatch`] accepts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub struct EndpointName {
+    /// The vendor wrapper's name (`option_history_eod`), or `None` for one of
+    /// the 19 descriptor-only RPCs, which have no wrapper and stay unstable.
+    pub wrapper: Option<&'static str>,
+    /// The RPC name (`GetOptionHistoryEod`).
+    pub rpc: &'static str,
+}
+
+impl EndpointName {
+    /// The name to call it by: the wrapper name, or the RPC name if it has
+    /// no wrapper. [`dispatch`], [`params`] and [`stability`] accept it.
+    pub const fn name(&self) -> &'static str {
+        match self.wrapper {
+            Some(wrapper) => wrapper,
+            None => self.rpc,
+        }
+    }
+}
 pub use generated::{ENDPOINTS, dispatch, params, stability};
 
 /// Runs one typed request. Implement it once for each way you consume a
-/// result; [`dispatch`] calls it with the request it built. If running can
-/// fail, make `Output` a `Result`.
+/// result; [`dispatch`] calls it with the request it built, unsplit (see
+/// [`plan`](crate::plan)). If running can fail, make `Output` a `Result`.
 pub trait Runner {
     type Output;
     fn run<E>(self, request: E) -> Self::Output
@@ -55,7 +91,8 @@ pub enum ParamKind {
     Bool,
     /// A calendar date.
     Date,
-    /// A time of day, or vendor time text.
+    /// A time of day, or vendor time text, sent as given (the vendor
+    /// defaults write `HH:MM:SS`).
     Time,
     /// An expiration date, or text such as `*` (every expiration).
     Expiration,
@@ -95,8 +132,37 @@ pub struct ParamInfo {
     /// The vendor wrapper's default exactly as written in the pinned
     /// package (for example `'1s'`, `None` or `_fmt_time('09:30:00')`), or
     /// `None` when it has none (required parameters, descriptor-only RPCs).
-    /// Text, not parsed: compare a caller's value with it as you see fit.
-    pub default: Option<&'static str>,
+    /// [`default_value`](Self::default_value) is the same default as a value.
+    pub vendor_default: Option<&'static str>,
+    default: Option<DefaultValue>,
+}
+
+impl ParamInfo {
+    /// The vendor default as the value the wrapper passes when the argument
+    /// is omitted, `_fmt_time` resolved: `None` becomes [`ParamValue::Null`],
+    /// `'1s'` a [`ParamValue::Str`], `_fmt_time('09:30:00')` a
+    /// [`ParamValue::Time`] of that text. `None` when there is no default.
+    /// Passing it to [`dispatch`] builds the same request as omitting the
+    /// parameter.
+    pub fn default_value(&self) -> Option<ParamValue> {
+        self.default.map(|value| match value {
+            DefaultValue::Null => ParamValue::Null,
+            DefaultValue::Str(text) => ParamValue::Str(text.to_owned()),
+            DefaultValue::Int(n) => ParamValue::Int(n),
+            DefaultValue::Bool(b) => ParamValue::Bool(b),
+            DefaultValue::Time(text) => ParamValue::Time(TimeOfDay::Text(text.to_owned())),
+        })
+    }
+}
+
+/// A vendor default, in a form the generated constants can hold.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum DefaultValue {
+    Null,
+    Str(&'static str),
+    Int(i64),
+    Bool(bool),
+    Time(&'static str),
 }
 
 /// A source of parameter values, such as a JSON object or Python keyword

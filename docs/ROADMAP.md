@@ -79,6 +79,11 @@ Nothing below is prepared or scheduled until the user decides.
    - **Recommended first:** `praevis-data` tries `dispatch` on a branch,
      through a git dependency on `main`, before the API is published. A
      published API can only grow, so any change it asks for is cheaper now.
+   - **The trial ran** (2026-11-14, at `4fa1395`): dispatch worked end to
+     end. Its four findings are being fixed before `0.1.2` (#191): the
+     descriptor-only RPCs' empty wrapper name in `ENDPOINTS`, a typed
+     vendor default, the canonical time form, and planning a dispatched
+     request.
 2. **Add binomial Greeks EOD, at-time trade and at-time quote to the weekly
    live run** ([live runbook](live-runbook.md#what-a-run-is-approved-to-include)).
    They plan like Greeks EOD did before `0.1.1`, but none has been sent

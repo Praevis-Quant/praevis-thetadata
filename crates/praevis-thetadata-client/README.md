@@ -178,7 +178,9 @@ use praevis_thetadata_client::dispatch::{self, Params, Runner};
 let built = dispatch::dispatch("option_history_eod", my_params, my_runner)?;
 ```
 
-- **Names:** the vendor wrapper name or the RPC name (`dispatch::ENDPOINTS`).
+- **Names:** the vendor wrapper name or the RPC name. `dispatch::ENDPOINTS`
+  lists both for each endpoint (`wrapper` is `None` for the 19
+  descriptor-only RPCs); `name()` gives the one to call it by.
 - **Parameters:** you implement `Params` once for your source (`take` a name
   and a kind, then `finish`, which rejects names that were not taken).
   - **Values** are a closed `ParamValue`.
@@ -186,10 +188,17 @@ let built = dispatch::dispatch("option_history_eod", my_params, my_runner)?;
     rejected, never truncated.
   - **An explicit `Null`** clears an optional default, as `None` does in the
     vendor package.
-- **Metadata:** `dispatch::params(name)` lists each parameter's name, kind,
-  whether it is required, and the vendor default exactly as written. Use
-  it to validate before sending, or to treat an omitted parameter and its
-  default as the same request.
+  - **Sent as given,** as the vendor package sends them: `09:30` and
+    `09:30:00` are different requests. The vendor defaults' form (time text
+    `HH:MM:SS`) is the canonical one; normalise to it if you compare or
+    cache requests.
+- **Metadata:** `dispatch::params(name)` lists each parameter's name, kind
+  and whether it is required, and its vendor default: `default_value()` as
+  a `ParamValue` (`_fmt_time` resolved), and `vendor_default` as written.
+  Passing `default_value()` builds the same request as omitting the
+  parameter.
+- **One request, unsplit:** `dispatch` does not plan. For a multi-day
+  request, run it as a `job()`, or split it with `plan()` in your runner.
 - **Stability is unchanged by dispatch:** the 19 descriptor-only RPCs
   answer by RPC name, but stay unstable (`dispatch::stability`).
 - **Python:** the Python package's calls go through the same generated

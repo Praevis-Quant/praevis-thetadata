@@ -29,10 +29,22 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
     numbers are range-checked to the requests' 32-bit fields, never
     truncated.
   - **`params(name)`** gives each parameter's name, kind, whether it is
-    required, and the vendor default as written.
+    required, and the vendor default: as a value (`default_value()`, with
+    `_fmt_time` resolved; passing it builds the same request as omitting
+    the parameter) and as written (`vendor_default`).
   - **`stability(name)`** keeps the 19 descriptor-only RPCs unstable however
     they are reached.
-  - **`ENDPOINTS`** lists the names.
+  - **`ENDPOINTS`** lists each endpoint as an `EndpointName`: `wrapper`
+    (`None` for a descriptor-only RPC), `rpc`, and `name()`, the one to
+    call it by. The Python package's `endpoints()` keeps its published
+    `""` form.
+  - **Not normalised, not split:** values are sent as given, as the vendor
+    package sends them (`09:30` and `09:30:00` differ; the defaults' form
+    is canonical), and a dispatched request is one request. A runner can
+    split it with `plan()`, or run it as a job.
+  - **Changed after the `praevis-data` trial at `4fa1395`** (unpublished):
+    `ENDPOINTS` had `""` as the wrapper name of descriptor-only RPCs, and
+    the default was text only.
   - **Non-exhaustive:** `ParamValue`, `ParamKind`, `ParamInfo`,
     `ParamError` and `DispatchError` are `#[non_exhaustive]`.
   - **One generator:** it produces this module, and the Python bindings now
