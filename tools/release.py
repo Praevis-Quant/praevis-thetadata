@@ -1,4 +1,4 @@
-"""Release helpers for .github/workflows/release.yml (docs/releasing.md).
+"""Release helpers for .github/workflows/trusted-publishing.yml (docs/releasing.md).
 
 Standard library only. Subcommands:
 
