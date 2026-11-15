@@ -10,7 +10,7 @@ the preparation records.
 
 **From `0.1.3`, releases are published only by the release workflow**
 ([docs/releasing.md](releasing.md)): the user tags the release and approves
-the `release` environment, and the workflow publishes to crates.io and PyPI
+the `trusted-publishing` environment, and the workflow publishes to crates.io and PyPI
 by trusted publishing and creates the GitHub release with attested
 artifacts. Nothing is published by hand, and no tokens are used. `0.1.3`
 is prepared below, the first release through it.
@@ -63,7 +63,7 @@ run. The first release through [the release workflow](releasing.md).
 **Release:**
 1. **The user** pushes the annotated tag `v0.1.3` on that commit.
 2. **The workflow** checks the tag, builds, checksums and attests.
-3. **The user** approves the `release` environment, after checking the run
+3. **The user** approves the `trusted-publishing` environment, after checking the run
    ([what to check](releasing.md#how-a-release-runs)).
 4. **The workflow** publishes crates.io in the four waves, then PyPI, then
    the GitHub release, marked latest, with the notes from the

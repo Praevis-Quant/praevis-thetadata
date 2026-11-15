@@ -14,11 +14,11 @@ after the user approves it. No tokens are stored or used.
 | Pre-release live check on the merged commit (`scripts/live/run.sh --part anytime`) | The maintainer, on the user's machine |
 | Dry run of the release workflow on `main` (optional, recommended) | The maintainer or the user (Actions → Trusted publishing → Run workflow) |
 | Create and push the tag `v<version>` | **The user** (repository admin). A tag ruleset blocks creating, moving or deleting `v*` tags for everyone else |
-| Approve the `release` environment | **The user**, the environment's required reviewer |
+| Approve the `trusted-publishing` environment | **The user**, the environment's required reviewer |
 | Publication record PR | An agent, after the user reports the release |
 
 **Agents never publish, never create or push `v*` tags, and never approve
-the `release` environment** ([AGENTS.md](../AGENTS.md)).
+the `trusted-publishing` environment** ([AGENTS.md](../AGENTS.md)).
 
 ## How a release runs
 
@@ -53,9 +53,9 @@ builds) or the macOS Keychain.
 artifacts, and a signed [build-provenance attestation](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)
 for each, made with GitHub's OIDC identity through Sigstore.
 
-**5. Approval.** The `publish` job waits for the `release` environment. The
+**5. Approval.** The `publish` job waits for the `trusted-publishing` environment. The
 user opens the run (Actions → Trusted publishing → the run for the tag), checks it, and
-chooses **Review deployments → release → Approve**. Before approving:
+chooses **Review deployments → trusted-publishing → Approve**. Before approving:
 - the gate passed for the tag you pushed, on the commit the live check ran on;
 - all 16 build jobs and the checksums job are green;
 - the run is for `refs/tags/v<version>`, not a branch.
@@ -87,7 +87,7 @@ the crates, wheels, checksums, attestations and docs.rs.
 in report-only mode, builds and checks all 16 artifacts, writes
 `SHA256SUMS` and attests them, and uploads them as the run's
 `release-<version>` artifact. The `publish` job does not run: it needs a tag
-push, and the `release` environment admits only `v*` tags anyway. Pull
+push, and the `trusted-publishing` environment admits only `v*` tags anyway. Pull
 requests that change the release tooling run the same dry run, without the
 attestations.
 
@@ -144,14 +144,15 @@ through trusted publishing.
 | `check` | `contents: read`, `actions: read` | — |
 | `cli`, `wheels` | `contents: read` | — |
 | `collect` | `contents: read`, `id-token: write`, `attestations: write` | — |
-| `publish` | `contents: write`, `id-token: write` | `release` (required reviewer: the user; `v*` tags only) |
+| `publish` | `contents: write`, `id-token: write` | `trusted-publishing` (required reviewer: the user; `v*` tags only) |
 
 Every action is pinned by full commit SHA. crates.io (all seven crates) and
-PyPI (`praevis-thetadata`) trust only `trusted-publishing.yml` in the `release`
+PyPI (`praevis-thetadata`) trust only `trusted-publishing.yml` in the `trusted-publishing`
 environment, and crates.io refuses token publishing for these crates.
 
-**The file name is fixed:** `trusted-publishing.yml` is the organisation's
-standard name for the publishing workflow, and crates.io and PyPI name that
-file (with the `release` environment) in their trusted-publisher settings.
-Renaming it, or moving the publish job to another file, stops publishing
-until those settings are changed to match.
+**The names are fixed:** the organisation's standard is a workflow file
+`trusted-publishing.yml` and a deployment environment of the same name,
+`trusted-publishing`. crates.io and PyPI name both in their
+trusted-publisher settings. Renaming either, or moving the publish job to
+another file or environment, stops publishing until those settings are
+changed to match.

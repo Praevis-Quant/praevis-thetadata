@@ -23,14 +23,14 @@ The workspace uses Rust edition 2024, currently declares version
 
 **Publishing (user decision 2026-11-15):** releases are published **only**
 by [`.github/workflows/trusted-publishing.yml`](.github/workflows/trusted-publishing.yml), on a
-`v*` tag, after the user approves its `release` environment
+`v*` tag, after the user approves its `trusted-publishing` environment
 ([docs/releasing.md](docs/releasing.md)). crates.io and PyPI use trusted
 publishing; **no tokens are used**, and crates.io refuses token publishing
 for these crates. Agents:
 - **never publish:** no `cargo publish`, `twine`, `maturin publish` or any
   other upload, and no other publishing path in any workflow;
 - **never create, push, move or delete `v*` tags;**
-- **never approve, reconfigure or bypass the `release` environment,** its
+- **never approve, reconfigure or bypass the `trusted-publishing` environment,** its
   reviewers, its deployment policy or the tag ruleset;
 - prepare release PRs (version, CHANGELOG, release-notes draft) and, after
   the user reports a release, the publication record.

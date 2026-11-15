@@ -40,7 +40,7 @@ approval of the release run (the fixes were approved for `0.1.3` on
   READMEs' exact pins for proto and stream move to `=0.1.3`.
 - **Published only by `.github/workflows/trusted-publishing.yml`** (user decision
   2026-11-15; [docs/releasing.md](docs/releasing.md)): on a `v*` tag the
-  user pushes, after the user approves the `release` environment. The same
+  user pushes, after the user approves the `trusted-publishing` environment. The same
   seven crates in the same four waves, then eight wheels to PyPI, both by
   trusted publishing with no tokens, then the GitHub release
   ([checklist](docs/crates-io-release-plan.md#013-publication-checklist-prepared-2026-11-15-the-release-workflow)).
