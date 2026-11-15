@@ -1,7 +1,9 @@
 # Weekly dependency updates, one grouped pull request per ecosystem and
 # directory. Security updates (Dependabot alerts) are separate and immediate.
 # Every update goes through CI like any other change; nothing is merged
-# automatically.
+# automatically. A version must be a week old before it is proposed (the
+# cooldown), so a malicious release that is caught and yanked quickly never
+# reaches a pull request; security updates are not delayed by it.
 version: 2
 updates:
   - package-ecosystem: cargo
@@ -9,6 +11,8 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
     groups:
       cargo:
         patterns: ["*"]
@@ -20,6 +24,8 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
     groups:
       tls-providers:
         patterns: ["*"]
@@ -33,6 +39,8 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
     groups:
       python-package:
         patterns: ["*"]
@@ -43,6 +51,8 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
     groups:
       tools:
         patterns: ["*"]
@@ -54,6 +64,8 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]
