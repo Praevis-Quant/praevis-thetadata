@@ -1,0 +1,45 @@
+# Fuzzing
+
+The decoders that read bytes from outside the process are fuzzed with
+[cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) (libFuzzer), in CI by
+[ClusterFuzzLite](https://google.github.io/clusterfuzzlite/)
+([workflow](../../.github/workflows/fuzz.yml)).
+
+| Target | What it feeds | Code under test |
+| --- | --- | --- |
+| `response_data` | Arbitrary bytes as a gRPC response envelope (`ResponseData`) | protobuf decoding, zstd decompression, the columnar Arrow decoder (`praevis-thetadata-arrow`), twice in a row, then a flush |
+| `zstd_payload` | Arbitrary bytes as a zstd-compressed table, with a fuzzed declared size | zstd frame handling (window limit, declared size, truncation) and whatever it decompresses to |
+| `eod_envelope` | Arbitrary bytes as a stock EOD envelope | the client's own bounded envelope parser and its table and numeric EOD decoders |
+| `terminal_event` | Arbitrary UTF-8 as a Theta Terminal WebSocket event | the stream crate's event parser |
+
+**Every case must end in `Ok` within the limits or a clean error.** A panic,
+an out-of-bounds access, a leak or a memory blow-up (the fuzzers run with
+small decoder limits and a 2 GiB RSS cap) is a finding.
+
+**When it runs:**
+- **Pull requests:** about five minutes on the targets the change affects
+  (ClusterFuzzLite's code-change mode), with AddressSanitizer.
+- **Weekly:** an hour across every target, with AddressSanitizer.
+
+**Seeds are synthetic:** `fuzz/src/bin/seeds.rs` builds them at build time
+from the emulator's synthetic fixture tables and hand-written synthetic
+Terminal events. No market data, captured response or vendor payload is used
+or committed, and a crash's reproducer stays an artifact of its run.
+
+**Running it locally** (nightly Rust and `cargo install cargo-fuzz`):
+
+```text
+cd fuzz
+cargo +nightly fuzz build -O
+target/x86_64-unknown-linux-gnu/release/seeds /tmp/seeds
+cargo +nightly fuzz run -O response_data /tmp/seeds/response_data -- -max_total_time=60
+```
+
+**The client hook:** the EOD decoders are private to the client crate, so
+the client exposes `praevis_thetadata_client::fuzzing` only under
+`--cfg fuzzing`, which cargo-fuzz sets. A normal build and the published
+crate do not contain it.
+
+**First local run** (2026-11-15, aarch64 Linux, 60 seconds per target, no
+sanitizer flags beyond cargo-fuzz's defaults): about 13.6 million cases in
+total, no crashes; peak memory 180 to 550 MB.

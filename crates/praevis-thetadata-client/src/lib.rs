@@ -26,6 +26,35 @@ pub mod endpoints;
 mod envelope;
 mod eod;
 mod framing;
+/// Entry points for the fuzz targets in `fuzz/` (docs/security/fuzzing.md).
+/// Compiled only under `--cfg fuzzing`, which cargo-fuzz sets: never part of
+/// a normal build or of the published API.
+#[cfg(fuzzing)]
+#[doc(hidden)]
+pub mod fuzzing {
+    use crate::bounded::{self, DecodeLimits};
+
+    /// The stock EOD path on untrusted bytes: the client's own bounded
+    /// envelope parser, then the table and the numeric decoders. Small
+    /// limits, so a case cannot exhaust the fuzzer's memory.
+    pub fn eod_envelope(bytes: &[u8]) {
+        let limits = DecodeLimits {
+            encoded_bytes: 1 << 20,
+            decompressed_bytes: 4 << 20,
+            headers: 64,
+            rows: 10_000,
+            cells: 100_000,
+            text_bytes: 64 << 10,
+            header_bytes: 1024,
+            allocated_bytes: 8 << 20,
+            zstd_window_log: 20,
+        };
+        if let Ok(response) = crate::envelope::parse(bytes.to_vec(), &limits) {
+            let _ = bounded::decode(response.clone(), &limits, None, true);
+            let _ = bounded::decode(response, &limits, None, false);
+        }
+    }
+}
 mod job;
 #[cfg(feature = "parquet")]
 mod output;
