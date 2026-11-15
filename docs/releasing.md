@@ -3,7 +3,7 @@
 How a release is built, approved and published (user decision 2026-11-15).
 From `0.1.3`, **nothing is published by hand**: crates.io, PyPI and the
 GitHub release are published only by
-[`.github/workflows/release.yml`](../.github/workflows/release.yml), and only
+[`.github/workflows/trusted-publishing.yml`](../.github/workflows/trusted-publishing.yml), and only
 after the user approves it. No tokens are stored or used.
 
 ## Who does what
@@ -12,7 +12,7 @@ after the user approves it. No tokens are stored or used.
 | --- | --- |
 | Release-prep PR (version bump, CHANGELOG, `docs/release-draft-<version>.md`, checklist) | An agent opens it; the maintainer merges it when CI is green |
 | Pre-release live check on the merged commit (`scripts/live/run.sh --part anytime`) | The maintainer, on the user's machine |
-| Dry run of the release workflow on `main` (optional, recommended) | The maintainer or the user (Actions → Release → Run workflow) |
+| Dry run of the release workflow on `main` (optional, recommended) | The maintainer or the user (Actions → Trusted publishing → Run workflow) |
 | Create and push the tag `v<version>` | **The user** (repository admin). A tag ruleset blocks creating, moving or deleting `v*` tags for everyone else |
 | Approve the `release` environment | **The user**, the environment's required reviewer |
 | Publication record PR | An agent, after the user reports the release |
@@ -54,7 +54,7 @@ artifacts, and a signed [build-provenance attestation](https://docs.github.com/e
 for each, made with GitHub's OIDC identity through Sigstore.
 
 **5. Approval.** The `publish` job waits for the `release` environment. The
-user opens the run (Actions → Release → the run for the tag), checks it, and
+user opens the run (Actions → Trusted publishing → the run for the tag), checks it, and
 chooses **Review deployments → release → Approve**. Before approving:
 - the gate passed for the tag you pushed, on the commit the live check ran on;
 - all 16 build jobs and the checksums job are green;
@@ -83,7 +83,7 @@ the crates, wheels, checksums, attestations and docs.rs.
 
 ## Dry run
 
-**Actions → Release → Run workflow** on `main` (or any branch) runs the gate
+**Actions → Trusted publishing → Run workflow** on `main` (or any branch) runs the gate
 in report-only mode, builds and checks all 16 artifacts, writes
 `SHA256SUMS` and attests them, and uploads them as the run's
 `release-<version>` artifact. The `publish` job does not run: it needs a tag
@@ -98,7 +98,7 @@ attestations.
 sha256sum --check SHA256SUMS                       # Linux
 shasum -a 256 --check SHA256SUMS                   # macOS
 
-# Provenance: each artifact was built by release.yml in this repository
+# Provenance: each artifact was built by trusted-publishing.yml in this repository
 gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz \
   --repo Praevis-Quant/praevis-thetadata
 ```
@@ -147,5 +147,11 @@ through trusted publishing.
 | `publish` | `contents: write`, `id-token: write` | `release` (required reviewer: the user; `v*` tags only) |
 
 Every action is pinned by full commit SHA. crates.io (all seven crates) and
-PyPI (`praevis-thetadata`) trust only `release.yml` in the `release`
+PyPI (`praevis-thetadata`) trust only `trusted-publishing.yml` in the `release`
 environment, and crates.io refuses token publishing for these crates.
+
+**The file name is fixed:** `trusted-publishing.yml` is the organisation's
+standard name for the publishing workflow, and crates.io and PyPI name that
+file (with the `release` environment) in their trusted-publisher settings.
+Renaming it, or moving the publish job to another file, stops publishing
+until those settings are changed to match.

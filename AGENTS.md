@@ -22,7 +22,7 @@ The workspace uses Rust edition 2024, currently declares version
 `0.1.3`, and sets `publish = ["crates-io"]`.
 
 **Publishing (user decision 2026-11-15):** releases are published **only**
-by [`.github/workflows/release.yml`](.github/workflows/release.yml), on a
+by [`.github/workflows/trusted-publishing.yml`](.github/workflows/trusted-publishing.yml), on a
 `v*` tag, after the user approves its `release` environment
 ([docs/releasing.md](docs/releasing.md)). crates.io and PyPI use trusted
 publishing; **no tokens are used**, and crates.io refuses token publishing

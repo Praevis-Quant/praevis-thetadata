@@ -54,7 +54,7 @@ run. The first release through [the release workflow](releasing.md).
    `binomial-greeks-eod-every-expiration`: the whole week records the
    service's real refusal code, and the drift check reports it if it is
    not the modelled `InvalidArgument`.
-3. **A dry run** of the release workflow on that commit (Actions → Release
+3. **A dry run** of the release workflow on that commit (Actions → Trusted publishing
    → Run workflow): all 16 artifacts built and checked, `SHA256SUMS`
    written and attested.
 4. **Archive review:** as for `0.1.2`, with no `tests/` in the client or
