@@ -1,0 +1,63 @@
+# Weekly dependency updates, one grouped pull request per ecosystem and
+# directory. Security updates (Dependabot alerts) are separate and immediate.
+# Every update goes through CI like any other change; nothing is merged
+# automatically.
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      cargo:
+        patterns: ["*"]
+    open-pull-requests-limit: 5
+
+  # The TLS-provider test crate has its own workspace and lockfile.
+  - package-ecosystem: cargo
+    directory: /tools/tls-providers
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      tls-providers:
+        patterns: ["*"]
+    # Our own crates are path dependencies here; the main workspace moves them.
+    ignore:
+      - dependency-name: "praevis-thetadata-*"
+
+  # The Python package's hash-pinned build and test requirements.
+  - package-ecosystem: pip
+    directory: /crates/praevis-thetadata-py
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      python-package:
+        patterns: ["*"]
+
+  # CI tooling.
+  - package-ecosystem: pip
+    directory: /tools
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      tools:
+        patterns: ["*"]
+
+  # Actions stay pinned by full commit SHA; Dependabot updates the SHA and
+  # the version comment together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+
+# Not updated: bench/python-baseline/requirements.txt pins the environment of
+# the recorded vendor-package benchmarks; changing it would change what the
+# retained measurements compare against. Update it by hand with a new run.
