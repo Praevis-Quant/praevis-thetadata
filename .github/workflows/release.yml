@@ -135,7 +135,8 @@ jobs:
           echo "$out"
           [ "$out" = "praevis-thetadata $VERSION" ]
           case "$TARGET" in
-            *-linux-musl) file "$exe" | tee /dev/stderr | grep -q 'statically linked' ;;
+            # "statically linked" or "static-pie linked": no interpreter, no libc.
+            *-linux-musl) file "$exe" | tee /dev/stderr | grep -qE 'static(ally|-pie) linked' ;;
             *-linux-gnu)
               newest=$(objdump -T "$exe" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)
               echo "newest glibc symbol: $newest"
@@ -227,7 +228,8 @@ jobs:
         run: |
           set -euo pipefail
           ls dist
-          [ "$(ls dist/*.whl | wc -l)" = 1 ]
+          wheels=(dist/*.whl)
+          [ "${#wheels[@]}" = 1 ]
           ls "dist/praevis_thetadata-$VERSION-cp310-abi3-$PLATFORM.whl"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
