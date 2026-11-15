@@ -12,8 +12,9 @@ library and the experimental market-data client. It has no market-data query com
 > with no breaking change without a new minor version and release notes.
 > It is **not** a full port of the vendor Python package.
 
-**Supported platforms:** Windows (Credential Manager) and Linux (Secret Service
-over D-Bus, with an unlocked persistent keyring). On other platforms,
+**Supported platforms:** Windows (Credential Manager), Linux (Secret Service
+over D-Bus, with an unlocked persistent keyring) and macOS (the default
+Keychain). On other platforms,
 authentication runs, but saving, status and logout report an unsupported-platform
 error. Requires Rust 1.88+. Linux builds compile a vendored D-Bus library and
 need a C compiler and `pkg-config`.
@@ -48,8 +49,8 @@ praevis-thetadata auth logout
 ```
 
 Like the vendor Python package, `auth` keeps the session in memory only. With
-`--save` it is stored in Windows Credential Manager or Linux Secret Service;
-on Linux that requires an available D-Bus session and an unlocked persistent
+`--save` it is stored in Windows Credential Manager, Linux Secret Service or
+the macOS Keychain; on Linux that requires an available D-Bus session and an unlocked persistent
 keyring. Credential order follows Python: `--creds-file`, then
 `THETADATA_API_KEY`, then `THETADATA_EMAIL`/`THETADATA_PASSWORD` (a Rust-only
 extra), then `THETADATA_CREDENTIALS_FILE` or `./creds.txt`. Status checks local storage only; logout removes the selected local

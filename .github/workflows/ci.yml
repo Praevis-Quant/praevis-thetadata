@@ -83,6 +83,16 @@ jobs:
             fi
           done
           cargo tree --locked -p praevis-thetadata-auth -e normal --target all --features native-store | grep -q keyring
+          # A real round trip through the native store (removed at the end of
+          # the test): the Windows Credential Manager, or on Linux a temporary
+          # Secret Service (gnome-keyring) in its own D-Bus session.
+          if [ "$RUNNER_OS" = Windows ]; then
+            cargo test --locked -p praevis-thetadata-auth --features native-store -- --ignored native_store_round_trip
+          else
+            sudo apt-get install -y -q gnome-keyring dbus >/dev/null
+            dbus-run-session -- bash -c 'echo -n praevis-test | gnome-keyring-daemon --unlock --components=secrets >/dev/null
+              cargo test --locked -p praevis-thetadata-auth --features native-store -- --ignored native_store_round_trip'
+          fi
       - name: Native EOD benchmark checks
         run: cargo test --locked -p praevis-thetadata-client --example eod_benchmark
       - name: Columnar decoder CPU benchmark (checks and a small smoke run)
@@ -104,6 +114,45 @@ jobs:
       - name: Windows native persistence
         if: runner.os == 'Windows'
         run: cargo test --locked -p praevis-thetadata-cli --test persistence -- --ignored
+
+  macos:
+    # The CLI and the native store on macOS (the Keychain, user approval
+    # 2026-11-15). The release builds the macOS executables and wheels.
+    name: macOS (CLI and Keychain store)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+          components: clippy
+      - name: Clippy (auth with the native store, and the CLI)
+        run: |
+          cargo clippy --locked -p praevis-thetadata-auth --features native-store --all-targets -- -D warnings
+          cargo clippy --locked -p praevis-thetadata-cli --all-targets -- -D warnings
+      - name: Build and run the CLI
+        run: |
+          cargo build --locked -p praevis-thetadata-cli
+          target/debug/praevis-thetadata --version
+      - name: Auth tests with the native store
+        run: cargo test --locked -p praevis-thetadata-auth --features native-store
+      - name: Keychain round trip, in a temporary keychain
+        run: |
+          set -euo pipefail
+          keychain="$RUNNER_TEMP/praevis-test.keychain-db"
+          previous=$(security default-keychain -d user | tr -d ' "')
+          restore() {
+            security default-keychain -d user -s "$previous" || true
+            security delete-keychain "$keychain" || true
+          }
+          trap restore EXIT
+          security create-keychain -p praevis-test "$keychain"
+          security set-keychain-settings "$keychain"
+          security unlock-keychain -p praevis-test "$keychain"
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -d user -s "$keychain"
+          cargo test --locked -p praevis-thetadata-auth --features native-store -- --ignored native_store_round_trip
 
   python-package:
     # P1 PR 6a: build the abi3 wheel and run its offline tests, including the

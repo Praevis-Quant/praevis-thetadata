@@ -9,7 +9,7 @@ const SERVICE: &str = "praevis.thetadata.auth.v1";
 pub enum StoreError {
     #[error("profile must be 1..=64 ASCII letters, digits, hyphens, or underscores")]
     InvalidProfile,
-    #[error("native session persistence is supported on Windows and Linux")]
+    #[error("native session persistence is supported on Windows, Linux and macOS")]
     UnsupportedPlatform,
     // Do not format keyring errors: some include the raw secret when decoding fails.
     #[error("native credential store operation failed")]
@@ -95,6 +95,8 @@ impl SessionStore {
             "Windows Credential Manager"
         } else if cfg!(target_os = "linux") {
             "Linux Secret Service"
+        } else if cfg!(target_os = "macos") {
+            "macOS Keychain"
         } else {
             "Unsupported platform"
         }
@@ -120,6 +122,14 @@ impl SessionStore {
     fn entry(&self) -> Result<keyring::Entry, StoreError> {
         // Secret Service interprets `target` as a COLLECTION name. Keep the
         // existing default/login collection and scope items by service instead.
+        keyring::Entry::new(&self.target(), &self.profile).map_err(storage_error)
+    }
+
+    #[cfg(target_os = "macos")]
+    fn entry(&self) -> Result<keyring::Entry, StoreError> {
+        // A generic password in the default keychain: the service is the
+        // target, the account the profile. (A keychain `target` would name a
+        // keychain domain, not the item.)
         keyring::Entry::new(&self.target(), &self.profile).map_err(storage_error)
     }
 
@@ -168,17 +178,17 @@ impl SessionStore {
         })
     }
 
-    #[cfg(any(windows, target_os = "linux"))]
+    #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
     fn write_secret(&self, encoded: &str) -> Result<(), StoreError> {
         self.entry()?.set_password(encoded).map_err(storage_error)
     }
 
-    #[cfg(not(any(windows, target_os = "linux")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     fn write_secret(&self, _: &str) -> Result<(), StoreError> {
         Err(StoreError::UnsupportedPlatform)
     }
 
-    #[cfg(any(windows, target_os = "linux"))]
+    #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
     fn read_secret(&self) -> Result<Option<String>, StoreError> {
         match self.entry()?.get_password() {
             Ok(value) => Ok(Some(value)),
@@ -187,13 +197,13 @@ impl SessionStore {
         }
     }
 
-    #[cfg(not(any(windows, target_os = "linux")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     fn read_secret(&self) -> Result<Option<String>, StoreError> {
         Err(StoreError::UnsupportedPlatform)
     }
 
     /// Remove only this profile/environment's local session. Does not revoke it on the server.
-    #[cfg(any(windows, target_os = "linux"))]
+    #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
     pub fn clear(&self) -> Result<bool, StoreError> {
         match self.entry()?.delete_credential() {
             Ok(()) => Ok(true),
@@ -202,13 +212,13 @@ impl SessionStore {
         }
     }
 
-    #[cfg(not(any(windows, target_os = "linux")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     pub fn clear(&self) -> Result<bool, StoreError> {
         Err(StoreError::UnsupportedPlatform)
     }
 }
 
-#[cfg(any(windows, target_os = "linux"))]
+#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
 fn storage_error(error: keyring::Error) -> StoreError {
     // Never expose native errors: some variants carry the stored secret.
     if cfg!(target_os = "linux")
@@ -255,5 +265,27 @@ mod tests {
         record["version"] = 1.into();
         record["environment"] = "STAGE".into();
         assert!(store.decode(&record.to_string()).is_err());
+    }
+
+    /// Writes to the real native store: run explicitly, where a test store is
+    /// set up (CI: a temporary macOS keychain, the Windows Credential Manager).
+    #[test]
+    #[ignore = "writes to the native credential store"]
+    fn native_store_round_trip() {
+        let profile = format!("roundtrip-{}", std::process::id());
+        let store = SessionStore::new(profile, Environment::Stage).unwrap();
+        let session = Session {
+            session_id: "test-session-id".into(),
+            user: serde_json::from_str(r#"{"email":"test@example.com"}"#).unwrap(),
+            environment: Environment::Stage,
+        };
+        assert!(store.load().unwrap().is_none());
+        store.save(&session).unwrap();
+        let loaded = store.load().unwrap().expect("saved");
+        assert_eq!(loaded.session().session_id(), "test-session-id");
+        assert_eq!(loaded.session().environment(), Environment::Stage);
+        assert!(store.clear().unwrap());
+        assert!(store.load().unwrap().is_none());
+        assert!(!store.clear().unwrap());
     }
 }
