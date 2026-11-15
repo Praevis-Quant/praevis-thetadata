@@ -25,6 +25,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           toolchain: stable
@@ -58,9 +60,11 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          persist-credentials: false
           path: candidate
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          persist-credentials: false
           ref: ${{ inputs.baseline_ref }}
           path: baseline
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
@@ -68,9 +72,11 @@ jobs:
           toolchain: stable
       - name: Build before and after with provenance
         shell: bash
+        env:
+          EXE: ${{ runner.os == 'Windows' && '.exe' || '' }}
         run: |
-          python candidate/tools/build_cli_benchmark.py --source baseline --output artifacts/before${{ runner.os == 'Windows' && '.exe' || '' }}
-          python candidate/tools/build_cli_benchmark.py --source candidate --output artifacts/after${{ runner.os == 'Windows' && '.exe' || '' }}
+          python candidate/tools/build_cli_benchmark.py --source baseline --output "artifacts/before$EXE"
+          python candidate/tools/build_cli_benchmark.py --source candidate --output "artifacts/after$EXE"
       - name: Install Linux keyring fixture
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends dbus gnome-keyring

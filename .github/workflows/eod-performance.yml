@@ -49,6 +49,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           toolchain: stable
@@ -90,6 +92,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
@@ -155,6 +158,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           toolchain: stable
@@ -162,13 +167,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifacts
-          cargo run --release --locked -p praevis-thetadata-client --example eod_memory -- run > artifacts/eod-memory-${{ runner.os }}.md
-          cat artifacts/eod-memory-${{ runner.os }}.md
+          cargo run --release --locked -p praevis-thetadata-client --example eod_memory -- run > artifacts/eod-memory-$RUNNER_OS.md
+          cat artifacts/eod-memory-$RUNNER_OS.md
       - name: Query-path memory bound (item 8; fails if a bound is exceeded)
         shell: bash
         run: |
           set -o pipefail
-          cargo run --release --locked -p praevis-thetadata-client --example eod_memory -- bound | tee artifacts/eod-memory-bound-${{ runner.os }}.md
+          cargo run --release --locked -p praevis-thetadata-client --example eod_memory -- bound | tee artifacts/eod-memory-bound-$RUNNER_OS.md
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eod-memory-${{ runner.os }}-${{ github.sha }}
