@@ -56,6 +56,11 @@ jobs:
         run: cargo test --workspace --locked
       - name: End-to-end scenarios against the emulator (ADR-0022; the live target never runs in CI)
         run: cargo run --locked -p praevis-thetadata-scenarios -- --target emulator --run-id ci --report target/scenarios-ci.json
+      - name: A consumer with both rustls providers still connects over TLS
+        # Its own workspace, so aws-lc-rs never enters the workspace build.
+        # Linux only: the provider choice is the same on every platform.
+        if: runner.os == 'Linux'
+        run: cargo test --locked --manifest-path tools/tls-providers/Cargo.toml
       - name: Minimum supported Rust version (rust-version 1.88)
         if: runner.os == 'Linux'
         run: |

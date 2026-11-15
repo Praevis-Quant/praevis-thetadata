@@ -32,7 +32,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "net", "io-util"] }
-tonic = { version = "0.14", features = ["tls-native-roots"] }
+# tls-ring: when the application installed no process-default rustls
+# provider, tonic builds its TLS configuration with ring explicitly, as
+# reqwest does. Without it tonic asks rustls for the process default, which
+# panics when a consumer's other dependencies also enable aws-lc-rs.
+tonic = { version = "0.14", features = ["tls-native-roots", "tls-ring"] }
 tonic-prost = "0.14"
 tonic-prost-build = "0.14"
 zstd = "0.14"

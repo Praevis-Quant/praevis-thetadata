@@ -1,0 +1,24 @@
+[package]
+name = "tls-providers"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# Its own workspace, so the second rustls provider below is enabled only
+# here and never unifies into the workspace build.
+[workspace]
+
+# A consumer whose other dependencies enable both rustls providers (for
+# example object_store's aws-lc-rs next to our ring). Test-only; nothing
+# here is published.
+[dev-dependencies]
+praevis-thetadata-auth = { path = "../../crates/praevis-thetadata-auth" }
+praevis-thetadata-client = { path = "../../crates/praevis-thetadata-client" }
+praevis-thetadata-emulator = { path = "../../crates/praevis-thetadata-emulator" }
+rustls = { version = "0.23", default-features = false, features = ["ring", "aws_lc_rs", "std"] }
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "io-util"] }
+# The test's own TLS server, in front of the plaintext emulator (tonic's
+# server side asks rustls for the process default, which is the panic
+# under test).
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
