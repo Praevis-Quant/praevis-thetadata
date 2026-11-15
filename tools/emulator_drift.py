@@ -33,8 +33,8 @@ def expected_code(rpc: str, scenario: str, status: dict, column: str, shape: str
     if scenario.startswith("not-found"):
         return "NotFound"
     if shape == "every-expiration-multi-day":
-        refused = any(rpc in r["rpcs"] and r["expiration"] == "*" for r in (model or {}).get("refusals_by_shape", []))
-        return "InvalidArgument" if refused else "OK"
+        refusals = [r for r in (model or {}).get("refusals_by_shape", []) if rpc in r["rpcs"] and r["expiration"] == "*"]
+        return refusals[0]["code"] if refusals else "OK"
     observed = status.get(rpc, {}).get(column)
     if observed is None:
         return None

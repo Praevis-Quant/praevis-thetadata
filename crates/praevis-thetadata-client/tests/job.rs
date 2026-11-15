@@ -110,6 +110,23 @@ fn greeks_eod_over_every_expiration_is_planned_one_day_at_a_time() {
     assert_eq!(plan(&eod), std::slice::from_ref(&eod));
 }
 
+#[test]
+fn binomial_greeks_eod_over_every_expiration_is_planned_one_day_at_a_time() {
+    // The vendor documents that any expiration `*` must be requested day by
+    // day (the 1.0.17 docstring and the v3 page), as for Greeks EOD.
+    let week = (day("2026-11-02"), day("2026-11-06"));
+    let wildcard = endpoints::OptionHistoryBinomialGreeksEod::new("SPY", "*", week.0, week.1);
+    let days: Vec<_> = plan(&wildcard)
+        .iter()
+        .map(|p| p.date_range().unwrap())
+        .collect();
+    assert_eq!(days.len(), 5);
+    assert!(days.iter().all(|(s, e)| s == e));
+    let one =
+        endpoints::OptionHistoryBinomialGreeksEod::new("SPY", day("2026-11-21"), week.0, week.1);
+    assert_eq!(plan(&one), std::slice::from_ref(&one));
+}
+
 #[tokio::test]
 async fn a_job_runs_its_parts_in_order_and_merges_their_rows() {
     let fixture = Fixture::start(Script {

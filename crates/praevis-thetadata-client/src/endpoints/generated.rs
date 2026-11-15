@@ -5305,6 +5305,14 @@ impl Endpoint for OptionHistoryBinomialGreeksEod {
             ..self.clone()
         })
     }
+    /// Per day when every expiration is asked for: the vendor documents that any expiration `*` must be requested day by day (the 1.0.17 docstring and the v3 operation page); not observed live.
+    fn split(&self) -> Split {
+        if matches!(&self.expiration, Expiration::Text(e) if e == "*") {
+            Split::Days(1)
+        } else {
+            Self::SPLIT
+        }
+    }
     fn to_query(&self) -> Self::Query {
         let mut query = api::OptionHistoryBinomialGreeksEodRequestQuery::default();
         query.contract_spec = Some(wire::ContractSpec {

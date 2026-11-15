@@ -111,28 +111,33 @@ def scenarios(client: pt.Client) -> list[tuple[str, object]]:
             raise AssertionError("no first batch")
         return f"{first} rows of the first batch, then cancelled", {"rpc": "GetOptionHistoryEod", "code": "OK"}
 
-    def greeks_eod_every_expiration():
-        # Refused whole over more than one day (InvalidArgument, 2026-11-13);
-        # the planned call splits it per day. Skipped where not entitled.
-        try:
-            result = client.query("option_history_greeks_eod", symbol="SPY", expiration="*",
-                                  start_date=dt.date(2026, 11, 2), end_date=dt.date(2026, 11, 6))
-        except pt.QueryFailed as error:
-            if error.args[2] == "PermissionDenied":
-                raise Skip("options are not entitled to Greeks EOD (PermissionDenied)") from None
-            raise
-        _, parts = pt.describe("option_history_greeks_eod", symbol="SPY", expiration="*",
-                               start_date=dt.date(2026, 11, 2), end_date=dt.date(2026, 11, 6))
-        if parts != 5:
-            raise AssertionError(f"planned {parts} parts, expected 5 (one a day)")
-        if result.num_rows == 0:
-            raise AssertionError("no rows")
-        return f"{result.num_rows} rows from {parts} one-day parts", {"rpc": "GetOptionHistoryGreeksEod", "code": "OK"}
+    def every_expiration(name, rpc):
+        # Refused whole over more than one day: observed for Greeks EOD
+        # (InvalidArgument, 2026-11-13), documented by the vendor for binomial
+        # Greeks EOD. The planned call splits it per day. Skipped where not
+        # entitled.
+        def scenario():
+            week = dict(symbol="SPY", expiration="*", start_date=dt.date(2026, 11, 2), end_date=dt.date(2026, 11, 6))
+            try:
+                result = client.query(name, **week)
+            except pt.QueryFailed as error:
+                if error.args[2] == "PermissionDenied":
+                    raise Skip(f"options are not entitled to {name} (PermissionDenied)") from None
+                raise
+            _, parts = pt.describe(name, **week)
+            if parts != 5:
+                raise AssertionError(f"planned {parts} parts, expected 5 (one a day)")
+            if result.num_rows == 0:
+                raise AssertionError("no rows")
+            return f"{result.num_rows} rows from {parts} one-day parts", {"rpc": rpc, "code": "OK"}
+        return scenario
 
     return [("login-tier", login_tier), ("vendor-named-method", vendor_named), ("query-planned", query_job),
             ("batches", batches), ("to-parquet", to_parquet), ("tier-refusal", tier_refusal),
             ("not-found-is-identical", not_found), ("cancel-midway", cancel_midway),
-            ("greeks-eod-every-expiration", greeks_eod_every_expiration)]
+            ("greeks-eod-every-expiration", every_expiration("option_history_greeks_eod", "GetOptionHistoryGreeksEod")),
+            ("binomial-greeks-eod-every-expiration",
+             every_expiration("option_history_binomial_greeks_eod", "GetOptionHistoryBinomialGreeksEod"))]
 
 
 def main() -> int:

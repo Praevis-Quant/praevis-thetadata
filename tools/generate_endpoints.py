@@ -381,9 +381,13 @@ def emit_body(w: Wrapper, params: dict[str, Param]) -> list[str]:
 # Requests the service refuses over more than one day when every expiration
 # (`*`) is asked for, each with the observation that showed it. Only observed
 # RPCs are listed; the others are not inferred (docs/endpoints/known-issues.md).
+# RPC -> (why, the release that first plans it per day).
 WILDCARD_EXPIRATION_PER_DAY = {
-    "GetOptionHistoryGreeksEod": "expiration `*` over 2 or 5 days was refused with InvalidArgument, "
-                                 "one day answered (praevis-data first ingest, 2026-11-13)",
+    "GetOptionHistoryGreeksEod": ("expiration `*` over 2 or 5 days was refused with InvalidArgument, "
+                                  "one day answered (praevis-data first ingest, 2026-11-13)", "0.1.1"),
+    "GetOptionHistoryBinomialGreeksEod": ("the vendor documents that any expiration `*` must be requested "
+                                          "day by day (the 1.0.17 docstring and the v3 operation page); "
+                                          "not observed live", "0.1.3"),
 }
 
 
@@ -412,7 +416,7 @@ def emit_split(w: Wrapper, params: dict[str, Param]) -> list[str]:
             "    fn with_date_range(&self, start: NaiveDate, end: NaiveDate) -> Option<Self> {",
             "        Some(Self {", *setter, "            ..self.clone()", "        })", "    }"]
     if w.rpc in WILDCARD_EXPIRATION_PER_DAY:
-        out += [f"    /// Per day when every expiration is asked for: {WILDCARD_EXPIRATION_PER_DAY[w.rpc]}.",
+        out += [f"    /// Per day when every expiration is asked for: {WILDCARD_EXPIRATION_PER_DAY[w.rpc][0]}.",
                 "    fn split(&self) -> Split {",
                 '        if matches!(&self.expiration, Expiration::Text(e) if e == "*") {',
                 "            Split::Days(1)",
@@ -670,7 +674,7 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS,
            "([lighter process](../architecture/performance-plan.md#f-process-simplification)).",
            "",
            "**Known request shapes the service refuses** are in [known issues](known-issues.md):",
-           *[f"`{rpc}`: {why}; planned one day at a time from 0.1.1." for rpc, why in WILDCARD_EXPIRATION_PER_DAY.items()],
+           *[f"`{rpc}`: {why}; planned one day at a time from {release}." for rpc, (why, release) in WILDCARD_EXPIRATION_PER_DAY.items()],
            "",
            "The value check compares our columnar decoder with the legacy decoder, and runs the",
            "request through the Python package: step F for options (`live_p0 option-checks`,",
