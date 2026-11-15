@@ -1,0 +1,47 @@
+name: Scorecard
+
+# OpenSSF Scorecard: checks the repository's security practices (branch
+# protection, pinned dependencies, token permissions, signed releases, ...),
+# publishes the result to api.scorecard.dev for the README badge, and uploads
+# the findings to code scanning. Runs on main and weekly; the published
+# result must come from the default branch.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 5 * * 1"
+  branch_protection_rule:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      # Upload the SARIF to code scanning.
+      security-events: write
+      # Sign the published result (GitHub OIDC).
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: ossf/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e # v2.5.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: scorecard-results
+          path: results.sarif
+          retention-days: 5
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: results.sarif
