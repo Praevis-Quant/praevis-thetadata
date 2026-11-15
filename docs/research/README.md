@@ -38,6 +38,12 @@ The per-release and cumulative records are checked offline by `python tools/upst
 | [python-1.0.17-inventory.json](python-1.0.17-inventory.json) | Full source/protocol inventory of the 1.0.17 wheel |
 | [vendor-1.0.17.json](vendor-1.0.17.json) | 1.0.17 summary in the shape of `vendor-1.0.12.json` |
 
+## Topic notes
+
+| File | Content |
+| --- | --- |
+| [greeks-version.md](greeks-version.md) | The Greeks `version` parameter: `latest` or `1`, a time-to-expiration rule, not a model; what pinning it does for repeatable backtests |
+
 The update decisions and steps are in [the 1.0.17 update plan](../upstream-update-1.0.17.md).
 
 ## Other research

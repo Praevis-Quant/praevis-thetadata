@@ -42,15 +42,21 @@ The refusals held with and without `strike='*'`, `right='both'`,
   CI against the emulator, and live in the scheduled run.
 - **The workaround on `0.1.0`:** one request per day, or a single expiration.
 
-**The same shape, untested (not inferred, so not split):** these RPCs also
-plan at 366 days and accept expiration `*`, but no run has sent them `*`
-over more than one day.
+**The vendor documents it** (found 2026-11-15): the docstrings of
+`option_history_greeks_eod` and `option_history_binomial_greeks_eod` say any
+`expiration=*` "must be requested day by day", in the pinned 1.0.17 package
+and already in 1.0.12, and so do both v3 operation pages. The research
+catalogued that text, but the planner did not use it; the refusal was found
+live instead.
+
+**The same shape, not split yet:** these RPCs also plan at 366 days and
+accept expiration `*`. No run has sent them `*` over more than one day.
 
 | RPC | Status | The check that would settle it |
 | --- | --- | --- |
-| `OptionHistoryBinomialGreeksEod` | **Unverified** | one request, SPY, expiration `*`, two weekdays |
-| `OptionAtTimeTrade` | **Unverified** | the same |
-| `OptionAtTimeQuote` | **Unverified** | the same |
+| `OptionHistoryBinomialGreeksEod` | **Documented by the vendor: day by day** (docstring, v3 page); not observed, and the planner does not split it yet | none needed to split it; one request (SPY, `*`, two weekdays) would confirm the refusal |
+| `OptionAtTimeTrade` | **Unverified;** nothing documented | one request, SPY, expiration `*`, two weekdays |
+| `OptionAtTimeQuote` | **Unverified;** the vendor documents only that a sub-minute time with `*` can be slow or hang | the same |
 | `OptionHistoryEod` | **Verified fine:** 5 days answered whole | — |
 
 Every other option history RPC already plans one day per request.
