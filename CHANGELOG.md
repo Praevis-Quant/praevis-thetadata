@@ -11,11 +11,34 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 `v0.1.0-alpha.2`, 2026-11-03 UTC) and `0.1.0-alpha.3` (tag `v0.1.0-alpha.3`,
 2026-11-08), then `0.1.0-beta.1` (2026-11-11) and `0.1.0-beta.2`
 (2026-11-12), both also on PyPI, **`0.1.0`, the first supported
-release (2026-11-13)**, then `0.1.1` and `0.1.2` (both 2026-11-14). Each release heading covers the entries
+release (2026-11-13)**, then `0.1.1` and `0.1.2` (both 2026-11-14).
+`0.1.3` is prepared, not published. Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
+
+## [0.1.3] - pending
+
+**A patch release with two fixes to published code.** Prepared, not
+published: dated and tagged (`v0.1.3`) at publication, which needs the
+user's final approval (the fix was approved for `0.1.3` on 2026-11-15).
+See the [release-notes draft](docs/release-draft-0.1.3.md).
+- **The fixes:** `job()`, Python's planned calls and `describe()` split
+  option binomial Greeks EOD over every expiration one day per request,
+  as the vendor documents; and the gRPC client no longer panics when the
+  application also enables rustls's aws-lc-rs provider.
+- **API:** no change.
+- **Everything else below** concerns unpublished tooling: the emulator,
+  the scenarios, the drift check and the TLS provider test.
+
+### Release
+
+- **Version `0.1.3`** across the workspace, with the wheel at `0.1.3`. The
+  READMEs' exact pins for proto and stream move to `=0.1.3`.
+- **The same publish set and order as `0.1.2`:** seven crates, then the
+  two wheels to PyPI by hand, then a tag and a GitHub release that is not
+  a pre-release ([checklist](docs/crates-io-release-plan.md#013-publication-checklist-and-order-prepared-2026-11-15)).
 
 ### Fixed
 

@@ -66,6 +66,10 @@ The [performance architecture plan](architecture/performance-plan.md)
     is not in it.
   - **`0.1.2`, which adds requests by name (`dispatch`), was published on
     2026-11-14** ([record](crates-io-release-plan.md#publication-record-012)).
+  - **`0.1.3` is prepared** (a patch: binomial Greeks EOD over every
+    expiration is planned one day per request, as the vendor documents,
+    and the gRPC client no longer panics next to aws-lc-rs).
+    Publishing it needs the user's final approval.
   - **`0.1.0`, the first supported release, was published on 2026-11-13**
     ([record](crates-io-release-plan.md#publication-record-010)), on
     crates.io and on PyPI as [`praevis-thetadata` 0.1.0](https://pypi.org/project/praevis-thetadata/0.1.0/). It is the
