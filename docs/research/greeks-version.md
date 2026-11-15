@@ -1,8 +1,9 @@
 # The Greeks `version` parameter
 
 Researched 2026-11-15 from the vendor's published v3 documentation and the
-pinned Python package (1.0.17). No live requests. Asked by `praevis-data`:
-can a backtest pin the Greeks methodology?
+pinned Python package (1.0.17), then checked live the same day by
+`praevis-data` ([below](#observed-eod-greeks-differ-on-the-expiration-day)).
+Asked by `praevis-data`: can a backtest pin the Greeks methodology?
 
 ## What it accepts and means
 
@@ -24,9 +25,10 @@ and a Leisen-Reimer binomial tree for the binomial endpoints (where
 
 **End-of-day Greeks** "always use a whole-number DTE, with 0.15 on the day
 of expiration", per the article, which does not single out the binomial EOD
-endpoint. That is the `1` behaviour, so on the
-documentation, `version` should not change EOD Greeks. This is documented,
-not observed: no run has compared the two values.
+endpoint. That is the `1` behaviour, so on the documentation, `version`
+should not change EOD Greeks. **The live comparison says otherwise** for
+contracts expiring that day
+([below](#observed-eod-greeks-differ-on-the-expiration-day)).
 
 ## Pinning it for repeatable backtests
 
@@ -37,9 +39,10 @@ not observed: no run has compared the two values.
 - **`1` is the only value that names a fixed methodology,** but it is the
   legacy one: for contracts under 7 DTE it differs from the default
   (intraday and snapshot Greeks near expiry).
-- **For EOD Greeks,** both values are documented to compute the same way,
-  so sending `version="1"` pins the methodology without changing the
-  result, as far as the documentation goes.
+- **For EOD Greeks,** the two values are documented to compute the same
+  way, but live they differ on the expiration day: `latest` does not keep
+  the fixed 0.15 there. Sending `version="1"` pins the legacy methodology;
+  it changes the result only for contracts expiring on the report day.
 - **Either way, the computation inputs matter as much:** the rate
   (`rate_type`, default SOFR, or `rate_value`), the dividend
   (`annual_dividend` or `annual_dividend_amount`), the price source
@@ -53,8 +56,21 @@ not observed: no run has compared the two values.
   ([`dispatch::params`](../../crates/praevis-thetadata-client/src/dispatch/mod.rs)
   reports it).
 
-**Open question for ThetaData:** will `latest` change without notice, and
-will each methodology get a stable number?
+## Observed: EOD Greeks differ on the expiration day
+
+**Live, 2026-11-15, by `praevis-data`:** `option_history_greeks_eod`, SPY,
+every expiration, for 2025-11-04, requested with `version='1'` and with
+`version='latest'`, all else equal.
+- **120 of 6,850 rows differed,** and all 120 were contracts expiring on
+  2025-11-04 itself. Every other row was identical.
+- **So:** for EOD Greeks, `latest` does not apply the documented fixed DTE
+  of 0.15 on the expiration day, while `1` does, or at least the two
+  differ there. Elsewhere they agree, as the documentation says.
+- **One day and one root only.** Counts are recorded here, no values.
+
+**Open questions for ThetaData:** what DTE does `latest` use for EOD Greeks
+on the expiration day (the article says 0.15)? Will `latest` change
+without notice, and will each methodology get a stable number?
 
 ## Sources
 
