@@ -1,7 +1,7 @@
 name: Trusted publishing
 
 # How a release runs: docs/releasing.md. A v* tag push builds, attests and
-# (after the user's approval in the `trusted-publishing` environment) publishes. A
+# (after the user's approvals in the `crates-io` and `pypi` environments) publishes. A
 # manual run (workflow_dispatch) and pull requests that touch the release
 # tooling are dry runs: they build and test everything, and never publish.
 
@@ -79,7 +79,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
         if: matrix.kind != 'gnu'
         with:
           toolchain: stable
@@ -210,7 +210,7 @@ jobs:
         with:
           python-version: "3.12"
           architecture: ${{ matrix.arch }}
-      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
         if: ${{ !matrix.image }}
         with:
           toolchain: stable
@@ -270,19 +270,22 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
-  publish:
-    # Only on a v* tag that passed the gate, and only after the user approves
-    # this job in the `trusted-publishing` environment (required reviewer; tags v* only).
-    # One job, so one approval: crates.io in the four waves, then PyPI, then
-    # the GitHub release. Re-running it skips what is already published.
-    name: Publish (crates.io, PyPI, GitHub release)
+  # Publishing: only on a v* tag that passed the gate, after the build,
+  # checksums and attestations. crates.io and PyPI each publish from their
+  # own job and environment (\`crates-io\`, \`pypi\`: required reviewer, v* tags
+  # only), so the user approves each, and each job holds only what it needs.
+  # The GitHub release follows once both succeeded. Every job re-checks the
+  # downloaded bundle against SHA256SUMS, and a re-run skips what is
+  # already published.
+  publish-crates:
+    name: Publish to crates.io
     needs: [check, collect]
     if: needs.check.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    environment: trusted-publishing
+    environment: crates-io
     permissions:
-      contents: write
+      contents: read
       id-token: write
     env:
       VERSION: ${{ needs.check.outputs.version }}
@@ -297,47 +300,86 @@ jobs:
           path: ${{ runner.temp }}/dist
       - name: The artifacts are the ones checksummed and attested
         run: cd "$RUNNER_TEMP/dist" && sha256sum --check --strict SHA256SUMS
-      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
         with:
           toolchain: stable
-      # crates.io trusted publishing: a short-lived token per wave, revoked
-      # when the job ends. cargo publish waits until the index serves each
-      # crate before the next one.
+      # Trusted publishing: a short-lived token per wave, revoked when the
+      # job ends. cargo publish waits until the index serves each crate.
       - id: wave1
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
-      - name: crates.io wave 1 (proto, core, auth)
+      - name: Wave 1 (proto, core, auth)
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.wave1.outputs.token }}
         run: python3 tools/release.py publish-crates --version "$VERSION" --wave 1
       - id: wave2
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
-      - name: crates.io wave 2 (arrow)
+      - name: Wave 2 (arrow)
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.wave2.outputs.token }}
         run: python3 tools/release.py publish-crates --version "$VERSION" --wave 2
       - id: wave3
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
-      - name: crates.io wave 3 (client)
+      - name: Wave 3 (client)
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.wave3.outputs.token }}
         run: python3 tools/release.py publish-crates --version "$VERSION" --wave 3
       - id: wave4
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
-      - name: crates.io wave 4 (cli, stream)
+      - name: Wave 4 (cli, stream)
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.wave4.outputs.token }}
         run: python3 tools/release.py publish-crates --version "$VERSION" --wave 4
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [check, collect]
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
       # In the workspace: the publish action is a container that sees only it.
-      # Created after cargo publish, which needs a clean tree.
-      - name: The wheels for PyPI
-        run: mkdir pypi-dist && cp "$RUNNER_TEMP"/dist/*.whl pypi-dist/
-      - name: PyPI (trusted publishing, with attestations)
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-${{ needs.check.outputs.version }}
+          path: dist
+      - name: The artifacts are the ones checksummed and attested
+        run: cd dist && sha256sum --check --strict SHA256SUMS
+      - name: The wheels only
+        run: mkdir pypi-dist && cp dist/*.whl pypi-dist/
+      - name: Upload (trusted publishing, with attestations)
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: pypi-dist/
           attestations: true
           skip-existing: true
-      - name: GitHub release
+
+  github-release:
+    # After both registries: the GitHub release from the tag, with every
+    # artifact and SHA256SUMS. No environment and no OIDC token: it needs
+    # only to write the release.
+    name: GitHub release
+    needs: [check, publish-crates, publish-pypi]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-${{ needs.check.outputs.version }}
+          path: ${{ runner.temp }}/dist
+      - name: The artifacts are the ones checksummed and attested
+        run: cd "$RUNNER_TEMP/dist" && sha256sum --check --strict SHA256SUMS
+      - name: Create or update the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
