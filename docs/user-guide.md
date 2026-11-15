@@ -9,10 +9,10 @@ supported and what is not, and lists the
 
 | | Supported | Notes |
 | --- | --- | --- |
-| **Windows x86_64** | Yes | Tested in CI. Python wheel: `win_amd64` |
-| **Linux x86_64, glibc 2.28 or later** | Yes | Tested in CI. Python wheel: `manylinux_2_28_x86_64`, which needs at most `GLIBC_2.28` |
-| **macOS** | No | Not built or tested. Without the native store the Rust crates may compile, but nothing is claimed |
-| **ARM (any OS)** | No | No wheels are built. The Rust crates are not tested on ARM in CI |
+| **Windows x86_64** | Yes | Tested in CI. Python wheel: `win_amd64`; CLI executable |
+| **Linux x86_64, glibc 2.28 or later** | Yes | Tested in CI. Python wheel: `manylinux_2_28_x86_64`, which needs at most `GLIBC_2.28`; CLI executable |
+| **Windows arm64; Linux aarch64 (glibc 2.28+); Linux musl (x86_64, aarch64)** | Built from `0.1.3` | Built and smoke-tested on their own runners at each release: the CLI runs `--version`; the wheel (`win_arm64`, `manylinux_2_28_aarch64`, `musllinux_1_2_*`) imports and plans `describe()` offline. The full test suite runs on x86_64 Windows and Linux only. The musl CLI is fully static |
+| **macOS (Intel 10.12+, Apple silicon 11.0+)** | Built from `0.1.3` | As above (`macosx_10_12_x86_64`, `macosx_11_0_arm64`). CI also builds the CLI and runs the auth tests, including a Keychain save, read and delete, on macOS |
 
 **Toolchains:**
 - **Rust:** 1.88 or later (`rust-version`, checked in CI).
@@ -28,9 +28,11 @@ supported and what is not, and lists the
 **Distribution:** the crates are on crates.io as `0.1.3` (`0.1.0` plus two
 planner fixes and requests by name). Pin the unstable `praevis-thetadata-proto`
 and the experimental `praevis-thetadata-stream` exactly (`=0.1.3`). The Python
-package is on PyPI as `praevis-thetadata` `0.1.3` (`pip install praevis-thetadata`). There are wheels only
-(Windows x86_64, and Linux x86_64 with glibc 2.28 or later) and no source
-distribution. The same wheels are attached to the GitHub release.
+package is on PyPI as `praevis-thetadata` `0.1.3` (`pip install praevis-thetadata`). There are wheels only,
+no source distribution, for the platforms in the table above. The same
+wheels, prebuilt CLI executables for those platforms, `SHA256SUMS` and a
+build-provenance attestation for each are attached to the GitHub release
+([how to verify them](releasing.md#verifying-a-release)).
 
 ## Credentials and the native store
 

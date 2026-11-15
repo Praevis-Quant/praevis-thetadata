@@ -1,26 +1,37 @@
 # GitHub release draft: v0.1.3 (not published)
 
-Status: **draft.** The user approved the fix for `0.1.3` on 2026-11-15;
-publishing needs the user's final approval
-([checklist](crates-io-release-plan.md#013-publication-checklist-and-order-prepared-2026-11-15)).
+Status: **draft.** The user approved the fixes for `0.1.3` on 2026-11-15;
+publishing needs the user's approval of the release run
+([checklist](crates-io-release-plan.md#013-publication-checklist-prepared-2026-11-15-the-release-workflow)).
 Nothing is tagged or published yet.
 
-**To fill in at publication:**
-- the date;
-- the commit;
-- the exact wheel file names, from that commit's CI artifacts
-  `wheel-ubuntu-latest` and `wheel-windows-latest`. The same two files go
-  to PyPI and to this release.
+**The release workflow uses this file:** the GitHub release's notes are
+everything after the **Body** line below, as written
+([docs/releasing.md](releasing.md)). The title is the tag, and the release
+is marked latest. Nothing is filled in by hand.
 
 ---
 
-**Title:** `v0.1.3`. Not a pre-release: mark it as the latest release.
-
 **Body:**
 
-> **A patch release of `0.1.2`.** praevis-thetadata is an independent,
-> unofficial client for ThetaData's market-data service. It is not
-> affiliated with, sponsored by or endorsed by Theta Data Inc.
+> **A patch release of `0.1.2`, and the first built, attested and published
+> by GitHub Actions.** praevis-thetadata is an independent, unofficial client
+> for ThetaData's market-data service. It is not affiliated with, sponsored
+> by or endorsed by Theta Data Inc.
+
+## Added
+
+- **Prebuilt CLI executables** for Windows (x86_64, arm64), Linux (glibc
+  2.28+ and fully static musl, each x86_64 and aarch64) and macOS (Intel,
+  Apple silicon), attached below. No Rust toolchain needed.
+- **Python wheels for eight platforms** (were two): Linux glibc and musl,
+  x86_64 and aarch64; Windows x86_64 and arm64; macOS Intel and Apple
+  silicon.
+- **`auth --save` on macOS:** the session store uses the macOS Keychain, as
+  it uses Credential Manager on Windows and Secret Service on Linux.
+- **Provenance:** every asset has a signed build-provenance attestation and
+  is listed in `SHA256SUMS`; the crates and wheels were published by
+  trusted publishing from this repository's release workflow.
 
 ## Fixed
 
@@ -57,18 +68,39 @@ praevis-thetadata-stream = "=0.1.3"    # optional, real time, experimental: pin 
 ```
 
 ```text
-cargo install praevis-thetadata-cli --locked
 pip install --upgrade praevis-thetadata
+cargo install praevis-thetadata-cli --locked    # or download an executable below
 ```
 
-The wheels are for Windows x86_64 and Linux x86_64 (glibc 2.28 or newer),
-CPython 3.10 or newer. The known gaps of `0.1.0` still apply
-([list](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.3/docs/releases.md#known-gaps-shipped-in-010)),
+**Verify a download:**
+
+```text
+sha256sum --check --ignore-missing SHA256SUMS
+gh attestation verify <file> --repo Praevis-Quant/praevis-thetadata
+```
+
+The wheels need CPython 3.10 or newer. The known gaps of `0.1.0` still
+apply ([list](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.3/docs/releases.md#known-gaps-shipped-in-010)),
 less the one fixed in `0.1.1`.
 
 ## Assets
 
 | File | Platform |
 | --- | --- |
-| `praevis_thetadata-0.1.3-cp310-abi3-win_amd64.whl` | Windows x86_64, CPython 3.10+ |
-| `praevis_thetadata-0.1.3-cp310-abi3-manylinux_2_28_x86_64.whl` | Linux x86_64, glibc 2.28+, CPython 3.10+ |
+| `praevis-thetadata-cli-0.1.3-x86_64-pc-windows-msvc.zip` | CLI, Windows x86_64 |
+| `praevis-thetadata-cli-0.1.3-aarch64-pc-windows-msvc.zip` | CLI, Windows arm64 |
+| `praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-gnu.tar.gz` | CLI, Linux x86_64, glibc 2.28+ |
+| `praevis-thetadata-cli-0.1.3-aarch64-unknown-linux-gnu.tar.gz` | CLI, Linux aarch64, glibc 2.28+ |
+| `praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz` | CLI, Linux x86_64, static |
+| `praevis-thetadata-cli-0.1.3-aarch64-unknown-linux-musl.tar.gz` | CLI, Linux aarch64, static |
+| `praevis-thetadata-cli-0.1.3-x86_64-apple-darwin.tar.gz` | CLI, macOS Intel (10.12+) |
+| `praevis-thetadata-cli-0.1.3-aarch64-apple-darwin.tar.gz` | CLI, macOS Apple silicon (11.0+) |
+| `praevis_thetadata-0.1.3-cp310-abi3-manylinux_2_28_x86_64.whl` | Python, Linux x86_64, glibc 2.28+ |
+| `praevis_thetadata-0.1.3-cp310-abi3-manylinux_2_28_aarch64.whl` | Python, Linux aarch64, glibc 2.28+ |
+| `praevis_thetadata-0.1.3-cp310-abi3-musllinux_1_2_x86_64.whl` | Python, Linux x86_64, musl 1.2+ |
+| `praevis_thetadata-0.1.3-cp310-abi3-musllinux_1_2_aarch64.whl` | Python, Linux aarch64, musl 1.2+ |
+| `praevis_thetadata-0.1.3-cp310-abi3-win_amd64.whl` | Python, Windows x86_64 |
+| `praevis_thetadata-0.1.3-cp310-abi3-win_arm64.whl` | Python, Windows arm64 |
+| `praevis_thetadata-0.1.3-cp310-abi3-macosx_10_12_x86_64.whl` | Python, macOS Intel |
+| `praevis_thetadata-0.1.3-cp310-abi3-macosx_11_0_arm64.whl` | Python, macOS Apple silicon |
+| `SHA256SUMS` | SHA-256 of every file above |
