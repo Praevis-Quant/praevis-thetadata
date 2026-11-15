@@ -269,3 +269,85 @@ jobs:
           name: release-${{ needs.check.outputs.version }}
           path: dist/*
           if-no-files-found: error
+
+  publish:
+    # Only on a v* tag that passed the gate, and only after the user approves
+    # this job in the `release` environment (required reviewer; tags v* only).
+    # One job, so one approval: crates.io in the four waves, then PyPI, then
+    # the GitHub release. Re-running it skips what is already published.
+    name: Publish (crates.io, PyPI, GitHub release)
+    needs: [check, collect]
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-${{ needs.check.outputs.version }}
+          # Outside the checkout, so cargo publish sees a clean tree.
+          path: ${{ runner.temp }}/dist
+      - name: The artifacts are the ones checksummed and attested
+        run: cd "$RUNNER_TEMP/dist" && sha256sum --check --strict SHA256SUMS
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+      # crates.io trusted publishing: a short-lived token per wave, revoked
+      # when the job ends. cargo publish waits until the index serves each
+      # crate before the next one.
+      - id: wave1
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+      - name: crates.io wave 1 (proto, core, auth)
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.wave1.outputs.token }}
+        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 1
+      - id: wave2
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+      - name: crates.io wave 2 (arrow)
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.wave2.outputs.token }}
+        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 2
+      - id: wave3
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+      - name: crates.io wave 3 (client)
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.wave3.outputs.token }}
+        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 3
+      - id: wave4
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+      - name: crates.io wave 4 (cli, stream)
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.wave4.outputs.token }}
+        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 4
+      # In the workspace: the publish action is a container that sees only it.
+      # Created after cargo publish, which needs a clean tree.
+      - name: The wheels for PyPI
+        run: mkdir pypi-dist && cp "$RUNNER_TEMP"/dist/*.whl pypi-dist/
+      - name: PyPI (trusted publishing, with attestations)
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: pypi-dist/
+          attestations: true
+          skip-existing: true
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 tools/release.py notes --version "$VERSION" > "$RUNNER_TEMP/notes.md"
+          tag="v$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$RUNNER_TEMP"/dist/* --clobber
+          else
+            flags=(--latest); case "$VERSION" in *-*) flags=(--prerelease --latest=false) ;; esac
+            gh release create "$tag" "$RUNNER_TEMP"/dist/* --verify-tag --title "$tag" \
+              --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
+          fi

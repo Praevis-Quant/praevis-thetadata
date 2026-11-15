@@ -69,6 +69,17 @@ class ArtifactTests(unittest.TestCase):
             self.assertTrue(all(len(line.split("  ")[0]) == 64 for line in lines))
 
 
+class PublishTests(unittest.TestCase):
+    def test_the_waves_cover_the_seven_crates_in_dependency_order(self):
+        order = [name for wave in sorted(release.WAVES) for name in release.WAVES[wave]]
+        self.assertEqual(len(order), 7)
+        self.assertLess(order.index("praevis-thetadata-proto"), order.index("praevis-thetadata-client"))
+        self.assertLess(order.index("praevis-thetadata-client"), order.index("praevis-thetadata-cli"))
+
+    def test_index_paths(self):
+        self.assertEqual(release.index_path("praevis-thetadata-core"), "pr/ae/praevis-thetadata-core")
+
+
 class NotesTests(unittest.TestCase):
     def test_the_body_follows_its_marker(self):
         self.assertEqual(release.release_body("# Draft\nmeta\n**Body:**\n\n> text\n"), "> text\n")

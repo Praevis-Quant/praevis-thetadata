@@ -12,6 +12,8 @@ Standard library only. Subcommands:
 - ``sums``: ``SHA256SUMS`` over a directory, checked against the expected
   artifact count.
 - ``notes``: the GitHub release body from ``docs/release-draft-<version>.md``.
+- ``publish-crates``: one wave of ``cargo publish``, skipping a crate whose
+  version the crates.io index already lists (a re-run after a failure).
 """
 from __future__ import annotations
 
@@ -24,6 +26,8 @@ import subprocess
 import sys
 import tarfile
 import tomllib
+import urllib.error
+import urllib.request
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -36,6 +40,13 @@ CLI_TARGETS = (
     "x86_64-apple-darwin", "aarch64-apple-darwin",
 )
 WHEELS = 8
+# crates.io waves, in dependency order (docs/releasing.md).
+WAVES = {
+    1: ("praevis-thetadata-proto", "praevis-thetadata-core", "praevis-thetadata-auth"),
+    2: ("praevis-thetadata-arrow",),
+    3: ("praevis-thetadata-client",),
+    4: ("praevis-thetadata-cli", "praevis-thetadata-stream"),
+}
 
 
 def workspace_version(root: pathlib.Path = ROOT) -> str:
@@ -161,6 +172,35 @@ def notes(args: argparse.Namespace) -> int:
     return 0
 
 
+def index_path(name: str) -> str:
+    """The sparse-index path of a crate name of four or more characters."""
+    return f"{name[:2]}/{name[2:4]}/{name}"
+
+
+def published(name: str, version: str) -> bool:
+    url = f"https://index.crates.io/{index_path(name)}"
+    request = urllib.request.Request(url, headers={"User-Agent": "praevis-thetadata-release"})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            lines = response.read().decode().splitlines()
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return False
+        raise
+    return any(json.loads(line)["vers"] == version for line in lines if line.strip())
+
+
+def publish_crates(args: argparse.Namespace) -> int:
+    if args.version != workspace_version():
+        sys.exit(f"version {args.version} is not the workspace version {workspace_version()}")
+    for name in WAVES[args.wave]:
+        if published(name, args.version):
+            print(f"{name} {args.version}: already on crates.io, skipped")
+            continue
+        subprocess.run(["cargo", "publish", "--locked", "-p", name], cwd=ROOT, check=True)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -179,8 +219,12 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--dir", required=True)
     n = sub.add_parser("notes")
     n.add_argument("--version", required=True)
+    c = sub.add_parser("publish-crates")
+    c.add_argument("--version", required=True)
+    c.add_argument("--wave", type=int, choices=sorted(WAVES), required=True)
     args = parser.parse_args(argv)
-    return {"check": check, "package-cli": package_cli, "sums": sums, "notes": notes}[args.command](args)
+    return {"check": check, "package-cli": package_cli, "sums": sums, "notes": notes,
+            "publish-crates": publish_crates}[args.command](args)
 
 
 if __name__ == "__main__":
