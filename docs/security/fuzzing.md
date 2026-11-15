@@ -21,6 +21,12 @@ small decoder limits and a 2 GiB RSS cap) is a finding.
   (ClusterFuzzLite's code-change mode), with AddressSanitizer.
 - **Weekly:** an hour across every target, with AddressSanitizer.
 
+**What is instrumented:** all Rust code, with AddressSanitizer and coverage.
+The C libraries underneath (zstd's decompressor and ring's primitives) are
+compiled without instrumentation, because ClusterFuzzLite's sanitizer
+`CFLAGS` would also reach build scripts that cannot link it; those libraries
+are fuzzed by their own projects.
+
 **Seeds are synthetic:** `fuzz/src/bin/seeds.rs` builds them at build time
 from the emulator's synthetic fixture tables and hand-written synthetic
 Terminal events. No market data, captured response or vendor payload is used
