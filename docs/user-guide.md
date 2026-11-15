@@ -51,6 +51,8 @@ the CLI's `auth --save`, `status` and `logout`. Its prerequisites:
   - Services and containers need an unlocked Secret Service under the same
     OS account. The [README](../README.md#build-and-authenticate) has the
     headless setup.
+- **macOS:** the user's default Keychain. No setup; macOS may ask once to
+  allow access when another program reads the item.
 - **Other platforms:** persistence returns an explicit unsupported-platform
   error. In-memory authentication still works.
 

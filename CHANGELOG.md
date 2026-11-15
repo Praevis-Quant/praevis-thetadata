@@ -18,6 +18,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Added
+
+- **The native session store on macOS:** the auth crate's `native-store`
+  feature, and the CLI's `auth --save`, `status` and `logout`, use the
+  user's default Keychain (a generic password; the service is the store's
+  target, the account the profile). Before, macOS returned
+  `UnsupportedPlatform`. User approval 2026-11-15: it adds
+  security-framework 2.11 and core-foundation 0.9 on macOS only.
+- **A real native-store round trip in CI** (save, read, delete) on Windows
+  (Credential Manager), Linux (a temporary gnome-keyring in its own D-Bus
+  session) and macOS (a temporary keychain), and a macOS job that builds
+  the CLI.
+
 ## [0.1.3] - pending
 
 **A patch release with two fixes to published code.** Prepared, not

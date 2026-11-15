@@ -30,6 +30,12 @@ thiserror.workspace = true
 [target.'cfg(windows)'.dependencies]
 keyring = { version = "3.6.3", features = ["windows-native"], optional = true }
 
+# The macOS Keychain (user approval 2026-11-15). It adds security-framework
+# 2.11 and core-foundation 0.9, older majors than the copies already in the
+# build through the native TLS roots.
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3.6.3", features = ["apple-native"], optional = true }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3.6.3", features = ["sync-secret-service", "crypto-rust", "vendored"], optional = true }
 

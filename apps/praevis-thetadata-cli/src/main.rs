@@ -38,7 +38,8 @@ struct AuthArgs {
     #[arg(long, global = true)]
     creds_file: Option<PathBuf>,
     /// Also save the session in the native credential store (Windows Credential
-    /// Manager or Linux Secret Service). Without it the session is not stored.
+    /// Manager, Linux Secret Service or the macOS Keychain). Without it the
+    /// session is not stored.
     #[arg(long)]
     save: bool,
     #[arg(

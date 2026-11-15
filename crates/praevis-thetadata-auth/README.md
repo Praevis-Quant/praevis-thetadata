@@ -41,11 +41,13 @@ praevis-thetadata-auth = "0.1"
 
 The default build (HTTP authentication and in-memory sessions) is pure Rust
 with `reqwest`/rustls and works on any platform supported by Rust 1.88+.
-`native-store` supports **Windows** (Credential Manager) and **Linux** (Secret
-Service over D-Bus, for example GNOME Keyring; the keyring must be unlocked).
-Other platforms get an explicit unsupported-platform error from its calls. On
-Linux, `native-store` compiles a vendored D-Bus library and needs a C compiler
-and `pkg-config`. CI covers Windows and Ubuntu.
+`native-store` supports **Windows** (Credential Manager), **Linux** (Secret
+Service over D-Bus, for example GNOME Keyring; the keyring must be unlocked)
+and **macOS** (the default Keychain). Other platforms get an explicit
+unsupported-platform error from its calls. On Linux, `native-store` compiles a
+vendored D-Bus library and needs a C compiler and `pkg-config`; for static musl
+builds on aarch64, set `CFLAGS=-mno-outline-atomics`. CI covers Windows,
+Ubuntu and macOS, each with a real save, read and delete.
 
 ## Example
 
