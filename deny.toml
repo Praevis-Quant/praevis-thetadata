@@ -1,0 +1,51 @@
+# cargo-deny: run in CI (the Supply chain job) and locally with
+# `cargo deny check`. What fails the build: a RustSec advisory (vulnerable,
+# unmaintained or unsound) against a locked crate, a licence outside the
+# allowlist, or a source other than crates.io. Duplicate versions only warn.
+
+[graph]
+all-features = true
+
+[advisories]
+# The RustSec database, fetched at check time.
+version = 2
+yanked = "deny"
+ignore = []
+
+[licenses]
+version = 2
+# Permissive licences compatible with distributing this project under
+# Apache-2.0. CDLA-Permissive-2.0 is webpki-roots' licence for its bundled
+# root-certificate data. Crates offering a choice (for example MIT OR
+# Apache-2.0 OR LGPL-2.1-or-later) pass on any allowed alternative.
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "MIT",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "BSL-1.0",
+    "Unicode-3.0",
+    "Zlib",
+    "CC0-1.0",
+    "Unlicense",
+    "CDLA-Permissive-2.0",
+]
+confidence-threshold = 0.9
+
+[licenses.private]
+# Our own unpublished crates (publish = false) need no licence check.
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+# Path dependencies between our own crates carry versions too; allow them.
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
