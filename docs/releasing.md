@@ -34,7 +34,9 @@ commit must be on `main`, CI (`ci.yml`) must have passed on that commit's
 push to `main`, and `docs/release-draft-<version>.md` must exist. Anything
 else stops the run before a build.
 
-**3. Build** (no secrets, read-only token):
+**3. Build** in [`build-release.yml`](../.github/workflows/build-release.yml),
+a reusable workflow that `trusted-publishing.yml` calls (no secrets,
+read-only token):
 
 | Artifact | Platforms | How it is checked |
 | --- | --- | --- |
@@ -49,9 +51,31 @@ and the CLI README. On every platform `auth --save` uses the native store:
 Windows Credential Manager, Linux Secret Service (including the static musl
 builds) or the macOS Keychain.
 
-**4. Checksums and attestations** (`collect` job): `SHA256SUMS` over the 16
-artifacts, and a signed [build-provenance attestation](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)
-for each, made with GitHub's OIDC identity through Sigstore.
+Alongside them, **CycloneDX 1.5 SBOMs** (`sbom` job, cargo-cyclonedx 0.5.10)
+of the Rust dependency graph each artifact is built from:
+`praevis-thetadata-<crate>-<version>.cdx.json` for each of the seven
+published crates (the CLI's covers the executables), and
+`praevis-thetadata-wheel-<version>.cdx.json` for the extension module in
+every wheel.
+
+**4. Checksums and attestations** (`collect` job, still in the reusable
+workflow):
+- `SHA256SUMS` over the 24 files (16 artifacts, 8 SBOMs);
+- a signed [build-provenance attestation](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)
+  for each of the 24, made with GitHub's OIDC identity through Sigstore;
+- SBOM attestations binding the eight executables to the CLI's SBOM and the
+  eight wheels to the wheel SBOM;
+- the three signed bundles, kept as release assets for offline
+  verification: `praevis-thetadata-<version>.provenance.sigstore.jsonl`,
+  `praevis-thetadata-cli-<version>.sbom.sigstore.jsonl` and
+  `praevis-thetadata-wheel-<version>.sbom.sigstore.jsonl`.
+
+**SLSA v1.0 Build Level 3.** The build and its attestations run in the
+reusable `build-release.yml`, so each attestation names that workflow as
+the builder (its signer), not the calling workflow. The caller's steps
+cannot influence the build or forge its provenance, and a verifier can
+require the signer workflow (below). This is GitHub's documented way to
+reach Build L3 with artifact attestations.
 
 **5. Approval, twice.** Two jobs wait: `publish-crates` for the
 `crates-io` environment and `publish-pypi` for the `pypi` environment. Each
@@ -60,7 +84,7 @@ tags. The user opens the run (Actions → Trusted publishing → the run for
 the tag), checks it, and chooses **Review deployments**, then approves
 `crates-io` and `pypi` (together, or one at a time). Before approving:
 - the gate passed for the tag you pushed, on the commit the live check ran on;
-- all 16 build jobs and the checksums job are green;
+- all 16 build jobs, the SBOM job and the checksums job are green;
 - the run is for `refs/tags/v<version>`, not a branch.
 
 Rejecting both, or letting them time out, publishes nothing. Approving
@@ -78,7 +102,8 @@ is published is what was attested.
    [trusted publishing](https://docs.pypi.org/trusted-publishers/), the
    eight wheels with PyPI attestations. No sdist.
 3. **`github-release`** (no environment, only `contents: write`), after both
-   succeeded: **the GitHub release** for the tag: the 16 artifacts and `SHA256SUMS`,
+   succeeded: **the GitHub release** for the tag: the 16 artifacts, the 8
+   SBOMs, the 3 signed bundles and `SHA256SUMS`,
    its notes taken from the body of `docs/release-draft-<version>.md`
    (everything after `**Body:**`). Marked latest; a version with a
    pre-release suffix is marked pre-release instead.
@@ -91,7 +116,7 @@ the crates, wheels, checksums, attestations and docs.rs.
 ## Dry run
 
 **Actions → Trusted publishing → Run workflow** on `main` (or any branch) runs the gate
-in report-only mode, builds and checks all 16 artifacts, writes
+in report-only mode, builds and checks all 16 artifacts and the 8 SBOMs, writes
 `SHA256SUMS` and attests them, and uploads them as the run's
 `release-<version>` artifact. The publish jobs do not run: they need a tag
 push, and the `crates-io` and `pypi` environments admit only `v*` tags anyway. Pull
@@ -100,15 +125,45 @@ attestations.
 
 ## Verifying a release
 
-```text
-# Checksums: download the release assets and SHA256SUMS into one folder
-sha256sum --check SHA256SUMS                       # Linux
-shasum -a 256 --check SHA256SUMS                   # macOS
+**Online** (a machine that can reach GitHub):
 
-# Provenance: each artifact was built by trusted-publishing.yml in this repository
+```text
+# Checksums: the release assets and SHA256SUMS in one folder
+sha256sum --check --ignore-missing SHA256SUMS       # Linux
+shasum -a 256 --check --ignore-missing SHA256SUMS   # macOS
+
+# Provenance: built by this repository's isolated build workflow
 gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz \
-  --repo Praevis-Quant/praevis-thetadata
+  --repo Praevis-Quant/praevis-thetadata \
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
+
+# The SBOM attestation of an executable or a wheel
+gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz \
+  --repo Praevis-Quant/praevis-thetadata --predicate-type https://cyclonedx.org/bom
 ```
+
+**Offline** (an enclave with no network): the signed bundles are release
+assets, so verification needs only one trust anchor fetched beforehand.
+1. **On a connected machine,** fetch Sigstore's trusted root through GitHub
+   (`gh attestation trusted-root > trusted_root.jsonl`), and download the
+   release assets you need with `SHA256SUMS` and the three
+   `*.sigstore.jsonl` bundles.
+2. **Transfer** them into the enclave by your approved process.
+3. **In the enclave:**
+
+```text
+sha256sum --check --ignore-missing SHA256SUMS
+gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz \
+  --bundle praevis-thetadata-0.1.3.provenance.sigstore.jsonl \
+  --custom-trusted-root trusted_root.jsonl \
+  --repo Praevis-Quant/praevis-thetadata \
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
+```
+
+`gh attestation verify --bundle` checks the signature, the certificate
+chain to the trusted root, the transparency-log inclusion recorded in the
+bundle and the workflow identity, without contacting any service. The
+trusted root changes rarely; refresh it with each transfer.
 
 On PyPI each file shows its attestation (the release workflow as publisher);
 on crates.io each version shows that it was published by GitHub Actions
@@ -149,8 +204,8 @@ through trusted publishing.
 | Job | Permissions | Environment |
 | --- | --- | --- |
 | `check` | `contents: read`, `actions: read` | — |
-| `cli`, `wheels` | `contents: read` | — |
-| `collect` | `contents: read`, `id-token: write`, `attestations: write` | — |
+| `cli`, `wheels`, `sbom` (in `build-release.yml`) | `contents: read` | — |
+| `collect` (in `build-release.yml`; the calling `build` job grants these) | `contents: read`, `id-token: write`, `attestations: write` | — |
 | `publish-crates` | `contents: read`, `id-token: write` | `crates-io` (required reviewer: the user; `v*` tags only) |
 | `publish-pypi` | `contents: read`, `id-token: write` | `pypi` (required reviewer: the user; `v*` tags only) |
 | `github-release` | `contents: write` | — |

@@ -11,6 +11,9 @@ Standard library only. Subcommands:
   (``.zip`` on Windows, ``.tar.gz`` elsewhere), with the licence files.
 - ``sums``: ``SHA256SUMS`` over a directory, checked against the expected
   artifact count.
+- ``collect-sboms``: the CycloneDX SBOMs cargo-cyclonedx wrote next to each
+  manifest, renamed for the release: one per published crate (the CLI's
+  covers the executables) and one for the wheels' extension module.
 - ``notes``: the GitHub release body from ``docs/release-draft-<version>.md``.
 - ``publish-crates``: one wave of ``cargo publish``, skipping a crate whose
   version the crates.io index already lists (a re-run after a failure).
@@ -40,6 +43,18 @@ CLI_TARGETS = (
     "x86_64-apple-darwin", "aarch64-apple-darwin",
 )
 WHEELS = 8
+# Crates whose SBOM is released: the seven published crates, and the Python
+# extension module (built into every wheel).
+SBOM_CRATES = {
+    "praevis-thetadata-proto": "crates/praevis-thetadata-proto",
+    "praevis-thetadata-core": "crates/praevis-thetadata-core",
+    "praevis-thetadata-auth": "crates/praevis-thetadata-auth",
+    "praevis-thetadata-arrow": "crates/praevis-thetadata-arrow",
+    "praevis-thetadata-client": "crates/praevis-thetadata-client",
+    "praevis-thetadata-cli": "apps/praevis-thetadata-cli",
+    "praevis-thetadata-stream": "crates/praevis-thetadata-stream",
+    "praevis-thetadata-wheel": "crates/praevis-thetadata-py",
+}
 # crates.io waves, in dependency order (docs/releasing.md).
 WAVES = {
     1: ("praevis-thetadata-proto", "praevis-thetadata-core", "praevis-thetadata-auth"),
@@ -141,8 +156,30 @@ def package_cli(args: argparse.Namespace) -> int:
     return 0
 
 
+def sbom_name(name: str, version: str) -> str:
+    return f"{name}-{version}.cdx.json"
+
+
 def expected_files(version: str) -> set[str]:
-    return {archive_name(version, target) for target in CLI_TARGETS}
+    return ({archive_name(version, target) for target in CLI_TARGETS}
+            | {sbom_name(name, version) for name in SBOM_CRATES})
+
+
+def collect_sboms(args: argparse.Namespace) -> int:
+    out = pathlib.Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for name, directory in SBOM_CRATES.items():
+        manifest = ROOT / directory / "Cargo.toml"
+        with open(manifest, "rb") as handle:
+            package = tomllib.load(handle)["package"]["name"]
+        source = ROOT / directory / f"{package}.cdx.json"
+        document = json.loads(source.read_text(encoding="utf-8"))
+        component = document["metadata"]["component"]
+        if component["name"] != package or component.get("version") != args.version:
+            sys.exit(f"{source}: describes {component['name']} {component.get('version')}")
+        (out / sbom_name(name, args.version)).write_text(json.dumps(document, indent=1), encoding="utf-8")
+    print(f"{len(SBOM_CRATES)} SBOMs")
+    return 0
 
 
 def sums(args: argparse.Namespace) -> int:
@@ -151,7 +188,7 @@ def sums(args: argparse.Namespace) -> int:
     names = {p.name for p in files}
     missing = expected_files(args.version) - names
     wheels = [n for n in names if n.endswith(".whl")]
-    if missing or len(wheels) != WHEELS or len(files) != len(CLI_TARGETS) + WHEELS:
+    if missing or len(wheels) != WHEELS or len(files) != len(CLI_TARGETS) + WHEELS + len(SBOM_CRATES):
         sys.exit(f"unexpected artifacts: missing {sorted(missing)}, {len(wheels)} wheels, {len(files)} files")
     lines = [f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n" for p in files]
     (directory / "SHA256SUMS").write_text("".join(lines), encoding="utf-8")
@@ -217,6 +254,9 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("sums")
     s.add_argument("--version", required=True)
     s.add_argument("--dir", required=True)
+    b = sub.add_parser("collect-sboms")
+    b.add_argument("--version", required=True)
+    b.add_argument("--out", required=True)
     n = sub.add_parser("notes")
     n.add_argument("--version", required=True)
     c = sub.add_parser("publish-crates")
@@ -224,7 +264,7 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--wave", type=int, choices=sorted(WAVES), required=True)
     args = parser.parse_args(argv)
     return {"check": check, "package-cli": package_cli, "sums": sums, "notes": notes,
-            "publish-crates": publish_crates}[args.command](args)
+            "publish-crates": publish_crates, "collect-sboms": collect_sboms}[args.command](args)
 
 
 if __name__ == "__main__":

@@ -18,3 +18,6 @@ __pycache__/
 /.venv-p1/
 /dist/
 /scripts/live/settings.env
+
+# cargo-cyclonedx output (the release builds SBOMs in CI).
+*.cdx.json
