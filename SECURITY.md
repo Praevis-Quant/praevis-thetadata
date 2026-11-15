@@ -20,18 +20,35 @@ replaced, and affected versions are yanked when that protects users.
 wheel or CLI, and version), how to reproduce it, and the impact you see.
 Never include a real ThetaData API key, session token or market data.
 
-**What to expect** (business days, from your report):
+## Response and fix targets
 
-| | Target |
+These are **targets for a single-maintainer project**, not guarantees.
+
+| Step | Target |
 | --- | --- |
-| Acknowledgement | 3 days |
-| First assessment (accepted or not, and severity) | 7 days |
-| Fix or mitigation for a high or critical issue | 30 days |
-| Others | the next planned release |
+| Acknowledge any report | within 7 days |
+| Assess it and score it (CVSS) | within 7 days |
 
-We coordinate the disclosure with you, publish a GitHub security advisory
-(and a RustSec advisory for the crates when it applies), and credit you
-unless you ask us not to.
+A fix is released within, by the vulnerability's CVSS v3.1 base score (or
+CVSS v4.0 where the advisory provides it):
+
+| Severity | CVSS base score | Fix released within |
+| --- | --- | --- |
+| Critical | 9.0–10.0 | 7 days |
+| High | 7.0–8.9 | 30 days |
+| Medium | 4.0–6.9 | 60 days |
+| Low | 0.1–3.9 | 90 days, or the next release |
+
+- **Coordinated disclosure:** a report stays private until the fix is
+  released, and at most 90 days. We publish a GitHub security advisory (and
+  a RustSec advisory for the crates when it applies), and credit the
+  reporter unless they ask us not to.
+- **Vulnerabilities in dependencies** use the score from that dependency's
+  advisory, with the same targets. RustSec advisories against the locked
+  dependencies fail CI, and Dependabot proposes the fixes.
+- These targets meet the OpenSSF Best Practices "passing" criteria: a
+  response to vulnerability reports within 14 days, and no medium or higher
+  publicly known vulnerability left unpatched for more than 60 days.
 
 ## Scope
 
