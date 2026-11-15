@@ -9,6 +9,7 @@
 //! It prints one JSON line, `{"auth_url": …, "endpoint": …}`, then serves
 //! until its standard input closes. A line `requests` on standard input
 //! prints `{"requests": N}`: the RPC requests received so far.
+#![forbid(unsafe_code)]
 use praevis_thetadata_emulator::{Concurrency, Config, Emulator, Fault, Profile};
 use std::io::{BufRead, Write};
 use std::process::ExitCode;

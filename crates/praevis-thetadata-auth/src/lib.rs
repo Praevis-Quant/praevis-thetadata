@@ -16,8 +16,9 @@
 //! process, as the vendor Python package does with `existing_authorized_client`.
 //! Saving it in the OS credential store across processes is an optional Rust
 //! enhancement: enable the `native-store` feature for `SessionStore`
-//! (Windows Credential Manager and Linux Secret Service).
+//! (Windows Credential Manager, Linux Secret Service and the macOS Keychain).
 
+#![forbid(unsafe_code)]
 /// `with_<field>` setters for a `#[non_exhaustive]` configuration struct: build
 /// one with `Default::default()` (or its constructor) and chain the setters.
 macro_rules! with_setters {

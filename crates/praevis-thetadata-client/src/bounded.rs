@@ -91,6 +91,7 @@ fn bound(value: usize, limit: usize, name: &'static str) -> Result<(), EodError>
         Ok(())
     }
 }
+#[allow(unsafe_code)] // ZSTD_getErrorCode: see the SAFETY note below.
 fn zstd_error(code: usize) -> EodError {
     use zstd::zstd_safe::zstd_sys::{ZSTD_ErrorCode, ZSTD_getErrorCode};
     // SAFETY: this C function accepts a numeric result code, dereferences no

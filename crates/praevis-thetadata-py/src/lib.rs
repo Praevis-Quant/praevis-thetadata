@@ -4,6 +4,7 @@
 //! the GIL released. Results leave through the Arrow PyCapsule interface
 //! (`__arrow_c_stream__`, `__arrow_c_array__`), so pyarrow, Polars and pandas
 //! import the buffers without copying and Python creates no object per row.
+#![forbid(unsafe_code)]
 #[rustfmt::skip]
 mod kwargs;
 

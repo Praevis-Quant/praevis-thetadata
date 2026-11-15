@@ -1,6 +1,8 @@
 #![doc = include_str!("../README.md")]
 //!
 //! Async batch streaming for ThetaData's direct gRPC API.
+// One audited FFI call (zstd's error code); every other line is safe Rust.
+#![deny(unsafe_code)]
 /// `with_<field>` setters for a `#[non_exhaustive]` configuration struct: build
 /// one with `Default::default()` (or its constructor) and chain the setters.
 macro_rules! with_setters {

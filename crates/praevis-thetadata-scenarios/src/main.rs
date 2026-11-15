@@ -17,6 +17,7 @@
 //! The report (`--report`, default under the ignored `artifacts/`) holds
 //! scenario names, outcomes, gRPC codes, column kinds and timings: never
 //! values. The drift check (ADR-0022 part 3) reads it.
+#![forbid(unsafe_code)]
 use clap::{Parser, ValueEnum};
 use praevis_thetadata_client::arrow_schema::{DataType, Schema};
 use praevis_thetadata_client::{

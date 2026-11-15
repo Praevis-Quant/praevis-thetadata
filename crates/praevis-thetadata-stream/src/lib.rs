@@ -32,6 +32,7 @@
 //! the unsubscribes before the Terminal reads them.
 //!
 //! This crate never starts, stops or reconfigures the Terminal.
+#![forbid(unsafe_code)]
 /// `with_<field>` setters for a `#[non_exhaustive]` configuration struct: build
 /// one with `Default::default()` (or its constructor) and chain the setters.
 macro_rules! with_setters {

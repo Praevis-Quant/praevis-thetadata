@@ -16,6 +16,7 @@
 //! An RPC with no recorded schema, or never probed on the profile, is
 //! answered `UNIMPLEMENTED` naming the evidence gap. The emulator never
 //! invents a schema.
+#![forbid(unsafe_code)]
 use praevis_thetadata_proto::beta_endpoints as api;
 use praevis_thetadata_proto::endpoints::{self as wire, data_value::DataType};
 use prost::Message;
