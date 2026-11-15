@@ -1,0 +1,271 @@
+name: Trusted publishing
+
+# How a release runs: docs/releasing.md. A v* tag push builds, attests and
+# (after the user's approval in the `release` environment) publishes. A
+# manual run (workflow_dispatch) and pull requests that touch the release
+# tooling are dry runs: they build and test everything, and never publish.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/trusted-publishing.yml
+      - tools/release.py
+      - tools/wheel_smoke.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: never
+  # The PyPA build images, pinned by digest (as in ci.yml).
+  MANYLINUX_X86_64: quay.io/pypa/manylinux_2_28_x86_64:2026.11.07-1@sha256:9555ba6c479fa69a2aa80ad1dc57154a60d562b19df159361d9379a02beb1e36
+  MANYLINUX_AARCH64: quay.io/pypa/manylinux_2_28_aarch64:2026.11.07-1@sha256:cb37f0d66c8a75abb93cf6085cad1f1427cd7208f0c0fc48359bb1eea9924f21
+  MUSLLINUX_X86_64: quay.io/pypa/musllinux_1_2_x86_64:2026.11.07-1@sha256:cf82db9d8dc8c5c2cb27f422208baf266ebc8ad70be4ab1bc79bcc8807a6432d
+  MUSLLINUX_AARCH64: quay.io/pypa/musllinux_1_2_aarch64:2026.11.07-1@sha256:6cdf1dca55fa6fb1e689e7516e465b51eed1f822167386d61102116c49235d6f
+
+jobs:
+  check:
+    # On a tag: the tag is v<workspace version>, the commit is on main, and
+    # CI passed on its push to main. Dry runs report and continue.
+    name: Release gate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      version: ${{ steps.gate.outputs.version }}
+      publish: ${{ steps.gate.outputs.publish }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/release.py check >> "$GITHUB_OUTPUT"
+
+  cli:
+    name: CLI (${{ matrix.target }})
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-pc-windows-msvc, runner: windows-latest, kind: windows, arch: x64 }
+          - { target: aarch64-pc-windows-msvc, runner: windows-11-arm, kind: windows, arch: arm64 }
+          - { target: x86_64-unknown-linux-gnu, runner: ubuntu-24.04, kind: gnu, image: MANYLINUX_X86_64 }
+          - { target: aarch64-unknown-linux-gnu, runner: ubuntu-24.04-arm, kind: gnu, image: MANYLINUX_AARCH64 }
+          - { target: x86_64-unknown-linux-musl, runner: ubuntu-24.04, kind: musl }
+          - { target: aarch64-unknown-linux-musl, runner: ubuntu-24.04-arm, kind: musl }
+          - { target: x86_64-apple-darwin, runner: macos-15-intel, kind: macos, arch: x64 }
+          - { target: aarch64-apple-darwin, runner: macos-15, kind: macos, arch: arm64 }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        if: matrix.kind != 'gnu'
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+      # The packaging script (tools/release.py needs Python 3.11+).
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: matrix.arch
+        with:
+          python-version: "3.12"
+          architecture: ${{ matrix.arch }}
+      - name: Build (Windows; the C runtime linked statically)
+        if: matrix.kind == 'windows'
+        env:
+          RUSTFLAGS: -C target-feature=+crt-static
+        run: cargo build --release --locked -p praevis-thetadata-cli --target "$TARGET"
+      - name: Build (macOS)
+        if: matrix.kind == 'macos'
+        run: cargo build --release --locked -p praevis-thetadata-cli --target "$TARGET"
+      - name: Build (Linux musl, static; libdbus vendored)
+        if: matrix.kind == 'musl'
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -q musl-tools >/dev/null
+          var=$(echo "$TARGET" | tr '-' '_')
+          export "CC_${var}=musl-gcc"
+          # aarch64: gcc's outline atomics need a libgcc helper the static
+          # link does not include (libdbus's atomics; docs/releasing.md).
+          if [ "${TARGET%%-*}" = aarch64 ]; then export "CFLAGS_${var}=-mno-outline-atomics"; fi
+          cargo build --release --locked -p praevis-thetadata-cli --target "$TARGET"
+      - name: Build (Linux glibc, in manylinux_2_28 for glibc 2.28 and newer)
+        if: matrix.kind == 'gnu'
+        env:
+          IMAGE: ${{ env[matrix.image] }}
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/io" -w /io -e TARGET -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" "$IMAGE" \
+            bash -euo pipefail -c '
+              for attempt in 1 2 3 4 5; do
+                curl --proto "=https" --tlsv1.2 -sSf -o /tmp/rustup-init.sh https://sh.rustup.rs && break
+                [ "$attempt" = 5 ] && exit 1
+                sleep $((attempt * 5))
+              done
+              sh /tmp/rustup-init.sh -y --profile minimal --default-toolchain stable
+              . "$HOME/.cargo/env"
+              cargo build --release --locked -p praevis-thetadata-cli --target "$TARGET"
+              chown -R "$HOST_UID:$HOST_GID" target'
+      - name: Check the binary
+        run: |
+          set -euo pipefail
+          exe="target/$TARGET/release/praevis-thetadata"
+          [ -f "$exe.exe" ] && exe="$exe.exe"
+          out=$("$exe" --version)
+          echo "$out"
+          [ "$out" = "praevis-thetadata $VERSION" ]
+          case "$TARGET" in
+            # "statically linked" or "static-pie linked": no interpreter, no libc.
+            *-linux-musl) file "$exe" | tee /dev/stderr | grep -qE 'static(ally|-pie) linked' ;;
+            *-linux-gnu)
+              newest=$(objdump -T "$exe" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)
+              echo "newest glibc symbol: $newest"
+              [ "$(printf '%s\nGLIBC_2.28\n' "$newest" | sort -V | tail -1)" = GLIBC_2.28 ] ;;
+          esac
+          py=$(command -v python3 || command -v python)
+          "$py" tools/release.py package-cli --version "$VERSION" --target "$TARGET" --binary "$exe" --out dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cli-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  wheels:
+    name: Wheel (${{ matrix.platform }})
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: manylinux_2_28_x86_64, runner: ubuntu-24.04, image: MANYLINUX_X86_64, compat: manylinux_2_28 }
+          - { platform: manylinux_2_28_aarch64, runner: ubuntu-24.04-arm, image: MANYLINUX_AARCH64, compat: manylinux_2_28 }
+          - { platform: musllinux_1_2_x86_64, runner: ubuntu-24.04, image: MUSLLINUX_X86_64, compat: musllinux_1_2 }
+          - { platform: musllinux_1_2_aarch64, runner: ubuntu-24.04-arm, image: MUSLLINUX_AARCH64, compat: musllinux_1_2 }
+          - { platform: win_amd64, runner: windows-latest, arch: x64 }
+          - { platform: win_arm64, runner: windows-11-arm, arch: arm64 }
+          - { platform: macosx_10_12_x86_64, runner: macos-15-intel, arch: x64 }
+          - { platform: macosx_11_0_arm64, runner: macos-15, arch: arm64 }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      PLATFORM: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: The hash-pinned maturin only
+        run: |
+          awk '/^maturin==/{p=1;print;next} p&&/^ /{print;next} p{exit}' \
+            crates/praevis-thetadata-py/requirements-test.txt > .maturin-requirements.txt
+      - name: Build and smoke-test (Linux, in the PyPA image)
+        if: matrix.image
+        env:
+          IMAGE: ${{ env[matrix.image] }}
+          COMPAT: ${{ matrix.compat }}
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/io" -w /io -e COMPAT -e VERSION -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" "$IMAGE" \
+            bash -euo pipefail -c '
+              for attempt in 1 2 3 4 5; do
+                curl --proto "=https" --tlsv1.2 -sSf -o /tmp/rustup-init.sh https://sh.rustup.rs && break
+                [ "$attempt" = 5 ] && exit 1
+                sleep $((attempt * 5))
+              done
+              sh /tmp/rustup-init.sh -y --profile minimal --default-toolchain stable
+              . "$HOME/.cargo/env"
+              /opt/python/cp312-cp312/bin/python -m pip install --quiet --require-hashes -r .maturin-requirements.txt
+              /opt/python/cp312-cp312/bin/maturin build --release --locked --compatibility "$COMPAT" \
+                -m crates/praevis-thetadata-py/Cargo.toml -o dist
+              # The oldest supported Python, in a clean environment, no network.
+              /opt/python/cp310-cp310/bin/python -m venv /tmp/smoke
+              /tmp/smoke/bin/python -m pip install --quiet --no-index --find-links dist praevis-thetadata
+              /tmp/smoke/bin/python tools/wheel_smoke.py "$VERSION"
+              chown -R "$HOST_UID:$HOST_GID" dist target'
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: ${{ !matrix.image }}
+        with:
+          python-version: "3.12"
+          architecture: ${{ matrix.arch }}
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        if: ${{ !matrix.image }}
+        with:
+          toolchain: stable
+      - name: Build and smoke-test (Windows, macOS)
+        if: ${{ !matrix.image }}
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet --require-hashes -r .maturin-requirements.txt
+          maturin build --release --locked -m crates/praevis-thetadata-py/Cargo.toml -o dist
+          python -m venv "$RUNNER_TEMP/smoke"
+          py="$RUNNER_TEMP/smoke/bin/python"; [ -x "$py" ] || py="$RUNNER_TEMP/smoke/Scripts/python.exe"
+          "$py" -m pip install --quiet --no-index --find-links dist praevis-thetadata
+          "$py" tools/wheel_smoke.py "$VERSION"
+      - name: Check the wheel's platform tag
+        run: |
+          set -euo pipefail
+          ls dist
+          wheels=(dist/*.whl)
+          [ "${#wheels[@]}" = 1 ]
+          ls "dist/praevis_thetadata-$VERSION-cp310-abi3-$PLATFORM.whl"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wheel-${{ matrix.platform }}
+          path: dist/*.whl
+          if-no-files-found: error
+
+  collect:
+    # Every artifact, its SHA256SUMS, and a signed build-provenance
+    # attestation for each (not on pull requests).
+    name: Checksums and attestations
+    needs: [check, cli, wheels]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: dist
+          merge-multiple: true
+      - name: SHA256SUMS
+        run: python3 tools/release.py sums --version "$VERSION" --dir dist
+      - name: Attest build provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: dist/SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-${{ needs.check.outputs.version }}
+          path: dist/*
+          if-no-files-found: error
