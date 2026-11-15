@@ -1,7 +1,7 @@
 name: Trusted publishing
 
 # How a release runs: docs/releasing.md. A v* tag push builds, attests and
-# (after the user's approval in the `release` environment) publishes. A
+# (after the user's approval in the `trusted-publishing` environment) publishes. A
 # manual run (workflow_dispatch) and pull requests that touch the release
 # tooling are dry runs: they build and test everything, and never publish.
 
@@ -272,7 +272,7 @@ jobs:
 
   publish:
     # Only on a v* tag that passed the gate, and only after the user approves
-    # this job in the `release` environment (required reviewer; tags v* only).
+    # this job in the `trusted-publishing` environment (required reviewer; tags v* only).
     # One job, so one approval: crates.io in the four waves, then PyPI, then
     # the GitHub release. Re-running it skips what is already published.
     name: Publish (crates.io, PyPI, GitHub release)
@@ -280,7 +280,7 @@ jobs:
     if: needs.check.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    environment: release
+    environment: trusted-publishing
     permissions:
       contents: write
       id-token: write

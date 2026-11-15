@@ -10,7 +10,7 @@ edition = "2024"
 rust-version = "1.88"
 license = "Apache-2.0"
 # crates.io only, published only by .github/workflows/trusted-publishing.yml on a v* tag,
-# after the user approves its `release` environment (trusted publishing, no
+# after the user approves its `trusted-publishing` environment (trusted publishing, no
 # tokens; docs/releasing.md). Nothing else publishes.
 publish = ["crates-io"]
 repository = "https://github.com/Praevis-Quant/praevis-thetadata"
