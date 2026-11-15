@@ -19,6 +19,20 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Fixed
 
+- **The gRPC client panicked when the application also enabled rustls's
+  aws-lc-rs provider** ("Could not automatically determine the
+  process-level CryptoProvider"), as `praevis-data` hit through
+  `object_store`'s AWS support. With both providers compiled in and none
+  installed, tonic asked rustls for the process default.
+  - **The fix:** tonic's `tls-ring` feature. When the application installed
+    no process default, the client builds its TLS configuration with ring
+    explicitly; an installed default is still used. The auth client's
+    reqwest already behaved so. No new package enters the build.
+  - **Test:** `tools/tls-providers`, a consumer with both providers enabled
+    in its own workspace, connects over TLS to the emulator (through its
+    own terminator with an explicit provider) and builds the auth client.
+    It fails without the fix. CI runs it on Linux.
+
 - **`job()` sent option binomial Greeks EOD over every expiration as one
   request over several days.** The vendor documents that any expiration
   `*` must be requested day by day (the 1.0.17 docstring and the v3
