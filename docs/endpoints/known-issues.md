@@ -49,12 +49,24 @@ and already in 1.0.12, and so do both v3 operation pages. The research
 catalogued that text, but the planner did not use it; the refusal was found
 live instead.
 
-**The same shape, not split yet:** these RPCs also plan at 366 days and
+**Fixed for `0.1.3`: binomial Greeks EOD is split per day too,** on the
+vendor's documentation (user decision, 2026-11-15). The planner splits
+`OptionHistoryBinomialGreeksEod` per day when the expiration is `*`, as for
+Greeks EOD; one expiration keeps the 366-day split.
+- **Not observed yet:** the emulator refuses the multi-day shape with
+  `InvalidArgument`, a code assumed from Greeks EOD. The scenarios
+  (`binomial-greeks-eod-every-expiration`) send the whole week live, record
+  the real code, and the drift check reports a difference from the model.
+- **Tests:** a planner test and an emulator test, as for Greeks EOD.
+- **The workaround on `0.1.2` and earlier:** one request per day, or a
+  single expiration.
+
+**The same shape, still unsplit:** these RPCs also plan at 366 days and
 accept expiration `*`. No run has sent them `*` over more than one day.
 
 | RPC | Status | The check that would settle it |
 | --- | --- | --- |
-| `OptionHistoryBinomialGreeksEod` | **Documented by the vendor: day by day** (docstring, v3 page); not observed, and the planner does not split it yet | none needed to split it; one request (SPY, `*`, two weekdays) would confirm the refusal |
+| `OptionHistoryBinomialGreeksEod` | **Split per day from `0.1.3`** on the vendor's documentation (above); the live scenario records the refusal | — |
 | `OptionAtTimeTrade` | **Unverified;** nothing documented | one request, SPY, expiration `*`, two weekdays |
 | `OptionAtTimeQuote` | **Unverified;** the vendor documents only that a sub-minute time with `*` can be slow or hang | the same |
 | `OptionHistoryEod` | **Verified fine:** 5 days answered whole | — |

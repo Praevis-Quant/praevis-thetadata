@@ -17,6 +17,21 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Fixed
+
+- **`job()` sent option binomial Greeks EOD over every expiration as one
+  request over several days.** The vendor documents that any expiration
+  `*` must be requested day by day (the 1.0.17 docstring and the v3
+  operation page, as for Greeks EOD, whose refusal was observed in
+  `0.1.0`). The same went for Python's planned calls and `describe`.
+  - **The fix:** the planner splits `OptionHistoryBinomialGreeksEod` one
+    day per request when the expiration is `*`, as `0.1.1` did for Greeks
+    EOD. One expiration keeps the 366-day split.
+  - **Not observed yet:** the emulator refuses the multi-day shape with
+    `InvalidArgument`, assumed from Greeks EOD, and the new
+    `binomial-greeks-eod-every-expiration` scenarios record the real code
+    live; the drift check now takes the expected code from the model.
+
 ## [0.1.2] - 2026-11-14
 
 **Requests by name, additive.** Published with the user's approval to

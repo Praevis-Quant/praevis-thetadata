@@ -43,7 +43,15 @@
       "max_days": 1,
       "code": "InvalidArgument",
       "message": "emulator: every expiration over more than one day is refused (praevis-data ingest, 2026-11-13)",
-      "evidence": "option_history_greeks_eod, SPY, expiration *: 2026-11-02..06 and 2026-11-05..06 refused with InvalidArgument (with or without strike *, right both, rate_type sofr, version latest); 2026-11-06 alone answered 12,952 rows. option_history_eod with expiration * over the same 5 days answered 63,626 rows, so it is not listed. Windows, options PRO, praevis-data's first ingest with package 0.1.0b2, about 17:45 UTC 2026-11-13. Other RPCs of this shape (binomial Greeks EOD, at-time trade and quote) are untested and not inferred"
+      "evidence": "option_history_greeks_eod, SPY, expiration *: 2026-11-02..06 and 2026-11-05..06 refused with InvalidArgument (with or without strike *, right both, rate_type sofr, version latest); 2026-11-06 alone answered 12,952 rows. option_history_eod with expiration * over the same 5 days answered 63,626 rows, so it is not listed. Windows, options PRO, praevis-data's first ingest with package 0.1.0b2, about 17:45 UTC 2026-11-13. At-time trade and quote, of the same shape, are untested and not inferred"
+    },
+    {
+      "rpcs": ["GetOptionHistoryBinomialGreeksEod"],
+      "expiration": "*",
+      "max_days": 1,
+      "code": "InvalidArgument",
+      "message": "emulator: every expiration over more than one day is refused (vendor documentation)",
+      "evidence": "Documented, not observed: the 1.0.17 docstring of option_history_binomial_greeks_eod and its v3 operation page say any expiration=* must be requested day by day, as they say for option_history_greeks_eod, whose refusal was observed (InvalidArgument, entry above). The code is assumed from that sibling; the live scenario records the real one and the drift check reports a difference"
     }
   ],
   "first_row_delays": [

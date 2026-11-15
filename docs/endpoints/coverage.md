@@ -7,6 +7,7 @@ per-clause requirement matrices for generated endpoints
 
 **Known request shapes the service refuses** are in [known issues](known-issues.md):
 `GetOptionHistoryGreeksEod`: expiration `*` over 2 or 5 days was refused with InvalidArgument, one day answered (praevis-data first ingest, 2026-11-13); planned one day at a time from 0.1.1.
+`GetOptionHistoryBinomialGreeksEod`: the vendor documents that any expiration `*` must be requested day by day (the 1.0.17 docstring and the v3 operation page); not observed live; planned one day at a time from 0.1.3.
 
 The value check compares our columnar decoder with the legacy decoder, and runs the
 request through the Python package: step F for options (`live_p0 option-checks`,

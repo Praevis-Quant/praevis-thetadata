@@ -77,6 +77,16 @@ class DriftTests(unittest.TestCase):
                               "shape": "every-expiration-multi-day"}))
         self.assertEqual([f["what"] for f in findings(lifted)], ["GetOptionHistoryGreeksEod: code"])
 
+    def test_the_documented_binomial_refusal_is_checked_against_the_model(self):
+        recorded = live(passed("binomial-greeks-eod-every-expiration-whole",
+                               {"rpc": "GetOptionHistoryBinomialGreeksEod", "code": "InvalidArgument",
+                                "shape": "every-expiration-multi-day"}))
+        self.assertEqual(findings(recorded), [])
+        other = live(passed("binomial-greeks-eod-every-expiration-whole",
+                            {"rpc": "GetOptionHistoryBinomialGreeksEod", "code": "FailedPrecondition",
+                             "shape": "every-expiration-multi-day"}))
+        self.assertEqual([f["what"] for f in findings(other)], ["GetOptionHistoryBinomialGreeksEod: code"])
+
     def test_an_emulator_report_is_not_evidence(self):
         report = {"run_id": "ci", "target": "emulator", "scenarios": []}
         self.assertEqual([f["what"] for f in findings(report)], ["not a live report"])

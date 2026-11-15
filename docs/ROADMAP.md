@@ -88,7 +88,9 @@ Nothing below is prepared or scheduled until the user decides.
      vendor default, the canonical time form, and planning a dispatched
      request.
 2. **Add binomial Greeks EOD, at-time trade and at-time quote to the weekly
-   live run** ([live runbook](live-runbook.md#what-a-run-is-approved-to-include)).
+   live run.** Binomial Greeks EOD is in it from `0.1.3`'s scenarios: the
+   vendor documents it as day by day, and the user approved the per-day
+   split (2026-11-15). At-time trade and quote remain ([live runbook](live-runbook.md#what-a-run-is-approved-to-include)).
    They plan like Greeks EOD did before `0.1.1`, but none has been sent
    expiration `*` over several days
    ([known issues](endpoints/known-issues.md)).
