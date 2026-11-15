@@ -14,11 +14,11 @@ after the user approves it. No tokens are stored or used.
 | Pre-release live check on the merged commit (`scripts/live/run.sh --part anytime`) | The maintainer, on the user's machine |
 | Dry run of the release workflow on `main` (optional, recommended) | The maintainer or the user (Actions → Trusted publishing → Run workflow) |
 | Create and push the tag `v<version>` | **The user** (repository admin). A tag ruleset blocks creating, moving or deleting `v*` tags for everyone else |
-| Approve the `trusted-publishing` environment | **The user**, the environment's required reviewer |
+| Approve the `crates-io` and `pypi` environments (two approvals per release) | **The user**, each environment's required reviewer |
 | Publication record PR | An agent, after the user reports the release |
 
 **Agents never publish, never create or push `v*` tags, and never approve
-the `trusted-publishing` environment** ([AGENTS.md](../AGENTS.md)).
+the `crates-io` or `pypi` environment** ([AGENTS.md](../AGENTS.md)).
 
 ## How a release runs
 
@@ -53,25 +53,32 @@ builds) or the macOS Keychain.
 artifacts, and a signed [build-provenance attestation](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)
 for each, made with GitHub's OIDC identity through Sigstore.
 
-**5. Approval.** The `publish` job waits for the `trusted-publishing` environment. The
-user opens the run (Actions → Trusted publishing → the run for the tag), checks it, and
-chooses **Review deployments → trusted-publishing → Approve**. Before approving:
+**5. Approval, twice.** Two jobs wait: `publish-crates` for the
+`crates-io` environment and `publish-pypi` for the `pypi` environment. Each
+environment has the user as its required reviewer and admits only `v*`
+tags. The user opens the run (Actions → Trusted publishing → the run for
+the tag), checks it, and chooses **Review deployments**, then approves
+`crates-io` and `pypi` (together, or one at a time). Before approving:
 - the gate passed for the tag you pushed, on the commit the live check ran on;
 - all 16 build jobs and the checksums job are green;
 - the run is for `refs/tags/v<version>`, not a branch.
 
-Rejecting, or letting the approval time out, publishes nothing.
+Rejecting both, or letting them time out, publishes nothing. Approving
+only one publishes to that registry only; the GitHub release then does not
+run (it needs both), and approving the other later completes the release.
 
-**6. Publish** (`publish` job, one approval for all three):
-1. **The artifacts are checked** against `SHA256SUMS` first, so what is
-   published is what was attested.
-2. **crates.io** by [trusted publishing](https://crates.io/docs/trusted-publishing),
+**6. Publish:** three jobs, each with only the permissions it needs, and
+each first re-checking the downloaded bundle against `SHA256SUMS`, so what
+is published is what was attested.
+1. **`publish-crates`** (environment `crates-io`): **crates.io** by [trusted publishing](https://crates.io/docs/trusted-publishing),
    in four waves: proto, core, auth; arrow; client; cli, stream. Each wave
    gets its own short-lived token, revoked when the job ends, and `cargo
    publish` waits until the index serves each crate.
-3. **PyPI** by [trusted publishing](https://docs.pypi.org/trusted-publishers/),
-   the eight wheels with PyPI attestations. No sdist.
-4. **The GitHub release** for the tag: the 16 artifacts and `SHA256SUMS`,
+2. **`publish-pypi`** (environment `pypi`): **PyPI** by
+   [trusted publishing](https://docs.pypi.org/trusted-publishers/), the
+   eight wheels with PyPI attestations. No sdist.
+3. **`github-release`** (no environment, only `contents: write`), after both
+   succeeded: **the GitHub release** for the tag: the 16 artifacts and `SHA256SUMS`,
    its notes taken from the body of `docs/release-draft-<version>.md`
    (everything after `**Body:**`). Marked latest; a version with a
    pre-release suffix is marked pre-release instead.
@@ -86,8 +93,8 @@ the crates, wheels, checksums, attestations and docs.rs.
 **Actions → Trusted publishing → Run workflow** on `main` (or any branch) runs the gate
 in report-only mode, builds and checks all 16 artifacts, writes
 `SHA256SUMS` and attests them, and uploads them as the run's
-`release-<version>` artifact. The `publish` job does not run: it needs a tag
-push, and the `trusted-publishing` environment admits only `v*` tags anyway. Pull
+`release-<version>` artifact. The publish jobs do not run: they need a tag
+push, and the `crates-io` and `pypi` environments admit only `v*` tags anyway. Pull
 requests that change the release tooling run the same dry run, without the
 attestations.
 
@@ -109,11 +116,11 @@ through trusted publishing.
 
 ## When something goes wrong
 
-- **Before approval:** reject the deployment (or let it time out), fix on
+- **Before approval:** reject both deployments (or let them time out), fix on
   `main`, and release a new version. A pushed `v*` tag is never moved.
-- **The publish job failed part-way:** re-run the failed job. It skips crates
-  already on the index, PyPI skips files already uploaded, and the GitHub
-  release's assets are replaced rather than duplicated.
+- **A publish job failed part-way:** re-run the failed job. `publish-crates` skips crates
+  already on the index, `publish-pypi` skips files already uploaded, and `github-release`
+  replaces the release's assets rather than duplicating them.
 - **A published release is wrong:** crates.io and PyPI versions cannot be
   replaced, only yanked, and a fixed patch released.
   - crates.io: the owner yanks the version in the crates.io web UI (yanking
@@ -144,15 +151,19 @@ through trusted publishing.
 | `check` | `contents: read`, `actions: read` | — |
 | `cli`, `wheels` | `contents: read` | — |
 | `collect` | `contents: read`, `id-token: write`, `attestations: write` | — |
-| `publish` | `contents: write`, `id-token: write` | `trusted-publishing` (required reviewer: the user; `v*` tags only) |
+| `publish-crates` | `contents: read`, `id-token: write` | `crates-io` (required reviewer: the user; `v*` tags only) |
+| `publish-pypi` | `contents: read`, `id-token: write` | `pypi` (required reviewer: the user; `v*` tags only) |
+| `github-release` | `contents: write` | — |
 
 Every action is pinned by full commit SHA. crates.io (all seven crates) and
-PyPI (`praevis-thetadata`) trust only `trusted-publishing.yml` in the `trusted-publishing`
-environment, and crates.io refuses token publishing for these crates.
+PyPI (`praevis-thetadata`) trust only `trusted-publishing.yml`, crates.io
+in the `crates-io` environment and PyPI in the `pypi` environment, and
+crates.io refuses token publishing for these crates.
 
-**The names are fixed:** the organisation's standard is a workflow file
-`trusted-publishing.yml` and a deployment environment of the same name,
-`trusted-publishing`. crates.io and PyPI name both in their
-trusted-publisher settings. Renaming either, or moving the publish job to
-another file or environment, stops publishing until those settings are
-changed to match.
+**The names are fixed:** the workflow file `trusted-publishing.yml` (the
+organisation's standard) and the environments `crates-io` and `pypi` are
+named in crates.io's and PyPI's trusted-publisher settings. Renaming any of
+them, or moving a publish job to another file or environment, stops
+publishing until those settings are changed to match. A workflow must never
+name an environment that does not exist: GitHub would create it, without
+protection.
