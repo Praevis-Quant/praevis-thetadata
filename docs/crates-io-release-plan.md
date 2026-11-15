@@ -4,9 +4,73 @@ Status: **executed.** `0.1.0-alpha.1` was published on 2026-11-02 UTC
 (2026-11-01 US time), `0.1.0-alpha.2` on 2026-11-03 UTC and `0.1.0-alpha.3`
 on 2026-11-08, `0.1.0-beta.1` on 2026-11-11, `0.1.0-beta.2` on 2026-11-12 and
 `0.1.0`, the first supported release, on 2026-11-13, and the patch
-`0.1.1` and `0.1.2` on 2026-11-14, each after owner approval. From
+`0.1.1` and `0.1.2` on 2026-11-14, each after owner approval. `0.1.3` is
+prepared below, awaiting the user's final approval. From
 beta.1 the Python wheels are also on PyPI. The plan below is retained as the preparation record. Publishing
 remains manual; no workflow publishes.
+
+## 0.1.3 publication checklist and order (prepared 2026-11-15)
+
+**Not approved for publication yet.** The user approved the fix for
+`0.1.3` on 2026-11-15; publishing needs the user's final approval. The
+user publishes locally, with tokens never in argv, logs or shell history.
+- **Scope:** two fixes to published code.
+  - `job()`, the Python planned calls and `describe()` split option
+    binomial Greeks EOD over every expiration one day per request, as the
+    vendor documents ([known issues](endpoints/known-issues.md)).
+  - The gRPC client picks its rustls provider explicitly when the
+    application installed none (tonic's `tls-ring`), so enabling aws-lc-rs
+    elsewhere no longer panics (#197).
+- **API:** no change.
+- **Unpublished since `0.1.2`:** the research note on the Greeks `version`
+  parameter (#194), the emulator's documented refusal, the scenarios, the
+  drift check and the TLS provider test.
+
+**Same set as `0.1.2`:** seven crates on crates.io. The proto crate stays
+unstable and the stream crate experimental. Two abi3 wheels (`0.1.3`) go
+to PyPI and to the GitHub release. No sdist.
+
+**Before publishing:**
+1. **This release PR is merged,** with Verify, the Python package job and
+   its 3.10-3.13 matrix, and the packaging rehearsal green on Windows and
+   Linux.
+2. **The pre-release live check on the merged commit**
+   (`scripts/live/run.sh --part anytime`). It now includes
+   `binomial-greeks-eod-every-expiration`: the whole week records the
+   service's real refusal code, and the drift check reports it if it is
+   not the modelled `InvalidArgument`.
+3. **Archive review:** as for `0.1.2`, with no `tests/` in the client or
+   stream archive.
+4. **Approval:** the maintainer's review of the merged commit, then the
+   user's approval of that exact commit.
+
+**Publish** in the same four waves as `0.1.2` (proto, core and auth; arrow;
+client; CLI and stream), each waiting until the index serves the previous
+crates.
+
+**Then PyPI** (the user, by hand, after wave 4):
+- **What:** `twine check`, then `twine upload` of the two wheels from the
+  published commit's CI run:
+  - `praevis_thetadata-0.1.3-cp310-abi3-win_amd64.whl`;
+  - `praevis_thetadata-0.1.3-cp310-abi3-manylinux_2_28_x86_64.whl`.
+- **The token** comes from the environment only.
+- **No sdist,** and nothing in CI uploads.
+
+**After publishing:**
+1. **Tag:** an annotated tag `v0.1.3` on the published commit.
+2. **GitHub release:** from the [draft](release-draft-0.1.3.md), not a
+   pre-release, marked latest, with the same two wheels attached.
+3. **Checks:**
+   - `cargo install praevis-thetadata-cli --locked` prints `0.1.3`;
+   - `pip install praevis-thetadata==0.1.3` gets `0.1.3` (an unpinned
+     install can lag the index for a few minutes);
+   - `pt.describe("option_history_binomial_greeks_eod", symbol="SPY",
+     expiration="*", start_date=…, end_date=…)` over five weekdays plans 5
+     parts;
+   - the crate hashes and each archive's commit, the consumers and docs.rs,
+     as for `0.1.2`.
+4. **Records:** a "Publication record: 0.1.3" section here, the CHANGELOG
+   section dated, and the `0.1.3` row of `releases.md` marked released.
 
 ## Publication record: 0.1.2
 
