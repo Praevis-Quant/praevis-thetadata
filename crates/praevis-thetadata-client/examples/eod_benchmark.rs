@@ -222,7 +222,7 @@ struct Case {
     summary: serde_json::Value,
 }
 fn hash(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    hex(&Sha256::digest(bytes))
 }
 fn source_hash(bytes: &[u8]) -> String {
     hash(
@@ -243,7 +243,7 @@ fn executable_hash(path: &Path) -> Result<String, Failure> {
         }
         digest.update(&buffer[..count]);
     }
-    Ok(format!("{:x}", digest.finalize()))
+    Ok(hex(&digest.finalize()))
 }
 fn command(program: &str, args: &[&str]) -> Result<String, Failure> {
     let output = Command::new(program).args(args).output()?;
@@ -947,4 +947,10 @@ mod tests {
         assert_eq!(counts.peak_live_bytes, bytes.len());
         assert!(!counts.invalid_scope);
     }
+}
+
+/// Lower-case hex of a digest. The digest types' own `LowerHex` went away
+/// with sha2 0.11 (hybrid-array outputs); bytes format the same in both.
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
