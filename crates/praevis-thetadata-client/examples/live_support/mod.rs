@@ -88,7 +88,7 @@ pub struct Provenance {
     protocol_manifest_sha256: String,
 }
 fn hash(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    hex(&Sha256::digest(bytes))
 }
 
 fn compiled_source_hash() -> String {
@@ -116,7 +116,7 @@ fn compiled_source_hash() -> String {
         digest.update((source.len() as u64).to_le_bytes());
         digest.update(source);
     }
-    format!("{:x}", digest.finalize())
+    hex(&digest.finalize())
 }
 
 impl Provenance {
@@ -158,7 +158,7 @@ impl Provenance {
             environment: environment.into(),
             source_commit,
             source_dirty: !git(&["status", "--porcelain"])?.is_empty(),
-            executable_sha256: format!("{:x}", digest.finalize()),
+            executable_sha256: hex(&digest.finalize()),
             compiled_source_sha256: compiled_source_hash(),
             rustc: env!("EOD_BENCH_RUSTC").into(),
             platform: format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH),
@@ -449,7 +449,7 @@ impl Accumulator {
             rows: self.rows,
             batches: self.batches,
             value_kinds: self.kinds,
-            semantic_sha256: format!("{:x}", self.digest.finalize()),
+            semantic_sha256: hex(&self.digest.finalize()),
         }
     }
 }
@@ -792,4 +792,10 @@ mod tests {
         assert!(evidence.responses(&directory).is_err());
         // Retain in ignored artifacts/live; never delete user-owned directories.
     }
+}
+
+/// Lower-case hex of a digest. The digest types' own `LowerHex` went away
+/// with sha2 0.11 (hybrid-array outputs); bytes format the same in both.
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
