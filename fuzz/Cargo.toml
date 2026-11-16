@@ -1,0 +1,59 @@
+[package]
+name = "praevis-thetadata-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+# Its own workspace: cargo-fuzz builds it with nightly and sanitizers, apart
+# from the main build. Nothing here is published.
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+praevis-thetadata-arrow = { path = "../crates/praevis-thetadata-arrow" }
+praevis-thetadata-client = { path = "../crates/praevis-thetadata-client" }
+praevis-thetadata-proto = { path = "../crates/praevis-thetadata-proto" }
+praevis-thetadata-stream = { path = "../crates/praevis-thetadata-stream" }
+prost = "0.14"
+# The seed generator: synthetic tables from the emulator's fixtures.
+praevis-thetadata-emulator = { path = "../crates/praevis-thetadata-emulator" }
+zstd = "0.14"
+
+[[bin]]
+name = "response_data"
+path = "fuzz_targets/response_data.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "zstd_payload"
+path = "fuzz_targets/zstd_payload.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "eod_envelope"
+path = "fuzz_targets/eod_envelope.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "terminal_event"
+path = "fuzz_targets/terminal_event.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "seeds"
+path = "src/bin/seeds.rs"
+test = false
+doc = false
+bench = false

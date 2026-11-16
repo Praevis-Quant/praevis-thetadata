@@ -1,0 +1,40 @@
+name: Fuzzing
+
+# ClusterFuzzLite over the fuzz targets in fuzz/ (docs/security/fuzzing.md):
+# the decoders of untrusted input. Pull requests: a short run of the targets
+# the change affects. Weekly: a longer run of every target. A crash fails the
+# job; its reproducer stays an artifact of the run and is never committed.
+
+on:
+  pull_request:
+  schedule:
+    - cron: "41 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    name: Fuzzing (${{ github.event_name == 'pull_request' && 'pull request' || 'weekly' }}, address)
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 120 }}
+    steps:
+      - name: Build the fuzz targets
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: rust
+          sanitizer: address
+          github-token: ${{ github.token }}
+      - name: Run them
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          github-token: ${{ github.token }}
+          mode: ${{ github.event_name == 'pull_request' && 'code-change' || 'batch' }}
+          fuzz-seconds: ${{ github.event_name == 'pull_request' && 300 || 3600 }}
+          sanitizer: address
+          output-sarif: false
