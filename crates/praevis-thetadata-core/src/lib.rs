@@ -2,6 +2,7 @@
 //!
 //! Transport-independent market data values. No network or CLI dependencies.
 
+#![forbid(unsafe_code)]
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::Serialize;
 mod batch;

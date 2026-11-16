@@ -5,6 +5,8 @@
 //! previous one, unknown fields are skipped), like the client's bounded
 //! decoder. The client's differential corpus checks both against the legacy
 //! decoder.
+// One audited FFI call (zstd's error code); every other line is safe Rust.
+#![deny(unsafe_code)]
 /// `with_<field>` setters for a `#[non_exhaustive]` configuration struct: build
 /// one with `Default::default()` (or its constructor) and chain the setters.
 macro_rules! with_setters {
@@ -727,6 +729,7 @@ pub fn timestamp_type(zone: i32) -> Option<DataType> {
         .map(|tz| DataType::Timestamp(TimeUnit::Millisecond, Some(tz.into())))
 }
 
+#[allow(unsafe_code)] // ZSTD_getErrorCode: see the SAFETY note below.
 fn zstd_error(code: usize) -> DecodeError {
     use zstd::zstd_safe::zstd_sys::{ZSTD_ErrorCode, ZSTD_getErrorCode};
     // SAFETY: a pure function of a numeric result code; no pointers. The typed

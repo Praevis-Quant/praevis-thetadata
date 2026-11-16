@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use clap::{Parser, Subcommand, ValueEnum};
 use praevis_thetadata_auth::{
     AuthClient, AuthConfig, AuthError, Credentials, Environment, SessionStore,

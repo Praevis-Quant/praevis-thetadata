@@ -122,3 +122,15 @@ class AnchorAuditTests(unittest.TestCase):
                 errors = audit_anchors(docs)
                 self.assertEqual(len(errors), 1)
                 self.assertIn(link, errors[0])
+
+
+class UnsafeAttributeTests(unittest.TestCase):
+    def test_roots_forbid_unsafe_except_the_audited_ffi_crates(self):
+        from check_repository import UNSAFE_DENY, audit_unsafe
+        files = {"crates/a/src/lib.rs": "#![forbid(unsafe_code)]\n", "apps/b/src/main.rs": "fn main() {}\n"}
+        for root in UNSAFE_DENY:
+            files[root] = "#![deny(unsafe_code)]\n"
+        errors = audit_unsafe(files.__getitem__, set(files))
+        self.assertEqual(errors, ["Missing #![forbid(unsafe_code)]: apps/b/src/main.rs"])
+        files[next(iter(UNSAFE_DENY))] = ""
+        self.assertEqual(len(audit_unsafe(files.__getitem__, set(files))), 2)

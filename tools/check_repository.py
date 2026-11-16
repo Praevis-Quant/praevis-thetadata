@@ -179,6 +179,24 @@ def audit_anchors(contents):
     return errors
 
 
+# Crate roots that may use one audited unsafe call (deny, with a scoped
+# allow); every other crate root forbids unsafe code outright.
+UNSAFE_DENY = {"crates/praevis-thetadata-arrow/src/lib.rs", "crates/praevis-thetadata-client/src/lib.rs"}
+
+
+def audit_unsafe(read, roots):
+    """Every crate root forbids unsafe code, except the audited exceptions."""
+    errors = []
+    for root in sorted(roots):
+        text = read(root)
+        if root in UNSAFE_DENY:
+            if "#![deny(unsafe_code)]" not in text:
+                errors.append(f"Missing #![deny(unsafe_code)]: {root}")
+        elif "#![forbid(unsafe_code)]" not in text:
+            errors.append(f"Missing #![forbid(unsafe_code)]: {root}")
+    return errors
+
+
 def main():
     files = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
     files = [path for path in files if path]
@@ -194,6 +212,9 @@ def main():
                 or (name.startswith(".env") and name != ".env.example")):
             errors.append(f"Forbidden tracked input: {path}")
     errors.extend(audit_package_files(lambda path: (ROOT / path).read_bytes(), set(files)))
+    roots = {path for path in files
+             if re.fullmatch(r"(crates|apps)/[^/]+/src/(lib|main)\.rs", path)}
+    errors.extend(audit_unsafe(lambda path: (ROOT / path).read_text(encoding="utf-8"), roots))
     manifest = json.loads((ROOT / "crates/praevis-thetadata-proto/schema/manifest.json").read_text())
     schema_hash = hashlib.sha256((ROOT / "crates/praevis-thetadata-proto/schema/thetadata.bin").read_bytes()).hexdigest()
     if schema_hash != manifest["descriptor_sha256"]:
@@ -223,7 +244,7 @@ def main():
     if errors:
         raise SystemExit("\n".join(errors))
     print(f"Checked {len(files)} tracked files, {len(defined)} requirements, {len(adrs)} ADR origins, "
-          "exhaustive requirement origins, local document links and anchors, package license copies, and descriptor integrity.")
+          "exhaustive requirement origins, local document links and anchors, package license copies, unsafe-code attributes, and descriptor integrity.")
 
 
 if __name__ == "__main__":
