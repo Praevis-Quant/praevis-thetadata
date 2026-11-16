@@ -33,7 +33,8 @@ class ArtifactTests(unittest.TestCase):
                          "praevis-thetadata-cli-0.1.3-x86_64-pc-windows-msvc.zip")
         self.assertEqual(release.archive_name("0.1.3", "aarch64-unknown-linux-musl"),
                          "praevis-thetadata-cli-0.1.3-aarch64-unknown-linux-musl.tar.gz")
-        self.assertEqual(len(release.expected_files("0.1.3")), 8)
+        self.assertEqual(len(release.expected_files("0.1.3")), 16)
+        self.assertIn("praevis-thetadata-cli-0.1.3.cdx.json", release.expected_files("0.1.3"))
 
     def test_packaged_archives_hold_the_binary_and_licences(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -65,7 +66,7 @@ class ArtifactTests(unittest.TestCase):
                 pathlib.Path(tmp, f"praevis_thetadata-0.1.3-cp310-abi3-p{i}.whl").write_bytes(b"w")
             self.assertEqual(release.main(["sums", "--version", "0.1.3", "--dir", tmp]), 0)
             lines = pathlib.Path(tmp, "SHA256SUMS").read_text().splitlines()
-            self.assertEqual(len(lines), 16)
+            self.assertEqual(len(lines), 24)
             self.assertTrue(all(len(line.split("  ")[0]) == 64 for line in lines))
 
 

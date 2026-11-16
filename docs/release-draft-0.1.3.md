@@ -29,8 +29,10 @@ is marked latest. Nothing is filled in by hand.
   silicon.
 - **`auth --save` on macOS:** the session store uses the macOS Keychain, as
   it uses Credential Manager on Windows and Secret Service on Linux.
-- **Provenance:** every asset has a signed build-provenance attestation and
-  is listed in `SHA256SUMS`; the crates and wheels were published by
+- **Provenance and SBOMs:** every asset has a signed build-provenance
+  attestation (SLSA v1.0 Build Level 3) and is listed in `SHA256SUMS`, and
+  CycloneDX SBOMs of the crates, the executables and the wheels are
+  attached and attested; the crates and wheels were published by
   trusted publishing from this repository's release workflow.
 
 ## Fixed
@@ -76,8 +78,12 @@ cargo install praevis-thetadata-cli --locked    # or download an executable belo
 
 ```text
 sha256sum --check --ignore-missing SHA256SUMS
-gh attestation verify <file> --repo Praevis-Quant/praevis-thetadata
+gh attestation verify <file> --repo Praevis-Quant/praevis-thetadata \
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
 ```
+
+Offline: add `--bundle praevis-thetadata-0.1.3.provenance.sigstore.jsonl
+--custom-trusted-root trusted_root.jsonl` ([how](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.3/docs/releasing.md#verifying-a-release)).
 
 The wheels need CPython 3.10 or newer. The known gaps of `0.1.0` still
 apply ([list](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.3/docs/releases.md#known-gaps-shipped-in-010)),
@@ -103,4 +109,15 @@ less the one fixed in `0.1.1`.
 | `praevis_thetadata-0.1.3-cp310-abi3-win_arm64.whl` | Python, Windows arm64 |
 | `praevis_thetadata-0.1.3-cp310-abi3-macosx_10_12_x86_64.whl` | Python, macOS Intel |
 | `praevis_thetadata-0.1.3-cp310-abi3-macosx_11_0_arm64.whl` | Python, macOS Apple silicon |
+| `praevis-thetadata-proto-0.1.3.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-proto` crate |
+| `praevis-thetadata-core-0.1.3.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-core` crate |
+| `praevis-thetadata-auth-0.1.3.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-auth` crate |
+| `praevis-thetadata-arrow-0.1.3.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-arrow` crate |
+| `praevis-thetadata-client-0.1.3.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-client` crate |
+| `praevis-thetadata-cli-0.1.3.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-cli` crate and the CLI executables |
+| `praevis-thetadata-stream-0.1.3.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-stream` crate |
+| `praevis-thetadata-wheel-0.1.3.cdx.json` | SBOM (CycloneDX 1.5), the extension module in every wheel |
 | `SHA256SUMS` | SHA-256 of every file above |
+| `praevis-thetadata-0.1.3.provenance.sigstore.jsonl` | Signed build-provenance attestation (SLSA v1.0) of every file above, for offline verification |
+| `praevis-thetadata-cli-0.1.3.sbom.sigstore.jsonl` | Signed SBOM attestation of the CLI executables |
+| `praevis-thetadata-wheel-0.1.3.sbom.sigstore.jsonl` | Signed SBOM attestation of the wheels |
