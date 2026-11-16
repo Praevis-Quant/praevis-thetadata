@@ -21,7 +21,8 @@ small decoder limits and a 2 GiB RSS cap) is a finding.
   (ClusterFuzzLite's code-change mode), with AddressSanitizer.
 - **Weekly:** an hour across every target, with AddressSanitizer.
 
-**What is instrumented:** all Rust code, with AddressSanitizer and coverage.
+**What is instrumented:** all Rust code, with AddressSanitizer, coverage,
+debug assertions and integer-overflow checks.
 The C libraries underneath (zstd's decompressor and ring's primitives) are
 compiled without instrumentation, because ClusterFuzzLite's sanitizer
 `CFLAGS` would also reach build scripts that cannot link it; those libraries
@@ -36,7 +37,7 @@ or committed, and a crash's reproducer stays an artifact of its run.
 
 ```text
 cd fuzz
-cargo +nightly fuzz build -O
+cargo +nightly fuzz build -O --debug-assertions
 target/x86_64-unknown-linux-gnu/release/seeds /tmp/seeds
 cargo +nightly fuzz run -O response_data /tmp/seeds/response_data -- -max_total_time=60
 ```

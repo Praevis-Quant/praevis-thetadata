@@ -8,7 +8,7 @@
 | Earlier releases and prereleases | No: upgrade to the latest `0.1.x` |
 
 Fixes are released as a new patch version through the release workflow
-(`.github/workflows/release.yml`); a published version is never
+(`.github/workflows/trusted-publishing.yml`); a published version is never
 replaced, and affected versions are yanked when that protects users.
 
 ## Reporting a vulnerability
@@ -60,5 +60,7 @@ Out of scope: ThetaData's service, the vendor's Python package and the
 Theta Terminal (report those to Theta Data Inc.), and issues that need a
 compromised machine or account.
 
-How releases are built, attested and published: `docs/releasing.md`. A
-security assurance report is planned.
+How releases are built, attested and published:
+[docs/releasing.md](docs/releasing.md). Why the software can be trusted,
+including on restricted or disconnected networks:
+[the security assurance report](docs/security/assurance-report.md).

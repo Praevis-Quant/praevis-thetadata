@@ -7,7 +7,9 @@
 # RUSTFLAGS; the C dependencies (zstd, ring) are built uninstrumented.
 unset CFLAGS CXXFLAGS
 cd "$SRC/praevis-thetadata/fuzz"
-cargo fuzz build -O
+# Debug assertions and integer-overflow checks on: they turn silent
+# arithmetic mistakes into findings.
+cargo fuzz build -O --debug-assertions
 release=target/x86_64-unknown-linux-gnu/release
 for target in response_data zstd_payload eod_envelope terminal_event; do
   cp "$release/$target" "$OUT/"
