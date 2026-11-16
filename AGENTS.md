@@ -19,10 +19,25 @@ complete Python compatibility: per-endpoint live evidence is in
 [the coverage table](docs/endpoints/coverage.md).
 
 The workspace uses Rust edition 2024, currently declares version
-`0.1.3`, and sets `publish = ["crates-io"]`. Publication is manual
-and owner-approved; never add `cargo publish` to a workflow. From beta.1 the
-Python wheels also go to PyPI (`praevis-thetadata`), uploaded by the user with
-`twine`; never add a PyPI upload to a workflow, and never run it yourself. The Rust crate version and the tracked Python version
+`0.1.3`, and sets `publish = ["crates-io"]`.
+
+**Publishing (user decision 2026-11-15):** releases are published **only**
+by [`.github/workflows/trusted-publishing.yml`](.github/workflows/trusted-publishing.yml), on a
+`v*` tag, after the user approves its `crates-io` and `pypi` environments
+([docs/releasing.md](docs/releasing.md)). crates.io and PyPI use trusted
+publishing; **no tokens are used**, and crates.io refuses token publishing
+for these crates. Agents:
+- **never publish:** no `cargo publish`, `twine`, `maturin publish` or any
+  other upload, and no other publishing path in any workflow;
+- **never create, push, move or delete `v*` tags;**
+- **never approve, reconfigure or bypass the `crates-io` or `pypi`
+  environment,** their reviewers, their deployment policies or the tag
+  ruleset, and never name an environment in a workflow that does not exist
+  (GitHub would create it unprotected);
+- prepare release PRs (version, CHANGELOG, release-notes draft) and, after
+  the user reports a release, the publication record.
+
+The Rust crate version and the tracked Python version
 are different concepts. The canonical upstream compatibility version is
 `source_version` in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 Do not maintain a second version literal in the scheduled PyPI checker.

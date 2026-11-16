@@ -44,9 +44,11 @@ with requests by name (`dispatch`) and two planner fixes
   ([0.1.0 known gaps](docs/releases.md#known-gaps-shipped-in-010)), among them
   20 vendor wrappers never seen to return data on the test account.
 - **Python:** `praevis-thetadata` `0.1.3` is on PyPI for Python 3.10 or
-  newer, tested in CI on 3.10-3.13 (`pip install praevis-thetadata`;
-  Windows x86_64 and Linux x86_64 wheels only). The same wheels are
-  attached to the GitHub release.
+  newer, tested in CI on 3.10-3.13 (`pip install praevis-thetadata`). From
+  `0.1.3` there are wheels for Linux (glibc and musl), Windows and macOS,
+  each on x86_64 and arm64, and prebuilt CLI executables for the same eight
+  platforms, all attached to the GitHub release with `SHA256SUMS` and
+  build-provenance attestations ([releasing](docs/releasing.md)).
 - **Scope:** it is independent and unofficial, and it is not full Python
   parity.
 

@@ -66,7 +66,8 @@ The [performance architecture plan](architecture/performance-plan.md)
     is not in it.
   - **`0.1.2`, which adds requests by name (`dispatch`), was published on
     2026-11-14** ([record](crates-io-release-plan.md#publication-record-012)).
-  - **`0.1.3` is prepared** (a patch: binomial Greeks EOD over every
+  - **`0.1.3` is prepared, the first release through the release
+    workflow** ([releasing](releasing.md)) (a patch: binomial Greeks EOD over every
     expiration is planned one day per request, as the vendor documents,
     and the gRPC client no longer panics next to aws-lc-rs).
     Publishing it needs the user's final approval.

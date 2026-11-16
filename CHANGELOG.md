@@ -18,6 +18,45 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+## [0.1.3] - pending
+
+**A patch release, and the first published by the release workflow.**
+Prepared, not published: dated at publication, which needs the user's
+approval of the release run (the fixes were approved for `0.1.3` on
+2026-11-15). See the [release-notes draft](docs/release-draft-0.1.3.md).
+- **The fixes:** `job()`, Python's planned calls and `describe()` split
+  option binomial Greeks EOD over every expiration one day per request,
+  as the vendor documents; and the gRPC client no longer panics when the
+  application also enables rustls's aws-lc-rs provider.
+- **Added:** the native session store on macOS; prebuilt CLI executables
+  for eight targets; wheels for eight platforms (were two).
+- **API:** no change.
+- **Unpublished tooling below:** the emulator, the scenarios, the drift
+  check, the TLS provider test and the release workflow.
+
+### Release
+
+- **Version `0.1.3`** across the workspace, with the wheel at `0.1.3`. The
+  READMEs' exact pins for proto and stream move to `=0.1.3`.
+- **Published only by `.github/workflows/trusted-publishing.yml`** (user decision
+  2026-11-15; [docs/releasing.md](docs/releasing.md)): on a `v*` tag the
+  user pushes, after the user approves the `crates-io` and `pypi` environments. The same
+  seven crates in the same four waves, then eight wheels to PyPI, both by
+  trusted publishing with no tokens, then the GitHub release
+  ([checklist](docs/crates-io-release-plan.md#013-publication-checklist-prepared-2026-11-15-the-release-workflow)).
+  - **Built on native runners:** the CLI for Windows x86_64 and arm64,
+    Linux glibc (manylinux_2_28) and static musl for x86_64 and aarch64,
+    and macOS Intel and Apple silicon; the wheels for the same platforms
+    (manylinux_2_28 and musllinux_1_2). Each executable runs `--version`,
+    and each wheel is installed and smoke-tested on its platform.
+  - **Checksums and provenance:** `SHA256SUMS` over the 16 artifacts and
+    a signed build-provenance attestation for each; PyPI attestations.
+  - **A gate:** the tag must match the workspace version, and its commit
+    be on `main` with CI green. A manual run is a dry run that builds and
+    attests without publishing.
+  - **AGENTS.md:** agents never publish, never push `v*` tags and never
+    approve the environment.
+
 ### Added
 
 - **The native session store on macOS:** the auth crate's `native-store`
@@ -30,28 +69,6 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   (Credential Manager), Linux (a temporary gnome-keyring in its own D-Bus
   session) and macOS (a temporary keychain), and a macOS job that builds
   the CLI.
-
-## [0.1.3] - pending
-
-**A patch release with two fixes to published code.** Prepared, not
-published: dated and tagged (`v0.1.3`) at publication, which needs the
-user's final approval (the fix was approved for `0.1.3` on 2026-11-15).
-See the [release-notes draft](docs/release-draft-0.1.3.md).
-- **The fixes:** `job()`, Python's planned calls and `describe()` split
-  option binomial Greeks EOD over every expiration one day per request,
-  as the vendor documents; and the gRPC client no longer panics when the
-  application also enables rustls's aws-lc-rs provider.
-- **API:** no change.
-- **Everything else below** concerns unpublished tooling: the emulator,
-  the scenarios, the drift check and the TLS provider test.
-
-### Release
-
-- **Version `0.1.3`** across the workspace, with the wheel at `0.1.3`. The
-  READMEs' exact pins for proto and stream move to `=0.1.3`.
-- **The same publish set and order as `0.1.2`:** seven crates, then the
-  two wheels to PyPI by hand, then a tag and a GitHub release that is not
-  a pre-release ([checklist](docs/crates-io-release-plan.md#013-publication-checklist-and-order-prepared-2026-11-15)).
 
 ### Fixed
 
