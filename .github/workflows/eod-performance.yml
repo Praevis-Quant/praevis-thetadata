@@ -48,7 +48,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
@@ -69,7 +69,7 @@ jobs:
           cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- run --engine legacy --output artifacts/eod-legacy-2.json
           cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- compare --baseline artifacts/eod-legacy-1.json --candidate artifacts/eod-table-1.json --output artifacts/eod-table-comparison.json
           cargo run --release --locked -p praevis-thetadata-client --example eod_benchmark -- compare --baseline artifacts/eod-legacy-1.json --candidate artifacts/eod-numeric-1.json --output artifacts/eod-numeric-comparison.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: synthetic-eod-${{ runner.os }}-${{ github.sha }}
           path: artifacts/eod-*.json
@@ -90,7 +90,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -137,7 +137,7 @@ jobs:
             done
           done
           python tools/eod_compare_summary.py "$out"/eod-*-compare-r*.json | tee "$out/eod-summary.md" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: eod-before-after-${{ runner.os }}-${{ github.run_id }}
@@ -157,7 +157,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
@@ -174,7 +174,7 @@ jobs:
         run: |
           set -o pipefail
           cargo run --release --locked -p praevis-thetadata-client --example eod_memory -- bound | tee artifacts/eod-memory-bound-$RUNNER_OS.md
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: eod-memory-${{ runner.os }}-${{ github.sha }}
           path: artifacts/eod-memory-*.md
