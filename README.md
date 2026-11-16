@@ -1,10 +1,23 @@
 # Praevis ThetaData
 
+[![CI](https://github.com/Praevis-Quant/praevis-thetadata/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Praevis-Quant/praevis-thetadata/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Praevis-Quant/praevis-thetadata/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/Praevis-Quant/praevis-thetadata/security/code-scanning)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Praevis-Quant/praevis-thetadata/badge)](https://scorecard.dev/viewer/?uri=github.com/Praevis-Quant/praevis-thetadata)
+[![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](docs/releasing.md#how-a-release-runs)
+[![OpenSSF Best Practices: pending](https://img.shields.io/badge/OpenSSF_Best_Practices-pending-lightgrey)](docs/security/openssf-best-practices.md)
+[![crates.io](https://img.shields.io/crates/v/praevis-thetadata-client.svg)](https://crates.io/crates/praevis-thetadata-client)
+[![PyPI](https://img.shields.io/pypi/v/praevis-thetadata.svg)](https://pypi.org/project/praevis-thetadata/)
+[![docs.rs](https://docs.rs/praevis-thetadata-client/badge.svg)](https://docs.rs/praevis-thetadata-client)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 > Independently maintained Rust client libraries for ThetaData services. This project is not affiliated with, sponsored by, or endorsed by Theta Data Inc. “ThetaData” identifies the service with which this software interoperates.
 
 Rust workspace derived from the ThetaData Python package, originally **1.0.12** and now tracking **1.0.17** ([update research](docs/research/thetadata-1.0.13-1.0.17.md)). The first application is an authentication CLI, backed by an authentication library that other projects can use independently.
 
 See the [auth requirements and ADRs](docs/README.md), [roadmap](docs/ROADMAP.md), [vendor research](docs/research/thetadata-1.0.12.md), and [performance methodology](docs/performance/auth.md). Only authentication is a baselined feature scope; the market-data crates are foundations for later work.
+
+**Security:** [policy and reporting](SECURITY.md), [assurance report](docs/security/assurance-report.md)
+(network behaviour, supply chain, offline verification), [releasing](docs/releasing.md).
 
 **Users:** the [user guide](docs/user-guide.md) covers supported platforms,
 native-store prerequisites, the resource policy and the differences from the
