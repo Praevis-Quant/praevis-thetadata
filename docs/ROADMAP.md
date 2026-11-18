@@ -480,6 +480,48 @@ packages and ordinary CI then never depend on nightly or the fuzzer.
 
 The plain-Rust corpus (deferred item 2, closed in alpha.3) remains the CI gate.
 
+### chrono and chrono-tz are unmaintained (assurance; accepted until 2027-02-18)
+
+RustSec marked both unmaintained (RUSTSEC-2026-0543 `chrono`,
+RUSTSEC-2026-0555 `chrono-tz`): informational, every version, no fix, not a
+vulnerability. The advisories recommend `jiff` or `time`. They are accepted
+in `deny.toml` **until 2027-02-18** (user approval needed; the repository
+check fails after that date), and a vulnerability advisory against either
+crate still fails CI.
+
+**Where they are used:**
+- **`chrono`, direct, in published code:**
+  - **client, public API:** `pub use chrono::NaiveDate`; every generated
+    request takes `NaiveDate` dates (313 uses in the generated endpoints),
+    `Expiration::Date`, `TimeOfDay::Time(NaiveTime)`, the dispatch API's
+    `ParamValue::Date`/`Time` (111 generated uses), the job planner;
+  - **core, internal:** timestamp formatting (`DateTime<Utc>`);
+  - **the Python bindings:** pyo3's `chrono` feature converts Python
+    `date`/`time` arguments.
+- **`chrono`, transitive and unavoidable for now:** arrow-array, parquet and
+  pyo3 depend on it. It stays in the build until they move, whatever this
+  project does.
+- **`chrono-tz`, direct:** one call in core (converting to America/New_York)
+  and the scenarios (dev-only).
+
+**Size of a migration:** about 19 hand-written files and 70 lines naming
+chrono types, the generator's templates (which regenerate the 424 generated
+uses), and the Python conversions; the public date type changes, so it is a
+breaking change for `0.2.0` with a migration note. Replacing `chrono-tz`
+alone is internal and small.
+
+**Plan:**
+1. **Now:** accept both advisories until 2027-02-18 (this entry).
+2. **A `0.1.x` patch:** replace `chrono-tz` in core with `jiff`'s time-zone
+   support (a new dependency, for approval), removing RUSTSEC-2026-0555 from
+   the published graph.
+3. **`0.2.0`:** move the public date and time types to `jiff` (or `time`,
+   following the choice arrow-rs and pyo3 make; pyo3 already offers a jiff
+   conversion feature).
+4. **Then:** `chrono` remains only transitively (arrow-rs, parquet), and the
+   acceptance can narrow to that: cargo-deny's `unmaintained = "workspace"`
+   scope fails only on our own direct dependencies.
+
 ### Native Rust development tooling (xtask)
 
 Evaluate migrating the performance harness and upstream version checker to a Rust `xtask` so routine builds, verification, and benchmarks use the Rust toolchain. Preserve synthetic fixtures, native-store cleanup, before/after build provenance, raw samples, comparison semantics, and regression coverage. Validate the replacement against the existing measurements before retiring the current tooling. Keep Python-specific artifact analysis scoped to research. This is a separate candidate from the runtime startup implementation.

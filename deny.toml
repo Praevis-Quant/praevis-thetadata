@@ -10,7 +10,20 @@ all-features = true
 # The RustSec database, fetched at check time.
 version = 2
 yanked = "deny"
-ignore = []
+# Accepted advisories. Each is time-boxed: its reason must end with
+# "until YYYY-MM-DD", and tools/check_repository.py fails once that date has
+# passed, so an acceptance is reviewed rather than forgotten. Only
+# informational advisories (unmaintained) are accepted; a vulnerability
+# advisory against the same crates still fails.
+ignore = [
+    # chrono and chrono-tz: unmaintained (informational; every version; no
+    # fix; not a vulnerability). chrono is in the client's public API
+    # (NaiveDate) and arrow-array, parquet and pyo3 depend on it, so it stays
+    # in the build whatever this project does. Migration plan:
+    # docs/ROADMAP.md, "chrono and chrono-tz are unmaintained".
+    { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained, no fix, also required by arrow-rs and pyo3; review until 2027-02-18" },
+    { id = "RUSTSEC-2026-0555", reason = "chrono-tz unmaintained, no fix, one internal use in core; review until 2027-02-18" },
+]
 
 [licenses]
 version = 2
