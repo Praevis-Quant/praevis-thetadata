@@ -134,3 +134,18 @@ class UnsafeAttributeTests(unittest.TestCase):
         self.assertEqual(errors, ["Missing #![forbid(unsafe_code)]: apps/b/src/main.rs"])
         files[next(iter(UNSAFE_DENY))] = ""
         self.assertEqual(len(audit_unsafe(files.__getitem__, set(files))), 2)
+
+
+class AdvisoryIgnoreTests(unittest.TestCase):
+    def test_accepted_advisories_are_time_boxed(self):
+        from check_repository import audit_advisory_ignores
+        deny = {"advisories": {"ignore": [
+            {"id": "A", "reason": "fine; review until 2027-02-18"},
+            {"id": "B", "reason": "no date"},
+            "C",
+        ]}}
+        errors = audit_advisory_ignores(deny, "2026-11-18")
+        self.assertEqual(len(errors), 2)
+        self.assertTrue(any("B" in e for e in errors))
+        self.assertEqual(len(audit_advisory_ignores(deny, "2027-02-19")), 3)
+        self.assertEqual(audit_advisory_ignores({}, "2026-11-18"), [])

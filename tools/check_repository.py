@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import posixpath
 import re
+import tomllib
+from datetime import date
 import subprocess
 import sys
 from urllib.parse import unquote
@@ -197,6 +199,21 @@ def audit_unsafe(read, roots):
     return errors
 
 
+def audit_advisory_ignores(deny, today):
+    """Every accepted advisory in deny.toml is time-boxed and not expired."""
+    errors = []
+    for entry in deny.get("advisories", {}).get("ignore", []):
+        if not isinstance(entry, dict):
+            errors.append(f"deny.toml: advisory ignore without a reason: {entry}")
+            continue
+        found = re.search(r"until (\d{4}-\d{2}-\d{2})\b", entry.get("reason", ""))
+        if not found:
+            errors.append(f"deny.toml: {entry.get('id')}: the reason must end with 'until YYYY-MM-DD'")
+        elif found.group(1) < today:
+            errors.append(f"deny.toml: {entry.get('id')}: accepted until {found.group(1)}; review it")
+    return errors
+
+
 def main():
     files = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
     files = [path for path in files if path]
@@ -241,10 +258,12 @@ def main():
             if target and not (document.parent / target).exists():
                 errors.append(f"Broken file link in {document.relative_to(ROOT)}: {target}")
     errors.extend(audit_anchors(contents))
+    with open(ROOT / "deny.toml", "rb") as handle:
+        errors.extend(audit_advisory_ignores(tomllib.load(handle), date.today().isoformat()))
     if errors:
         raise SystemExit("\n".join(errors))
     print(f"Checked {len(files)} tracked files, {len(defined)} requirements, {len(adrs)} ADR origins, "
-          "exhaustive requirement origins, local document links and anchors, package license copies, unsafe-code attributes, and descriptor integrity.")
+          "exhaustive requirement origins, local document links and anchors, package license copies, unsafe-code attributes, time-boxed advisory exceptions, and descriptor integrity.")
 
 
 if __name__ == "__main__":
