@@ -16,13 +16,13 @@ yanked = "deny"
 # informational advisories (unmaintained) are accepted; a vulnerability
 # advisory against the same crates still fails.
 ignore = [
-    # chrono and chrono-tz: unmaintained (informational; every version; no
-    # fix; not a vulnerability). chrono is in the client's public API
-    # (NaiveDate) and arrow-array, parquet and pyo3 depend on it, so it stays
-    # in the build whatever this project does. Migration plan:
-    # docs/ROADMAP.md, "chrono and chrono-tz are unmaintained".
+    # chrono: unmaintained (informational; every version; no fix; not a
+    # vulnerability). It is in the client's public API (NaiveDate) and
+    # arrow-array, parquet and pyo3 depend on it, so it stays in the build
+    # whatever this project does. chrono-tz, flagged with it
+    # (RUSTSEC-2026-0555), is gone: jiff replaced it in 0.1.4. Migration plan:
+    # docs/ROADMAP.md, "chrono is unmaintained".
     { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained, no fix, also required by arrow-rs and pyo3; review until 2027-02-18" },
-    { id = "RUSTSEC-2026-0555", reason = "chrono-tz unmaintained, no fix, one internal use in core; review until 2027-02-18" },
 ]
 
 [licenses]

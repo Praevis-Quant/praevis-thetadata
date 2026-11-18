@@ -246,13 +246,13 @@ Rust).
 
 - **Single maintainer.** Review depth and response capacity are limited;
   the targets in section 7 are targets, not guarantees.
-- **Unmaintained dependencies.** `chrono` and `chrono-tz` (dates and time
-  zones) are flagged unmaintained by RustSec; they have no known
-  vulnerability. The advisories are accepted until 2027-02-18 with recorded
-  reasons, enforced by a repository check, and any vulnerability advisory
-  against them still fails CI; `chrono` is also required by arrow-rs and
-  pyo3. Replacing them is
-  [planned](../ROADMAP.md#chrono-and-chrono-tz-are-unmaintained-assurance-accepted-until-2027-02-18).
+- **An unmaintained dependency.** `chrono` (dates) is flagged unmaintained
+  by RustSec; it has no known vulnerability. Its advisory is accepted until
+  2027-02-18 with a recorded reason, enforced by a repository check, and any
+  vulnerability advisory against it still fails CI. It is part of the public
+  API in `0.1.x` and is also required by arrow-rs and pyo3; moving the public
+  dates to `jiff` is [planned for 0.2.0](../ROADMAP.md#chrono-is-unmaintained-assurance-accepted-until-2027-02-18).
+  (`chrono-tz`, flagged with it, was replaced by `jiff` in `0.1.4`.)
 - **Third-party code.** About 200 crates (in the client's normal build)
   are trusted transitively, including C code in zstd (decompression) and
   ring (cryptography). They are locked, audited against RustSec, licence

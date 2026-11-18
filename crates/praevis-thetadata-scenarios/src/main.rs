@@ -104,9 +104,14 @@ async fn market_open(client: &ThetaClient) -> Result<bool, String> {
     let (Some(open), Some(close)) = (column("open")?, column("close")?) else {
         return Ok(false);
     };
-    let now = chrono::Utc::now()
-        .with_timezone(&chrono_tz::America::New_York)
-        .time();
+    let new_york = jiff::tz::TimeZone::get("America/New_York").map_err(|e| e.to_string())?;
+    let now = jiff::Timestamp::now().to_zoned_datetime(new_york).time();
+    let now = chrono::NaiveTime::from_hms_opt(
+        u32::try_from(now.hour()).unwrap_or(0),
+        u32::try_from(now.minute()).unwrap_or(0),
+        u32::try_from(now.second()).unwrap_or(0),
+    )
+    .ok_or("the New York time")?;
     Ok(open <= now && now < close)
 }
 

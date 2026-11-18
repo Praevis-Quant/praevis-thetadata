@@ -481,47 +481,57 @@ packages and ordinary CI then never depend on nightly or the fuzzer.
 
 The plain-Rust corpus (deferred item 2, closed in alpha.3) remains the CI gate.
 
-### chrono and chrono-tz are unmaintained (assurance; accepted until 2027-02-18)
+### chrono is unmaintained (assurance; accepted until 2027-02-18)
 
-RustSec marked both unmaintained (RUSTSEC-2026-0543 `chrono`,
-RUSTSEC-2026-0555 `chrono-tz`): informational, every version, no fix, not a
-vulnerability. The advisories recommend `jiff` or `time`. They are accepted
-in `deny.toml` **until 2027-02-18** (user approval needed; the repository
-check fails after that date), and a vulnerability advisory against either
-crate still fails CI.
+RustSec marked `chrono` (RUSTSEC-2026-0543) and `chrono-tz`
+(RUSTSEC-2026-0555) unmaintained: informational, every version, no fix, not a
+vulnerability. The advisories recommend `jiff` or `time`.
 
-**Where they are used:**
-- **`chrono`, direct, in published code:**
-  - **client, public API:** `pub use chrono::NaiveDate`; every generated
-    request takes `NaiveDate` dates (313 uses in the generated endpoints),
-    `Expiration::Date`, `TimeOfDay::Time(NaiveTime)`, the dispatch API's
-    `ParamValue::Date`/`Time` (111 generated uses), the job planner;
-  - **core, internal:** timestamp formatting (`DateTime<Utc>`);
-  - **the Python bindings:** pyo3's `chrono` feature converts Python
-    `date`/`time` arguments.
-- **`chrono`, transitive and unavoidable for now:** arrow-array, parquet and
-  pyo3 depend on it. It stays in the build until they move, whatever this
-  project does.
-- **`chrono-tz`, direct:** one call in core (converting to America/New_York)
-  and the scenarios (dev-only).
+**Done in `0.1.4`:** `chrono-tz` is gone. Core takes New York's UTC offset
+from `jiff` 1.0's bundled time-zone database (never the host's zoneinfo) and
+formats with chrono as before, so the output is unchanged; the timestamp
+boundary tests (including the 2026-03-08 and 2026-11-01 transitions) pass
+unchanged. The scenarios use jiff too. Its advisory acceptance is removed.
 
-**Size of a migration:** about 19 hand-written files and 70 lines naming
-chrono types, the generator's templates (which regenerate the 424 generated
-uses), and the Python conversions; the public date type changes, so it is a
-breaking change for `0.2.0` with a migration note. Replacing `chrono-tz`
-alone is internal and small.
+**Still accepted, until 2027-02-18:** `chrono` (user approval 2026-11-18;
+the repository check fails after that date, and a vulnerability advisory
+against it still fails CI). Where it is used:
+- **client, public API:** `pub use chrono::NaiveDate`; every generated
+  request takes `NaiveDate` dates (313 uses in the generated endpoints),
+  `Expiration::Date`, `TimeOfDay::Time(NaiveTime)`, the dispatch API's
+  `ParamValue::Date`/`Time` (111 generated uses), the job planner;
+- **core, internal:** timestamp formatting (`DateTime<Utc>`);
+- **the Python bindings:** pyo3's `chrono` feature converts Python
+  `date`/`time` arguments;
+- **transitively:** arrow-array, parquet and pyo3 depend on it, so it stays
+  in the build until they move, whatever this project does.
 
-**Plan:**
-1. **Now:** accept both advisories until 2027-02-18 (this entry).
-2. **A `0.1.x` patch:** replace `chrono-tz` in core with `jiff`'s time-zone
-   support (a new dependency, for approval), removing RUSTSEC-2026-0555 from
-   the published graph.
-3. **`0.2.0`:** move the public date and time types to `jiff` (or `time`,
-   following the choice arrow-rs and pyo3 make; pyo3 already offers a jiff
-   conversion feature).
-4. **Then:** `chrono` remains only transitively (arrow-rs, parquet), and the
-   acceptance can narrow to that: cargo-deny's `unmaintained = "workspace"`
-   scope fails only on our own direct dependencies.
+#### Design note for `0.2.0`: public dates in jiff
+
+- **Types:** `jiff::civil::Date` replaces `chrono::NaiveDate` (request
+  dates, `Expiration::Date`, the dispatch `ParamValue::Date`, the re-export),
+  and `jiff::civil::Time` replaces `NaiveTime` (`TimeOfDay::Time`). The wire
+  format is unchanged (`YYYY-MM-DD`; `HH:MM:SS.mmm`).
+- **Size:** about 19 hand-written files and 70 lines naming chrono types,
+  the generator's templates (regenerating the 424 generated uses), core's
+  formatting, and the Python conversions. A breaking change, with a
+  migration note (`NaiveDate::from_ymd_opt(y, m, d)` →
+  `jiff::civil::date(y, m, d)`, and so on).
+- **Python:** pyo3 0.30.1, its latest release (checked 2026-11-18), converts
+  only **jiff 0.2** (feature `jiff-02`); it has no jiff 1.x conversion yet. Until
+  it does, the bindings convert Python `date`/`time` by hand (year, month,
+  day; hour, minute, second, microsecond) into jiff 1.x, which is small and
+  avoids a second jiff in the build; switch to pyo3's feature when it
+  supports jiff 1.x.
+- **Arrow:** arrow-rs still uses chrono for its temporal helpers; tracked
+  upstream in [apache/arrow-rs#9183](https://github.com/apache/arrow-rs/issues/9183)
+  ("Replace `chrono` w/ `jiff`", open). Our Arrow output does not expose
+  chrono types, so it does not block the change here.
+- **Then:** once our own crates no longer depend on chrono, narrow the
+  acceptance to transitive use (cargo-deny's `unmaintained = "workspace"`
+  scope fails only on direct dependencies, checked with cargo-deny 0.20.2),
+  and drop it entirely once arrow-rs#9183 lands and pyo3 no longer pulls
+  chrono.
 
 ### Reproducible release builds (assurance, after 0.1.3)
 

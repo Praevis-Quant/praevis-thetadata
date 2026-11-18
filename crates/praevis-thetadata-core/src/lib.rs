@@ -3,7 +3,7 @@
 //! Transport-independent market data values. No network or CLI dependencies.
 
 #![forbid(unsafe_code)]
-use chrono::{DateTime, SecondsFormat, Utc};
+use chrono::{DateTime, FixedOffset, SecondsFormat, Utc};
 use serde::Serialize;
 mod batch;
 pub use batch::{BatchValue, DataBatch, TimeZone, Timestamp};
@@ -191,6 +191,26 @@ pub fn check_timestamp_range(epoch_ms: u64) -> Result<(), DataError> {
     Ok(())
 }
 
+/// America/New_York from jiff's bundled time-zone database (never the host's
+/// zoneinfo), so the output is the same on every platform.
+fn new_york() -> &'static jiff::tz::TimeZone {
+    static ZONE: std::sync::OnceLock<jiff::tz::TimeZone> = std::sync::OnceLock::new();
+    ZONE.get_or_init(|| {
+        jiff::tz::TimeZone::get("America/New_York")
+            .expect("the bundled tz database includes America/New_York")
+    })
+}
+
+/// New York's UTC offset, in seconds, at an instant in the accepted range.
+/// jiff's latest instant is 9999-12-30T22:00Z, a day before the end of the
+/// RFC 3339 range accepted here; beyond it the offset is taken at jiff's
+/// latest instant, which the zone's permanent rule puts in standard time, as
+/// it does the rest of 9999-12-31.
+fn new_york_offset_seconds(millis: i64) -> i32 {
+    let instant = jiff::Timestamp::from_millisecond(millis).unwrap_or(jiff::Timestamp::MAX);
+    new_york().to_offset(instant).seconds()
+}
+
 /// Millisecond RFC 3339 representation, including the source timezone's offset.
 pub fn timestamp(epoch_ms: u64, zone: i32) -> Result<String, DataError> {
     check_timestamp_range(epoch_ms)?;
@@ -198,9 +218,13 @@ pub fn timestamp(epoch_ms: u64, zone: i32) -> Result<String, DataError> {
     let utc =
         DateTime::<Utc>::from_timestamp_millis(millis).ok_or(DataError::Timestamp(epoch_ms))?;
     match zone {
-        0 => Ok(utc
-            .with_timezone(&chrono_tz::America::New_York)
-            .to_rfc3339_opts(SecondsFormat::Millis, true)),
+        0 => {
+            let offset = FixedOffset::east_opt(new_york_offset_seconds(millis))
+                .ok_or(DataError::Timestamp(epoch_ms))?;
+            Ok(utc
+                .with_timezone(&offset)
+                .to_rfc3339_opts(SecondsFormat::Millis, true))
+        }
         1 => Ok(utc.to_rfc3339_opts(SecondsFormat::Millis, true)),
         _ => Err(DataError::TimeZone(zone)),
     }
@@ -359,8 +383,8 @@ mod tests {
         assert!(timestamp(0, 2).is_err());
     }
 
-    /// EOD-L3-009 boundary catalogue. chrono and chrono-tz are pure Rust with an embedded
-    /// tz database, so these strings are platform-independent. The numeric Timestamp must
+    /// EOD-L3-009 boundary catalogue. The New York offset comes from jiff's bundled tz
+    /// database (never the host's), so these strings are platform-independent. The numeric Timestamp must
     /// accept exactly the same domain and render identically.
     #[test]
     fn timestamp_boundary_catalogue_matches_table_and_numeric() {
@@ -397,6 +421,19 @@ mod tests {
                 1_793_512_800_000,
                 "2026-11-01T01:00:00.000-05:00",
                 "2026-11-01T06:00:00.000Z",
+            ),
+            // Mid-summer, in daylight time.
+            (
+                1_782_921_600_000,
+                "2026-07-01T12:00:00.000-04:00",
+                "2026-07-01T16:00:00.000Z",
+            ),
+            // The last day of the range, past jiff's latest instant
+            // (9999-12-30T22:00Z): still standard time.
+            (
+                253_402_214_400_000,
+                "9999-12-30T19:00:00.000-05:00",
+                "9999-12-31T00:00:00.000Z",
             ),
             (
                 MAX_EPOCH_MS,
