@@ -175,7 +175,14 @@ through trusted publishing.
   `main`, and release a new version. A pushed `v*` tag is never moved.
 - **A publish job failed part-way:** re-run the failed job. `publish-crates` skips crates
   already on the index, `publish-pypi` skips files already uploaded, and `github-release`
-  replaces the release's assets rather than duplicating them.
+  replaces the release's assets rather than duplicating them (while
+  releases are not immutable; [below](#immutable-releases)).
+- **A build job failed on infrastructure** (for example
+  `actions/upload-artifact` reporting `Failed to CreateArtifact: Unable to
+  make request: ENOTFOUND`, a transient DNS failure on the runner, seen on
+  #222 after the wheel had built): re-run the failed job. Build, SBOM and
+  checksum jobs publish nothing, so a re-run is always safe; the publish jobs
+  only start once every build job has succeeded.
 - **A published release is wrong:** crates.io and PyPI versions cannot be
   replaced, only yanked, and a fixed patch released.
   - crates.io: the owner yanks the version in the crates.io web UI (yanking
@@ -183,6 +190,34 @@ through trusted publishing.
   - PyPI: the owner yanks the release in the PyPI web UI.
   - GitHub: the user edits the release (or marks an earlier one latest). The
     tag stays.
+
+## Immutable releases
+
+**Status: not enabled.** The `v0.1.3` release reports `isImmutable: false`.
+GitHub's *immutable releases* setting (repository or organisation settings)
+makes a release unchangeable once it is published: its assets cannot be
+added, replaced or deleted, its tag cannot be moved or deleted, and GitHub
+signs a release attestation that `gh release verify` and
+`gh release verify-asset` check. Drafts stay editable until published. It
+applies only to releases published after it is enabled; `v0.1.3` stays as it
+is.
+
+**Recommended: enable it, after one change to the workflow.**
+- **What it adds:** the published assets and the tag are then protected
+  against later replacement even by an account with admin rights or a
+  stolen token; today only our provenance and checksums would show such a
+  change, not prevent it. It also fits the policy already followed: a wrong
+  release is fixed by a new version, never in place.
+- **The change first:** the `github-release` job creates the release with
+  its assets in one `gh release create`, and on a re-run uploads with
+  `--clobber`. With immutability on, the release must be created as a
+  **draft**, the assets uploaded, and only then published (`gh release
+  edit --draft=false`), and a re-run can no longer replace assets of a
+  published release. The job should do exactly that, so a failure before
+  publishing leaves an editable draft and a failure after it needs nothing.
+- **What it costs:** a mistake in a published GitHub release can then only be
+  corrected by a new version (as for crates.io and PyPI already); the
+  release notes can still be edited.
 
 ## Platform notes
 

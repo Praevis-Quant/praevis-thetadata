@@ -12,14 +12,107 @@ the preparation records.
 ([docs/releasing.md](releasing.md)): the user tags the release and approves
 the `crates-io` and `pypi` environments, and the workflow publishes to crates.io and PyPI
 by trusted publishing and creates the GitHub release with attested
-artifacts. Nothing is published by hand, and no tokens are used. `0.1.3`
-is prepared below, the first release through it.
+artifacts. Nothing is published by hand, and no tokens are used. `0.1.3`,
+published on 2026-11-16, is the first release through it.
+
+## Publication record: 0.1.3
+
+**Published 2026-11-16 by the release workflow,** the first release through
+it ([releasing](releasing.md)): run
+[43857290715](https://github.com/Praevis-Quant/praevis-thetadata/actions/runs/43857290715)
+of `trusted-publishing.yml`, on the annotated tag `v0.1.3` (tag object
+`34e3f3b909c2`, pushed by the user) on `f69403504111caa4863c86fbb338c7c005b6c603`
+(`main` after #212). The user approved the `crates-io` and `pypi`
+environments.
+- **Before tagging:** CI (run 43857290534) green on `f694035`; the
+  pre-release live check `pre-013-anytime-002` on `f694035` clean (Rust 11
+  passed and 2 skipped, Python 10 passed); a dry run of the workflow
+  (43840582156) green in all 22 jobs.
+- **The run:** gate 11:23 UTC; build, SBOMs, checksums and attestations by
+  11:35; after the two approvals, PyPI 12:03:00–12:04:05, crates.io
+  12:03:00–12:05:25, GitHub release 12:05:29–12:05:56.
+- **No tokens:** crates.io and PyPI accepted only the workflow's OIDC
+  identity; nothing was published by hand.
+
+**crates.io:** seven crates in the four waves; each version's registry
+checksum equals the downloaded `.crate` file, every archive's
+`.cargo_vcs_info.json` names `f694035` (not dirty), none is yanked, and
+crates.io records each as trusted-published from GitHub run 43857290715.
+
+| Crate | Published (UTC) | `.crate` SHA-256 (index = downloaded) |
+| --- | --- | --- |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.3) | 12:03:48 | `fb67f53d428b889e5670a53fea72355bc077aa2d603747067909222840578916` |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.3) | 12:03:56 | `05654b4fda852e0871c855d699c8037948b112d4992bfae1f0da025c71fcecac` |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.3) | 12:04:06 | `b6b8d49b3f2a639fe4707f6b559f994503622bdec2e2e600102658ae1e1f1ff3` |
+| [`praevis-thetadata-arrow`](https://crates.io/crates/praevis-thetadata-arrow/0.1.3) | 12:04:24 | `4cb6c49ae453ee1eba49e40e87e9ff6ea15b5e6dff6e0cf87391f04129b4d588` |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.3) | 12:04:59 | `958eab736cdbcc00df48a6fd98cca4c73652b475a24ddaa23ef3179d6cf87297` |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.3) | 12:05:17 | `c241aebf17b2f3eb903f974cb8fe8ecaeb5fc0660178b342877543642e78e413` |
+| [`praevis-thetadata-stream`](https://crates.io/crates/praevis-thetadata-stream/0.1.3) | 12:05:21 | `8d53440cdd0ab428cd16e135cd375eef4193ebc37661ff33ea3beba5b561fb21` |
+
+**PyPI:** [`praevis-thetadata` 0.1.3](https://pypi.org/project/praevis-thetadata/0.1.3/),
+the project's latest version: exactly the eight wheels (no sdist), each with
+the SHA-256 listed in the release's `SHA256SUMS`, none yanked, uploaded
+12:03:44–12:04:01. Each carries a PyPI attestation whose publisher is
+`Praevis-Quant/praevis-thetadata`, workflow `trusted-publishing.yml`,
+environment `pypi`.
+
+**The GitHub release** [v0.1.3](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.3):
+published 12:05:53 UTC, the repository's latest release, not a pre-release,
+**not immutable** (`isImmutable: false`; see [releasing](releasing.md#immutable-releases)),
+with 28 assets: 8 CLI archives, 8 wheels, 8 SBOMs, `SHA256SUMS`
+(`f7ca8535c81c3103cc756cb08f3c3ce651d879ed8eddd5f1ea1c098862858c69`) and the
+three Sigstore bundles. Its notes are the body of the
+[release draft](release-draft-0.1.3.md). The remote tag peels to `f694035`.
+
+**Post-publication checks (owner, Windows):** `pip install
+praevis-thetadata==0.1.3` installed it; `describe()` of binomial Greeks EOD
+with expiration `*` over five days plans 5 parts; the Windows CLI zip runs and
+prints `0.1.3`; `gh attestation verify` on it names the signer
+`build-release.yml@refs/tags/v0.1.3` and commit `f694035`. All 24
+`SHA256SUMS` entries verified. Offline (`--bundle`) verification passed in
+the dry run.
+
+**Post-publication checks, Linux (the agent's sandbox, aarch64, 2026-11-18):**
+- **Checksums:** all 28 release assets downloaded; `sha256sum --check
+  --strict SHA256SUMS` passes for all 24 entries.
+- **Provenance, online:** `gh attestation verify` passes for all 24 files
+  with `--signer-workflow .../build-release.yml --source-ref refs/tags/v0.1.3`.
+- **Provenance, offline form:** the same 24 pass with `--bundle
+  praevis-thetadata-0.1.3.provenance.sigstore.jsonl --custom-trusted-root`
+  (a trusted root fetched with `gh attestation trusted-root`).
+- **SBOM attestations:** all 8 executables against the CLI SBOM bundle and
+  all 8 wheels against the wheel SBOM bundle (`--predicate-type
+  https://cyclonedx.org/bom`).
+- **Executables and wheel on this platform:** the `aarch64-unknown-linux-musl`
+  executable is statically linked and the `aarch64-unknown-linux-gnu` one
+  dynamic; both print `praevis-thetadata 0.1.3`, and each archive holds the
+  executable, `LICENSE`, `NOTICE` and `README.md`. The
+  `manylinux_2_28_aarch64` wheel installs offline into a clean environment
+  (Python 3.11) and passes the release smoke test (import, version,
+  `describe()`).
+- **Archives:** no `tests/` in the client or stream archive; arrow and the
+  CLI keep their own tests, as before.
+- **docs.rs** built proto, core, auth, arrow, client and stream. The CLI is
+  binary-only.
+- **Crates.io-only consumers:** copies of `tools/release-consumers`, with
+  the staging registry removed, resolved `0.1.3` from crates.io, built and
+  ran: proto (100 RPCs), core, auth and auth-store (the native store), arrow
+  (an exact decimal and a typed all-null column), client (typed EOD
+  validation, 100 endpoints, the planner, the tier's concurrency, requests
+  by name) and stream (a parsed quote). The default auth and client
+  consumers resolve no keyring or D-Bus packages.
+
+**Not bit-for-bit reproducible:** the dry run and the tag build of the same
+commit gave different checksums for all 24 files. The Linux and macOS
+executables are identical between them; the differences are timestamps and
+serial numbers in archives and SBOMs, and the Windows linker's timestamp
+([ROADMAP](ROADMAP.md#reproducible-release-builds-assurance-after-013)).
 
 ## 0.1.3 publication checklist (prepared 2026-11-15; the release workflow)
 
-**Not approved for publication yet.** The user approved the fixes for
-`0.1.3` on 2026-11-15; publishing needs the user's approval of the release
-run. The first release through [the release workflow](releasing.md).
+**Executed 2026-11-16** ([record above](#publication-record-013)). Kept as
+the preparation record. The first release through
+[the release workflow](releasing.md).
 - **Scope:**
   - **Fixed:** `job()`, the Python planned calls and `describe()` split
     option binomial Greeks EOD over every expiration one day per request,

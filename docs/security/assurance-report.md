@@ -3,7 +3,7 @@
 **For:** a security reviewer or approving authority deciding whether to
 approve praevis-thetadata for use, including on a **disconnected or
 restricted network**.
-**As of:** 2026-11-16, `main` of
+**As of:** 2026-11-18, `main` of
 [Praevis-Quant/praevis-thetadata](https://github.com/Praevis-Quant/praevis-thetadata).
 **Status of claims:** every statement below is either **in place** (with a
 link to the evidence in [the appendix](#appendix-claims-and-evidence)) or
@@ -51,9 +51,9 @@ crate is experimental.
 ## 2. Scope: the artifacts under review
 
 **Version:** the first release built and published by the pipeline
-described here is **`0.1.3`** (in preparation as of this report; the
-publication record will be added to
-[the release plan](../crates-io-release-plan.md) when it is out). Earlier
+described here is **`0.1.3`**, published on 2026-11-16 (tag `v0.1.3` on
+`f694035`); its [publication record](../crates-io-release-plan.md#publication-record-013)
+lists the checksums, provenance and SBOM checks run after publication. Earlier
 versions (`0.1.0`–`0.1.2`) were published by hand and **have no build
 provenance or SBOM**; review `0.1.3` or later.
 
@@ -131,7 +131,7 @@ system's resolver, and on Linux, when the optional session store is used,
 | Control | Status | What it gives |
 | --- | --- | --- |
 | **SLSA v1.0 Build Level 3 provenance** for every release artifact and SBOM | In place from `0.1.3` | A signed statement, verifiable offline, that the file was built by `build-release.yml` (an isolated reusable workflow) in this repository, from a named commit and tag, on GitHub-hosted runners |
-| **CycloneDX SBOMs** | In place from `0.1.3` | The full Rust dependency graph of each crate, the executables and the wheels, attested to the artifacts they describe |
+| **CycloneDX SBOMs** | In place from `0.1.3` | The full Rust dependency graph of each crate, the executables and the wheels, attested to the artifacts they describe. Each wheel also carries its own SBOM inside it (`.dist-info/sboms/`, written by maturin), so it travels with the wheel |
 | **SHA-256 checksums** (`SHA256SUMS`) | In place from `0.1.3` | Integrity of every file after transfer |
 | **Trusted publishing** to crates.io and PyPI | In place from `0.1.3` | Publication only from `trusted-publishing.yml`, through OIDC, after the maintainer approves the `crates-io` and `pypi` environments. **No long-lived registry tokens exist**; crates.io refuses token publishing for these crates. PyPI files carry PyPI attestations |
 | **Release gate** | In place | A tag must match the version, be on `main`, with CI green; `v*` tags can be created only by repository admins |
@@ -262,6 +262,20 @@ Rust).
   certificates are ThetaData's. A compromised vendor endpoint could send
   hostile data; the decoders are bounded and fuzzed against that, but the
   data's correctness is the vendor's.
+- **Not bit-for-bit reproducible (yet).** Two builds of the same commit
+  (the `0.1.3` dry run and tag build) produced different checksums for
+  every file. The Linux and macOS executables were identical between them;
+  the differences are timestamps and serial numbers in archives, wheels and
+  SBOMs, and the Windows linker's timestamp. So a reviewer cannot yet
+  rebuild a release and compare checksums: the evidence that a file came
+  from the tagged source is its signed SLSA provenance, not an independent
+  rebuild. Making builds reproducible is
+  [planned](../ROADMAP.md#reproducible-release-builds-assurance-after-013).
+- **GitHub releases are not immutable.** A published release's assets
+  could be replaced by an account with write access to releases; the
+  checksums and provenance would expose a replaced file, but nothing
+  prevents it. Enabling GitHub's immutable releases is
+  [recommended](../releasing.md#immutable-releases) and **planned**.
 - **No OS code signing.** Executables are not Authenticode-signed or Apple
   notarised; their integrity rests on `SHA256SUMS` and the provenance
   attestation. macOS may prompt before the first run of a downloaded

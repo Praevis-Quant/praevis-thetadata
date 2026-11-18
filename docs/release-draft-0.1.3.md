@@ -1,9 +1,10 @@
-# GitHub release draft: v0.1.3 (not published)
+# GitHub release draft: v0.1.3 (published)
 
-Status: **draft.** The user approved the fixes for `0.1.3` on 2026-11-15;
-publishing needs the user's approval of the release run
-([checklist](crates-io-release-plan.md#013-publication-checklist-prepared-2026-11-15-the-release-workflow)).
-Nothing is tagged or published yet.
+Status: **published 2026-11-16** by the release workflow as the
+[v0.1.3 release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.3)
+(the latest release, not a pre-release), its notes taken from the body below
+([publication record](crates-io-release-plan.md#publication-record-013)).
+The text is kept as published.
 
 **The release workflow uses this file:** the GitHub release's notes are
 everything after the **Body** line below, as written
