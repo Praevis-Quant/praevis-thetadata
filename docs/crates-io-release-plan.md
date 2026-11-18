@@ -15,6 +15,46 @@ by trusted publishing and creates the GitHub release with attested
 artifacts. Nothing is published by hand, and no tokens are used. `0.1.3`,
 published on 2026-11-16, is the first release through it.
 
+## 0.1.4 publication checklist (prepared 2026-11-18)
+
+**Not approved for publication yet.** The user approved the change for
+`0.1.4` on 2026-11-18; publishing needs the user's tag and approval of the
+release run, as for `0.1.3` ([releasing](releasing.md)).
+- **Scope:** one change to published code: `chrono-tz` is replaced by
+  `jiff` 1.0 in core (New York's UTC offset from jiff's bundled time-zone
+  database); timestamps are unchanged (#223). RUSTSEC-2026-0555 no longer
+  applies.
+- **API:** no change. `chrono` stays in the public API (its advisory is
+  accepted until 2027-02-18).
+- **Unpublished since `0.1.3`:** the 0.1.3 record (#219), the advisory
+  policy and CI fixes (#222).
+
+**Same set as `0.1.3`:** seven crates on crates.io and eight wheels on PyPI
+by trusted publishing; the GitHub release with the 16 artifacts, 8 SBOMs,
+`SHA256SUMS` and the three signed bundles.
+
+**Before tagging:**
+1. **This release PR is merged,** with CI green on `main`.
+2. **The pre-release live check on the commit to be tagged**
+   (`scripts/live/run.sh --part anytime`). New York timestamps come from
+   jiff now: the scenarios' value checks compare them live.
+3. **A dry run** of the release workflow on that commit (Actions → Trusted
+   publishing → Run workflow): all jobs green.
+
+**Release:** as for `0.1.3`: the user pushes the annotated tag `v0.1.4`,
+checks the run and approves the `crates-io` and `pypi` environments; the
+workflow publishes crates.io (four waves) and PyPI, then the GitHub release
+with the notes from the [draft](release-draft-0.1.4.md).
+
+**After publishing:**
+1. **Checks:** as for `0.1.3` (checksums, provenance online and with the
+   bundles, SBOM attestations, PyPI provenance, crates.io trusted
+   publishing, the crates' hashes and commit, docs.rs, the consumers), and
+   that a New York timestamp renders as before (for example `describe()`
+   or a query through the Python package).
+2. **Records:** a "Publication record: 0.1.4" section here, the CHANGELOG
+   section dated, and the `0.1.4` row of `releases.md` marked released.
+
 ## Publication record: 0.1.3
 
 **Published 2026-11-16 by the release workflow,** the first release through

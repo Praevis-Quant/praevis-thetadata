@@ -36,7 +36,7 @@ Pin the exact version:
 
 ```toml
 [dependencies]
-praevis-thetadata-proto = "=0.1.3"
+praevis-thetadata-proto = "=0.1.4"
 ```
 
 ## Supported platforms

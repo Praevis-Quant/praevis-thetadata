@@ -1167,7 +1167,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-arrow"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -1181,7 +1181,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-auth"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "reqwest",
  "serde",
@@ -1191,7 +1191,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-client"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "chrono",
  "heck",
@@ -1211,7 +1211,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-core"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "chrono",
  "jiff",
@@ -1221,7 +1221,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-emulator"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "heck",
  "praevis-thetadata-auth",
@@ -1254,7 +1254,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-proto"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "prost",
  "prost-types",
@@ -1265,7 +1265,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-stream"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "thiserror",
  "tungstenite",
@@ -1844,7 +1844,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
