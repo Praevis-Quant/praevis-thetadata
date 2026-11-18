@@ -66,11 +66,12 @@ The [performance architecture plan](architecture/performance-plan.md)
     is not in it.
   - **`0.1.2`, which adds requests by name (`dispatch`), was published on
     2026-11-14** ([record](crates-io-release-plan.md#publication-record-012)).
-  - **`0.1.3` is prepared, the first release through the release
-    workflow** ([releasing](releasing.md)) (a patch: binomial Greeks EOD over every
-    expiration is planned one day per request, as the vendor documents,
-    and the gRPC client no longer panics next to aws-lc-rs).
-    Publishing it needs the user's final approval.
+  - **`0.1.3`, the first release through the release workflow, was
+    published on 2026-11-16** ([record](crates-io-release-plan.md#publication-record-013)):
+    binomial Greeks EOD over every expiration is planned one day per
+    request, the gRPC client no longer panics next to aws-lc-rs, the macOS
+    Keychain store, CLI executables and wheels for eight platforms, with
+    SLSA Build Level 3 provenance and SBOMs.
   - **`0.1.0`, the first supported release, was published on 2026-11-13**
     ([record](crates-io-release-plan.md#publication-record-010)), on
     crates.io and on PyPI as [`praevis-thetadata` 0.1.0](https://pypi.org/project/praevis-thetadata/0.1.0/). It is the
@@ -521,6 +522,28 @@ alone is internal and small.
 4. **Then:** `chrono` remains only transitively (arrow-rs, parquet), and the
    acceptance can narrow to that: cargo-deny's `unmaintained = "workspace"`
    scope fails only on our own direct dependencies.
+
+### Reproducible release builds (assurance, after 0.1.3)
+
+**Today a release is attested, not reproducible.** The tag build of `0.1.3`
+and its dry run, both from `f694035`, produced different `SHA256SUMS` for all
+24 files. A comparison of the two (2026-11-18) shows where:
+- **Executables:** the six Linux and macOS executables are bit-identical
+  between the builds. The two Windows executables differ (MSVC's linker
+  writes a timestamp and a debug-info GUID).
+- **Archives:** their file times differ, so the archives differ even where
+  the executable does not.
+- **Wheels:** the compiled extension is identical except on Windows; the
+  wheel's embedded SBOM (maturin writes one into `.dist-info/sboms/`) and
+  `RECORD` differ.
+- **SBOMs:** only `serialNumber` and `metadata.timestamp` differ.
+
+**The work:** derive every timestamp from the commit (`SOURCE_DATE_EPOCH`):
+archive members' times and gzip headers, the SBOMs' timestamp, and a
+deterministic serial number; link the Windows executables with `/Brepro`;
+then rebuild a release independently and compare checksums, and document how
+a third party can do so. Until then, the evidence that a file came from the
+tagged source is its signed provenance, not a rebuild.
 
 ### Native Rust development tooling (xtask)
 
