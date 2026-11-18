@@ -72,6 +72,9 @@ The [performance architecture plan](architecture/performance-plan.md)
     request, the gRPC client no longer panics next to aws-lc-rs, the macOS
     Keychain store, CLI executables and wheels for eight platforms, with
     SLSA Build Level 3 provenance and SBOMs.
+  - **`0.1.4` is prepared** (a patch: `chrono-tz`, unmaintained, replaced by
+    `jiff`; timestamps unchanged). Publishing it needs the user's tag and
+    approvals.
   - **`0.1.0`, the first supported release, was published on 2026-11-13**
     ([record](crates-io-release-plan.md#publication-record-010)), on
     crates.io and on PyPI as [`praevis-thetadata` 0.1.0](https://pypi.org/project/praevis-thetadata/0.1.0/). It is the

@@ -12,11 +12,26 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 2026-11-08), then `0.1.0-beta.1` (2026-11-11) and `0.1.0-beta.2`
 (2026-11-12), both also on PyPI, **`0.1.0`, the first supported
 release (2026-11-13)**, then `0.1.1` and `0.1.2` (both 2026-11-14), and
-`0.1.3` (2026-11-16), the first published by the release workflow. Each release heading covers the entries
+`0.1.3` (2026-11-16), the first published by the release workflow.
+`0.1.4` is prepared, not published. Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
+
+## [0.1.4] - pending
+
+**A patch release: `chrono-tz` replaced by `jiff`, nothing else changes in
+published code.** Prepared, not published: dated at publication, which needs
+the user's tag and approval of the release run. See the
+[release-notes draft](docs/release-draft-0.1.4.md).
+
+### Release
+
+- **Version `0.1.4`** across the workspace, with the wheel at `0.1.4`. The
+  READMEs' exact pins for proto and stream move to `=0.1.4`.
+- **Published by the release workflow,** as for `0.1.3`
+  ([checklist](docs/crates-io-release-plan.md#014-publication-checklist-prepared-2026-11-18)).
 
 ### Changed
 

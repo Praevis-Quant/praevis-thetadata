@@ -42,8 +42,8 @@ package name, and builds the `praevis-thetadata` executable. Cargo places build 
 the shared root `target/` directory; that does not make the CLI a root package.
 The selected naming and compatibility boundaries are recorded in
 [the naming decision](docs/project-naming.md). The packages are released
-together on crates.io as **`0.1.3`**: `0.1.0`, the first supported release,
-with requests by name (`dispatch`) and two planner fixes
+together on crates.io as **`0.1.4`**: `0.1.0`, the first supported release,
+with requests by name (`dispatch`), planner fixes and dependency updates
 ([declared surface](docs/releases.md#010-scope-record-user-2026-11-12)).
 - **Supported:** auth, core, arrow (with the Parquet sink), the client's
   `query()`, `job()`, `RequestOptions`, generated endpoints and `dispatch`, the CLI and
@@ -56,7 +56,7 @@ with requests by name (`dispatch`) and two planner fixes
 - **Known gaps** are listed with the release
   ([0.1.0 known gaps](docs/releases.md#known-gaps-shipped-in-010)), among them
   20 vendor wrappers never seen to return data on the test account.
-- **Python:** `praevis-thetadata` `0.1.3` is on PyPI for Python 3.10 or
+- **Python:** `praevis-thetadata` `0.1.4` is on PyPI for Python 3.10 or
   newer, tested in CI on 3.10-3.13 (`pip install praevis-thetadata`). From
   `0.1.3` there are wheels for Linux (glibc and musl), Windows and macOS,
   each on x86_64 and arm64, and prebuilt CLI executables for the same eight
