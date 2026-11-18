@@ -91,6 +91,8 @@ jobs:
           if [ "$RUNNER_OS" = Windows ]; then
             cargo test --locked -p praevis-thetadata-auth --features native-store -- --ignored native_store_round_trip
           else
+            # Refresh the index first: a stale runner image index 404s on packages.
+            sudo apt-get update -qq
             sudo apt-get install -y -q gnome-keyring dbus >/dev/null
             dbus-run-session -- bash -c 'echo -n praevis-test | gnome-keyring-daemon --unlock --components=secrets >/dev/null
               cargo test --locked -p praevis-thetadata-auth --features native-store -- --ignored native_store_round_trip'

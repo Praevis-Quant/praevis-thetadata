@@ -480,6 +480,21 @@ packages and ordinary CI then never depend on nightly or the fuzzer.
 
 The plain-Rust corpus (deferred item 2, closed in alpha.3) remains the CI gate.
 
+### chrono and chrono-tz are unmaintained (assurance)
+
+RustSec marked both unmaintained (RUSTSEC-2026-0543 and -0555, informational,
+every version, no fix); they are not known to be vulnerable. The advisories
+are accepted, with their reasons, in `deny.toml` (2026-11-18) so CI does not
+fail on them; any vulnerability advisory against either still fails it.
+- **Why not simply replace them:** `chrono` is in the public API (dates are
+  `chrono::NaiveDate`), and arrow-array, parquet and pyo3's date conversion
+  depend on it, so it stays in the build until they move. `chrono-tz` is used
+  only by core (exchange time zones) and the scenarios.
+- **The work:** follow arrow-rs's and pyo3's choice (the advisory suggests
+  jiff or time); replace `chrono-tz` in core first, since nothing else needs
+  it; move the public date types in the next minor version (`0.2.0`), with a
+  migration note.
+
 ### Native Rust development tooling (xtask)
 
 Evaluate migrating the performance harness and upstream version checker to a Rust `xtask` so routine builds, verification, and benchmarks use the Rust toolchain. Preserve synthetic fixtures, native-store cleanup, before/after build provenance, raw samples, comparison semantics, and regression coverage. Validate the replacement against the existing measurements before retiring the current tooling. Keep Python-specific artifact analysis scoped to research. This is a separate candidate from the runtime startup implementation.

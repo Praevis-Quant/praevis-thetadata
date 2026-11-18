@@ -246,6 +246,12 @@ Rust).
 
 - **Single maintainer.** Review depth and response capacity are limited;
   the targets in section 7 are targets, not guarantees.
+- **Unmaintained dependencies.** `chrono` and `chrono-tz` (dates and time
+  zones) are flagged unmaintained by RustSec; they have no known
+  vulnerability. The advisories are accepted with recorded reasons, and any
+  vulnerability advisory against them still fails CI; `chrono` is also
+  required by arrow-rs and pyo3. Replacing them is
+  [planned](../ROADMAP.md#chrono-and-chrono-tz-are-unmaintained-assurance).
 - **Third-party code.** About 200 crates (in the client's normal build)
   are trusted transitively, including C code in zstd (decompression) and
   ring (cryptography). They are locked, audited against RustSec, licence

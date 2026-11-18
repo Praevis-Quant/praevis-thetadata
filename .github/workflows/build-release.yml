@@ -79,6 +79,7 @@ jobs:
         if: matrix.kind == 'musl'
         run: |
           set -euo pipefail
+          sudo apt-get update -qq
           sudo apt-get install -y -q musl-tools >/dev/null
           var=$(echo "$TARGET" | tr '-' '_')
           export "CC_${var}=musl-gcc"

@@ -10,7 +10,16 @@ all-features = true
 # The RustSec database, fetched at check time.
 version = 2
 yanked = "deny"
-ignore = []
+# Accepted advisories, each with its reason. Review them when they change.
+ignore = [
+    # chrono and chrono-tz are unmaintained (informational, every version,
+    # no fix; RustSec 2026-09-14). Not a vulnerability. chrono is in the
+    # public API (NaiveDate) and arrow-array, parquet and pyo3 depend on it,
+    # so it stays in the graph whatever this project does; replacing it here
+    # is tracked in docs/ROADMAP.md (accepted 2026-11-18).
+    { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained; no fix; also required by arrow-rs and pyo3" },
+    { id = "RUSTSEC-2026-0555", reason = "chrono-tz unmaintained; no fix; replacement tracked in the ROADMAP" },
+]
 
 [licenses]
 version = 2
