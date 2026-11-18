@@ -18,6 +18,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Changed
+
+- **chrono-tz is replaced by jiff** (user approval 2026-11-18). RustSec
+  marked chrono-tz unmaintained (RUSTSEC-2026-0555). Core now takes New
+  York's UTC offset from jiff 1.0's bundled time-zone database (never the
+  host's zoneinfo) and formats as before: timestamps are unchanged, and the
+  boundary tests, including the 2026-03-08 and 2026-11-01 transitions, pass
+  unchanged, with two more cases (summer time, and the last day of the
+  range, past jiff's latest instant). chrono-tz, phf, phf_shared and
+  siphasher leave the build; jiff, jiff-core and jiff-tzdb join it. Its
+  advisory acceptance is removed from `deny.toml`; chrono's stays, until
+  2027-02-18, with the 0.2.0 plan in the ROADMAP.
+
 ## [0.1.3] - 2026-11-16
 
 **A patch release, and the first published by the release workflow**
