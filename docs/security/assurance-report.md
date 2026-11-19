@@ -53,7 +53,10 @@ crate is experimental.
 **Version:** the first release built and published by the pipeline
 described here is **`0.1.3`**, published on 2026-11-16 (tag `v0.1.3` on
 `f694035`); its [publication record](../crates-io-release-plan.md#publication-record-013)
-lists the checksums, provenance and SBOM checks run after publication. Earlier
+lists the checksums, provenance and SBOM checks run after publication. The
+current release is **`0.1.4`** (2026-11-19, tag `v0.1.4` on `13e029a`,
+[record](../crates-io-release-plan.md#publication-record-014)), which replaces
+`chrono-tz` with `jiff` and is otherwise the same; review the latest. Earlier
 versions (`0.1.0`–`0.1.2`) were published by hand and **have no build
 provenance or SBOM**; review `0.1.3` or later.
 

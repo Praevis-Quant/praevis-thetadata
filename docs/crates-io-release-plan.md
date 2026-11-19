@@ -13,13 +13,91 @@ the preparation records.
 the `crates-io` and `pypi` environments, and the workflow publishes to crates.io and PyPI
 by trusted publishing and creates the GitHub release with attested
 artifacts. Nothing is published by hand, and no tokens are used. `0.1.3`,
-published on 2026-11-16, is the first release through it.
+published on 2026-11-16, is the first release through it, and `0.1.4`
+followed on 2026-11-19.
+
+## Publication record: 0.1.4
+
+**Published 2026-11-19 by the release workflow:** run
+[44459014045](https://github.com/Praevis-Quant/praevis-thetadata/actions/runs/44459014045)
+of `trusted-publishing.yml`, on the annotated tag `v0.1.4` (tag object
+`9bec0fa845f9`, pushed by the user) on
+`13e029aafc6c8bc95036a5bf70023bb112b33009` (`main` after #224). The user
+approved the `crates-io` and `pypi` environments.
+- **Before tagging:** CI (run 44459013939) green on `13e029a`; a dry run of
+  the workflow (44278539478) green in all 22 jobs; the pre-release live check
+  `pre-014-anytime-001` on `13e029a` clean (Rust 11 passed and 2 skipped,
+  Python 10 passed); and the weekly live run `weekly-20261118` on the same
+  commit, all 15 steps exit 0.
+- **The run:** gate 04:32 UTC; after the two approvals, PyPI
+  05:01:44–05:02:48, crates.io 05:01:45–05:04:20, GitHub release
+  05:04:23–05:04:41.
+- **No tokens:** crates.io and PyPI accepted only the workflow's OIDC
+  identity.
+
+**crates.io:** seven crates in the four waves; each registry checksum equals
+the downloaded `.crate` file, every archive names `13e029a` (not dirty), none
+is yanked, and crates.io records each as trusted-published from GitHub run
+44459014045. The published `core` depends on `jiff` (1.0.1, with
+`jiff-core` and `jiff-tzdb`) and no longer on `chrono-tz`.
+
+| Crate | Published (UTC) | `.crate` SHA-256 (index = downloaded) |
+| --- | --- | --- |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.4) | 05:02:35 | `61bed2af84535480907d84c24015b93ec21df1418280af77b9e19b6c44b15f29` |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.4) | 05:02:41 | `c1c872a2cfa35e79d71e95d5ae263e2bdaecb9e17fc79576ad0a9a17e8b68af6` |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.4) | 05:02:51 | `379d23cff023334233118187cdb3448f2300a235c64fb113b064bed590608dd5` |
+| [`praevis-thetadata-arrow`](https://crates.io/crates/praevis-thetadata-arrow/0.1.4) | 05:03:17 | `633dc3a2e879d5c7b94126e2f5b58b1470718478d1ea06a274dccffe64c5a590` |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.4) | 05:03:52 | `6ba16e88fccbc48e5b1bc8739b7b2c26afc839c90f7e4ce1dfb8fc49bbe127db` |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.4) | 05:04:09 | `93bf0da90e61643ae7e404db09b07a025a01ad31e6783d084b36f073766dd18c` |
+| [`praevis-thetadata-stream`](https://crates.io/crates/praevis-thetadata-stream/0.1.4) | 05:04:14 | `09707307a145e6e8bc9b242a7b4e7d4015457594fea484e0a4b579cb5dbce1b0` |
+
+**PyPI:** [`praevis-thetadata` 0.1.4](https://pypi.org/project/praevis-thetadata/0.1.4/),
+the latest version: exactly the eight wheels (no sdist), each with the
+SHA-256 in `SHA256SUMS`, none yanked, uploaded 05:02:29–05:02:44. Their PyPI
+attestation names `trusted-publishing.yml`, environment `pypi`.
+
+**The GitHub release** [v0.1.4](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.4):
+published 05:04:38 UTC, the latest release, not a pre-release, not immutable
+(`isImmutable: false`), 28 assets; `SHA256SUMS`
+`c3c04cd1f0fd47da37cb2e2f4ad73db53db82a005d070894c302fd37be7802e7`. The tag
+peels to `13e029a`.
+
+**Post-publication checks (owner, Windows):** `pip install
+praevis-thetadata==0.1.4` works; the Windows CLI zip prints `0.1.4`; all 24
+`SHA256SUMS` entries verify; `gh attestation verify` on the Windows CLI names
+`build-release.yml@refs/tags/v0.1.4` and `13e029a`.
+
+**Post-publication checks, Linux (the agent's sandbox, aarch64, 2026-11-19):**
+- **Checksums:** all 28 assets downloaded; 24/24 `SHA256SUMS` entries pass.
+- **Provenance:** 24/24 online (`--signer-workflow .../build-release.yml
+  --source-ref refs/tags/v0.1.4`) and 24/24 with the bundle and a trusted
+  root (the offline form).
+- **SBOM attestations:** 8/8 executables, 8/8 wheels.
+- **New York timestamps (the checklist's check):** a program built against
+  the published `praevis-thetadata-core` 0.1.4 from crates.io renders eight
+  instants exactly as `0.1.3` (chrono-tz) did, 8/8: the epoch, both sides of
+  the 2026-03-08 and 2026-11-01 transitions, mid-summer, and the last day of
+  the range (past jiff's latest instant).
+- **Executables and wheel here:** the `aarch64-unknown-linux-musl`
+  executable is statically linked and the `-gnu` one dynamic; both print
+  `praevis-thetadata 0.1.4` and ship `LICENSE`, `NOTICE` and `README.md`. The
+  `manylinux_2_28_aarch64` wheel installs offline and passes the release
+  smoke test.
+- **Archives:** no `tests/` in the client or stream archive.
+- **docs.rs** built proto, core, auth, arrow, client and stream; the CLI is
+  binary-only.
+- **Crates.io-only consumers:** copies of `tools/release-consumers`, with
+  the staging registry removed, resolved `0.1.4` from crates.io, built and
+  ran: proto (100 RPCs), core, auth and auth-store (the native store), arrow
+  (an exact decimal and a typed all-null column), client (typed EOD
+  validation, 100 endpoints, the planner, the tier's concurrency, requests
+  by name) and stream (a parsed quote). The default auth and client
+  consumers resolve no keyring or D-Bus packages.
 
 ## 0.1.4 publication checklist (prepared 2026-11-18)
 
-**Not approved for publication yet.** The user approved the change for
-`0.1.4` on 2026-11-18; publishing needs the user's tag and approval of the
-release run, as for `0.1.3` ([releasing](releasing.md)).
+**Executed 2026-11-19** ([record above](#publication-record-014)). Kept as
+the preparation record.
 - **Scope:** one change to published code: `chrono-tz` is replaced by
   `jiff` 1.0 in core (New York's UTC offset from jiff's bundled time-zone
   database); timestamps are unchanged (#223). RUSTSEC-2026-0555 no longer
