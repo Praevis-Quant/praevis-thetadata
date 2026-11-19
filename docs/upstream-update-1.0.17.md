@@ -5,7 +5,7 @@ Status line records what has landed. This document follows the
 [upstream update template](upstream-update-template.md) and
 [ADR-0015](adr/0015-upstream-and-enhancement-contracts.md). Evidence is in
 [the 1.0.13–1.0.17 research](research/thetadata-1.0.13-1.0.17.md) and
-[the generated delta](research/python-1.0.13-1.0.17-delta.json).
+[the generated delta](research/python-1.0.13-1.0.18-delta.json).
 
 ## Template record
 
