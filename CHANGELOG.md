@@ -12,19 +12,22 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 2026-11-08), then `0.1.0-beta.1` (2026-11-11) and `0.1.0-beta.2`
 (2026-11-12), both also on PyPI, **`0.1.0`, the first supported
 release (2026-11-13)**, then `0.1.1` and `0.1.2` (both 2026-11-14), and
-`0.1.3` (2026-11-16), the first published by the release workflow.
-`0.1.4` is prepared, not published. Each release heading covers the entries
+`0.1.3` (2026-11-16), the first published by the release workflow, and
+`0.1.4` (2026-11-19). Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
 
-## [0.1.4] - pending
+## [0.1.4] - 2026-11-19
 
 **A patch release: `chrono-tz` replaced by `jiff`, nothing else changes in
-published code.** Prepared, not published: dated at publication, which needs
-the user's tag and approval of the release run. See the
-[release-notes draft](docs/release-draft-0.1.4.md).
+published code.** Published by the release workflow (run 44459014045, tag
+`v0.1.4` on `13e029a`) after the user approved the `crates-io` and `pypi`
+environments: seven crates on crates.io and
+[`praevis-thetadata` 0.1.4](https://pypi.org/project/praevis-thetadata/0.1.4/)
+on PyPI by trusted publishing, and the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.4).
+See the [publication record](docs/crates-io-release-plan.md#publication-record-014).
 
 ### Release
 

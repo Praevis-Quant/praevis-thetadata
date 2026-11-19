@@ -72,9 +72,9 @@ The [performance architecture plan](architecture/performance-plan.md)
     request, the gRPC client no longer panics next to aws-lc-rs, the macOS
     Keychain store, CLI executables and wheels for eight platforms, with
     SLSA Build Level 3 provenance and SBOMs.
-  - **`0.1.4` is prepared** (a patch: `chrono-tz`, unmaintained, replaced by
-    `jiff`; timestamps unchanged). Publishing it needs the user's tag and
-    approvals.
+  - **`0.1.4` was published on 2026-11-19**
+    ([record](crates-io-release-plan.md#publication-record-014)): `chrono-tz`,
+    unmaintained, replaced by `jiff`; timestamps unchanged.
   - **`0.1.0`, the first supported release, was published on 2026-11-13**
     ([record](crates-io-release-plan.md#publication-record-010)), on
     crates.io and on PyPI as [`praevis-thetadata` 0.1.0](https://pypi.org/project/praevis-thetadata/0.1.0/). It is the
@@ -372,6 +372,33 @@ this use case. It closed on 2026-11-10.
     44-47 µs against 17-20 on Windows; the p50 was unchanged. WSL2
     virtualisation is the likely cause, not established.
   - **Still to do:** native Linux. That decides the target there.
+- **Weekly live run `weekly-20261118`** (`main` 13e029a, Windows, the live
+  Terminal): all 15 steps exit 0, 0 dropped everywhere. Latency in µs
+  (p50 / p99 / p99.9 / max):
+
+  | Load | p50 | p99 | p99.9 | Max | Heartbeat gaps |
+  | --- | ---: | ---: | ---: | ---: | --- |
+  | 10 contracts | 15 | 36 | 82,000 | 127,460 | 0 |
+  | 100 contracts | 15 | 29 | 68 | 70,537 | 0 |
+  | 1,000 contracts (991 seen) | 16 | 31 | 53 | 2,996 | 38 (longest 2,780 ms) |
+  | Full trades (71,776 contracts) | 15 | 32 | 100 | 207,793 | 0 |
+
+  Compared with the earlier W10 records (ADR-0018, and the runs above):
+  - **p50 and p99 are unchanged** and inside the 50 µs target.
+  - **The 1,000-contract heartbeat gaps are known:** the 2026-11-07 dev-feed
+    1,000-contract run (sleeping consumer) had 45, longest 3,286 ms, and no
+    smaller load had any. The reader counts them before our consumer, so
+    they are most likely on the Terminal or feed side. This is the first
+    record of them on the live feed.
+  - **The 10-contract p99.9 is known in kind, new in size:** the dev feed
+    gave 359 and 813 µs (thread wake-ups on Windows at a low quote rate), and
+    #136's comparison left it unexplained. Today's 82 ms p99.9, with maxes of
+    70-208 ms at other loads against the earlier 4-29 ms, points to bursts
+    of queued frames (our consumer descheduled, or the Terminal batching)
+    rather than single wake-ups. #136 stays parked; the next test, if a
+    consumer needs the tail, is pinning or raising the consumer thread's
+    priority on Windows, with #136's per-event numbering to tell our side
+    from the Terminal's.
 - **The `Remote(Internal)` error on a second gRPC request** is unexplained.
   An idle connection was ruled out. It stays open until there is evidence.
 - **For users:** run either the Terminal's REST API or our historical client
