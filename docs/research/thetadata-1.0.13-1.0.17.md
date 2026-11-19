@@ -69,8 +69,8 @@ cross-check is the basis for trusting the newer inventories.
 | File | Content |
 | --- | --- |
 | [python-1.0.13-delta.md](python-1.0.13-delta.md) … [python-1.0.17-delta.md](python-1.0.17-delta.md) | One record per release against its predecessor: artifact members and text diffs, dependencies, every RPC/message/field/enum change, every wrapper signature, default, wire binding with condition, metadata-map entry, raised expression and description diff, other symbols, imports, environment reads and constants |
-| [python-1.0.12-to-1.0.17-delta.md](python-1.0.12-to-1.0.17-delta.md) | The same record for a single 1.0.12 → 1.0.17 comparison, plus artifact identities, sdist equality and attested commits for all six versions |
-| [python-1.0.13-1.0.17-delta.json](python-1.0.13-1.0.17-delta.json) | Machine-readable source of the records above: per-release and cumulative deltas, artifacts, and per-item history |
+| [python-1.0.12-to-1.0.18-delta.md](python-1.0.12-to-1.0.18-delta.md) | The same record for a single 1.0.12 → 1.0.17 comparison, plus artifact identities, sdist equality and attested commits for all six versions |
+| [python-1.0.13-1.0.18-delta.json](python-1.0.13-1.0.18-delta.json) | Machine-readable source of the records above: per-release and cumulative deltas, artifacts, and per-item history |
 | [python-1.0.17-inventory.json](python-1.0.17-inventory.json) | Full 1.0.17 inventory with the same entry schema as `python-1.0.12-inventory.json` |
 | [vendor-1.0.17.json](vendor-1.0.17.json) | 1.0.17 summary in the shape of `vendor-1.0.12.json` |
 | [python-1.0.17-catalog.md](python-1.0.17-catalog.md) | Every 1.0.17 item, marked unchanged, changed or added since 1.0.12, with its 1.0.12 feature key and disposition; new items are marked undecided |
@@ -110,7 +110,7 @@ wheel does not document.
 
 ## Cumulative summary: 1.0.12 → 1.0.17
 
-Exhaustive record: [python-1.0.12-to-1.0.17-delta.md](python-1.0.12-to-1.0.17-delta.md).
+Exhaustive record: [python-1.0.12-to-1.0.18-delta.md](python-1.0.12-to-1.0.18-delta.md).
 
 | Area | Change from 1.0.12 to 1.0.17 |
 | --- | --- |

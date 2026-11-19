@@ -20,4 +20,8 @@ python tools/check_upstream.py
 
 Live validation on 2026-10-04 reported tracked **1.0.12**, latest stable **1.0.12**, exit **0**. Releases 1.0.13–1.0.17 made the scheduled job fail daily from 2026-10-09 until the baseline update. A local run against the updated manifest on 2026-11-01 reported tracked **1.0.17**, latest stable **1.0.17**, exit **0**. The workflow does not automatically update files, create issues, or send separate messages. GitHub's ordinary workflow notifications govern failure alerts.
 
+**1.0.18 (2026-11-18):** the scheduled run 44401463653 failed on PyPI's
+1.0.18. The [research and proposal](research/thetadata-1.0.18.md) are
+written; the job stays red until the user decides whether to adopt it.
+
 Reference: [GitHub scheduled event behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).

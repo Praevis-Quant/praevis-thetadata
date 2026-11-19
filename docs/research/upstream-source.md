@@ -95,7 +95,7 @@ The certificate-embedded commits are:
 Applied to 1.0.12, the same extraction reproduces the commit above. The
 repository still returns 404. Every sdist's Python modules match its wheel
 byte-for-byte. The machine-readable record, including the provenance
-response hashes, is in [the delta data](python-1.0.13-1.0.17-delta.json).
+response hashes, is in [the delta data](python-1.0.13-1.0.18-delta.json).
 
 To recover the current 1.0.17 wheel, download
 [PyPI's versioned file](https://files.pythonhosted.org/packages/fe/5c/24aaae12bc2bde3e66dda1bfed0c03dc26b5a00c2058402e6174b6cb1799/thetadata-1.0.17-py3-none-any.whl)

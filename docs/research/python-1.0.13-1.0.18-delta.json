@@ -184,6 +184,36 @@
         "subject_matches_wheel": true,
         "certificate_commit": "7d8def5003d30423ec75144e95b26f682b434464"
       }
+    },
+    {
+      "version": "1.0.18",
+      "wheel": {
+        "filename": "thetadata-1.0.18-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/75/4d/9d10d875ed66082bda39752c7e3b3a0829fadef3a177e49dbf7dc159086f/thetadata-1.0.18-py3-none-any.whl",
+        "bytes": 45147,
+        "sha256": "5ee4d60d81149437b306a2a152047a6303fe203a399ba44b452d8ddaaf39b94d",
+        "upload_time": "2026-11-17T22:08:36.773281Z"
+      },
+      "sdist": {
+        "filename": "thetadata-1.0.18.tar.gz",
+        "url": "https://files.pythonhosted.org/packages/96/13/d9b271a25fe085bd2887153faaae0173bf7e93a6e05fd59a3d815e8d353d/thetadata-1.0.18.tar.gz",
+        "sha256": "3381de43468d580da60a2ec6ee446553b459ac82c7b885fc6ef4a5984f45f75b",
+        "upload_time": "2026-11-17T22:08:38.346738Z"
+      },
+      "record_entries_verified": 13,
+      "sdist_comparison": {
+        "python_modules_in_wheel": 9,
+        "byte_identical_in_sdist": 9,
+        "sdist_only_python_modules": []
+      },
+      "provenance": {
+        "response_sha256": "e3e59da8d80a04221128eae3e31632ff5217667a1ca098569697c016c95a18cc",
+        "repository": "AXIOMXLLC/thetadata-python",
+        "workflow": "publish.yml",
+        "environment": "pypi",
+        "subject_matches_wheel": true,
+        "certificate_commit": "279f102caf79ddb350c57eae67db6376ca7c9cd9"
+      }
     }
   ],
   "releases": [
@@ -8964,14 +8994,710 @@
         "GetFutureSnapshotOhlc",
         "GetFutureSnapshotTrade"
       ]
+    },
+    {
+      "from": "1.0.17",
+      "to": "1.0.18",
+      "wheel_sha256": {
+        "old": "a43a2fe0fc4896047b9287a9cbf725214386566e3adf930523e5f8aeabf81fea",
+        "new": "5ee4d60d81149437b306a2a152047a6303fe203a399ba44b452d8ddaaf39b94d"
+      },
+      "files": {
+        "METADATA": {
+          "old": {
+            "bytes": 5336,
+            "sha256": "4c72216c173764b5bfb3852c8f1dec14fa9d83440ce4eaa1a0756ea8d4681c78"
+          },
+          "new": {
+            "bytes": 5336,
+            "sha256": "78f102d91a490a279cad2846bd8268c2b09be249b995461595c251bc5a6700e0"
+          }
+        },
+        "RECORD": {
+          "old": {
+            "bytes": 1176,
+            "sha256": "65026b3976487635736c31725f15d1170576e920bd456ff2faba525f674243f9"
+          },
+          "new": {
+            "bytes": 1176,
+            "sha256": "6822cd1716784ef67a71fa69b7ceafa1f8a160ea9972f9eecce43267ba8b58eb"
+          }
+        },
+        "thetadata/client.py": {
+          "old": {
+            "bytes": 293312,
+            "sha256": "ff09f426804afa45d8b1fb15d382dce087781c0561f2a72a2f3a392aa5f1c2c3"
+          },
+          "new": {
+            "bytes": 297462,
+            "sha256": "489f389b0e52df3ef44f40d1ae28214ada0642c5780858e42faed0cd6c8b23af"
+          }
+        }
+      },
+      "text_member_diffs": {
+        "METADATA": [
+          "-Version: 1.0.17",
+          "+Version: 1.0.18"
+        ]
+      },
+      "metadata_payload_changed": false,
+      "dependencies": {
+        "Requires-Python": [
+          ">=3.12"
+        ],
+        "Requires-Dist": [
+          "grpcio>=1.75.0",
+          "httpx>=0.28.1",
+          "pandas>=2.3.2",
+          "polars>=1.33.1",
+          "protobuf>=6.32.1",
+          "zstandard>=0.25.0"
+        ],
+        "License-Expression": [
+          "Apache-2.0"
+        ]
+      },
+      "dependencies_changed": {},
+      "protocol_files": {
+        "endpoints.proto": "58c4c1b34d46eaa3d42f2acba6ad45fe0b1142698eba0804c42d6a96a6645703",
+        "v3grpc/endpoints.proto": "3243558209648a11441dbdae5036ec3847afe92be692ed8c5db90b53e00774a5"
+      },
+      "rpcs_added": [],
+      "rpcs_removed": [],
+      "rpcs_changed": {},
+      "messages_added": [],
+      "messages_removed": [],
+      "messages_changed": {},
+      "enums_added": [],
+      "enums_removed": [],
+      "enums_changed": {},
+      "wrappers_added": [
+        {
+          "name": "ThetaClient.corporate_action_dividend",
+          "signature": "ThetaClient.corporate_action_dividend(self, symbol: str, start_date: datetime.date, end_date: datetime.date)",
+          "rpc": "GetCorporateActionDividend",
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null,
+              "default": null,
+              "kind": "positional-or-keyword"
+            },
+            {
+              "name": "symbol",
+              "annotation": "str",
+              "default": null,
+              "kind": "positional-or-keyword"
+            },
+            {
+              "name": "start_date",
+              "annotation": "datetime.date",
+              "default": null,
+              "kind": "positional-or-keyword"
+            },
+            {
+              "name": "end_date",
+              "annotation": "datetime.date",
+              "default": null,
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "bindings": [
+            {
+              "target": "query_info",
+              "expression": "endpoints_pb2.QueryInfo(auth_token=self.auth_token, email_hint=self.email, query_parameters=query_parameters)",
+              "when": []
+            },
+            {
+              "target": "query",
+              "expression": "endpoints_pb2.CorporateActionDividendRequestQuery()",
+              "when": []
+            },
+            {
+              "target": "query.symbol",
+              "expression": "symbol",
+              "when": []
+            },
+            {
+              "target": "query.start_date",
+              "expression": "start_date.strftime('%Y-%m-%d')",
+              "when": []
+            },
+            {
+              "target": "query.end_date",
+              "expression": "end_date.strftime('%Y-%m-%d')",
+              "when": []
+            },
+            {
+              "target": "request",
+              "expression": "endpoints_pb2.CorporateActionDividendRequest(query_info=query_info, params=query)",
+              "when": []
+            }
+          ],
+          "metadata_construction": [
+            "query_parameters = {'client': 'python'}",
+            "query_parameters['symbol'] = str(symbol)",
+            "query_parameters['start_date'] = str(start_date)",
+            "query_parameters['end_date'] = str(end_date)"
+          ],
+          "exceptions": [
+            "NoDataFoundError(f'No data found for: corporate_action_dividend({symbol},{start_date},{end_date})')",
+            "e"
+          ],
+          "description": "- Returns the dividend events for a symbol with an ex-date between the specified dates (inclusive).\n- One row per payment, not per tax-character component, so summing `amount` over a period gives that period's total. Where the source published a payment only as its parts, those parts are returned instead and flagged with `is_component`; a payment is never returned both ways.\n\n    "
+        },
+        {
+          "name": "ThetaClient.corporate_action_split",
+          "signature": "ThetaClient.corporate_action_split(self, symbol: str, start_date: datetime.date, end_date: datetime.date)",
+          "rpc": "GetCorporateActionSplit",
+          "parameters": [
+            {
+              "name": "self",
+              "annotation": null,
+              "default": null,
+              "kind": "positional-or-keyword"
+            },
+            {
+              "name": "symbol",
+              "annotation": "str",
+              "default": null,
+              "kind": "positional-or-keyword"
+            },
+            {
+              "name": "start_date",
+              "annotation": "datetime.date",
+              "default": null,
+              "kind": "positional-or-keyword"
+            },
+            {
+              "name": "end_date",
+              "annotation": "datetime.date",
+              "default": null,
+              "kind": "positional-or-keyword"
+            }
+          ],
+          "bindings": [
+            {
+              "target": "query_info",
+              "expression": "endpoints_pb2.QueryInfo(auth_token=self.auth_token, email_hint=self.email, query_parameters=query_parameters)",
+              "when": []
+            },
+            {
+              "target": "query",
+              "expression": "endpoints_pb2.CorporateActionSplitRequestQuery()",
+              "when": []
+            },
+            {
+              "target": "query.symbol",
+              "expression": "symbol",
+              "when": []
+            },
+            {
+              "target": "query.start_date",
+              "expression": "start_date.strftime('%Y-%m-%d')",
+              "when": []
+            },
+            {
+              "target": "query.end_date",
+              "expression": "end_date.strftime('%Y-%m-%d')",
+              "when": []
+            },
+            {
+              "target": "request",
+              "expression": "endpoints_pb2.CorporateActionSplitRequest(query_info=query_info, params=query)",
+              "when": []
+            }
+          ],
+          "metadata_construction": [
+            "query_parameters = {'client': 'python'}",
+            "query_parameters['symbol'] = str(symbol)",
+            "query_parameters['start_date'] = str(start_date)",
+            "query_parameters['end_date'] = str(end_date)"
+          ],
+          "exceptions": [
+            "NoDataFoundError(f'No data found for: corporate_action_split({symbol},{start_date},{end_date})')",
+            "e"
+          ],
+          "description": "- Returns the split events for a symbol with an effective date between the specified dates (inclusive). One row per split event.\n- A 4-for-1 forward split reports `before_shares` 1, `after_shares` 4, `split_ratio` 0.25 and `event_code` SD. A 1-for-10 reverse split reports `before_shares` 10, `after_shares` 1, `split_ratio` 10 and `event_code` CONSD.\n\n    "
+        }
+      ],
+      "wrappers_removed": [],
+      "wrappers_changed": {
+        "ThetaClient.option_history_binomial_trade_greeks_all": {
+          "signature": {
+            "old": "ThetaClient.option_history_binomial_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)",
+            "new": "ThetaClient.option_history_binomial_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "perf_boost_intraday": {
+              "old": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_first_order": {
+          "signature": {
+            "old": "ThetaClient.option_history_binomial_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)",
+            "new": "ThetaClient.option_history_binomial_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "perf_boost_intraday": {
+              "old": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_second_order": {
+          "signature": {
+            "old": "ThetaClient.option_history_binomial_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)",
+            "new": "ThetaClient.option_history_binomial_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "perf_boost_intraday": {
+              "old": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        },
+        "ThetaClient.option_history_binomial_trade_greeks_third_order": {
+          "signature": {
+            "old": "ThetaClient.option_history_binomial_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)",
+            "new": "ThetaClient.option_history_binomial_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "perf_boost_intraday": {
+              "old": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        },
+        "ThetaClient.option_history_ohlc": {
+          "signature": {
+            "old": "ThetaClient.option_history_ohlc(self, symbol: str, expiration: datetime.date, interval: str='1s', date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None)",
+            "new": "ThetaClient.option_history_ohlc(self, symbol: str, expiration: Union[datetime.date, str], interval: str='1s', date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "expiration": {
+              "old": {
+                "name": "expiration",
+                "annotation": "datetime.date",
+                "default": null,
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "expiration",
+                "annotation": "Union[datetime.date, str]",
+                "default": null,
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "bindings_removed": [
+            {
+              "target": "contract_spec",
+              "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+              "when": []
+            }
+          ],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": [
+            "-- Multi-day requests are limited to 1 month of data.",
+            "+- Multi-day requests are limited to 1 month of data, and must specify an expiration."
+          ]
+        },
+        "ThetaClient.option_history_trade_greeks_all": {
+          "signature": {
+            "old": "ThetaClient.option_history_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)",
+            "new": "ThetaClient.option_history_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "perf_boost_intraday": {
+              "old": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        },
+        "ThetaClient.option_history_trade_greeks_first_order": {
+          "signature": {
+            "old": "ThetaClient.option_history_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)",
+            "new": "ThetaClient.option_history_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "perf_boost_intraday": {
+              "old": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        },
+        "ThetaClient.option_history_trade_greeks_implied_volatility": {
+          "signature": {
+            "old": "ThetaClient.option_history_trade_greeks_implied_volatility(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)",
+            "new": "ThetaClient.option_history_trade_greeks_implied_volatility(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "perf_boost_intraday": {
+              "old": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        },
+        "ThetaClient.option_history_trade_greeks_second_order": {
+          "signature": {
+            "old": "ThetaClient.option_history_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)",
+            "new": "ThetaClient.option_history_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "perf_boost_intraday": {
+              "old": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        },
+        "ThetaClient.option_history_trade_greeks_third_order": {
+          "signature": {
+            "old": "ThetaClient.option_history_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)",
+            "new": "ThetaClient.option_history_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "perf_boost_intraday": {
+              "old": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "perf_boost_intraday",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        },
+        "ThetaClient.option_history_trade_quote": {
+          "signature": {
+            "old": "ThetaClient.option_history_trade_quote(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, use_time_based_trade_quote: Optional[bool]=True)",
+            "new": "ThetaClient.option_history_trade_quote(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, use_time_based_trade_quote: Optional[bool]=False)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "use_time_based_trade_quote": {
+              "old": {
+                "name": "use_time_based_trade_quote",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "use_time_based_trade_quote",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": [
+            "+- Current-day requests with ``expiration=*`` only return trades matched with the last quote reported before the trade. They require ``use_time_based_trade_quote=false``, ignore ``exclusive``, and return a 400 error otherwise."
+          ]
+        },
+        "ThetaClient.stock_history_trade_quote": {
+          "signature": {
+            "old": "ThetaClient.stock_history_trade_quote(self, symbol: str, date: Optional[datetime.date]=None, start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, venue: Optional[str]='nqb', start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, use_time_based_trade_quote: Optional[bool]=True)",
+            "new": "ThetaClient.stock_history_trade_quote(self, symbol: str, date: Optional[datetime.date]=None, start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, venue: Optional[str]='nqb', start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, use_time_based_trade_quote: Optional[bool]=False)"
+          },
+          "parameters_added": [],
+          "parameters_removed": [],
+          "parameters_changed": {
+            "use_time_based_trade_quote": {
+              "old": {
+                "name": "use_time_based_trade_quote",
+                "annotation": "Optional[bool]",
+                "default": "True",
+                "kind": "positional-or-keyword"
+              },
+              "new": {
+                "name": "use_time_based_trade_quote",
+                "annotation": "Optional[bool]",
+                "default": "False",
+                "kind": "positional-or-keyword"
+              }
+            }
+          },
+          "bindings_added": [],
+          "bindings_removed": [],
+          "metadata_added": [],
+          "metadata_removed": [],
+          "exceptions": null,
+          "rpc": null,
+          "description_diff": []
+        }
+      },
+      "other_symbols_added": [],
+      "other_symbols_removed": [],
+      "other_symbols_changed": {
+        "ThetaClient (thetadata/client.py)": {
+          "signature": {
+            "old": null,
+            "new": null
+          },
+          "description_diff": []
+        },
+        "ThetaClient.__init__ (thetadata/client.py)": {
+          "signature": {
+            "old": "ThetaClient.__init__(self, creds_file: Optional[Union[Path | str]]=None, email: Optional[str]=None, password: Optional[str]=None, api_key: Optional[str]=None, existing_authorized_client: Optional[ThetaClient]=None, dataframe_type: Union['pandas', 'polars']='polars', mdds_host: Optional[str]=None, mdds_port: Optional[str]=None, mdds_type: Optional[str]=None, dotenv_path: Optional[Union[Path | str]]=None, auth_url: Optional[str]=None, insecure_channel: bool=False)",
+            "new": "ThetaClient.__init__(self, creds_file: Optional[Union[Path | str]]=None, email: Optional[str]=None, password: Optional[str]=None, api_key: Optional[str]=None, existing_authorized_client: Optional[ThetaClient]=None, dataframe_type: Union['pandas', 'polars']='polars', mdds_host: Optional[str]=None, mdds_port: Optional[str]=None, mdds_type: Optional[str]=None, dotenv_path: Optional[Union[Path | str]]=None, auth_url: Optional[str]=None, insecure_channel: bool=False)"
+          },
+          "description_diff": []
+        }
+      },
+      "unchanged_client_symbols": [
+        "AuthenticationError (thetadata/errors.py)",
+        "NoDataFoundError (thetadata/errors.py)",
+        "ThetaClient._convert_response_stream (thetadata/client.py)",
+        "ThetaClient._read_creds_from_file (thetadata/client.py)",
+        "_fmt_if_date (thetadata/client.py)",
+        "_fmt_time (thetadata/client.py)"
+      ],
+      "modules_changed": {
+        "thetadata/client.py": {
+          "imports": {
+            "added": [
+              {
+                "statement": "import importlib.metadata"
+              }
+            ],
+            "removed": []
+          }
+        }
+      },
+      "counts": {
+        "old": {
+          "class": 6,
+          "enum": 3,
+          "file": 14,
+          "function": 207,
+          "message": 212,
+          "rpc": 100,
+          "wrapper": 81
+        },
+        "new": {
+          "class": 6,
+          "enum": 3,
+          "file": 14,
+          "function": 207,
+          "message": 212,
+          "rpc": 100,
+          "wrapper": 83
+        }
+      },
+      "rpc_without_python_wrapper": [
+        "GetFutureAtTimeBbo",
+        "GetFutureAtTimeTrade",
+        "GetFutureFlatFileBbo",
+        "GetFutureFlatFileEod",
+        "GetFutureFlatFileTradeBbo",
+        "GetFutureHistoryBbo",
+        "GetFutureHistoryEod",
+        "GetFutureHistoryOhlc",
+        "GetFutureHistorySettlement",
+        "GetFutureHistoryTrade",
+        "GetFutureHistoryTradeBbo",
+        "GetFutureListDates",
+        "GetFutureListSymbols",
+        "GetFutureSnapshotBbo",
+        "GetFutureSnapshotMarketValue",
+        "GetFutureSnapshotOhlc",
+        "GetFutureSnapshotTrade"
+      ]
     }
   ],
   "cumulative": {
     "from": "1.0.12",
-    "to": "1.0.17",
+    "to": "1.0.18",
     "wheel_sha256": {
       "old": "d9a5f4d19d0a6e7abc9861e8aee6bba3838e3551105babf76c4e361ff233d565",
-      "new": "a43a2fe0fc4896047b9287a9cbf725214386566e3adf930523e5f8aeabf81fea"
+      "new": "5ee4d60d81149437b306a2a152047a6303fe203a399ba44b452d8ddaaf39b94d"
     },
     "files": {
       "METADATA": {
@@ -8981,7 +9707,7 @@
         },
         "new": {
           "bytes": 5336,
-          "sha256": "4c72216c173764b5bfb3852c8f1dec14fa9d83440ce4eaa1a0756ea8d4681c78"
+          "sha256": "78f102d91a490a279cad2846bd8268c2b09be249b995461595c251bc5a6700e0"
         }
       },
       "RECORD": {
@@ -8991,7 +9717,7 @@
         },
         "new": {
           "bytes": 1176,
-          "sha256": "65026b3976487635736c31725f15d1170576e920bd456ff2faba525f674243f9"
+          "sha256": "6822cd1716784ef67a71fa69b7ceafa1f8a160ea9972f9eecce43267ba8b58eb"
         }
       },
       "WHEEL": {
@@ -9040,15 +9766,15 @@
           "sha256": "e5e9b6bee6da5538907994d01725e8049861c85446934daa9eb3bb4db2a0989d"
         },
         "new": {
-          "bytes": 293312,
-          "sha256": "ff09f426804afa45d8b1fb15d382dce087781c0561f2a72a2f3a392aa5f1c2c3"
+          "bytes": 297462,
+          "sha256": "489f389b0e52df3ef44f40d1ae28214ada0642c5780858e42faed0cd6c8b23af"
         }
       }
     },
     "text_member_diffs": {
       "METADATA": [
         "-Version: 1.0.12",
-        "+Version: 1.0.17"
+        "+Version: 1.0.18"
       ],
       "WHEEL": [
         "-Generator: hatchling 1.32.4",
@@ -12151,6 +12877,154 @@
     "enums_changed": {},
     "wrappers_added": [
       {
+        "name": "ThetaClient.corporate_action_dividend",
+        "signature": "ThetaClient.corporate_action_dividend(self, symbol: str, start_date: datetime.date, end_date: datetime.date)",
+        "rpc": "GetCorporateActionDividend",
+        "parameters": [
+          {
+            "name": "self",
+            "annotation": null,
+            "default": null,
+            "kind": "positional-or-keyword"
+          },
+          {
+            "name": "symbol",
+            "annotation": "str",
+            "default": null,
+            "kind": "positional-or-keyword"
+          },
+          {
+            "name": "start_date",
+            "annotation": "datetime.date",
+            "default": null,
+            "kind": "positional-or-keyword"
+          },
+          {
+            "name": "end_date",
+            "annotation": "datetime.date",
+            "default": null,
+            "kind": "positional-or-keyword"
+          }
+        ],
+        "bindings": [
+          {
+            "target": "query_info",
+            "expression": "endpoints_pb2.QueryInfo(auth_token=self.auth_token, email_hint=self.email, query_parameters=query_parameters)",
+            "when": []
+          },
+          {
+            "target": "query",
+            "expression": "endpoints_pb2.CorporateActionDividendRequestQuery()",
+            "when": []
+          },
+          {
+            "target": "query.symbol",
+            "expression": "symbol",
+            "when": []
+          },
+          {
+            "target": "query.start_date",
+            "expression": "start_date.strftime('%Y-%m-%d')",
+            "when": []
+          },
+          {
+            "target": "query.end_date",
+            "expression": "end_date.strftime('%Y-%m-%d')",
+            "when": []
+          },
+          {
+            "target": "request",
+            "expression": "endpoints_pb2.CorporateActionDividendRequest(query_info=query_info, params=query)",
+            "when": []
+          }
+        ],
+        "metadata_construction": [
+          "query_parameters = {'client': 'python'}",
+          "query_parameters['symbol'] = str(symbol)",
+          "query_parameters['start_date'] = str(start_date)",
+          "query_parameters['end_date'] = str(end_date)"
+        ],
+        "exceptions": [
+          "NoDataFoundError(f'No data found for: corporate_action_dividend({symbol},{start_date},{end_date})')",
+          "e"
+        ],
+        "description": "- Returns the dividend events for a symbol with an ex-date between the specified dates (inclusive).\n- One row per payment, not per tax-character component, so summing `amount` over a period gives that period's total. Where the source published a payment only as its parts, those parts are returned instead and flagged with `is_component`; a payment is never returned both ways.\n\n    "
+      },
+      {
+        "name": "ThetaClient.corporate_action_split",
+        "signature": "ThetaClient.corporate_action_split(self, symbol: str, start_date: datetime.date, end_date: datetime.date)",
+        "rpc": "GetCorporateActionSplit",
+        "parameters": [
+          {
+            "name": "self",
+            "annotation": null,
+            "default": null,
+            "kind": "positional-or-keyword"
+          },
+          {
+            "name": "symbol",
+            "annotation": "str",
+            "default": null,
+            "kind": "positional-or-keyword"
+          },
+          {
+            "name": "start_date",
+            "annotation": "datetime.date",
+            "default": null,
+            "kind": "positional-or-keyword"
+          },
+          {
+            "name": "end_date",
+            "annotation": "datetime.date",
+            "default": null,
+            "kind": "positional-or-keyword"
+          }
+        ],
+        "bindings": [
+          {
+            "target": "query_info",
+            "expression": "endpoints_pb2.QueryInfo(auth_token=self.auth_token, email_hint=self.email, query_parameters=query_parameters)",
+            "when": []
+          },
+          {
+            "target": "query",
+            "expression": "endpoints_pb2.CorporateActionSplitRequestQuery()",
+            "when": []
+          },
+          {
+            "target": "query.symbol",
+            "expression": "symbol",
+            "when": []
+          },
+          {
+            "target": "query.start_date",
+            "expression": "start_date.strftime('%Y-%m-%d')",
+            "when": []
+          },
+          {
+            "target": "query.end_date",
+            "expression": "end_date.strftime('%Y-%m-%d')",
+            "when": []
+          },
+          {
+            "target": "request",
+            "expression": "endpoints_pb2.CorporateActionSplitRequest(query_info=query_info, params=query)",
+            "when": []
+          }
+        ],
+        "metadata_construction": [
+          "query_parameters = {'client': 'python'}",
+          "query_parameters['symbol'] = str(symbol)",
+          "query_parameters['start_date'] = str(start_date)",
+          "query_parameters['end_date'] = str(end_date)"
+        ],
+        "exceptions": [
+          "NoDataFoundError(f'No data found for: corporate_action_split({symbol},{start_date},{end_date})')",
+          "e"
+        ],
+        "description": "- Returns the split events for a symbol with an effective date between the specified dates (inclusive). One row per split event.\n- A 4-for-1 forward split reports `before_shares` 1, `after_shares` 4, `split_ratio` 0.25 and `event_code` SD. A 1-for-10 reverse split reports `before_shares` 10, `after_shares` 1, `split_ratio` 10 and `event_code` CONSD.\n\n    "
+      },
+      {
         "name": "ThetaClient.stock_flat_file_quote",
         "signature": "ThetaClient.stock_flat_file_quote(self, date: datetime.date)",
         "rpc": "GetStockFlatFileQuote",
@@ -12823,7 +13697,7 @@
       "ThetaClient.option_history_binomial_trade_greeks_all": {
         "signature": {
           "old": "ThetaClient.option_history_binomial_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False)",
-          "new": "ThetaClient.option_history_binomial_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
+          "new": "ThetaClient.option_history_binomial_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
         },
         "parameters_added": [
           {
@@ -12840,7 +13714,22 @@
           }
         ],
         "parameters_removed": [],
-        "parameters_changed": {},
+        "parameters_changed": {
+          "perf_boost_intraday": {
+            "old": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
         "bindings_added": [
           {
             "target": "query.annual_dividend_amount",
@@ -12882,7 +13771,7 @@
       "ThetaClient.option_history_binomial_trade_greeks_first_order": {
         "signature": {
           "old": "ThetaClient.option_history_binomial_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False)",
-          "new": "ThetaClient.option_history_binomial_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
+          "new": "ThetaClient.option_history_binomial_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
         },
         "parameters_added": [
           {
@@ -12899,7 +13788,22 @@
           }
         ],
         "parameters_removed": [],
-        "parameters_changed": {},
+        "parameters_changed": {
+          "perf_boost_intraday": {
+            "old": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
         "bindings_added": [
           {
             "target": "query.annual_dividend_amount",
@@ -12941,7 +13845,7 @@
       "ThetaClient.option_history_binomial_trade_greeks_second_order": {
         "signature": {
           "old": "ThetaClient.option_history_binomial_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False)",
-          "new": "ThetaClient.option_history_binomial_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
+          "new": "ThetaClient.option_history_binomial_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
         },
         "parameters_added": [
           {
@@ -12958,7 +13862,22 @@
           }
         ],
         "parameters_removed": [],
-        "parameters_changed": {},
+        "parameters_changed": {
+          "perf_boost_intraday": {
+            "old": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
         "bindings_added": [
           {
             "target": "query.annual_dividend_amount",
@@ -13000,7 +13919,7 @@
       "ThetaClient.option_history_binomial_trade_greeks_third_order": {
         "signature": {
           "old": "ThetaClient.option_history_binomial_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False)",
-          "new": "ThetaClient.option_history_binomial_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
+          "new": "ThetaClient.option_history_binomial_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, binomial_steps: Optional[int]=101, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None, exercise_style: Optional[str]=None)"
         },
         "parameters_added": [
           {
@@ -13017,7 +13936,22 @@
           }
         ],
         "parameters_removed": [],
-        "parameters_changed": {},
+        "parameters_changed": {
+          "perf_boost_intraday": {
+            "old": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
         "bindings_added": [
           {
             "target": "query.annual_dividend_amount",
@@ -13455,10 +14389,56 @@
         "rpc": null,
         "description_diff": []
       },
+      "ThetaClient.option_history_ohlc": {
+        "signature": {
+          "old": "ThetaClient.option_history_ohlc(self, symbol: str, expiration: datetime.date, interval: str='1s', date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None)",
+          "new": "ThetaClient.option_history_ohlc(self, symbol: str, expiration: Union[datetime.date, str], interval: str='1s', date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None)"
+        },
+        "parameters_added": [],
+        "parameters_removed": [],
+        "parameters_changed": {
+          "expiration": {
+            "old": {
+              "name": "expiration",
+              "annotation": "datetime.date",
+              "default": null,
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "expiration",
+              "annotation": "Union[datetime.date, str]",
+              "default": null,
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
+        "bindings_added": [
+          {
+            "target": "contract_spec",
+            "expression": "ContractSpec(symbol=symbol, expiration=_fmt_if_date(expiration), strike=strike, right=right)",
+            "when": []
+          }
+        ],
+        "bindings_removed": [
+          {
+            "target": "contract_spec",
+            "expression": "ContractSpec(symbol=symbol, expiration=expiration.strftime('%Y-%m-%d'), strike=strike, right=right)",
+            "when": []
+          }
+        ],
+        "metadata_added": [],
+        "metadata_removed": [],
+        "exceptions": null,
+        "rpc": null,
+        "description_diff": [
+          "-- Multi-day requests are limited to 1 month of data.",
+          "+- Multi-day requests are limited to 1 month of data, and must specify an expiration."
+        ]
+      },
       "ThetaClient.option_history_trade_greeks_all": {
         "signature": {
           "old": "ThetaClient.option_history_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False)",
-          "new": "ThetaClient.option_history_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)"
+          "new": "ThetaClient.option_history_trade_greeks_all(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
         },
         "parameters_added": [
           {
@@ -13469,7 +14449,22 @@
           }
         ],
         "parameters_removed": [],
-        "parameters_changed": {},
+        "parameters_changed": {
+          "perf_boost_intraday": {
+            "old": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
         "bindings_added": [
           {
             "target": "query.annual_dividend_amount",
@@ -13500,7 +14495,7 @@
       "ThetaClient.option_history_trade_greeks_first_order": {
         "signature": {
           "old": "ThetaClient.option_history_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False)",
-          "new": "ThetaClient.option_history_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)"
+          "new": "ThetaClient.option_history_trade_greeks_first_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
         },
         "parameters_added": [
           {
@@ -13511,7 +14506,22 @@
           }
         ],
         "parameters_removed": [],
-        "parameters_changed": {},
+        "parameters_changed": {
+          "perf_boost_intraday": {
+            "old": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
         "bindings_added": [
           {
             "target": "query.annual_dividend_amount",
@@ -13542,7 +14552,7 @@
       "ThetaClient.option_history_trade_greeks_implied_volatility": {
         "signature": {
           "old": "ThetaClient.option_history_trade_greeks_implied_volatility(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False)",
-          "new": "ThetaClient.option_history_trade_greeks_implied_volatility(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)"
+          "new": "ThetaClient.option_history_trade_greeks_implied_volatility(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
         },
         "parameters_added": [
           {
@@ -13553,7 +14563,22 @@
           }
         ],
         "parameters_removed": [],
-        "parameters_changed": {},
+        "parameters_changed": {
+          "perf_boost_intraday": {
+            "old": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
         "bindings_added": [
           {
             "target": "query.annual_dividend_amount",
@@ -13584,7 +14609,7 @@
       "ThetaClient.option_history_trade_greeks_second_order": {
         "signature": {
           "old": "ThetaClient.option_history_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False)",
-          "new": "ThetaClient.option_history_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)"
+          "new": "ThetaClient.option_history_trade_greeks_second_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
         },
         "parameters_added": [
           {
@@ -13595,7 +14620,22 @@
           }
         ],
         "parameters_removed": [],
-        "parameters_changed": {},
+        "parameters_changed": {
+          "perf_boost_intraday": {
+            "old": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
         "bindings_added": [
           {
             "target": "query.annual_dividend_amount",
@@ -13626,7 +14666,7 @@
       "ThetaClient.option_history_trade_greeks_third_order": {
         "signature": {
           "old": "ThetaClient.option_history_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False)",
-          "new": "ThetaClient.option_history_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=False, annual_dividend_amount: Optional[float]=None)"
+          "new": "ThetaClient.option_history_trade_greeks_third_order(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), annual_dividend: Optional[float]=None, rate_type: Optional[str]='sofr', rate_value: Optional[float]=None, version: Optional[str]='latest', max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, perf_boost_intraday: Optional[bool]=True, annual_dividend_amount: Optional[float]=None)"
         },
         "parameters_added": [
           {
@@ -13637,7 +14677,22 @@
           }
         ],
         "parameters_removed": [],
-        "parameters_changed": {},
+        "parameters_changed": {
+          "perf_boost_intraday": {
+            "old": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "False",
+              "kind": "positional-or-keyword"
+            },
+            "new": {
+              "name": "perf_boost_intraday",
+              "annotation": "Optional[bool]",
+              "default": "True",
+              "kind": "positional-or-keyword"
+            }
+          }
+        },
         "bindings_added": [
           {
             "target": "query.annual_dividend_amount",
@@ -13668,13 +14723,13 @@
       "ThetaClient.option_history_trade_quote": {
         "signature": {
           "old": "ThetaClient.option_history_trade_quote(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None)",
-          "new": "ThetaClient.option_history_trade_quote(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, use_time_based_trade_quote: Optional[bool]=True)"
+          "new": "ThetaClient.option_history_trade_quote(self, symbol: str, expiration: Union[datetime.date, str], date: Optional[datetime.date]=None, strike: Optional[str]='*', right: Optional[str]='both', start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, max_dte: Optional[int]=None, strike_range: Optional[int]=None, start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, use_time_based_trade_quote: Optional[bool]=False)"
         },
         "parameters_added": [
           {
             "name": "use_time_based_trade_quote",
             "annotation": "Optional[bool]",
-            "default": "True",
+            "default": "False",
             "kind": "positional-or-keyword"
           }
         ],
@@ -13708,7 +14763,8 @@
         "description_diff": [
           "-- A quote is matched with a trade if its timestamp ``<=`` the trade timestamp. ",
           "+- For current-day data requests, trades are matched with the last quote reported before the trade (unless use_time_based_trade_quote is given).",
-          "+- For deeper historical data, trades are matched with quotes based on millisecond timestamps. A quote is matched with a trade if its timestamp ``<=`` the trade timestamp. "
+          "+- For deeper historical data, trades are matched with quotes based on millisecond timestamps. A quote is matched with a trade if its timestamp ``<=`` the trade timestamp. ",
+          "+- Current-day requests with ``expiration=*`` only return trades matched with the last quote reported before the trade. They require ``use_time_based_trade_quote=false``, ignore ``exclusive``, and return a 400 error otherwise."
         ]
       },
       "ThetaClient.option_snapshot_binomial_greeks_all": {
@@ -14588,13 +15644,13 @@
       "ThetaClient.stock_history_trade_quote": {
         "signature": {
           "old": "ThetaClient.stock_history_trade_quote(self, symbol: str, date: Optional[datetime.date]=None, start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, venue: Optional[str]='nqb', start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None)",
-          "new": "ThetaClient.stock_history_trade_quote(self, symbol: str, date: Optional[datetime.date]=None, start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, venue: Optional[str]='nqb', start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, use_time_based_trade_quote: Optional[bool]=True)"
+          "new": "ThetaClient.stock_history_trade_quote(self, symbol: str, date: Optional[datetime.date]=None, start_time: Optional[Union[datetime.time, str]]=_fmt_time('09:30:00'), end_time: Optional[Union[datetime.time, str]]=_fmt_time('16:00:00'), exclusive: Optional[bool]=True, venue: Optional[str]='nqb', start_date: Optional[datetime.date]=None, end_date: Optional[datetime.date]=None, use_time_based_trade_quote: Optional[bool]=False)"
         },
         "parameters_added": [
           {
             "name": "use_time_based_trade_quote",
             "annotation": "Optional[bool]",
-            "default": "True",
+            "default": "False",
             "kind": "positional-or-keyword"
           }
         ],
@@ -14893,18 +15949,35 @@
           "new": null
         },
         "description_diff": []
+      },
+      "ThetaClient.__init__ (thetadata/client.py)": {
+        "signature": {
+          "old": "ThetaClient.__init__(self, creds_file: Optional[Union[Path | str]]=None, email: Optional[str]=None, password: Optional[str]=None, api_key: Optional[str]=None, existing_authorized_client: Optional[ThetaClient]=None, dataframe_type: Union['pandas', 'polars']='polars', mdds_host: Optional[str]=None, mdds_port: Optional[str]=None, mdds_type: Optional[str]=None, dotenv_path: Optional[Union[Path | str]]=None, auth_url: Optional[str]=None, insecure_channel: bool=False)",
+          "new": "ThetaClient.__init__(self, creds_file: Optional[Union[Path | str]]=None, email: Optional[str]=None, password: Optional[str]=None, api_key: Optional[str]=None, existing_authorized_client: Optional[ThetaClient]=None, dataframe_type: Union['pandas', 'polars']='polars', mdds_host: Optional[str]=None, mdds_port: Optional[str]=None, mdds_type: Optional[str]=None, dotenv_path: Optional[Union[Path | str]]=None, auth_url: Optional[str]=None, insecure_channel: bool=False)"
+        },
+        "description_diff": []
       }
     },
     "unchanged_client_symbols": [
       "AuthenticationError (thetadata/errors.py)",
       "NoDataFoundError (thetadata/errors.py)",
-      "ThetaClient.__init__ (thetadata/client.py)",
       "ThetaClient._convert_response_stream (thetadata/client.py)",
       "ThetaClient._read_creds_from_file (thetadata/client.py)",
       "_fmt_if_date (thetadata/client.py)",
       "_fmt_time (thetadata/client.py)"
     ],
-    "modules_changed": {},
+    "modules_changed": {
+      "thetadata/client.py": {
+        "imports": {
+          "added": [
+            {
+              "statement": "import importlib.metadata"
+            }
+          ],
+          "removed": []
+        }
+      }
+    },
     "counts": {
       "old": {
         "class": 6,
@@ -14922,12 +15995,10 @@
         "function": 207,
         "message": 212,
         "rpc": 100,
-        "wrapper": 81
+        "wrapper": 83
       }
     },
     "rpc_without_python_wrapper": [
-      "GetCorporateActionDividend",
-      "GetCorporateActionSplit",
       "GetFutureAtTimeBbo",
       "GetFutureAtTimeTrade",
       "GetFutureFlatFileBbo",
@@ -14948,10 +16019,10 @@
     ]
   },
   "latest_item_history": {
-    "file:METADATA": "changed (last in 1.0.17)",
-    "file:RECORD": "changed (last in 1.0.17)",
+    "file:METADATA": "changed (last in 1.0.18)",
+    "file:RECORD": "changed (last in 1.0.18)",
     "file:thetadata/_proto/v3grpc/endpoints_pb2.py": "changed (last in 1.0.17)",
-    "file:thetadata/client.py": "changed (last in 1.0.17)",
+    "file:thetadata/client.py": "changed (last in 1.0.18)",
     "message:BetaEndpoints.IndexSnapshotMarketValueRequestQuery": "changed (last in 1.0.13)",
     "message:BetaEndpoints.IndexSnapshotOhlcRequestQuery": "changed (last in 1.0.13)",
     "message:BetaEndpoints.IndexSnapshotPriceRequestQuery": "changed (last in 1.0.13)",
@@ -14977,13 +16048,13 @@
     "message:BetaEndpoints.StockSnapshotOhlcRequestQuery": "changed (last in 1.0.13)",
     "message:BetaEndpoints.StockSnapshotQuoteRequestQuery": "changed (last in 1.0.13)",
     "message:BetaEndpoints.StockSnapshotTradeRequestQuery": "changed (last in 1.0.13)",
-    "symbol:thetadata/client.py:ThetaClient": "changed (last in 1.0.17)",
+    "symbol:thetadata/client.py:ThetaClient": "changed (last in 1.0.18)",
     "symbol:thetadata/client.py:ThetaClient.index_snapshot_market_value": "changed (last in 1.0.13)",
     "symbol:thetadata/client.py:ThetaClient.index_snapshot_ohlc": "changed (last in 1.0.13)",
     "symbol:thetadata/client.py:ThetaClient.index_snapshot_price": "changed (last in 1.0.13)",
     "symbol:thetadata/client.py:ThetaClient.option_history_binomial_greeks_eod": "changed (last in 1.0.17)",
     "symbol:thetadata/client.py:ThetaClient.option_history_greeks_eod": "changed (last in 1.0.15)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_trade_quote": "changed (last in 1.0.13)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_trade_quote": "changed (last in 1.0.18)",
     "symbol:thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_all": "changed (last in 1.0.17)",
     "symbol:thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_first_order": "changed (last in 1.0.17)",
     "symbol:thetadata/client.py:ThetaClient.option_snapshot_binomial_greeks_second_order": "changed (last in 1.0.17)",
@@ -14998,7 +16069,7 @@
     "symbol:thetadata/client.py:ThetaClient.option_snapshot_open_interest": "changed (last in 1.0.13)",
     "symbol:thetadata/client.py:ThetaClient.option_snapshot_quote": "changed (last in 1.0.13)",
     "symbol:thetadata/client.py:ThetaClient.option_snapshot_trade": "changed (last in 1.0.13)",
-    "symbol:thetadata/client.py:ThetaClient.stock_history_trade_quote": "changed (last in 1.0.13)",
+    "symbol:thetadata/client.py:ThetaClient.stock_history_trade_quote": "changed (last in 1.0.18)",
     "symbol:thetadata/client.py:ThetaClient.stock_snapshot_market_value": "changed (last in 1.0.13)",
     "symbol:thetadata/client.py:ThetaClient.stock_snapshot_ohlc": "changed (last in 1.0.13)",
     "symbol:thetadata/client.py:ThetaClient.stock_snapshot_quote": "changed (last in 1.0.13)",
@@ -15037,20 +16108,20 @@
     "symbol:thetadata/client.py:ThetaClient.option_history_binomial_greeks_first_order": "changed (last in 1.0.17)",
     "symbol:thetadata/client.py:ThetaClient.option_history_binomial_greeks_second_order": "changed (last in 1.0.17)",
     "symbol:thetadata/client.py:ThetaClient.option_history_binomial_greeks_third_order": "changed (last in 1.0.17)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_all": "changed (last in 1.0.16)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_first_order": "changed (last in 1.0.16)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_second_order": "changed (last in 1.0.16)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_third_order": "changed (last in 1.0.16)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_all": "changed (last in 1.0.18)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_first_order": "changed (last in 1.0.18)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_second_order": "changed (last in 1.0.18)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_binomial_trade_greeks_third_order": "changed (last in 1.0.18)",
     "symbol:thetadata/client.py:ThetaClient.option_history_greeks_all": "changed (last in 1.0.17)",
     "symbol:thetadata/client.py:ThetaClient.option_history_greeks_first_order": "changed (last in 1.0.17)",
     "symbol:thetadata/client.py:ThetaClient.option_history_greeks_implied_volatility": "changed (last in 1.0.17)",
     "symbol:thetadata/client.py:ThetaClient.option_history_greeks_second_order": "changed (last in 1.0.17)",
     "symbol:thetadata/client.py:ThetaClient.option_history_greeks_third_order": "changed (last in 1.0.17)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_all": "changed (last in 1.0.15)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_first_order": "changed (last in 1.0.15)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_implied_volatility": "changed (last in 1.0.15)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_second_order": "changed (last in 1.0.15)",
-    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_third_order": "changed (last in 1.0.15)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_all": "changed (last in 1.0.18)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_first_order": "changed (last in 1.0.18)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_implied_volatility": "changed (last in 1.0.18)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_second_order": "changed (last in 1.0.18)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_trade_greeks_third_order": "changed (last in 1.0.18)",
     "enum:Endpoints.TimestampPrecision": "added in 1.0.16",
     "message:BetaEndpoints.FutureAtTimeBboRequest": "added in 1.0.16",
     "message:BetaEndpoints.FutureAtTimeBboRequestQuery": "added in 1.0.16",
@@ -15139,7 +16210,11 @@
     "symbol:thetadata/_proto/v3grpc/endpoints_pb2_grpc.py:BetaThetaTerminalServicer.GetFutureSnapshotTrade": "added in 1.0.16",
     "file:WHEEL": "changed (last in 1.0.16)",
     "file:thetadata/_proto/endpoints_pb2.py": "changed (last in 1.0.16)",
-    "message:Endpoints.ZonedDateTime": "changed (last in 1.0.16)"
+    "message:Endpoints.ZonedDateTime": "changed (last in 1.0.16)",
+    "symbol:thetadata/client.py:ThetaClient.corporate_action_dividend": "added in 1.0.18",
+    "symbol:thetadata/client.py:ThetaClient.corporate_action_split": "added in 1.0.18",
+    "symbol:thetadata/client.py:ThetaClient.__init__": "changed (last in 1.0.18)",
+    "symbol:thetadata/client.py:ThetaClient.option_history_ohlc": "changed (last in 1.0.18)"
   },
   "latest_truthiness_guards": {
     "stock_list_symbols": [],
@@ -15755,6 +16830,8 @@
     "calendar_on_date": [],
     "calendar_year": [],
     "interest_rate_history_eod": [],
+    "corporate_action_dividend": [],
+    "corporate_action_split": [],
     "option_flat_file_trade_quote": [],
     "option_flat_file_eod": [],
     "option_flat_file_open_interest": [],

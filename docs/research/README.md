@@ -26,17 +26,31 @@ The per-release and cumulative records are checked offline by `python tools/upst
 | File | Content |
 | --- | --- |
 | [thetadata-1.0.13-1.0.17.md](thetadata-1.0.13-1.0.17.md) | Analysis: per-release and cumulative changes, documented server-side behavior, Rust impact and open questions |
-| [python-1.0.12-to-1.0.17-delta.md](python-1.0.12-to-1.0.17-delta.md) | Generated cumulative change record, 1.0.12 → 1.0.17 |
+| [python-1.0.12-to-1.0.18-delta.md](python-1.0.12-to-1.0.18-delta.md) | Generated cumulative change record, 1.0.12 → 1.0.18 (the chain now extends to the 1.0.18 research below) |
 | [python-1.0.13-delta.md](python-1.0.13-delta.md) | Generated change record, 1.0.12 → 1.0.13 |
 | [python-1.0.14-delta.md](python-1.0.14-delta.md) | Generated change record, 1.0.13 → 1.0.14 |
 | [python-1.0.15-delta.md](python-1.0.15-delta.md) | Generated change record, 1.0.14 → 1.0.15 |
 | [python-1.0.16-delta.md](python-1.0.16-delta.md) | Generated change record, 1.0.15 → 1.0.16 |
 | [python-1.0.17-delta.md](python-1.0.17-delta.md) | Generated change record, 1.0.16 → 1.0.17 |
-| [python-1.0.13-1.0.17-delta.json](python-1.0.13-1.0.17-delta.json) | Machine-readable deltas, artifact identities and per-item history |
+| [python-1.0.18-delta.md](python-1.0.18-delta.md) | Generated change record, 1.0.17 → 1.0.18 ([analysis](thetadata-1.0.18.md); not the baseline) |
+| [python-1.0.13-1.0.18-delta.json](python-1.0.13-1.0.18-delta.json) | Machine-readable deltas, artifact identities and per-item history |
 | [python-1.0.17-catalog.md](python-1.0.17-catalog.md) | Generated catalogue and traceability for the current baseline (`research_python.py --render`) |
 | [python-1.0.17-dispositions.json](python-1.0.17-dispositions.json) | Current feature decision ledger: the 1.0.12 decisions carried forward plus `futures` (unresolved) |
 | [python-1.0.17-inventory.json](python-1.0.17-inventory.json) | Full source/protocol inventory of the 1.0.17 wheel |
 | [vendor-1.0.17.json](vendor-1.0.17.json) | 1.0.17 summary in the shape of `vendor-1.0.12.json` |
+
+## Python 1.0.18 (researched 2026-11-19; not adopted)
+
+Research only: the compatibility baseline stays 1.0.17 until the user decides
+([analysis and proposal](thetadata-1.0.18.md)).
+
+| File | Content |
+| --- | --- |
+| [thetadata-1.0.18.md](thetadata-1.0.18.md) | Analysis: what changed from 1.0.17, the impact on this project, and a proposal for the user |
+| [python-1.0.18-delta.md](python-1.0.18-delta.md) | Generated change record, 1.0.17 → 1.0.18 |
+| [python-1.0.18-inventory.json](python-1.0.18-inventory.json) | Full source/protocol inventory of the 1.0.18 wheel |
+| [vendor-1.0.18.json](vendor-1.0.18.json) | 1.0.18 summary in the shape of `vendor-1.0.12.json` |
+| [python-1.0.18-catalog.md](python-1.0.18-catalog.md) | Generated catalogue of every 1.0.18 item, marked unchanged, changed or added since 1.0.12 |
 
 ## Topic notes
 

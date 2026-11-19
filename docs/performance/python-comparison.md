@@ -17,7 +17,7 @@ The comparator pin moved from 1.0.12 to 1.0.17 with the compatibility baseline
 ([plan decision D4](../upstream-update-1.0.17.md)). The `stock_history_eod`
 wrapper, its request messages, `_convert_response_stream`, the date/time
 helpers and the declared dependencies are unchanged from 1.0.12 to 1.0.17
-([cumulative record](../research/python-1.0.12-to-1.0.17-delta.md)). The
+([cumulative record](../research/python-1.0.12-to-1.0.18-delta.md)). The
 [artifact research](../research/thetadata-1.0.12.md#conversion-and-output)
 therefore still describes the measured path: full-stream accumulation followed
 by dataframe construction. Python 1.0.16+ ignores the new timestamp

@@ -83,6 +83,14 @@ The [performance architecture plan](architecture/performance-plan.md)
 
 ## Decisions waiting on the user (2026-11-14)
 
+0. **Adopt the vendor package's 1.0.18 as the baseline** (2026-11-19): the
+   protocol is unchanged; two new wrappers (corporate actions), two flipped
+   defaults that change current-day results, and a wider OHLC expiration.
+   **Recommended: yes, in `0.1.5`** (defaults and wrappers) plus `0.2.0`
+   (the OHLC field type), after four live checks
+   ([research and proposal](research/thetadata-1.0.18.md)). The upstream
+   monitor stays red until then.
+
 Nothing below is prepared or scheduled until the user decides.
 
 1. ~~Publish `0.1.2`: the dispatch API~~ **Decided: published 2026-11-14**
