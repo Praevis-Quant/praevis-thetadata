@@ -15,7 +15,7 @@ session from `praevis-thetadata-auth`.
 > (`raw_client`, `stream_raw`, `RawStream`) stays low-level and unstable. No
 > breaking change without a new minor version and release notes. It is **not** a
 > full port of, or drop-in replacement for, the vendor Python package. The Rust version is
-> independent of the tracked Python compatibility baseline (currently 1.0.17).
+> independent of the tracked Python compatibility baseline (currently 1.0.18).
 
 ## Status and scope
 
@@ -179,7 +179,7 @@ let built = dispatch::dispatch("option_history_eod", my_params, my_runner)?;
 ```
 
 - **Names:** the vendor wrapper name or the RPC name. `dispatch::ENDPOINTS`
-  lists both for each endpoint (`wrapper` is `None` for the 19
+  lists both for each endpoint (`wrapper` is `None` for the 17
   descriptor-only RPCs); `name()` gives the one to call it by.
 - **Parameters:** you implement `Params` once for your source (`take` a name
   and a kind, then `finish`, which rejects names that were not taken).
@@ -199,8 +199,8 @@ let built = dispatch::dispatch("option_history_eod", my_params, my_runner)?;
   parameter.
 - **One request, unsplit:** `dispatch` does not plan. For a multi-day
   request, run it as a `job()`, or split it with `plan()` in your runner.
-- **Stability is unchanged by dispatch:** the 19 descriptor-only RPCs
-  answer by RPC name, but stay unstable (`dispatch::stability`).
+- **Stability is unchanged by dispatch:** the 17 descriptor-only RPCs
+  (futures) answer by RPC name, but stay unstable (`dispatch::stability`).
 - **Python:** the Python package's calls go through the same generated
   code.
 

@@ -1,7 +1,9 @@
 # ThetaData Python 1.0.18: upstream delta research and proposal
 
-**Status: research only; the compatibility baseline stays 1.0.17** until the
-user decides on the [proposal](#proposal-for-the-users-decision). Per
+**Status: adopted.** The user approved the [proposal](#proposal-for-the-users-decision)
+on 2026-11-20: 1.0.18 is the compatibility baseline from `0.1.5`, with the
+new defaults, the two corporate-action wrappers (not live-verified), the
+login unchanged and the OHLC widening held back to `0.2.0`. Per
 [AGENTS.md](../../AGENTS.md) and the [monitor policy](../upstream-monitor.md),
 a new upstream release starts research; it does not authorise a baseline
 bump. The scheduled monitor stays red until then.

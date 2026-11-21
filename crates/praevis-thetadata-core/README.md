@@ -10,7 +10,7 @@ batches.
 > release ([declared surface](../../docs/releases.md#010-scope-record-user-2026-11-12)): no breaking
 > change without a new minor version and release notes. It is **not** a
 > full port of, or drop-in replacement for, the vendor Python package. The Rust version is
-> independent of the tracked Python compatibility baseline (currently 1.0.17).
+> independent of the tracked Python compatibility baseline (currently 1.0.18).
 
 ## What it does
 

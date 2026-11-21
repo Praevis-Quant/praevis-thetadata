@@ -73,8 +73,8 @@ per strike when it runs, after one strikes-list request; `describe` does not
 count those parts. `plan=False` sends the request as given
 ([request timing](../../docs/performance/request-timing.md)).
 
-**Vendor-named methods.** All 81 vendor `ThetaClient` methods exist with the
-vendor 1.0.17 signatures (names, order and defaults; checked against the pinned
+**Vendor-named methods.** All 83 vendor `ThetaClient` methods exist with the
+vendor 1.0.18 signatures (names, order and defaults; checked against the pinned
 inventory), plus a keyword-only `plan`. Each forwards every argument to the
 same native query and returns the client's `dataframe_type`. Differences, by
 design: prices stay exact (`decimal128(38, 10)`, Arrow-backed in pandas), and

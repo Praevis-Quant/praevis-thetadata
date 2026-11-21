@@ -3,7 +3,7 @@
 Generated protobuf message types and tonic gRPC client/server bindings for
 ThetaData's direct market-data service. The definitions were recovered
 statically from the vendor Python distribution: the checked-in descriptor
-covers Python **1.0.17**, with **100 RPCs**.
+covers Python **1.0.18** (byte-identical to 1.0.17's), with **100 RPCs**.
 
 > **Independent and unofficial.** This is an unofficial Rust project. It is not
 > affiliated with, sponsored by or endorsed by Theta Data Inc.; “ThetaData”
@@ -12,7 +12,7 @@ covers Python **1.0.17**, with **100 RPCs**.
 > ([scope](../../docs/releases.md#010-scope-record-user-2026-11-12)): its generated tonic types may change in any
 > release, so pin it exactly. It is **not** a full port of, or drop-in replacement for, the
 > vendor Python package. The Rust version is
-> independent of the tracked Python compatibility baseline (currently 1.0.17).
+> independent of the tracked Python compatibility baseline (currently 1.0.18).
 
 ## What it contains
 

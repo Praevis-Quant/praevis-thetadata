@@ -186,7 +186,7 @@ fn defaults_are_the_vendor_text_and_descriptor_only_rpcs_stay_unstable() {
     );
     assert_eq!(interval.default_value(), Some(ParamValue::Str("1s".into())));
     let unwrapped: Vec<_> = ENDPOINTS.iter().filter(|e| e.wrapper.is_none()).collect();
-    assert_eq!(unwrapped.len(), 19);
+    assert_eq!(unwrapped.len(), 17);
     for endpoint in unwrapped {
         let rpc = endpoint.name();
         assert_eq!(rpc, endpoint.rpc);

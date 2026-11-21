@@ -2,7 +2,7 @@
 
 The [scheduled workflow](../.github/workflows/upstream-version.yml) runs daily at **13:17 UTC** and supports manual dispatch. It checks PyPI without installing or executing ThetaData. Scheduled GitHub workflows run from the default branch, so this schedule becomes active after the workflow is merged there. GitHub may delay scheduled runs; it is not an exact-time service.
 
-The tracked Python version comes from `source_version` in [the protocol provenance manifest](../crates/praevis-thetadata-proto/schema/manifest.json), currently **1.0.17** (moved from 1.0.12 after the [1.0.13–1.0.17 research](research/thetadata-1.0.13-1.0.17.md)). This is intentionally distinct from the Rust workspace's `0.1.0` version. Do not bump the baseline merely to make a failing check green: first research the release, decide scope, update requirements/ADRs and compatibility evidence, and deliberately regenerate or reconcile the source provenance.
+The tracked Python version comes from `source_version` in [the protocol provenance manifest](../crates/praevis-thetadata-proto/schema/manifest.json), currently **1.0.18** (moved from 1.0.12 after the [1.0.13–1.0.17 research](research/thetadata-1.0.13-1.0.17.md), and to 1.0.18 after its [research](research/thetadata-1.0.18.md)). This is intentionally distinct from the Rust workspace's `0.1.0` version. Do not bump the baseline merely to make a failing check green: first research the release, decide scope, update requirements/ADRs and compatibility evidence, and deliberately regenerate or reconcile the source provenance.
 
 [The checker](../tools/check_upstream.py) requests the [PyPI JSON Simple Index API](https://docs.pypi.org/api/index-api/) and compares distribution versions using [PEP 440 ordering from packaging](https://packaging.pypa.io/en/stable/version.html). The policy is the latest non-yanked stable release, including post-releases; prereleases and development releases are excluded. It considers wheel and source distributions regardless of this runner's Python/platform compatibility. No package download is needed.
 
@@ -22,6 +22,7 @@ Live validation on 2026-10-04 reported tracked **1.0.12**, latest stable **1.0.1
 
 **1.0.18 (2026-11-18):** the scheduled run 44401463653 failed on PyPI's
 1.0.18. The [research and proposal](research/thetadata-1.0.18.md) are
-written; the job stays red until the user decides whether to adopt it.
+written. The user adopted 1.0.18 on 2026-11-20, so the tracked version is
+1.0.18 and the job is green again.
 
 Reference: [GitHub scheduled event behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).

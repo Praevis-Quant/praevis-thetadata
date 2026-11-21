@@ -340,6 +340,9 @@ def decision_key(entry):
     }:
         return "stock-eod"
     if entry["kind"] == "wrapper":
+        if "corporate_action" in entry["name"]:
+            # Added in 1.0.18; implemented but not live-verified, so not "supported".
+            return "corporate-actions"
         return "flat-files" if "flat_file" in entry["name"] else "query-wrappers"
     if entry["kind"] == "rpc":
         if entry["name"].startswith("GetFuture"):

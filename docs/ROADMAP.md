@@ -12,14 +12,14 @@ The [performance architecture plan](architecture/performance-plan.md)
 [History](#history)).
 
 - **Endpoints:**
-  - **All 81 vendor wrappers** of the pinned Python 1.0.17 package exist in
+  - **All 83 vendor wrappers** of the pinned Python 1.0.18 package exist in
     two forms:
     - generated Rust requests (`endpoints::*`, with explicit presence and the
       vendor's defaults);
     - same-name Python methods with the vendor's signatures
       (`praevis_thetadata.Client`).
-  - **The other 19 RPCs are descriptor-only:** 17 futures and 2 corporate
-    actions.
+  - **The other 17 RPCs are descriptor-only:** all futures. The two
+    corporate-action wrappers (1.0.18) are generated but not live-verified.
   - Per-endpoint status is in [endpoint coverage](endpoints/coverage.md).
 - **Phases:**
   - **P0 is done** ([results](performance/p0-results.md)).
@@ -83,16 +83,11 @@ The [performance architecture plan](architecture/performance-plan.md)
 
 ## Decisions waiting on the user (2026-11-14)
 
-0. **Adopt the vendor package's 1.0.18 as the baseline** (2026-11-19): the
-   protocol is unchanged; two new wrappers (corporate actions), two flipped
-   defaults that change current-day results, and a wider OHLC expiration.
-   **Recommended: yes, in `0.1.5`** (defaults and wrappers) plus `0.2.0`
-   (the OHLC field type), after four live checks
-   ([research and proposal](research/thetadata-1.0.18.md)). The upstream
-   monitor stays red until then.
-
-Nothing below is prepared or scheduled until the user decides.
-
+0. ~~Adopt the vendor package's 1.0.18 as the baseline~~ **Decided
+   2026-11-20: adopted in `0.1.5`** ([research](research/thetadata-1.0.18.md)):
+   the new defaults, the two corporate-action wrappers (not live-verified),
+   the login unchanged, and the OHLC widening held back to `0.2.0`. The
+   follow-ups are the live check and the 0.2.0 item below.
 1. ~~Publish `0.1.2`: the dispatch API~~ **Decided: published 2026-11-14**
    ([record](crates-io-release-plan.md#publication-record-012)), after the
    trial below and a clean pre-release live check.
@@ -518,6 +513,33 @@ packages and ordinary CI then never depend on nightly or the fuzzer.
   committed.
 
 The plain-Rust corpus (deferred item 2, closed in alpha.3) remains the CI gate.
+
+### Vendor 1.0.18: one-time live check (approved to plan; runs later)
+
+Not blocking (user decision 2026-11-20). In market hours, about eight
+requests, codes and counts only, then the corporate-action rows in
+[endpoint coverage](endpoints/coverage.md) can lose "not live-verified":
+1. `corporate_action_dividend` for a symbol with known dividends, and
+   `corporate_action_split` for a symbol with a known split: codes, columns
+   and row counts (registering their schemas and entitlements).
+2. Current-day trade Greeks with `perf_boost_intraday` on and off: both
+   answer, and how the underlying price differs.
+3. Current-day trade-quote with `use_time_based_trade_quote` absent, `false`
+   and `true`: whether absent behaves as `false` (the open question in the
+   [1.0.18 research](research/thetadata-1.0.18.md#open-questions-for-thetadata)),
+   and the documented 400 for option `expiration="*"` with `true`.
+4. Option OHLC with `expiration="*"` for one day (through the RPC directly,
+   since the 0.1.x wrapper takes a date): answered.
+
+### Option OHLC expiration "*" (0.2.0)
+
+Vendor 1.0.18 widened `option_history_ohlc`'s `expiration` from a date to a
+date or text, so `"*"` asks for every expiration (multi-day requests must
+name one). `0.1.5` holds it back (`HELD_BACK` in `tools/generate_endpoints.py`)
+because `OptionHistoryOhlc.expiration` is a public `NaiveDate` field. In
+`0.2.0`, with the public dates moving to jiff, it becomes `Expiration`:
+remove the hold-back, regenerate, and note it in the migration guide. The
+planner already sends option OHLC one day per request.
 
 ### chrono is unmaintained (assurance; accepted until 2027-02-18)
 

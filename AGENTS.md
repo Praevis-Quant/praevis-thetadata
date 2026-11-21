@@ -8,7 +8,7 @@ this file, not that one.
 
 Praevis ThetaData is an open-source, high-performance Rust replacement for the
 ThetaData Python package, with a thin Python pass-through over it. It is derived
-from the ThetaData Python 1.0.12 distribution and now tracks 1.0.17
+from the ThetaData Python 1.0.12 distribution and now tracks 1.0.18
 (`source_version` in the proto manifest). It provides a reusable authentication
 library, the `praevis-thetadata` CLI with optional (`auth --save`) Windows/Linux
 native session persistence, typed requests for all 100 RPCs, exact Arrow
@@ -444,8 +444,8 @@ for a newer release or inability to verify. A failure initiates compatibility
 research; it does not authorize silently bumping the baseline. The checker
 does not install or execute the upstream package.
 
-The [current 1.0.17 catalogue](docs/research/python-1.0.17-catalog.md)
-inventories every source module/function, all 81 wrappers and 100 RPCs, protocol
+The [current 1.0.18 catalogue](docs/research/python-1.0.18-catalog.md)
+inventories every source module/function, all 83 wrappers and 100 RPCs, protocol
 fields, and explicit feature dispositions. The [frozen 1.0.12 catalogue](docs/research/python-1.0.12-catalog.md)
 (80 wrappers, 82 RPCs) is preserved alongside it, and the
 [1.0.13–1.0.17 records](docs/research/README.md) document every change.

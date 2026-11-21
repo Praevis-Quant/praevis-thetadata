@@ -96,8 +96,9 @@ peaks of 103-182 MiB over 7 live runs).
 ## Compatibility with the vendor Python package
 
 **The same:**
-- **Methods:** all 81 vendor `ThetaClient` methods, with the vendor 1.0.17
-  names, argument order and defaults.
+- **Methods:** all 83 vendor `ThetaClient` methods, with the vendor 1.0.18
+  names, argument order and defaults (one held back: `option_history_ohlc`'s
+  `expiration` stays a date until `0.2.0`).
 - **Credentials:** the same order (`creds_file`, `api_key`, email and
   password, the environment, `./creds.txt`).
 - **Frames:** `dataframe_type` selects `"polars"` (the default), `"pandas"`

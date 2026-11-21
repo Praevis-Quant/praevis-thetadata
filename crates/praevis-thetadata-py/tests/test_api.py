@@ -10,7 +10,7 @@ class EndpointTests(unittest.TestCase):
         names = pt.endpoints()
         self.assertEqual(len(names), 100)
         self.assertEqual(len({rpc for _, rpc in names}), 100)
-        self.assertEqual(sum(1 for vendor, _ in names if vendor), 81)
+        self.assertEqual(sum(1 for vendor, _ in names if vendor), 83)
 
     def test_vendor_and_rpc_names_build_the_same_query(self):
         kwargs = dict(symbol="AAPL", start_date=dt.date(2024, 1, 2), end_date="2024-01-05")

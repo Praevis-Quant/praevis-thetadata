@@ -1,6 +1,6 @@
-"""Generate typed endpoint requests from the pinned vendor 1.0.17 inventory.
+"""Generate typed endpoint requests from the pinned vendor 1.0.18 inventory.
 
-P1 design section 3. Reads docs/research/python-1.0.17-inventory.json (the
+P1 design section 3. Reads docs/research/python-1.0.18-inventory.json (the
 committed research record; no vendor code is imported or run) and writes:
 
 * crates/praevis-thetadata-client/src/endpoints/generated.rs: one typed request
@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-INVENTORY = ROOT / "docs/research/python-1.0.17-inventory.json"
+INVENTORY = ROOT / "docs/research/python-1.0.18-inventory.json"
 STATUS = ROOT / "docs/endpoints/status.json"
 SCHEMAS = ROOT / "docs/endpoints/schemas.json"
 RUST_OUT = ROOT / "crates/praevis-thetadata-client/src/endpoints/generated.rs"
@@ -85,12 +85,52 @@ class ProtoField:
         return self.scalar
 
 
+# Vendor parameter changes held back until a minor version, because they change
+# a published Rust type. RPC -> parameter -> (the earlier binding expression,
+# the earlier annotation). 1.0.18 widened option OHLC's expiration from a date
+# to a date or text ("*"); in 0.1.x it stays a date (user decision
+# 2026-11-20; the widening is planned for 0.2.0 in docs/ROADMAP.md).
+HELD_BACK = {
+    "GetOptionHistoryOhlc": {
+        "expiration": ("expiration.strftime('%Y-%m-%d')", "datetime.date"),
+    },
+}
+
+
+# Vendor wrappers added without any request to the service yet: generated and
+# usable, but not supported until the one-time live check in docs/ROADMAP.md
+# (user decision 2026-11-20).
+NOT_LIVE_VERIFIED = {"GetCorporateActionDividend", "GetCorporateActionSplit"}
+
+
+def hold_back(wrapper: dict) -> dict:
+    """The wrapper with HELD_BACK's earlier bindings and annotations."""
+    held = HELD_BACK.get(wrapper["rpc"])
+    if not held:
+        return wrapper
+    wrapper = json.loads(json.dumps(wrapper))
+    for name, (expression, annotation) in held.items():
+        pattern = re.compile(rf"\b{name}=_fmt_if_date\({name}\)")
+        changed = 0
+        for binding in wrapper["bindings"]:
+            new = pattern.sub(f"{name}={expression}", binding["expression"])
+            changed += new != binding["expression"]
+            binding["expression"] = new
+        params = [p for p in wrapper["parameters"] if p["name"] == name]
+        if changed != 1 or len(params) != 1:
+            raise GenerationError(f"{wrapper['rpc']}: held-back {name!r} no longer matches the inventory")
+        params[0]["annotation"] = annotation
+        wrapper["signature"] = re.sub(rf"\b{name}: Union\[datetime\.date, str\]", f"{name}: {annotation}",
+                                      wrapper["signature"])
+    return wrapper
+
+
 def load(inventory: Path) -> tuple[list[dict], dict[str, dict], dict[str, dict]]:
     data = json.loads(inventory.read_text(encoding="utf-8"))
     entries = data["entries"]
     rpcs = [e for e in entries if e["kind"] == "rpc"]
     messages = {e["name"]: e for e in entries if e["kind"] == "message"}
-    wrappers = {e["rpc"]: e for e in entries if e["kind"] == "wrapper"}
+    wrappers = {e["rpc"]: hold_back(e) for e in entries if e["kind"] == "wrapper"}
     return rpcs, messages, wrappers
 
 
@@ -399,6 +439,10 @@ def emit_split(w: Wrapper, params: dict[str, Param]) -> list[str]:
     start, end = params.get("start_date"), params.get("end_date")
     if not (start and end and start.kind == end.kind == "NaiveDate"):
         return []
+    if "CorporateAction" in w.rpc:
+        # Sparse events (one row per dividend or split), and the vendor package
+        # sends one request: planned whole until a live check shows a limit.
+        return []
     days = 366 if "Eod" in w.rpc or "AtTime" in w.rpc else 1
     out = [f"    const SPLIT: Split = Split::Days({days});",
            "    fn date_range(&self) -> Option<(NaiveDate, NaiveDate)> {"]
@@ -639,7 +683,10 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS,
         if rpc["name"] in wrappers:
             w = translate_wrapper(rpc, wrappers[rpc["name"]], fields)
             items.append(emit_wrapper(w, request, query))
-            rows.append((rpc["name"], w.python, w.struct, "vendor wrapper"))
+            stability = "vendor wrapper"
+            if rpc["name"] in NOT_LIVE_VERIFIED:
+                stability += ", **not live-verified**"
+            rows.append((rpc["name"], w.python, w.struct, stability))
         else:
             struct = rpc["name"][3:] if rpc["name"].startswith("Get") else rpc["name"]
             items.append(emit_unwrapped(rpc, request, query, fields))
@@ -650,7 +697,7 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS,
         registry.append(f"    EndpointInfo {{ rpc: <{struct} as Endpoint>::RPC, python_name: <{struct} as Endpoint>::PYTHON_NAME, stability: <{struct} as Endpoint>::STABILITY }},")
     registry.append("];")
     header = [
-        "// @generated by tools/generate_endpoints.py from docs/research/python-1.0.17-inventory.json.",
+        "// @generated by tools/generate_endpoints.py from docs/research/python-1.0.18-inventory.json.",
         "// Do not edit by hand; run `python tools/generate_endpoints.py`.",
         "use super::*;",
         "use chrono::NaiveDate;",
@@ -668,7 +715,7 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS,
             raise GenerationError(f"{rpc}: gated is true, and only on an RPC the PRO account run did not probe")
     doc = ["# Endpoint coverage",
            "",
-           "Generated by `tools/generate_endpoints.py` from the pinned 1.0.17 inventory and",
+           "Generated by `tools/generate_endpoints.py` from the pinned 1.0.18 inventory and",
            "[`status.json`](status.json); do not edit by hand. This table replaces",
            "per-clause requirement matrices for generated endpoints",
            "([lighter process](../architecture/performance-plan.md#f-process-simplification)).",
@@ -706,7 +753,7 @@ def generate(inventory: Path = INVENTORY, status_path: Path = STATUS,
            f"{sum(1 for r in rows if not r[1])} descriptor-only (unstable).",
            ""]
     families = (("stock", "Stock"), ("option", "Option"), ("index", "Index"),
-                ("calendar", "Calendar"), ("interest", "Interest rate"))
+                ("calendar", "Calendar"), ("interest", "Interest rate"), ("corporate", "Corporate action"))
     summary: dict[str, dict[str, int]] = {}
     for rpc, python, _, _ in rows:
         if not python:
@@ -796,7 +843,7 @@ def generate_client_dispatch(inventory: Path = INVENTORY) -> str:
                    f"default: {typed_default(rpc['name'], PARAM_KINDS[k], d)} }}" for n, k, req, d in params]
         infos.append(f"        {labels} => Some(&[{', '.join(entries)}]),")
         stabilities.append(f"        {labels} => Some(<endpoints::{struct} as Endpoint>::STABILITY),")
-    header = ["// @generated by tools/generate_endpoints.py from docs/research/python-1.0.17-inventory.json.",
+    header = ["// @generated by tools/generate_endpoints.py from docs/research/python-1.0.18-inventory.json.",
               "// Do not edit by hand; run `python tools/generate_endpoints.py`.",
               "#![allow(unused_mut, clippy::all)]",
               "use super::{DefaultValue, DispatchError, EndpointName, ParamInfo, ParamKind, Params, Runner, finish, optional, required, value};",
@@ -861,15 +908,15 @@ def python_default(rpc: str, literal: str) -> str:
 
 
 def generate_vendor_aliases(inventory: Path = INVENTORY) -> str:
-    """Vendor-named methods (P1 PR 6b): the 1.0.17 wrappers' exact parameter
+    """Vendor-named methods (P1 PR 6b): the 1.0.18 wrappers' exact parameter
     names, order and defaults, plus keyword-only `plan`. Each forwards every
     argument to the native query and returns the client's dataframe type.
     Python does no data work here."""
     rpcs, _, wrappers = load(inventory)
     quote = '"' * 3
-    out = [f"{quote}Vendor-named methods with the vendor 1.0.17 signatures.",
+    out = [f"{quote}Vendor-named methods with the vendor 1.0.18 signatures.",
            "",
-           "@generated by tools/generate_endpoints.py from docs/research/python-1.0.17-inventory.json.",
+           "@generated by tools/generate_endpoints.py from docs/research/python-1.0.18-inventory.json.",
            "Do not edit by hand; run `python tools/generate_endpoints.py`.",
            quote,
            "from __future__ import annotations",

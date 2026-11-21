@@ -1,4 +1,4 @@
-"""Vendor-named methods: exact 1.0.17 signatures, every argument forwarded,
+"""Vendor-named methods: exact 1.0.18 signatures, every argument forwarded,
 forwarding defaults identical to omitting them, and dataframe_type (no network)."""
 import ast
 import datetime as dt
@@ -10,7 +10,7 @@ import unittest
 import praevis_thetadata as pt
 from praevis_thetadata import _native
 
-INVENTORY = pathlib.Path(__file__).resolve().parents[3] / "docs/research/python-1.0.17-inventory.json"
+INVENTORY = pathlib.Path(__file__).resolve().parents[3] / "docs/research/python-1.0.18-inventory.json"
 WRAPPERS = [e for e in json.loads(INVENTORY.read_text(encoding="utf-8"))["entries"] if e["kind"] == "wrapper"]
 
 # Realistic values for required parameters, by annotation.
@@ -54,9 +54,15 @@ def required(wrapper):
             for p in wrapper["parameters"] if p["name"] != "self" and p["default"] is None}
 
 
+# Parameters deliberately kept at an older vendor signature (HELD_BACK in
+# tools/generate_endpoints.py): 1.0.18 widened option_history_ohlc's
+# expiration to accept "*", which stays for 0.2.0 (ROADMAP).
+HELD_BACK = {("option_history_ohlc", "expiration"): "datetime.date"}
+
+
 class VendorSignatures(unittest.TestCase):
-    def test_all_81_methods_have_the_vendor_signature(self):
-        self.assertEqual(len(WRAPPERS), 81)
+    def test_every_method_has_the_vendor_signature(self):
+        self.assertEqual(len(WRAPPERS), 83)
         for wrapper in WRAPPERS:
             method = wrapper["name"].split(".")[-1]
             with self.subTest(method):
@@ -68,7 +74,8 @@ class VendorSignatures(unittest.TestCase):
                     self.assertEqual(ours_p.kind, inspect.Parameter.POSITIONAL_OR_KEYWORD)
                     expected = inspect.Parameter.empty if vendor_p["default"] is None else vendor_default(vendor_p["default"])
                     self.assertEqual(ours_p.default, expected)
-                    self.assertEqual(ours_p.annotation, vendor_p["annotation"] or inspect.Parameter.empty)
+                    annotation = HELD_BACK.get((method, vendor_p["name"]), vendor_p["annotation"])
+                    self.assertEqual(ours_p.annotation, annotation or inspect.Parameter.empty)
                 self.assertEqual((parameters[-1].name, parameters[-1].kind), ("plan", inspect.Parameter.KEYWORD_ONLY))
 
     def test_every_argument_is_forwarded_by_name(self):
