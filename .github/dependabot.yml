@@ -45,7 +45,8 @@ updates:
       python-package:
         patterns: ["*"]
 
-  # CI tooling.
+  # CI tooling: requirements.in compiled by pip-compile into the hash-pinned
+  # requirements.txt; Dependabot recompiles it, hashes included.
   - package-ecosystem: pip
     directory: /tools
     schedule:

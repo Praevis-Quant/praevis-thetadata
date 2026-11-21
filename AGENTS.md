@@ -117,7 +117,7 @@ maturin build --release --locked -m crates/praevis-thetadata-py/Cargo.toml -o di
 python -m unittest discover -s crates/praevis-thetadata-py/tests
 
 # Existing repository/tooling checks (Python is development tooling only)
-python -m pip install -r tools/requirements.txt
+python -m pip install --require-hashes -r tools/requirements.txt
 python tools/check_repository.py
 python tools/research_python.py --check
 python tools/generate_endpoints.py --check   # typed endpoint requests up to date (regenerate without --check)

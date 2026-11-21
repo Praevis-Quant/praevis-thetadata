@@ -52,6 +52,11 @@ See the [release-notes draft](docs/release-draft-0.1.5.md).
   store is unchanged: the Secret Service over a vendored libdbus, the
   secret encrypted on the session bus. Fifty lock-only packages leave
   `Cargo.lock`; no built dependency changes on any platform.
+- **Every pip install in CI and the release workflow is pinned:** the CI
+  tooling from a hash-pinned `tools/requirements.txt` (compiled by
+  `pip-compile` from `tools/requirements.in`) with `--require-hashes`, and
+  our own wheel by its file path from no index, so OpenSSF Scorecard's
+  Pinned-Dependencies check finds no unpinned pip install.
 - **cargo-deny now checks every crate, on each of the eight released
   platforms,** for unmaintained and unsound advisories. Before, it checked
   only direct dependencies, which let rustix 1.1.5 through.

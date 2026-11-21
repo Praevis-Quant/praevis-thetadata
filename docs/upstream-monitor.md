@@ -13,7 +13,7 @@ The tracked Python version comes from `source_version` in [the protocol provenan
 Network requests have a 20-second timeout, up to three attempts for connection/timeouts, and a response-size cap; the workflow is bounded to five minutes. Offline policy tests cover equality, older/newer versions, numeric ordering, post-releases, prereleases, yanks (including empty reasons), invalid responses, and retry failure. Normal PR CI runs these synthetic tests without requiring PyPI availability for the comparison itself. Tool dependencies are pinned in [tools/requirements.txt](../tools/requirements.txt).
 
 ```powershell
-python -m pip install -r tools/requirements.txt
+python -m pip install --require-hashes -r tools/requirements.txt
 python -m unittest discover -s tools -p 'test_*.py'
 python tools/check_upstream.py
 ```

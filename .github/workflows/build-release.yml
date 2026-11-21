@@ -179,7 +179,7 @@ jobs:
                 -m crates/praevis-thetadata-py/Cargo.toml -o dist
               # The oldest supported Python, in a clean environment, no network.
               /opt/python/cp310-cp310/bin/python -m venv /tmp/smoke
-              /tmp/smoke/bin/python -m pip install --quiet --no-index --find-links dist praevis-thetadata
+              /tmp/smoke/bin/python -m pip install --quiet --no-index dist/praevis_thetadata-*.whl
               /tmp/smoke/bin/python tools/wheel_smoke.py "$VERSION"
               chown -R "$HOST_UID:$HOST_GID" dist target'
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -199,7 +199,7 @@ jobs:
           maturin build --release --locked -m crates/praevis-thetadata-py/Cargo.toml -o dist
           python -m venv "$RUNNER_TEMP/smoke"
           py="$RUNNER_TEMP/smoke/bin/python"; [ -x "$py" ] || py="$RUNNER_TEMP/smoke/Scripts/python.exe"
-          "$py" -m pip install --quiet --no-index --find-links dist praevis-thetadata
+          "$py" -m pip install --quiet --no-index dist/praevis_thetadata-*.whl
           "$py" tools/wheel_smoke.py "$VERSION"
       - name: Check the wheel's platform tag
         run: |

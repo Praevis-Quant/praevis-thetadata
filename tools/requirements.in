@@ -1,0 +1,4 @@
+# CI-only tooling; not needed for Rust builds or the runtime CLI. Compiled,
+# hash-pinned, into requirements.txt (installed with --require-hashes):
+#   pip-compile --generate-hashes --output-file=requirements.txt requirements.in
+packaging==26.3
