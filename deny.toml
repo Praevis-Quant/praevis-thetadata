@@ -5,11 +5,28 @@
 
 [graph]
 all-features = true
+# Exactly the eight platforms released as CLI executables and wheels
+# (tools/release.py CLI_TARGETS; tools/test_deny_config.py keeps them equal),
+# so each one's platform-specific dependencies (Windows, macOS and Linux
+# keyring backends, for example) are checked.
+targets = [
+    "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl",
+    "x86_64-apple-darwin", "aarch64-apple-darwin",
+]
 
 [advisories]
 # The RustSec database, fetched at check time.
 version = 2
 yanked = "deny"
+# Unmaintained and unsound advisories against every crate in the graph, not
+# only our direct dependencies (cargo-deny's default, "workspace"). The
+# default let RUSTSEC-2026-0486 (rustix 1.1.5, unsound) and RUSTSEC-2026-0370
+# to -0372 (zbus's crates, unmaintained) through, because both are
+# transitive; chrono was caught only because it is a direct dependency.
+unmaintained = "all"
+unsound = "all"
 # Accepted advisories. Each is time-boxed: its reason must end with
 # "until YYYY-MM-DD", and tools/check_repository.py fails once that date has
 # passed, so an acceptance is reviewed rather than forgotten. Only

@@ -41,6 +41,15 @@ affect **current-day requests only**; historical requests are unchanged.
   `new(symbol, start_date, end_date)` with `NaiveDate` dates, as for every
   other wrapper, in place of `Default` and string setters.
 
+## Dependencies
+
+- **rustix 1.1.6**, fixing [RUSTSEC-2026-0486](https://rustsec.org/advisories/RUSTSEC-2026-0486)
+  (build- and test-time only; not in the executables, wheels or the
+  crates' runtime dependencies).
+- **zbus and three related crates are gone from `Cargo.lock`**
+  (RUSTSEC-2026-0370 to -0372, unmaintained). They were listed but never
+  built; the Linux credential store is unchanged.
+
 ## Not changed
 
 - **The protocol:** 1.0.18's descriptor is byte-identical to 1.0.17's.

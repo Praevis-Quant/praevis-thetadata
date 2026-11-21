@@ -592,11 +592,13 @@ against it still fails CI). Where it is used:
   upstream in [apache/arrow-rs#9183](https://github.com/apache/arrow-rs/issues/9183)
   ("Replace `chrono` w/ `jiff`", open). Our Arrow output does not expose
   chrono types, so it does not block the change here.
-- **Then:** once our own crates no longer depend on chrono, narrow the
-  acceptance to transitive use (cargo-deny's `unmaintained = "workspace"`
-  scope fails only on direct dependencies, checked with cargo-deny 0.20.2),
-  and drop it entirely once arrow-rs#9183 lands and pyo3 no longer pulls
-  chrono.
+- **Then:** once our own crates no longer depend on chrono, the acceptance
+  covers only arrow-rs's and pyo3's use of it; drop it once arrow-rs#9183
+  lands and pyo3 no longer pulls chrono. It stays an explicit, time-boxed
+  `ignore`. cargo-deny's `unmaintained = "workspace"` scope would hide it
+  but is not an option: it checks direct dependencies only, which let
+  rustix 1.1.5 (RUSTSEC-2026-0486) through, so `deny.toml` checks every
+  crate (`"all"`) since 2026-11-21.
 
 ### Reproducible release builds (assurance, after 0.1.3)
 

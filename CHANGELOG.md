@@ -33,6 +33,28 @@ See the [release-notes draft](docs/release-draft-0.1.5.md).
   READMEs' exact pins for proto and stream move to `=0.1.5`.
 - **Published by the release workflow,** as for `0.1.4`
   ([checklist](docs/crates-io-release-plan.md#015-publication-checklist-prepared-2026-11-21)).
+- **The provenance bundle is named `praevis-thetadata-<version>.intoto.jsonl`**,
+  the suffix OpenSSF Scorecard recognises; its content is unchanged
+  ([releasing](docs/releasing.md)).
+
+### Dependencies
+
+- **rustix 1.1.6** (from 1.1.5), fixing RUSTSEC-2026-0486 (unsound xattr
+  functions). It is build- and test-time only (through `tempfile`, for
+  `prost-build` in the proto crate's build script), not in the shipped
+  executables, wheels or the crates' runtime dependencies.
+- **zbus, zvariant, zvariant_derive and zbus_names are gone from the
+  lockfile** (RUSTSEC-2026-0370 to -0372, unmaintained). They were never
+  built: keyring's `crypto-rust` feature also names the unused
+  `secret-service` backend, and Cargo lists such a feature's target in
+  `Cargo.lock` anyway. The Linux store now enables `crypto-rust` on
+  `dbus-secret-service` (the same crate and version) instead. The Linux
+  store is unchanged: the Secret Service over a vendored libdbus, the
+  secret encrypted on the session bus. Fifty lock-only packages leave
+  `Cargo.lock`; no built dependency changes on any platform.
+- **cargo-deny now checks every crate, on each of the eight released
+  platforms,** for unmaintained and unsound advisories. Before, it checked
+  only direct dependencies, which let rustix 1.1.5 through.
 
 ### Changed
 

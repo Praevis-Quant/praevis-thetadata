@@ -16,7 +16,7 @@ categories = ["authentication", "api-bindings"]
 # Optional native session persistence (ADR-0020). Off by default: the default build
 # authenticates into an in-memory Session, like the vendor Python package, and pulls in
 # no keyring, D-Bus or Windows credential dependencies. The CLI enables it explicitly.
-native-store = ["dep:keyring"]
+native-store = ["dep:keyring", "dep:dbus-secret-service"]
 
 [package.metadata.docs.rs]
 features = ["native-store"]
@@ -36,8 +36,18 @@ keyring = { version = "3.6.3", features = ["windows-native"], optional = true }
 [target.'cfg(target_os = "macos")'.dependencies]
 keyring = { version = "3.6.3", features = ["apple-native"], optional = true }
 
+# Linux: the Secret Service over D-Bus through dbus-secret-service, with a
+# vendored libdbus. Its crypto-rust feature (the secret encrypted on the
+# session bus) is enabled on dbus-secret-service itself, not through
+# keyring's crypto-rust: that one also names "secret-service?/crypto-rust", and
+# Cargo writes a weak dependency feature's target into Cargo.lock even when
+# it is never built (rust-lang/cargo#10801). That put secret-service and the
+# unmaintained zbus, zvariant, zvariant_derive and zbus_names
+# (RUSTSEC-2026-0370 to -0372) in the lockfile. dbus-secret-service is the
+# same crate and version keyring already used; no crate is added.
 [target.'cfg(target_os = "linux")'.dependencies]
-keyring = { version = "3.6.3", features = ["sync-secret-service", "crypto-rust", "vendored"], optional = true }
+keyring = { version = "3.6.3", features = ["sync-secret-service", "vendored"], optional = true }
+dbus-secret-service = { version = "4.1.0", features = ["crypto-rust"], optional = true }
 
 [dev-dependencies]
 tokio.workspace = true
