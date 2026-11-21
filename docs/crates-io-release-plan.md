@@ -16,6 +16,57 @@ artifacts. Nothing is published by hand, and no tokens are used. `0.1.3`,
 published on 2026-11-16, is the first release through it, and `0.1.4`
 followed on 2026-11-19.
 
+## 0.1.5 publication checklist (prepared 2026-11-21)
+
+**Not approved for publication yet.** The user approved the 1.0.18 baseline
+for `0.1.5` on 2026-11-20; publishing needs the user's tag and approval of
+the release run, as for `0.1.4` ([releasing](releasing.md)).
+- **Scope:** the vendor package's 1.0.18 is the compatibility baseline
+  (#227); its protocol descriptor is byte-identical to 1.0.17's.
+- **Behaviour change (current-day requests only):** `perf_boost_intraday`
+  now defaults to `true` on the nine trade-Greeks requests, and
+  `use_time_based_trade_quote` to `false` on the two trade-quote requests,
+  as in 1.0.18. The CHANGELOG and the release notes give the settings that
+  restore `0.1.4`'s results.
+- **Added:** `corporate_action_dividend` and `corporate_action_split`
+  (Rust, `dispatch`, Python), **not live-verified**: marked so in the
+  coverage table, and not supported until the one-time live check in the
+  [ROADMAP](ROADMAP.md) runs. That check does not block this release.
+- **Not changed:** the login request; option OHLC `expiration` stays a date
+  (the `"*"` widening is for `0.2.0`).
+- **Unpublished since `0.1.4`:** the 0.1.4 record (#225), the 1.0.18
+  research (#226), the vendor baseline harness on 1.0.18 (#228), the robust
+  `describe()` overhead gate (#229) and the fuzzing job's coverage-lookup
+  fix (#230); none of them is published code.
+
+**Same set as `0.1.4`:** seven crates on crates.io and eight wheels on PyPI
+by trusted publishing; the GitHub release with the 16 artifacts, 8 SBOMs,
+`SHA256SUMS` and the three signed bundles.
+
+**Before tagging:**
+1. **This release PR is merged,** with CI green on `main`, and the upstream
+   monitor green on 1.0.18.
+2. **The pre-release live check on the commit to be tagged**
+   (`scripts/live/run.sh --part anytime`).
+3. **A dry run** of the release workflow on that commit (Actions → Trusted
+   publishing → Run workflow): all jobs green.
+
+**Release:** as for `0.1.4`: the user pushes the annotated tag `v0.1.5`,
+checks the run and approves the `crates-io` and `pypi` environments; the
+workflow publishes crates.io (four waves) and PyPI, then the GitHub release
+with the notes from the [draft](release-draft-0.1.5.md).
+
+**After publishing:**
+1. **Checks:** as for `0.1.4` (checksums, provenance online and with the
+   bundles, SBOM attestations, PyPI provenance, crates.io trusted
+   publishing, the crates' hashes and commit, docs.rs, the consumers), and
+   that the published Python package's `describe()` shows the new defaults
+   (`perf_boost_intraday` sent on a trade-Greeks request,
+   `use_time_based_trade_quote` absent on a trade-quote request) and plans
+   `corporate_action_split` as one request.
+2. **Records:** a "Publication record: 0.1.5" section here, the CHANGELOG
+   section dated, and the `0.1.5` row of `releases.md` marked released.
+
 ## Publication record: 0.1.4
 
 **Published 2026-11-19 by the release workflow:** run
