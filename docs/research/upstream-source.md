@@ -77,7 +77,7 @@ Recovery depends on continued artifact availability; a hash alone is not an
 archive. See [ADR-0011](../adr/0011-market-data-verification-and-artifact-retention.md)
 for the proposed retention and Rust-native verification policy.
 
-## Releases 1.0.13–1.0.17 and the current 1.0.17 baseline
+## Releases 1.0.13–1.0.18 and the current 1.0.18 baseline
 
 Checked 2026-11-01. PyPI's integrity API attests every wheel from 1.0.13 to
 1.0.17 to the same `AXIOMXLLC/thetadata-python` repository, `publish.yml`
@@ -91,22 +91,27 @@ The certificate-embedded commits are:
 | 1.0.15 | `68104130571ac70a4bad7a9433e794a01ff81cc2e952e1f86513785e84533c17` | `46e346b05fe793b1ef82be9cc5d15a5cc6766b9f` |
 | 1.0.16 | `709fed6738f9450931ff405795b0783ea45604761467584473d85b1e485ab6b0` | `226cceb174bb7e98e8868b91740fbfedb0546edd` |
 | 1.0.17 | `a43a2fe0fc4896047b9287a9cbf725214386566e3adf930523e5f8aeabf81fea` | `7d8def5003d30423ec75144e95b26f682b434464` |
+| 1.0.18 | `5ee4d60d81149437b306a2a152047a6303fe203a399ba44b452d8ddaaf39b94d` | `279f102caf79ddb350c57eae67db6376ca7c9cd9` |
+
+1.0.18 was checked on 2026-11-19 the same way (the same repository, workflow
+and environment; the subject equals the wheel hash).
 
 Applied to 1.0.12, the same extraction reproduces the commit above. The
 repository still returns 404. Every sdist's Python modules match its wheel
 byte-for-byte. The machine-readable record, including the provenance
 response hashes, is in [the delta data](python-1.0.13-1.0.18-delta.json).
 
-To recover the current 1.0.17 wheel, download
-[PyPI's versioned file](https://files.pythonhosted.org/packages/fe/5c/24aaae12bc2bde3e66dda1bfed0c03dc26b5a00c2058402e6174b6cb1799/thetadata-1.0.17-py3-none-any.whl)
+To recover the current 1.0.18 wheel, download
+[PyPI's versioned file](https://files.pythonhosted.org/packages/75/4d/9d10d875ed66082bda39752c7e3b3a0829fadef3a177e49dbf7dc159086f/thetadata-1.0.18-py3-none-any.whl)
 to ignored research storage. Compare its SHA-256 with `artifact_sha256` in
-[vendor-1.0.17.json](vendor-1.0.17.json), not with a newly downloaded
-checksum alone. Then run, without installing or importing the package:
+[vendor-1.0.18.json](vendor-1.0.18.json), not with a newly downloaded
+checksum alone. Then run, without installing or importing the package (both
+passed on 2026-11-21):
 
 ```bash
 python -m pip install -r tools/research-requirements.txt
-python tools/research_python.py --archive artifacts/research/thetadata-1.0.17-py3-none-any.whl --check
-python tools/extract_protocol.py --archive artifacts/research/thetadata-1.0.17-py3-none-any.whl --check
+python tools/research_python.py --archive artifacts/research/thetadata-1.0.18-py3-none-any.whl --check
+python tools/extract_protocol.py --archive artifacts/research/thetadata-1.0.18-py3-none-any.whl --check
 ```
 
 ## Remaining research actions

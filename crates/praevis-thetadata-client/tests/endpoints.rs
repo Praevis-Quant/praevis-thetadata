@@ -21,17 +21,17 @@ fn registry_covers_every_descriptor_rpc_once() {
     let rpcs: BTreeSet<_> = ALL.iter().map(|e| e.rpc).collect();
     assert_eq!(rpcs.len(), 100, "duplicate RPC");
     let wrappers: Vec<_> = ALL.iter().filter_map(|e| e.python_name).collect();
-    assert_eq!(wrappers.len(), 81);
+    assert_eq!(wrappers.len(), 83);
     assert_eq!(
         wrappers.iter().collect::<BTreeSet<_>>().len(),
-        81,
+        83,
         "duplicate wrapper"
     );
     let unstable: Vec<_> = ALL
         .iter()
         .filter(|e| e.stability == Stability::Unstable)
         .collect();
-    assert_eq!(unstable.len(), 19);
+    assert_eq!(unstable.len(), 17);
     assert!(unstable.iter().all(|e| e.python_name.is_none()
         && (e.rpc.starts_with("GetFuture") || e.rpc.starts_with("GetCorporateAction"))));
 }

@@ -19,6 +19,50 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Changed
+
+- **The compatibility baseline is the vendor package's 1.0.18** (user
+  decision 2026-11-20; [research](docs/research/thetadata-1.0.18.md)). Its
+  protocol descriptor is byte-identical to 1.0.17's, so no request changes
+  shape, and the upstream monitor is green again.
+- **Behaviour change: two vendor defaults now follow 1.0.18.** Both affect
+  **current-day requests only** (per the vendor's OpenAPI); historical
+  requests are unchanged. They apply to the generated Rust requests,
+  `dispatch` and the Python methods alike.
+  - **Trade Greeks** (`option_history_trade_greeks_*` and
+    `option_history_binomial_trade_greeks_*`, nine requests):
+    `perf_boost_intraday` now defaults to `true`, and is sent. The service
+    then looks up the underlying price at 1-second instead of millisecond
+    precision. **To get `0.1.4`'s results:** pass `perf_boost_intraday=False`
+    in Python, or `.perf_boost_intraday(false)` in Rust (nothing is sent, as
+    before).
+  - **Trade-quote** (`option_history_trade_quote`, `stock_history_trade_quote`):
+    `use_time_based_trade_quote` now defaults to `false`, and is no longer
+    sent. Current-day trades are then matched with the last quote before
+    them, not by millisecond timestamp. **To get `0.1.4`'s results:** pass
+    `use_time_based_trade_quote=True` in Python, or
+    `.use_time_based_trade_quote(true)` in Rust.
+- **Held back to `0.2.0`:** 1.0.18 lets `option_history_ohlc` take
+  `expiration="*"`. Here its `expiration` stays a date, because widening it
+  changes a public Rust field's type.
+- **Not followed:** 1.0.18's login request adds a client name and version;
+  ours is unchanged (user decision 2026-11-20).
+
+### Added
+
+- **`corporate_action_dividend` and `corporate_action_split`**, 1.0.18's new
+  wrappers for the dividend and split RPCs: generated Rust requests
+  (`CorporateActionDividend`, `CorporateActionSplit`, now `VendorWrapper`),
+  `dispatch` names and Python methods. **Not live-verified:** no request has
+  been sent to the service yet, so they are not supported until the one-time
+  live check in the [ROADMAP](docs/ROADMAP.md) runs.
+- **Their Rust types change shape** (they were unstable, descriptor-only
+  types): `CorporateActionDividend::new(symbol, start_date, end_date)` and
+  `CorporateActionSplit::new(...)` take the required parameters, with the
+  dates as `NaiveDate`, as for every other wrapper. They no longer implement
+  `Default`, and the `start_date` and `end_date` fields are no longer
+  `String`.
+
 ## [0.1.4] - 2026-11-19
 
 **A patch release: `chrono-tz` replaced by `jiff`, nothing else changes in

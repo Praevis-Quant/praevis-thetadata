@@ -186,7 +186,7 @@ the CLI it requires `auth --save`. The credential store holds the **session
 returned by login**, so another process can reuse it without the API key or a
 new login. The API key and password are never copied into the saved record.
 
-1. `praevis-thetadata auth --save` submits credentials to the same HTTPS authentication endpoint and with the same request shape as Python 1.0.12, unchanged through 1.0.17.
+1. `praevis-thetadata auth --save` submits credentials to the same HTTPS authentication endpoint and with the same request shape as Python 1.0.12, unchanged through 1.0.17. Python 1.0.18 also sends a client name and version; this project does not (user decision 2026-11-20).
 2. After a successful response, `SessionStore::save` stores a versioned JSON record **inside the native credential store**, not in a project file. The record contains the session ID, account/subscription metadata, environment, and save time. The API key and password are not stored.
 3. The stable identifier is `praevis.thetadata.auth.v1:PROD:default` for the default production profile. Windows uses it as the credential target. Linux uses it as the Secret Service `service` attribute, with the profile as `username`, in the default collection. Changing the profile or environment selects a different entry. All applications using this library and identifier share that record under the same OS user and credential service. Windows and Linux stores are independent; sessions are not automatically synchronized between them.
 4. `praevis-thetadata auth status` starts independently and reads the record from the native store. It does not authenticate, require login credentials, or contact ThetaData. It reports the account, save time, and storage location without exposing the token.
@@ -265,7 +265,7 @@ Tests cover API key and email/password request bodies, malformed/rejected authen
 
 ## Protocol provenance
 
-The Python 1.0.17 client exposes **81 methods**; its descriptor includes **100 RPCs**, including two corporate-action and seventeen futures methods without Python wrappers (1.0.12 had 80 methods and 82 RPCs). `tools/extract_protocol.py` reads the serialized descriptors using Python AST parsing without executing the vendor package. The recovered descriptor, source hashes, and RPC inventory are in `crates/praevis-thetadata-proto/schema/`.
+The Python 1.0.18 client exposes **83 methods**; its descriptor includes **100 RPCs**, including seventeen futures methods without Python wrappers (1.0.18 added wrappers for the two corporate-action RPCs; its descriptor is byte-identical to 1.0.17's; 1.0.12 had 80 methods and 82 RPCs). `tools/extract_protocol.py` reads the serialized descriptors using Python AST parsing without executing the vendor package. The recovered descriptor, source hashes, and RPC inventory are in `crates/praevis-thetadata-proto/schema/`.
 
 To regenerate after deliberately updating the bundled package, run `python tools/extract_protocol.py --archive <wheel>` with `google.protobuf` installed. It reads the wheel in memory and refuses any wheel whose hash differs from the reviewed `docs/research/vendor-<version>.json`; `--check` compares instead of writing. Rust builds compile the checked-in descriptor through [tonic-prost-build's descriptor API](https://docs.rs/tonic-prost-build/0.14.6/tonic_prost_build/struct.Builder.html#method.compile_fds). The upstream Apache-2.0 license is retained at `crates/praevis-thetadata-proto/LICENSE.upstream`. The original Python distribution is unchanged.
 

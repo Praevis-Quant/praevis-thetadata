@@ -29,7 +29,7 @@
 //! text as `HH:MM:SS`. A service that compares or caches requests should
 //! bring values to that form before dispatching.
 //!
-//! **Stability is unchanged by dispatch.** The 19 descriptor-only RPCs are
+//! **Stability is unchanged by dispatch.** The 17 descriptor-only RPCs are
 //! reachable by their RPC names, with their request fields as parameter
 //! names, but they stay [`Stability::Unstable`](crate::endpoints::Stability)
 //! (each request's `STABILITY` constant; [`stability`]). Reaching one by
@@ -48,7 +48,7 @@ mod generated;
 #[non_exhaustive]
 pub struct EndpointName {
     /// The vendor wrapper's name (`option_history_eod`), or `None` for one of
-    /// the 19 descriptor-only RPCs, which have no wrapper and stay unstable.
+    /// the 17 descriptor-only RPCs, which have no wrapper and stay unstable.
     pub wrapper: Option<&'static str>,
     /// The RPC name (`GetOptionHistoryEod`).
     pub rpc: &'static str,

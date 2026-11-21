@@ -74,7 +74,7 @@ class OutputTests(unittest.TestCase):
         self.assertEqual(dispatch.count("::STABILITY),"), 100)
         aliases = gen.generate_vendor_aliases()
         self.assertEqual(gen.VENDOR_OUT.read_text(encoding="utf-8"), aliases)
-        self.assertEqual(aliases.count('        return self._vendor("'), 81)
+        self.assertEqual(aliases.count('        return self._vendor("'), 83)
 
     def test_the_subscription_required_follows_the_evidence_only(self):
         def run(cls, code, tier=None, **extra):

@@ -19,7 +19,7 @@ These files are preserved byte-for-byte. `python tools/research_python.py --chec
 | [vendor-1.0.12.json](vendor-1.0.12.json) | Original artifact hashes, wrapper-to-RPC map and OpenAPI comparison |
 | [upstream-source.md](upstream-source.md) | Publishing provenance, sdist equivalence and artifact recovery |
 
-## Python 1.0.13–1.0.17 (current baseline: 1.0.17)
+## Python 1.0.13–1.0.17
 
 The per-release and cumulative records are checked offline by `python tools/upstream_delta.py check`; the current inventory, ledger and catalogue by `python tools/research_python.py --check`.
 
@@ -39,10 +39,11 @@ The per-release and cumulative records are checked offline by `python tools/upst
 | [python-1.0.17-inventory.json](python-1.0.17-inventory.json) | Full source/protocol inventory of the 1.0.17 wheel |
 | [vendor-1.0.17.json](vendor-1.0.17.json) | 1.0.17 summary in the shape of `vendor-1.0.12.json` |
 
-## Python 1.0.18 (researched 2026-11-19; not adopted)
+## Python 1.0.18 (current baseline since 2026-11-20)
 
-Research only: the compatibility baseline stays 1.0.17 until the user decides
-([analysis and proposal](thetadata-1.0.18.md)).
+Adopted as the compatibility baseline on 2026-11-20 (user decision on the
+[analysis and proposal](thetadata-1.0.18.md)); `research_python.py --check`
+checks the current inventory, ledger and catalogue.
 
 | File | Content |
 | --- | --- |
@@ -50,7 +51,8 @@ Research only: the compatibility baseline stays 1.0.17 until the user decides
 | [python-1.0.18-delta.md](python-1.0.18-delta.md) | Generated change record, 1.0.17 → 1.0.18 |
 | [python-1.0.18-inventory.json](python-1.0.18-inventory.json) | Full source/protocol inventory of the 1.0.18 wheel |
 | [vendor-1.0.18.json](vendor-1.0.18.json) | 1.0.18 summary in the shape of `vendor-1.0.12.json` |
-| [python-1.0.18-catalog.md](python-1.0.18-catalog.md) | Generated catalogue of every 1.0.18 item, marked unchanged, changed or added since 1.0.12 |
+| [python-1.0.18-catalog.md](python-1.0.18-catalog.md) | Generated catalogue and traceability for the current baseline (`research_python.py --render`) |
+| [python-1.0.18-dispositions.json](python-1.0.18-dispositions.json) | Current feature decision ledger: 1.0.17's carried forward, with corporate actions now planned (wrappers added, not live-verified) |
 
 ## Topic notes
 

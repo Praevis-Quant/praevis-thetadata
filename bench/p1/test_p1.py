@@ -174,8 +174,11 @@ class Runners(unittest.TestCase):
     def test_stock_index_rate_checks_cover_every_other_method_but_flat_files(self):
         import datetime as dt
 
+        # The corporate actions (methods since 1.0.18) stay out until the user
+        # approves their one-time live check (ROADMAP).
         names = [vendor for vendor, _ in pt.endpoints()
-                 if vendor and not vendor.startswith("option_") and "flat_file" not in vendor]
+                 if vendor and not vendor.startswith(("option_", "corporate_action_"))
+                 and "flat_file" not in vendor]
         checks = stock_index_rate_checks.requests(dt.date(2024, 6, 14))
         self.assertEqual(sorted({m for m, _, _ in checks}), sorted(names))
         self.assertEqual(len(names), 26)
