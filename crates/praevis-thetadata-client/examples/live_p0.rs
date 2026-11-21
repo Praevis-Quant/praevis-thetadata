@@ -1177,12 +1177,12 @@ async fn entitlements(
         .await?;
     // Unstable: in the descriptor, with no vendor wrapper.
     r.run(typed::FutureListSymbols::default()).await?;
-    r.run(
-        typed::CorporateActionSplit::default()
-            .symbol("AAPL".into())
-            .start_date("2024-01-01".into())
-            .end_date("2024-12-31".into()),
-    )
+    // A vendor wrapper since 1.0.18, not live-verified yet (ROADMAP).
+    r.run(typed::CorporateActionSplit::new(
+        "AAPL",
+        date("2024-01-01"),
+        date("2024-12-31"),
+    ))
     .await?;
     Ok(())
 }
@@ -3370,10 +3370,16 @@ mod tests {
             .await
             .unwrap();
         // Every stock, index, calendar and interest-rate RPC with a vendor
-        // wrapper, and nothing else.
+        // wrapper, and nothing else. The corporate actions (wrappers since
+        // 1.0.18) stay out until the user approves their one-time live
+        // check (ROADMAP).
         let expected: std::collections::BTreeSet<&str> = typed::ALL
             .iter()
-            .filter(|e| e.python_name.is_some() && !e.rpc.starts_with("GetOption"))
+            .filter(|e| {
+                e.python_name.is_some()
+                    && !e.rpc.starts_with("GetOption")
+                    && !e.rpc.starts_with("GetCorporateAction")
+            })
             .map(|e| e.rpc)
             .collect();
         assert_eq!(expected.len(), 30);

@@ -56,6 +56,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   `dispatch` names and Python methods. **Not live-verified:** no request has
   been sent to the service yet, so they are not supported until the one-time
   live check in the [ROADMAP](docs/ROADMAP.md) runs.
+- **Their Rust types change shape** (they were unstable, descriptor-only
+  types): `CorporateActionDividend::new(symbol, start_date, end_date)` and
+  `CorporateActionSplit::new(...)` take the required parameters, with the
+  dates as `NaiveDate`, as for every other wrapper. They no longer implement
+  `Default`, and the `start_date` and `end_date` fields are no longer
+  `String`.
 
 ## [0.1.4] - 2026-11-19
 
