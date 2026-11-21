@@ -269,7 +269,7 @@ jobs:
     # The abi3 wheel built once per OS above, installed into a clean virtual
     # environment and tested on every supported Python version: no rebuild, only
     # the package tests (with the emulator examples). Test dependencies come from
-    # a hash-pinned lock that resolves for Python 3.10 and later.
+    # a hash-pinned lock compiled for each Python version.
     name: Python ${{ matrix.python }} (${{ matrix.os }})
     needs: python-package
     strategy:
@@ -298,11 +298,13 @@ jobs:
           name: emulator-${{ matrix.os }}
           path: emulator
       - name: Install the wheel into a clean environment and run the package tests
+        env:
+          PYTHON_VERSION: ${{ matrix.python }}
         run: |
           set -euo pipefail
           python -m venv "$RUNNER_TEMP/venv"
           py="$RUNNER_TEMP/venv/bin/python"; [ -x "$py" ] || py="$RUNNER_TEMP/venv/Scripts/python.exe"
-          "$py" -m pip install --quiet --require-hashes -r crates/praevis-thetadata-py/requirements-matrix.txt
+          "$py" -m pip install --quiet --require-hashes -r "crates/praevis-thetadata-py/requirements-matrix-$PYTHON_VERSION.txt"
           "$py" -m pip install --quiet --no-index --no-deps dist/*.whl
           "$py" -c "import sys, praevis_thetadata as pt; print(sys.version.split()[0], 'praevis_thetadata', pt.__version__)"
           server="$PWD/emulator/praevis-thetadata-emulator"

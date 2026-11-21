@@ -33,7 +33,9 @@ updates:
     ignore:
       - dependency-name: "praevis-thetadata-*"
 
-  # The Python package's hash-pinned build and test requirements.
+  # The Python package's hash-pinned build and test requirements, compiled by
+  # pip-compile (requirements-test.txt; requirements-matrix-<python>.txt, one
+  # per Python version, each recompiled with the Python its header names).
   - package-ecosystem: pip
     directory: /crates/praevis-thetadata-py
     schedule:

@@ -56,7 +56,11 @@ See the [release-notes draft](docs/release-draft-0.1.5.md).
   tooling from a hash-pinned `tools/requirements.txt` (compiled by
   `pip-compile` from `tools/requirements.in`) with `--require-hashes`, and
   our own wheel by its file path from no index, so OpenSSF Scorecard's
-  Pinned-Dependencies check finds no unpinned pip install.
+  Pinned-Dependencies check finds no unpinned pip install. The Python
+  package's build and test locks are compiled by pip-tools too, so
+  Dependabot keeps them current; the version-matrix lock is now one file
+  per Python version (`requirements-matrix-<python>.txt`), with the same
+  pins. The live-check runner installs its wheel by path too.
 - **cargo-deny now checks every crate, on each of the eight released
   platforms,** for unmaintained and unsound advisories. Before, it checked
   only direct dependencies, which let rustix 1.1.5 through.

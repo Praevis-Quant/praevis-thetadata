@@ -112,7 +112,8 @@ cargo test --workspace --locked
 
 # Python package (inside a virtual environment with
 # crates/praevis-thetadata-py/requirements-test.txt installed; CI's version
-# matrix installs requirements-matrix.txt, which resolves for Python 3.10+)
+# matrix installs requirements-matrix-<python>.txt, one per Python version.
+# All are compiled by pip-tools with hashes and installed with --require-hashes)
 maturin build --release --locked -m crates/praevis-thetadata-py/Cargo.toml -o dist
 python -m unittest discover -s crates/praevis-thetadata-py/tests
 
