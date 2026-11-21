@@ -1,7 +1,7 @@
 """Vendor Python baseline for the options workloads (options phase, step D2).
 
 Times whole workloads (W4-W6 in workloads.json) through the official
-thetadata 1.0.17 package's public methods, returning Polars frames:
+thetadata 1.0.18 package's public methods, returning Polars frames:
 synchronously (``--threads 1``) and threaded on one client (``--threads 8``,
 the same concurrency as ours on PRO). Run under the same scoped exception and
 rules as baseline.py: by the Coordinator only, key from THETADATA_API_KEY,

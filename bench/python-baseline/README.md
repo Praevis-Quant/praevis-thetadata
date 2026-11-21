@@ -1,6 +1,6 @@
 # Vendor Python baseline harness (performance plan C.1)
 
-This harness runs the **official `thetadata` 1.0.17 package** to measure the
+This harness runs the **official `thetadata` 1.0.18 package** to measure the
 baseline every Praevis performance claim is compared against. It exists under
 the single scoped exception in [AGENTS.md](../../AGENTS.md):
 
@@ -58,7 +58,7 @@ run stops at the first `RESOURCE_EXHAUSTED` or any status other than
 
 ## Run it (Windows PowerShell, from the repository root)
 
-Requires Python 3.12 or newer (`thetadata` 1.0.17 declares `>=3.12`).
+Requires Python 3.12 or newer (`thetadata` 1.0.18 declares `>=3.12`).
 
 ```powershell
 cd bench\python-baseline
@@ -88,5 +88,5 @@ Keep the `.bin` captures private; their SHA-256 values are in the JSON.
 uv pip compile --universal --generate-hashes --python-version 3.12 requirements.in -o requirements.txt
 ```
 
-Keep `thetadata==1.0.17` unless a newer version is approved through the same
+Keep `thetadata==1.0.18` unless a newer version is approved through the same
 process.

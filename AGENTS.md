@@ -461,7 +461,7 @@ one approved exception (2026-11-03, [plan C.1](docs/architecture/performance-pla
 - **Only** the Python baseline harness in `bench/python-baseline/` may run it.
   That harness is outside the Cargo workspace and excluded from packaging, CI,
   tests and `tools/`.
-- It runs `thetadata==1.0.17` from a hash-pinned (`--require-hashes`)
+- It runs `thetadata==1.0.18` from a hash-pinned (`--require-hashes`)
   isolated virtual environment, and only **manually by the Coordinator on the
   user's machine**, with the user's key taken from the environment (never
   written to disk or logs).

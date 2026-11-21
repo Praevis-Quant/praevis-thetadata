@@ -1,6 +1,6 @@
 """Keep the vendor package's log output (which includes the session token) silent.
 
-thetadata 1.0.12-1.0.17 logs the entire successful auth response, including
+thetadata 1.0.12-1.0.18 logs the entire successful auth response, including
 ``sessionId``, at INFO, and rejection bodies at ERROR (research:
 docs/research/thetadata-1.0.12.md, "Logging hazard"). The harness must never
 let those records reach a console, a file or any handler that a dependency
