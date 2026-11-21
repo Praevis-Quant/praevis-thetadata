@@ -74,7 +74,7 @@ gh attestation verify <file> --repo Praevis-Quant/praevis-thetadata \
   --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
 ```
 
-Offline: add `--bundle praevis-thetadata-0.1.5.provenance.sigstore.jsonl
+Offline: add `--bundle praevis-thetadata-0.1.5.intoto.jsonl
 --custom-trusted-root trusted_root.jsonl` ([how](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.5/docs/releasing.md#verifying-a-release)).
 
 The wheels need CPython 3.10 or newer. The known gaps of `0.1.0` still
@@ -113,6 +113,6 @@ release ([report](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.5
 | `praevis-thetadata-stream-0.1.5.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-stream` crate |
 | `praevis-thetadata-wheel-0.1.5.cdx.json` | SBOM (CycloneDX 1.5), the extension module in every wheel |
 | `SHA256SUMS` | SHA-256 of every file above |
-| `praevis-thetadata-0.1.5.provenance.sigstore.jsonl` | Signed build-provenance attestation (SLSA v1.0) of every file above, for offline verification |
+| `praevis-thetadata-0.1.5.intoto.jsonl` | Signed build-provenance attestation (SLSA v1.0) of every file above, for offline verification (named `.provenance.sigstore.jsonl` up to `0.1.4`) |
 | `praevis-thetadata-cli-0.1.5.sbom.sigstore.jsonl` | Signed SBOM attestation of the CLI executables |
 | `praevis-thetadata-wheel-0.1.5.sbom.sigstore.jsonl` | Signed SBOM attestation of the wheels |

@@ -66,7 +66,7 @@ provenance or SBOM**; review `0.1.3` or later.
 | Python package | [PyPI](https://pypi.org/project/praevis-thetadata/) and the GitHub release | `praevis_thetadata-<version>-cp310-abi3-<platform>.whl`, 8 platforms (Linux glibc and musl, Windows, macOS; x86_64 and arm64) |
 | CLI executables | the GitHub release | `praevis-thetadata-cli-<version>-<target>.zip`/`.tar.gz`, 8 targets |
 | SBOMs (CycloneDX 1.5) | the GitHub release | `praevis-thetadata-<crate>-<version>.cdx.json` (7), `praevis-thetadata-wheel-<version>.cdx.json` |
-| Checksums and signed attestations | the GitHub release | `SHA256SUMS`; `praevis-thetadata-<version>.provenance.sigstore.jsonl`; `praevis-thetadata-cli-<version>.sbom.sigstore.jsonl`; `praevis-thetadata-wheel-<version>.sbom.sigstore.jsonl` |
+| Checksums and signed attestations | the GitHub release | `SHA256SUMS`; `praevis-thetadata-<version>.intoto.jsonl` (provenance; up to `0.1.4` named `.provenance.sigstore.jsonl`); `praevis-thetadata-cli-<version>.sbom.sigstore.jsonl`; `praevis-thetadata-wheel-<version>.sbom.sigstore.jsonl` |
 
 **Supported surface:** auth, core, arrow, the client's query and job API,
 the CLI and the Python package. The proto crate is unstable and the stream
@@ -193,7 +193,7 @@ project**:
 **On a connected staging machine:**
 1. **Download** from the GitHub release for the version under review: the
    artifacts you need, the matching SBOMs, `SHA256SUMS`, and the three
-   `*.sigstore.jsonl` bundles.
+   signed bundles (`*.intoto.jsonl` and `*.sbom.sigstore.jsonl`).
 2. **Fetch the Sigstore trusted root** through GitHub's CLI:
    `gh attestation trusted-root > trusted_root.jsonl`.
 3. **Optionally, the Rust sources:** for a build from source, also run
@@ -215,7 +215,7 @@ project**:
 
    ```text
    gh attestation verify <artifact> \
-     --bundle praevis-thetadata-<version>.provenance.sigstore.jsonl \
+     --bundle praevis-thetadata-<version>.intoto.jsonl \
      --custom-trusted-root trusted_root.jsonl \
      --repo Praevis-Quant/praevis-thetadata \
      --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml

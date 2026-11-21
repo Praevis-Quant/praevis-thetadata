@@ -297,7 +297,9 @@ jobs:
           SBOM_WHEELS: ${{ steps.sbom-wheels.outputs.bundle-path }}
         run: |
           set -euo pipefail
-          cp "$PROVENANCE" "dist/praevis-thetadata-$VERSION.provenance.sigstore.jsonl"
+          # .intoto.jsonl is the suffix OpenSSF Scorecard recognises as
+          # provenance (Signed-Releases); the content is the Sigstore bundle.
+          cp "$PROVENANCE" "dist/praevis-thetadata-$VERSION.intoto.jsonl"
           cp "$SBOM_CLI" "dist/praevis-thetadata-cli-$VERSION.sbom.sigstore.jsonl"
           cp "$SBOM_WHEELS" "dist/praevis-thetadata-wheel-$VERSION.sbom.sigstore.jsonl"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

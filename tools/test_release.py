@@ -87,6 +87,16 @@ class NotesTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             release.release_body("no marker")
 
+    def test_the_provenance_bundle_has_the_suffix_scorecard_recognises(self):
+        # OpenSSF Scorecard's Signed-Releases check counts a release asset
+        # ending in .intoto.jsonl as provenance (probes/releasesHaveProvenance).
+        workflow = (release.ROOT / ".github" / "workflows" / "build-release.yml").read_text(encoding="utf-8")
+        self.assertIn('"dist/praevis-thetadata-$VERSION.intoto.jsonl"', workflow)
+        self.assertNotIn("provenance.sigstore.jsonl", workflow)
+        version = release.workspace_version()
+        body = release.release_body(release.draft(version).read_text(encoding="utf-8"))
+        self.assertIn(f"`praevis-thetadata-{version}.intoto.jsonl`", body)
+
     def test_the_current_draft_has_a_body(self):
         body = release.release_body(release.draft(release.workspace_version()).read_text(encoding="utf-8"))
         self.assertIn("## Install", body)

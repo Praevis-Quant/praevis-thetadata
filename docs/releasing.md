@@ -66,9 +66,16 @@ workflow):
 - SBOM attestations binding the eight executables to the CLI's SBOM and the
   eight wheels to the wheel SBOM;
 - the three signed bundles, kept as release assets for offline
-  verification: `praevis-thetadata-<version>.provenance.sigstore.jsonl`,
-  `praevis-thetadata-cli-<version>.sbom.sigstore.jsonl` and
-  `praevis-thetadata-wheel-<version>.sbom.sigstore.jsonl`.
+  verification: the provenance bundle `praevis-thetadata-<version>.intoto.jsonl`,
+  and `praevis-thetadata-cli-<version>.sbom.sigstore.jsonl` and
+  `praevis-thetadata-wheel-<version>.sbom.sigstore.jsonl`. The provenance
+  bundle is named with the `.intoto.jsonl` suffix that OpenSSF Scorecard's
+  Signed-Releases check recognises; its content is the Sigstore bundle, as
+  before. Up to `0.1.4` it was named
+  `praevis-thetadata-<version>.provenance.sigstore.jsonl`.
+- **The bundles are not in `SHA256SUMS`, by design:** they are made after it
+  (the provenance attests each `SHA256SUMS` entry), and are verified by
+  their signatures, not by checksum.
 
 **SLSA v1.0 Build Level 3.** The build and its attestations run in the
 reusable `build-release.yml`, so each attestation names that workflow as
@@ -146,15 +153,15 @@ gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.
 assets, so verification needs only one trust anchor fetched beforehand.
 1. **On a connected machine,** fetch Sigstore's trusted root through GitHub
    (`gh attestation trusted-root > trusted_root.jsonl`), and download the
-   release assets you need with `SHA256SUMS` and the three
-   `*.sigstore.jsonl` bundles.
+   release assets you need with `SHA256SUMS` and the three bundles
+   (`*.intoto.jsonl` and `*.sbom.sigstore.jsonl`).
 2. **Transfer** them into the enclave by your approved process.
 3. **In the enclave:**
 
 ```text
 sha256sum --check --ignore-missing SHA256SUMS
-gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz \
-  --bundle praevis-thetadata-0.1.3.provenance.sigstore.jsonl \
+gh attestation verify praevis-thetadata-cli-0.1.5-x86_64-unknown-linux-musl.tar.gz \
+  --bundle praevis-thetadata-0.1.5.intoto.jsonl \
   --custom-trusted-root trusted_root.jsonl \
   --repo Praevis-Quant/praevis-thetadata \
   --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
