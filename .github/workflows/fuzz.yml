@@ -30,6 +30,13 @@ jobs:
           language: rust
           sanitizer: address
           github-token: ${{ github.token }}
+          # Run all four targets on every pull request, which is what already
+          # happened: pruning needs a coverage report, and none is uploaded.
+          # Skipping it skips the coverage lookup, which pages through every
+          # artifact in the repository and never stops if artifacts expire
+          # mid-scan (until the token's rate limit; #227 lost 22 minutes and
+          # timed out).
+          keep-unaffected-fuzz-targets: true
       - name: Run them
         uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
         with:
