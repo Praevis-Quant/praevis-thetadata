@@ -58,11 +58,29 @@ published crates (the CLI's covers the executables), and
 `praevis-thetadata-wheel-<version>.cdx.json` for the extension module in
 every wheel.
 
+**The seven crates** (`crates` job, from `0.1.5`): `cargo package` of the
+published crates in one command, in publish order, so each later crate
+resolves the earlier ones from the local package directory, with the
+verification build. The `.crate` files, `praevis-thetadata-<crate>-<version>.crate`,
+are release artifacts like the others. The `crates` job records its exact
+Rust toolchain, and crates.io publishing uses that same toolchain.
+- **Reproducible, and checked every run:** `crates-reproducible` packages
+  them again on another runner and architecture (`ubuntu-24.04-arm`) with
+  the same toolchain. Every `.crate` must be byte-identical, or nothing is
+  attested or published.
+- **Evidence (2026-11-21):** two checkouts of the same commit with
+  different paths and file times give identical `.crate` files. `cargo
+  package` of tag `v0.1.4` on an aarch64 machine reproduces all seven
+  `0.1.4` crates on crates.io byte for byte, which `cargo publish` packaged
+  on the x86_64 release runner one crate at a time against crates.io. So
+  publishing one crate at a time gives the same bytes as packaging the
+  seven together.
+
 **4. Checksums and attestations** (`collect` job, still in the reusable
 workflow):
-- `SHA256SUMS` over the 24 files (16 artifacts, 8 SBOMs);
+- `SHA256SUMS` over the 31 files (16 artifacts, 7 crates, 8 SBOMs);
 - a signed [build-provenance attestation](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)
-  for each of the 24, made with GitHub's OIDC identity through Sigstore;
+  for each of the 31, made with GitHub's OIDC identity through Sigstore;
 - SBOM attestations binding the eight executables to the CLI's SBOM and the
   eight wheels to the wheel SBOM;
 - the three signed bundles, kept as release assets for offline
@@ -73,6 +91,10 @@ workflow):
   Signed-Releases check recognises; its content is the Sigstore bundle, as
   before. Up to `0.1.4` it was named
   `praevis-thetadata-<version>.provenance.sigstore.jsonl`.
+- **Every published artifact has verifiable provenance** from `0.1.5`: the
+  executables and wheels, and now the crates too (crates.io's own
+  trusted-publishing record names the workflow run, but does not sign
+  the file).
 - **The bundles are not in `SHA256SUMS`, by design:** they are made after it
   (the provenance attests each `SHA256SUMS` entry), and are verified by
   their signatures, not by checksum.
@@ -104,13 +126,21 @@ is published is what was attested.
 1. **`publish-crates`** (environment `crates-io`): **crates.io** by [trusted publishing](https://crates.io/docs/trusted-publishing),
    in four waves: proto, core, auth; arrow; client; cli, stream. Each wave
    gets its own short-lived token, revoked when the job ends, and `cargo
-   publish` waits until the index serves each crate.
+   publish` waits until the index serves each crate. Two checks tie what
+   crates.io serves to the attested `.crate` files:
+   - **Before the first wave:** with the build's toolchain, the job packages
+     the seven crates itself and each must be byte-identical to the
+     attested one, or nothing is published.
+   - **After each crate:** it is downloaded back from `static.crates.io`, and
+     its SHA-256 and the index's checksum must equal the attested `.crate`;
+     any difference fails the job before the GitHub release. A re-run
+     checks crates already published too.
 2. **`publish-pypi`** (environment `pypi`): **PyPI** by
    [trusted publishing](https://docs.pypi.org/trusted-publishers/), the
    eight wheels with PyPI attestations. No sdist.
 3. **`github-release`** (no environment, only `contents: write`), after both
-   succeeded: **the GitHub release** for the tag: the 16 artifacts, the 8
-   SBOMs, the 3 signed bundles and `SHA256SUMS`,
+   succeeded: **the GitHub release** for the tag: the 16 artifacts, the 7
+   crates, the 8 SBOMs, the 3 signed bundles and `SHA256SUMS` (35 assets),
    its notes taken from the body of `docs/release-draft-<version>.md`
    (everything after `**Body:**`). Marked latest; a version with a
    pre-release suffix is marked pre-release instead.
@@ -123,7 +153,8 @@ the crates, wheels, checksums, attestations and docs.rs.
 ## Dry run
 
 **Actions → Trusted publishing → Run workflow** on `main` (or any branch) runs the gate
-in report-only mode, builds and checks all 16 artifacts and the 8 SBOMs, writes
+in report-only mode, builds and checks all 16 artifacts, the 7 crates (packaged
+twice, on two runners, and compared) and the 8 SBOMs, writes
 `SHA256SUMS` and attests them, and uploads them as the run's
 `release-<version>` artifact. The publish jobs do not run: they need a tag
 push, and the `crates-io` and `pypi` environments admit only `v*` tags anyway. Pull
@@ -139,7 +170,8 @@ attestations.
 sha256sum --check --ignore-missing SHA256SUMS       # Linux
 shasum -a 256 --check --ignore-missing SHA256SUMS   # macOS
 
-# Provenance: built by this repository's isolated build workflow
+# Provenance: built by this repository's isolated build workflow (any
+# release asset, including the .crate files from 0.1.5)
 gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz \
   --repo Praevis-Quant/praevis-thetadata \
   --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
@@ -147,6 +179,16 @@ gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.
 # The SBOM attestation of an executable or a wheel
 gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz \
   --repo Praevis-Quant/praevis-thetadata --predicate-type https://cyclonedx.org/bom
+```
+
+**A crate as crates.io serves it** (from `0.1.5`): the file Cargo downloads
+is the attested one, so its provenance verifies directly.
+
+```text
+curl -sSfLO https://static.crates.io/crates/praevis-thetadata-core/praevis-thetadata-core-0.1.5.crate
+gh attestation verify praevis-thetadata-core-0.1.5.crate \
+  --repo Praevis-Quant/praevis-thetadata \
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
 ```
 
 **Offline** (an enclave with no network): the signed bundles are release
@@ -190,6 +232,25 @@ through trusted publishing.
   #222 after the wheel had built): re-run the failed job. Build, SBOM and
   checksum jobs publish nothing, so a re-run is always safe; the publish jobs
   only start once every build job has succeeded.
+- **The crates are not reproducible.** It depends on where this is found:
+  - **In the build** (`crates-reproducible` fails): nothing is attested or
+    published. Find the difference (`diffoscope` on the two `.crate` files,
+    or compare their unpacked contents), fix it on `main`, and release a
+    new version. The tag is not moved.
+  - **Before publishing** (the check before wave 1 fails): nothing is on
+    crates.io. Reject or cancel the `pypi` deployment if it is still
+    waiting; if PyPI already published, that version's wheels stay, and the
+    release continues as a new version as above.
+  - **After publishing** (a downloaded crate differs): that crate and the
+    ones before it are on crates.io and **cannot be replaced**; the job
+    stops, so the GitHub release is not created, and nobody creates it by
+    hand. Compare the served `.crate` with the attested one. If only the
+    archive differs and the sources are the same, the published version is
+    sound but has no matching provenance: the publication record says so,
+    and the next version restores it. If the sources differ, yank the
+    affected versions on crates.io (and their dependants among ours) and
+    release a fixed version through the pipeline. Either way the version
+    gets no GitHub release, and its record names the mismatch.
 - **A published release is wrong:** crates.io and PyPI versions cannot be
   replaced, only yanked, and a fixed patch released.
   - crates.io: the owner yanks the version in the crates.io web UI (yanking

@@ -39,9 +39,11 @@ the release run, as for `0.1.4` ([releasing](releasing.md)).
   `describe()` overhead gate (#229) and the fuzzing job's coverage-lookup
   fix (#230); none of them is published code.
 
-**Same set as `0.1.4`:** seven crates on crates.io and eight wheels on PyPI
-by trusted publishing; the GitHub release with the 16 artifacts, 8 SBOMs,
-`SHA256SUMS` and the three signed bundles.
+**As for `0.1.4`, plus the crates as attested artifacts:** seven crates on
+crates.io and eight wheels on PyPI by trusted publishing; the GitHub release
+with the 16 artifacts, the 7 `.crate` files, 8 SBOMs, `SHA256SUMS` and the
+three signed bundles (35 assets). The provenance bundle is now
+`praevis-thetadata-0.1.5.intoto.jsonl`.
 
 **Before tagging:**
 1. **This release PR is merged,** with CI green on `main`, and the upstream
@@ -49,7 +51,9 @@ by trusted publishing; the GitHub release with the 16 artifacts, 8 SBOMs,
 2. **The pre-release live check on the commit to be tagged**
    (`scripts/live/run.sh --part anytime`).
 3. **A dry run** of the release workflow on that commit (Actions → Trusted
-   publishing → Run workflow): all jobs green.
+   publishing → Run workflow): all jobs green, including
+   `crates-reproducible` (the crates byte-identical on a second runner), and
+   the bundles named `.intoto.jsonl`.
 
 **Release:** as for `0.1.4`: the user pushes the annotated tag `v0.1.5`,
 checks the run and approves the `crates-io` and `pypi` environments; the
@@ -58,7 +62,7 @@ with the notes from the [draft](release-draft-0.1.5.md).
 
 **After publishing:**
 1. **Checks:** as for `0.1.4` (checksums, provenance online and with the
-   bundles, SBOM attestations, PyPI provenance, crates.io trusted
+   bundles, now also each `.crate` as downloaded from crates.io, SBOM attestations, PyPI provenance, crates.io trusted
    publishing, the crates' hashes and commit, docs.rs, the consumers), and
    that the published Python package's `describe()` shows the new defaults
    (`perf_boost_intraday` sent on a trade-Greeks request,

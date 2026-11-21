@@ -33,6 +33,15 @@ See the [release-notes draft](docs/release-draft-0.1.5.md).
   READMEs' exact pins for proto and stream move to `=0.1.5`.
 - **Published by the release workflow,** as for `0.1.4`
   ([checklist](docs/crates-io-release-plan.md#015-publication-checklist-prepared-2026-11-21)).
+- **The seven crates are attested release artifacts.** The isolated build
+  packages them (`cargo package`, in publish order), a second runner on
+  another architecture must reproduce every `.crate` byte for byte, and
+  they are listed in `SHA256SUMS`, covered by the signed provenance and
+  attached to the GitHub release (35 assets). Publishing uses the build's
+  exact toolchain, checks the crates it packages against the attested ones
+  before uploading anything, and downloads each published crate back from
+  crates.io to compare, failing before the GitHub release on any
+  difference ([releasing](docs/releasing.md)).
 - **The provenance bundle is named `praevis-thetadata-<version>.intoto.jsonl`**,
   the suffix OpenSSF Scorecard recognises; its content is unchanged
   ([releasing](docs/releasing.md)).

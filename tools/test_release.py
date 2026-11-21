@@ -33,7 +33,8 @@ class ArtifactTests(unittest.TestCase):
                          "praevis-thetadata-cli-0.1.3-x86_64-pc-windows-msvc.zip")
         self.assertEqual(release.archive_name("0.1.3", "aarch64-unknown-linux-musl"),
                          "praevis-thetadata-cli-0.1.3-aarch64-unknown-linux-musl.tar.gz")
-        self.assertEqual(len(release.expected_files("0.1.3")), 16)
+        self.assertEqual(len(release.expected_files("0.1.3")), 23)
+        self.assertIn("praevis-thetadata-client-0.1.3.crate", release.expected_files("0.1.3"))
         self.assertIn("praevis-thetadata-cli-0.1.3.cdx.json", release.expected_files("0.1.3"))
 
     def test_packaged_archives_hold_the_binary_and_licences(self):
@@ -66,7 +67,7 @@ class ArtifactTests(unittest.TestCase):
                 pathlib.Path(tmp, f"praevis_thetadata-0.1.3-cp310-abi3-p{i}.whl").write_bytes(b"w")
             self.assertEqual(release.main(["sums", "--version", "0.1.3", "--dir", tmp]), 0)
             lines = pathlib.Path(tmp, "SHA256SUMS").read_text().splitlines()
-            self.assertEqual(len(lines), 24)
+            self.assertEqual(len(lines), 31)
             self.assertTrue(all(len(line.split("  ")[0]) == 64 for line in lines))
 
 
@@ -76,6 +77,31 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(len(order), 7)
         self.assertLess(order.index("praevis-thetadata-proto"), order.index("praevis-thetadata-client"))
         self.assertLess(order.index("praevis-thetadata-client"), order.index("praevis-thetadata-cli"))
+
+    def test_the_crates_are_in_publish_order(self):
+        self.assertEqual(release.CRATES[0], "praevis-thetadata-proto")
+        self.assertEqual(set(release.CRATES), {n for w in release.WAVES.values() for n in w})
+
+    def test_a_downloaded_crate_must_equal_the_attested_one(self):
+        import hashlib
+        data = b"crate bytes"
+        good = hashlib.sha256(data).hexdigest()
+        name, version = "praevis-thetadata-core", "0.1.5"
+        self.assertIsNone(release.download_mismatch(name, version, good, data, good))
+        self.assertIn("crates.io serves", release.download_mismatch(name, version, good, b"other", good))
+        self.assertIn("index lists", release.download_mismatch(name, version, good, data, "0" * 64))
+        self.assertIn("not downloadable", release.download_mismatch(name, version, good, None, None))
+
+    def test_crate_mismatches_name_each_difference(self):
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            for name in release.CRATES:
+                pathlib.Path(a, release.crate_file(name, "0.1.5")).write_bytes(name.encode())
+                pathlib.Path(b, release.crate_file(name, "0.1.5")).write_bytes(name.encode())
+            self.assertEqual(release.crate_mismatches("0.1.5", pathlib.Path(a), pathlib.Path(b)), [])
+            pathlib.Path(b, release.crate_file("praevis-thetadata-cli", "0.1.5")).write_bytes(b"changed")
+            pathlib.Path(b, release.crate_file("praevis-thetadata-core", "0.1.5")).unlink()
+            found = release.crate_mismatches("0.1.5", pathlib.Path(a), pathlib.Path(b))
+            self.assertEqual(len(found), 2, found)
 
     def test_index_paths(self):
         self.assertEqual(release.index_path("praevis-thetadata-core"), "pr/ae/praevis-thetadata-core")
