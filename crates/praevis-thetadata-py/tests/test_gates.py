@@ -9,7 +9,6 @@ PRAEVIS_GATE_ROWS=1000000,10000000 runs the plan's full sizes manually; CI uses
 smaller ones.
 """
 import os
-import statistics
 import sys
 import time
 import tracemalloc
@@ -62,36 +61,70 @@ class AllocationGate(unittest.TestCase):
         self.check(to_polars)
 
 
-class OverheadGate(unittest.TestCase):
-    def test_python_layer_adds_a_fixed_few_microseconds(self):
-        kwargs = dict(symbol="AAPL", start_date="2024-01-02", end_date="2024-01-05")
-        calls = 2000
-
-        def per_call(function) -> float:
-            samples = []
-            for _ in range(7):
-                start = time.perf_counter()
-                for _ in range(calls):
-                    function("stock_history_eod", **kwargs)
-                samples.append((time.perf_counter() - start) / calls * 1e6)
-            return statistics.median(samples)
-
-        native = per_call(_native.describe)
-        wrapped = per_call(pt.describe)
-        print(f"\nnative {native:.2f} µs/call, Python layer {wrapped:.2f} µs/call", file=sys.stderr)
-        self.assertLess(wrapped - native, 5.0)
+LIMIT_US = 5.0
 
 
-class AliasOverheadGate(unittest.TestCase):
-    """D.2 gate: a vendor-named alias adds at most a fixed few microseconds.
+def overhead(direct, wrapped, blocks: int = 21, calls: int = 500) -> tuple[float, float]:
+    """(direct µs per call, wrapper overhead µs per call), minimum per side
+    over interleaved blocks.
 
     Timing noise on a shared runner only ever adds time. So the two paths are
     timed in interleaved blocks (alternating which goes first), and each
     side's **minimum** block is compared. Timing all of one path and then all
     of the other let noise between the two phases decide the result: Windows
-    CI saw -12.6 to +9.3 µs on unchanged code."""
+    CI saw -12.6 to +9.3 µs on unchanged code, and 10.4 µs for describe()."""
+    def block(function) -> float:
+        begin = time.perf_counter()
+        for _ in range(calls):
+            function()
+        return (time.perf_counter() - begin) / calls * 1e6
 
-    LIMIT_US = 5.0
+    block(direct), block(wrapped)  # warm
+    bases, tops = [], []
+    for index in range(blocks):
+        if index % 2:
+            tops.append(block(wrapped))
+            bases.append(block(direct))
+        else:
+            bases.append(block(direct))
+            tops.append(block(wrapped))
+    return min(bases), min(tops) - min(bases)
+
+
+def slowed(function, seconds: float = 10e-6):
+    """``function`` made at least ``seconds`` slower per call (mutation checks)."""
+    def slow():
+        stop = time.perf_counter() + seconds
+        while time.perf_counter() < stop:
+            pass
+        return function()
+    return slow
+
+
+class OverheadGate(unittest.TestCase):
+    """The Python layer of describe() adds at most a fixed few microseconds."""
+
+    def setUp(self):
+        kwargs = dict(symbol="AAPL", start_date="2024-01-02", end_date="2024-01-05")
+        self.native = lambda: _native.describe("stock_history_eod", **kwargs)
+        self.wrapped = lambda: pt.describe("stock_history_eod", **kwargs)
+
+    def test_python_layer_adds_a_fixed_few_microseconds(self):
+        native, added = overhead(self.native, self.wrapped)
+        print(f"\nnative describe {native:.2f} µs, Python layer adds {added:.2f} µs "
+              f"(minimum of 21 interleaved blocks per side)", file=sys.stderr)
+        self.assertLess(added, LIMIT_US)
+
+    def test_the_gate_still_fails_a_genuinely_slow_layer(self):
+        # Mutation check: a layer that spends at least 10 µs more per call
+        # must fail the same measurement, so the minimum cannot hide real cost.
+        _, added = overhead(self.native, slowed(self.wrapped), blocks=7, calls=200)
+        self.assertGreaterEqual(added, LIMIT_US)
+
+
+class AliasOverheadGate(unittest.TestCase):
+    """D.2 gate: a vendor-named alias adds at most a fixed few microseconds,
+    measured as in ``overhead``."""
 
     def setUp(self):
         import pyarrow as pa
@@ -111,44 +144,18 @@ class AliasOverheadGate(unittest.TestCase):
             "stock_history_eod", plan=True, symbol="AAPL", start_date=start, end_date=end)))
         self.alias = lambda: client.stock_history_eod("AAPL", start, end)
 
-    @staticmethod
-    def overhead(direct, alias, blocks: int = 21, calls: int = 500) -> tuple[float, float]:
-        """(direct µs per call, alias overhead µs per call), minimum per side
-        over interleaved blocks."""
-        def block(function) -> float:
-            begin = time.perf_counter()
-            for _ in range(calls):
-                function()
-            return (time.perf_counter() - begin) / calls * 1e6
-
-        block(direct), block(alias)  # warm
-        bases, wrapped = [], []
-        for index in range(blocks):
-            if index % 2:
-                wrapped.append(block(alias))
-                bases.append(block(direct))
-            else:
-                bases.append(block(direct))
-                wrapped.append(block(alias))
-        return min(bases), min(wrapped) - min(bases)
-
     def test_a_vendor_alias_adds_a_fixed_few_microseconds(self):
-        base, added = self.overhead(self.direct, self.alias)
+        base, added = overhead(self.direct, self.alias)
         print(f"\nnative call + conversion {base:.2f} µs, vendor alias adds {added:.2f} µs "
               f"(minimum of 21 interleaved blocks per side)", file=sys.stderr)
-        self.assertLess(added, self.LIMIT_US)
+        self.assertLess(added, LIMIT_US)
 
     def test_the_gate_still_fails_a_genuinely_slow_alias(self):
         # Mutation check: an alias that spends at least 10 µs more per call
         # must fail the same measurement, so the minimum cannot hide real cost.
-        def slow_alias():
-            stop = time.perf_counter() + 10e-6
-            while time.perf_counter() < stop:
-                pass
-            return self.alias()
+        _, added = overhead(self.direct, slowed(self.alias), blocks=7, calls=200)
+        self.assertGreaterEqual(added, LIMIT_US)
 
-        _, added = self.overhead(self.direct, slow_alias, blocks=7, calls=200)
-        self.assertGreaterEqual(added, self.LIMIT_US)
 
 if __name__ == "__main__":
     unittest.main()
