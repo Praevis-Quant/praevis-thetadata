@@ -1,6 +1,6 @@
 """Vendor Python baseline (performance plan C.1). See README.md before running.
 
-Runs the FREE-tier workloads through the official thetadata 1.0.17 package and
+Runs the FREE-tier workloads through the official thetadata 1.0.18 package and
 records, per request:
 
 * ``e2e``    -- the public wrapper call, returning a Polars and a pandas
@@ -62,7 +62,7 @@ def wrapper_kwargs(method: str, request: dict) -> dict:
 
 
 def build_request(method: str, request: dict, auth_token, email):
-    """The exact protobuf request the public wrapper builds (catalogue 1.0.17)."""
+    """The exact protobuf request the public wrapper builds (catalogue 1.0.18)."""
     from thetadata._proto.endpoints_pb2 import ContractSpec
     from thetadata._proto.v3grpc import endpoints_pb2 as pb
 
