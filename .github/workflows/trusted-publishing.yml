@@ -57,13 +57,17 @@ jobs:
     uses: ./.github/workflows/build-release.yml # zizmor: ignore[self-repository]
     with:
       version: ${{ needs.check.outputs.version }}
-      attest: ${{ github.event_name != 'pull_request' }}
+      # No attestations on pull requests, nor on a manual run from a tag: then
+      # the only attestations from a v* tag ref are the tag push's, and
+      # verifying with --source-ref refs/tags/v<version> picks out the release.
+      attest: ${{ github.event_name != 'pull_request' && !(github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/')) }}
 
   # Publishing: only on a v* tag that passed the gate, after the build,
   # checksums and attestations. crates.io and PyPI each publish from their
   # own job and environment (\`crates-io\`, \`pypi\`: required reviewer, v* tags
-  # only), so the user approves each, and each job holds only what it needs.
-  # The GitHub release follows once both succeeded. Every job re-checks the
+  # only, no administrator bypass), so the user approves each, and each job
+  # holds only what it needs. crates.io goes first; PyPI waits for it to
+  # succeed, and the GitHub release follows PyPI. Every job re-checks the
   # downloaded bundle against SHA256SUMS, and a re-run skips what is
   # already published.
   publish-crates:
@@ -89,39 +93,88 @@ jobs:
           path: ${{ runner.temp }}/dist
       - name: The artifacts are the ones checksummed and attested
         run: cd "$RUNNER_TEMP/dist" && sha256sum --check --strict SHA256SUMS
+      # The toolchain that packaged the attested crates, not today's stable:
+      # the approval can come after a new Rust release.
       - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
         with:
-          toolchain: stable
+          toolchain: ${{ needs.build.outputs.rust-version }}
+      # Before anything is published: packaged here, every crate is
+      # byte-identical to the attested one, so cargo publish uploads it.
+      - name: The crates packaged here are the attested ones
+        run: python3 tools/release.py compare-crates --version "$VERSION" --dist "$RUNNER_TEMP/dist"
       # Trusted publishing: a short-lived token per wave, revoked when the
-      # job ends. cargo publish waits until the index serves each crate.
+      # job ends. cargo publish waits until the index serves each crate; then
+      # each is downloaded back from crates.io and must equal the attested
+      # .crate (and the index's checksum), or the job fails before the
+      # GitHub release.
       - id: wave1
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
       - name: Wave 1 (proto, core, auth)
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.wave1.outputs.token }}
-        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 1
+        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 1 --dist "$RUNNER_TEMP/dist"
       - id: wave2
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
       - name: Wave 2 (arrow)
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.wave2.outputs.token }}
-        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 2
+        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 2 --dist "$RUNNER_TEMP/dist"
       - id: wave3
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
       - name: Wave 3 (client)
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.wave3.outputs.token }}
-        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 3
+        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 3 --dist "$RUNNER_TEMP/dist"
       - id: wave4
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
       - name: Wave 4 (cli, stream)
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.wave4.outputs.token }}
-        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 4
+        run: python3 tools/release.py publish-crates --version "$VERSION" --wave 4 --dist "$RUNNER_TEMP/dist"
+
+  publish-path-check:
+    # Dry runs only (no environment, no OIDC token, read-only): the publish
+    # job's checks, without publishing. The pinned toolchain, the bundle
+    # against SHA256SUMS, the crates packaged here against the attested
+    # ones, and the crates.io download checks against a version already
+    # published (tools/release.py KNOWN_GOOD).
+    name: Publish path (dry run)
+    needs: [check, build]
+    if: needs.check.outputs.publish != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      RUST_VERSION: ${{ needs.build.outputs.rust-version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-${{ needs.check.outputs.version }}
+          path: ${{ runner.temp }}/dist
+      - name: The artifacts are the ones checksummed
+        run: cd "$RUNNER_TEMP/dist" && sha256sum --check --strict SHA256SUMS
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
+        with:
+          toolchain: ${{ needs.build.outputs.rust-version }}
+      - name: The toolchain publishing would use
+        run: |
+          echo "build's toolchain: $RUST_VERSION"
+          test "$(rustc --version | cut -d' ' -f2)" = "$RUST_VERSION"
+      - name: The crates packaged here are the attested ones
+        run: python3 tools/release.py compare-crates --version "$VERSION" --dist "$RUNNER_TEMP/dist"
+      - name: The crates.io download checks, against a published version
+        run: python3 tools/release.py check-known-good
 
   publish-pypi:
+    # Only after crates.io succeeded, including its byte-for-byte checks: a
+    # crate problem then stops the release before anything reaches PyPI.
     name: Publish to PyPI
-    needs: [check, build]
+    needs: [check, build, publish-crates]
     if: needs.check.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30

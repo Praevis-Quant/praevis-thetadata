@@ -33,7 +33,8 @@ class ArtifactTests(unittest.TestCase):
                          "praevis-thetadata-cli-0.1.3-x86_64-pc-windows-msvc.zip")
         self.assertEqual(release.archive_name("0.1.3", "aarch64-unknown-linux-musl"),
                          "praevis-thetadata-cli-0.1.3-aarch64-unknown-linux-musl.tar.gz")
-        self.assertEqual(len(release.expected_files("0.1.3")), 16)
+        self.assertEqual(len(release.expected_files("0.1.3")), 23)
+        self.assertIn("praevis-thetadata-client-0.1.3.crate", release.expected_files("0.1.3"))
         self.assertIn("praevis-thetadata-cli-0.1.3.cdx.json", release.expected_files("0.1.3"))
 
     def test_packaged_archives_hold_the_binary_and_licences(self):
@@ -66,7 +67,7 @@ class ArtifactTests(unittest.TestCase):
                 pathlib.Path(tmp, f"praevis_thetadata-0.1.3-cp310-abi3-p{i}.whl").write_bytes(b"w")
             self.assertEqual(release.main(["sums", "--version", "0.1.3", "--dir", tmp]), 0)
             lines = pathlib.Path(tmp, "SHA256SUMS").read_text().splitlines()
-            self.assertEqual(len(lines), 24)
+            self.assertEqual(len(lines), 31)
             self.assertTrue(all(len(line.split("  ")[0]) == 64 for line in lines))
 
 
@@ -77,6 +78,60 @@ class PublishTests(unittest.TestCase):
         self.assertLess(order.index("praevis-thetadata-proto"), order.index("praevis-thetadata-client"))
         self.assertLess(order.index("praevis-thetadata-client"), order.index("praevis-thetadata-cli"))
 
+    def test_the_crates_are_in_publish_order(self):
+        self.assertEqual(release.CRATES[0], "praevis-thetadata-proto")
+        self.assertEqual(set(release.CRATES), {n for w in release.WAVES.values() for n in w})
+
+    def test_a_downloaded_crate_must_equal_the_attested_one(self):
+        import hashlib
+        data = b"crate bytes"
+        good = hashlib.sha256(data).hexdigest()
+        name, version = "praevis-thetadata-core", "0.1.5"
+        self.assertIsNone(release.download_mismatch(name, version, good, data, good))
+        self.assertIn("crates.io serves", release.download_mismatch(name, version, good, b"other", good))
+        self.assertIn("index lists", release.download_mismatch(name, version, good, data, "0" * 64))
+        self.assertIn("not downloadable", release.download_mismatch(name, version, good, None, None))
+
+    def test_fetch_retries_only_transient_failures(self):
+        import io
+        import urllib.error
+        from unittest import mock
+        calls = []
+
+        def opener(errors):
+            def urlopen(request, timeout):
+                calls.append(1)
+                if errors:
+                    raise errors.pop(0)
+                return io.BytesIO(b"ok")
+            return urlopen
+        with mock.patch("time.sleep"), mock.patch("urllib.request.urlopen",
+                                                   opener([urllib.error.URLError("dns"), urllib.error.HTTPError("u", 503, "x", {}, None)])):
+            self.assertEqual(release.fetch("https://example.invalid", delays=(0, 0, 0)), b"ok")
+        self.assertEqual(len(calls), 3)
+        with mock.patch("time.sleep"), mock.patch("urllib.request.urlopen",
+                                                   opener([urllib.error.HTTPError("u", 404, "x", {}, None)])):
+            with self.assertRaises(urllib.error.HTTPError):
+                release.fetch("https://example.invalid", delays=(0, 0))
+        with mock.patch("time.sleep"), mock.patch("urllib.request.urlopen",
+                                                   opener([urllib.error.URLError("dns")] * 3)):
+            with self.assertRaises(urllib.error.URLError):
+                release.fetch("https://example.invalid", delays=(0, 0))
+
+    def test_the_known_good_version_covers_every_crate(self):
+        self.assertEqual(set(release.KNOWN_GOOD[1]), set(release.CRATES))
+
+    def test_crate_mismatches_name_each_difference(self):
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            for name in release.CRATES:
+                pathlib.Path(a, release.crate_file(name, "0.1.5")).write_bytes(name.encode())
+                pathlib.Path(b, release.crate_file(name, "0.1.5")).write_bytes(name.encode())
+            self.assertEqual(release.crate_mismatches("0.1.5", pathlib.Path(a), pathlib.Path(b)), [])
+            pathlib.Path(b, release.crate_file("praevis-thetadata-cli", "0.1.5")).write_bytes(b"changed")
+            pathlib.Path(b, release.crate_file("praevis-thetadata-core", "0.1.5")).unlink()
+            found = release.crate_mismatches("0.1.5", pathlib.Path(a), pathlib.Path(b))
+            self.assertEqual(len(found), 2, found)
+
     def test_index_paths(self):
         self.assertEqual(release.index_path("praevis-thetadata-core"), "pr/ae/praevis-thetadata-core")
 
@@ -86,6 +141,31 @@ class NotesTests(unittest.TestCase):
         self.assertEqual(release.release_body("# Draft\nmeta\n**Body:**\n\n> text\n"), "> text\n")
         with self.assertRaises(ValueError):
             release.release_body("no marker")
+
+    def test_the_provenance_bundle_has_the_suffix_scorecard_recognises(self):
+        # OpenSSF Scorecard's Signed-Releases check counts a release asset
+        # ending in .intoto.jsonl as provenance (probes/releasesHaveProvenance).
+        workflow = (release.ROOT / ".github" / "workflows" / "build-release.yml").read_text(encoding="utf-8")
+        self.assertIn('"dist/praevis-thetadata-$VERSION.intoto.jsonl"', workflow)
+        self.assertNotIn("provenance.sigstore.jsonl", workflow)
+        version = release.workspace_version()
+        body = release.release_body(release.draft(version).read_text(encoding="utf-8"))
+        self.assertIn(f"`praevis-thetadata-{version}.intoto.jsonl`", body)
+
+    def test_every_documented_verification_names_the_release_tag(self):
+        # Dry runs attest too, from a branch; only --source-ref tells the
+        # release's attestation apart for a reproducible .crate.
+        docs = [release.ROOT / "docs" / "releasing.md", release.ROOT / "docs" / "security" / "assurance-report.md",
+                release.draft(release.workspace_version())]
+        for doc in docs:
+            commands = doc.read_text(encoding="utf-8").split("gh attestation verify ")[1:]
+            self.assertTrue(commands, doc)
+            for command in commands:
+                text = command.split("```")[0].split("\n\n")[0]
+                if text.startswith("--bundle` checks"):
+                    continue  # prose about the command, not a command
+                with self.subTest(doc=doc.name, command=text[:50]):
+                    self.assertIn("--source-ref refs/tags/v", text)
 
     def test_the_current_draft_has_a_body(self):
         body = release.release_body(release.draft(release.workspace_version()).read_text(encoding="utf-8"))

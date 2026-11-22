@@ -33,6 +33,47 @@ See the [release-notes draft](docs/release-draft-0.1.5.md).
   READMEs' exact pins for proto and stream move to `=0.1.5`.
 - **Published by the release workflow,** as for `0.1.4`
   ([checklist](docs/crates-io-release-plan.md#015-publication-checklist-prepared-2026-11-21)).
+- **The seven crates are attested release artifacts.** The isolated build
+  packages them (`cargo package`, in publish order), a second runner on
+  another architecture must reproduce every `.crate` byte for byte, and
+  they are listed in `SHA256SUMS`, covered by the signed provenance and
+  attached to the GitHub release (35 assets). Publishing uses the build's
+  exact toolchain, checks the crates it packages against the attested ones
+  before uploading anything, and downloads each published crate back from
+  crates.io to compare, failing before the GitHub release on any
+  difference ([releasing](docs/releasing.md)).
+- **The provenance bundle is named `praevis-thetadata-<version>.intoto.jsonl`**,
+  the suffix OpenSSF Scorecard recognises; its content is unchanged
+  ([releasing](docs/releasing.md)).
+
+### Dependencies
+
+- **rustix 1.1.6** (from 1.1.5), fixing RUSTSEC-2026-0486 (unsound xattr
+  functions). It is build- and test-time only (through `tempfile`, for
+  `prost-build` in the proto crate's build script), not in the shipped
+  executables, wheels or the crates' runtime dependencies.
+- **zbus, zvariant, zvariant_derive and zbus_names are gone from the
+  lockfile** (RUSTSEC-2026-0370 to -0372, unmaintained). They were never
+  built: keyring's `crypto-rust` feature also names the unused
+  `secret-service` backend, and Cargo lists such a feature's target in
+  `Cargo.lock` anyway. The Linux store now enables `crypto-rust` on
+  `dbus-secret-service` (the same crate and version) instead. The Linux
+  store is unchanged: the Secret Service over a vendored libdbus, the
+  secret encrypted on the session bus. Fifty lock-only packages leave
+  `Cargo.lock`; no built dependency changes on any platform.
+- **Every pip install in CI and the release workflow is pinned:** the CI
+  tooling from a hash-pinned `tools/requirements.txt` (compiled by
+  `pip-compile` from `tools/requirements.in`) with `--require-hashes`, and
+  our own wheel by its file path from no index, so OpenSSF Scorecard's
+  Pinned-Dependencies check finds no unpinned pip install. The Python
+  package's build and test locks are compiled by pip-tools too, so
+  Dependabot keeps them current; the version-matrix lock is now one per
+  Python version, each in its own directory
+  (`requirements-matrix/<python>/requirements.txt`, because Dependabot
+  recompiles a directory's locks with a single Python), with the same pins. The live-check runner installs its wheel by path too.
+- **cargo-deny now checks every crate, on every platform,** for
+  unmaintained and unsound advisories. Before, it checked
+  only direct dependencies, which let rustix 1.1.5 through.
 
 ### Changed
 

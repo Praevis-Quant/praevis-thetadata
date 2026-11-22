@@ -175,7 +175,7 @@ if [ "$BUILD" = 1 ]; then
         && cargo build --release --locked -q -p praevis-thetadata-stream --features live-tests --examples"
     step build-python bash -c "rm -rf '$OUT/wheel' && '$PY' -m maturin build --release --locked -q \
         -m crates/praevis-thetadata-py/Cargo.toml -o '$OUT/wheel' \
-        && '$PY' -m pip install -q --no-index --find-links '$OUT/wheel' --force-reinstall --no-deps praevis-thetadata"
+        && '$PY' -m pip install -q --no-index --force-reinstall --no-deps '$OUT/wheel'/praevis_thetadata-*.whl"
 fi
 SCEN="$REL/praevis-thetadata-scenarios$EXE"
 P0="$REL/examples/live_p0$EXE"

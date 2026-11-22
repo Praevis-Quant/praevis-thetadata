@@ -5,11 +5,24 @@
 
 [graph]
 all-features = true
+# No `targets`: cargo-deny then checks the dependencies of every platform,
+# so each released platform's (the Windows, macOS and Linux keyring backends,
+# for example) is included. A targets list would narrow that, so keep none
+# (tools/test_deny_config.py).
 
 [advisories]
 # The RustSec database, fetched at check time.
 version = 2
 yanked = "deny"
+# Unmaintained and unsound advisories against every crate in the graph, not
+# only our direct dependencies (cargo-deny's default, "workspace"). The
+# default let RUSTSEC-2026-0486 (rustix 1.1.5, unsound) through, because rustix
+# is transitive; chrono was caught only because it is a direct dependency.
+# (RUSTSEC-2026-0370 to -0372, against zbus's crates, were never visible to
+# cargo-deny under any scope: those crates were only listed in Cargo.lock,
+# never in the resolved graph. Scorecard reads Cargo.lock and saw them.)
+unmaintained = "all"
+unsound = "all"
 # Accepted advisories. Each is time-boxed: its reason must end with
 # "until YYYY-MM-DD", and tools/check_repository.py fails once that date has
 # passed, so an acceptance is reviewed rather than forgotten. Only

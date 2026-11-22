@@ -15,8 +15,20 @@ Standard library only. Subcommands:
   manifest, renamed for the release: one per published crate (the CLI's
   covers the executables) and one for the wheels' extension module.
 - ``notes``: the GitHub release body from ``docs/release-draft-<version>.md``.
+- ``package-crates``: ``cargo package`` of the seven published crates in one
+  command, so each later crate resolves the earlier ones from the local
+  package directory (nothing is fetched from crates.io for them), copied out
+  as ``<crate>-<version>.crate`` for SHA256SUMS and the provenance.
+- ``compare-crates``: package the seven crates again (without the
+  verification build) and fail unless every ``.crate`` is byte-identical to
+  the ones in a directory: the reproducibility check, and the gate before
+  anything is published to crates.io.
 - ``publish-crates``: one wave of ``cargo publish``, skipping a crate whose
-  version the crates.io index already lists (a re-run after a failure).
+  version the crates.io index already lists (a re-run after a failure). After
+  each, the crate is downloaded back from crates.io and must equal the
+  attested ``.crate`` byte for byte, as must the index's checksum.
+- ``check-known-good``: the same download checks against a version already
+  published (``KNOWN_GOOD``), so a dry run exercises them without a token.
 """
 from __future__ import annotations
 
@@ -28,6 +40,8 @@ import pathlib
 import subprocess
 import sys
 import tarfile
+import tempfile
+import time
 import tomllib
 import urllib.error
 import urllib.request
@@ -62,6 +76,8 @@ WAVES = {
     3: ("praevis-thetadata-client",),
     4: ("praevis-thetadata-cli", "praevis-thetadata-stream"),
 }
+# The published crates, in publish order.
+CRATES = tuple(name for wave in sorted(WAVES) for name in WAVES[wave])
 
 
 def workspace_version(root: pathlib.Path = ROOT) -> str:
@@ -160,9 +176,64 @@ def sbom_name(name: str, version: str) -> str:
     return f"{name}-{version}.cdx.json"
 
 
+def crate_file(name: str, version: str) -> str:
+    return f"{name}-{version}.crate"
+
+
 def expected_files(version: str) -> set[str]:
     return ({archive_name(version, target) for target in CLI_TARGETS}
-            | {sbom_name(name, version) for name in SBOM_CRATES})
+            | {sbom_name(name, version) for name in SBOM_CRATES}
+            | {crate_file(name, version) for name in CRATES})
+
+
+def sha256(path: pathlib.Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def cargo_package(target_dir: pathlib.Path, verify: bool) -> pathlib.Path:
+    """``cargo package`` of the published crates; returns the package directory."""
+    command = ["cargo", "package", "--locked", *(["--no-verify"] if not verify else [])]
+    for name in CRATES:
+        command += ["-p", name]
+    subprocess.run(command, cwd=ROOT, check=True, env={**os.environ, "CARGO_TARGET_DIR": str(target_dir)})
+    return target_dir / "package"
+
+
+def package_crates(args: argparse.Namespace) -> int:
+    if args.version != workspace_version():
+        sys.exit(f"version {args.version} is not the workspace version {workspace_version()}")
+    package = cargo_package(ROOT / "target", verify=True)
+    out = pathlib.Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for name in CRATES:
+        source = package / crate_file(name, args.version)
+        (out / source.name).write_bytes(source.read_bytes())
+        print(f"{source.name}  {sha256(source)}")
+    return 0
+
+
+def crate_mismatches(version: str, ours: pathlib.Path, theirs: pathlib.Path) -> list[str]:
+    """The published crates whose ``.crate`` differs between two directories."""
+    found = []
+    for name in CRATES:
+        a, b = ours / crate_file(name, version), theirs / crate_file(name, version)
+        if not a.is_file() or not b.is_file():
+            found.append(f"{crate_file(name, version)}: missing")
+        elif sha256(a) != sha256(b):
+            found.append(f"{a.name}: {sha256(a)} here, {sha256(b)} attested")
+    return found
+
+
+def compare_crates(args: argparse.Namespace) -> int:
+    with tempfile.TemporaryDirectory() as tmp:
+        package = cargo_package(pathlib.Path(tmp), verify=False)
+        found = crate_mismatches(args.version, package, pathlib.Path(args.dist))
+    for line in found:
+        print(f"::error::{line}", file=sys.stderr)
+    if found:
+        return 1
+    print(f"{len(CRATES)} crates byte-identical to {args.dist}")
+    return 0
 
 
 def collect_sboms(args: argparse.Namespace) -> int:
@@ -188,7 +259,7 @@ def sums(args: argparse.Namespace) -> int:
     names = {p.name for p in files}
     missing = expected_files(args.version) - names
     wheels = [n for n in names if n.endswith(".whl")]
-    if missing or len(wheels) != WHEELS or len(files) != len(CLI_TARGETS) + WHEELS + len(SBOM_CRATES):
+    if missing or len(wheels) != WHEELS or len(files) != len(CLI_TARGETS) + WHEELS + len(SBOM_CRATES) + len(CRATES):
         sys.exit(f"unexpected artifacts: missing {sorted(missing)}, {len(wheels)} wheels, {len(files)} files")
     lines = [f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n" for p in files]
     (directory / "SHA256SUMS").write_text("".join(lines), encoding="utf-8")
@@ -214,27 +285,134 @@ def index_path(name: str) -> str:
     return f"{name[:2]}/{name[2:4]}/{name}"
 
 
-def published(name: str, version: str) -> bool:
-    url = f"https://index.crates.io/{index_path(name)}"
-    request = urllib.request.Request(url, headers={"User-Agent": "praevis-thetadata-release"})
+USER_AGENT = {"User-Agent": "praevis-thetadata-release"}
+
+
+RETRY_DELAYS = (5, 15, 30, 60, 120)  # seconds, between attempts; about four minutes in all
+
+
+def transient(error: Exception) -> bool:
+    """A failure worth retrying: a server error, a timeout or a network error.
+    A 4xx answer (for example 404, not served yet) is the caller's to judge."""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code >= 500
+    return isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError))
+
+
+def fetch(url: str, delays: tuple[int, ...] = RETRY_DELAYS) -> bytes:
+    """GET with bounded retries and backoff on transient failures, so a slow
+    or flaky registry does not fail a release after a crate is published."""
+    for attempt in range(len(delays) + 1):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=USER_AGENT), timeout=60) as response:
+                return response.read()
+        except Exception as error:  # noqa: BLE001 (re-raised unless transient)
+            if not transient(error) or attempt == len(delays):
+                raise
+            print(f"{url}: {error}; retrying in {delays[attempt]} s", file=sys.stderr)
+            time.sleep(delays[attempt])
+    raise AssertionError("unreachable")
+
+
+def index_checksum(name: str, version: str) -> str | None:
+    """The crates.io index's checksum of a version (None: not listed)."""
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            lines = response.read().decode().splitlines()
+        lines = fetch(f"https://index.crates.io/{index_path(name)}").decode().splitlines()
     except urllib.error.HTTPError as error:
         if error.code == 404:
-            return False
+            return None
         raise
-    return any(json.loads(line)["vers"] == version for line in lines if line.strip())
+    for line in lines:
+        if line.strip() and json.loads(line)["vers"] == version:
+            return json.loads(line)["cksum"]
+    return None
+
+
+def published(name: str, version: str) -> bool:
+    return index_checksum(name, version) is not None
+
+
+def download_mismatch(name: str, version: str, attested: str, downloaded: bytes | None,
+                      index: str | None) -> str | None:
+    """Why the crate crates.io serves is not the attested one (None: it is). Pure."""
+    if downloaded is None:
+        return f"{crate_file(name, version)}: not downloadable from crates.io"
+    if hashlib.sha256(downloaded).hexdigest() != attested:
+        return (f"{crate_file(name, version)}: crates.io serves {hashlib.sha256(downloaded).hexdigest()},"
+                f" the attested .crate is {attested}")
+    if index != attested:
+        return f"{crate_file(name, version)}: the crates.io index lists {index}, the attested .crate is {attested}"
+    return None
+
+
+def verify_published(name: str, version: str, dist: pathlib.Path, attempts: int = 10) -> None:
+    """Download the crate back from crates.io and compare it with the attested
+    one; exit on any difference."""
+    check_published(name, version, sha256(dist / crate_file(name, version)), attempts)
+
+
+def check_published(name: str, version: str, attested: str, attempts: int = 10) -> None:
+    """crates.io serves ``attested`` for this crate, and its index lists that
+    checksum; exit otherwise. Network failures are retried in ``fetch``; a 403
+    or 404 (not served yet) and a missing index entry, every 30 s."""
+    url = f"https://static.crates.io/crates/{name}/{crate_file(name, version)}"
+    downloaded = None
+    for attempt in range(attempts):
+        try:
+            downloaded = fetch(url)
+            break
+        except urllib.error.HTTPError as error:
+            if error.code not in (403, 404) or attempt == attempts - 1:
+                break
+            time.sleep(30)
+    index = None
+    for attempt in range(attempts):
+        index = index_checksum(name, version)
+        if index is not None or attempt == attempts - 1:
+            break
+        time.sleep(30)
+    problem = download_mismatch(name, version, attested, downloaded, index)
+    if problem:
+        sys.exit(f"::error::{problem}")
+    print(f"{crate_file(name, version)}: crates.io serves the attested .crate ({attested})")
+
+
+# A published version whose crates.io files are known (its publication
+# record, docs/crates-io-release-plan.md): the dry run checks the download leg
+# of publishing against it, with no token.
+KNOWN_GOOD = ("0.1.4", {
+    "praevis-thetadata-proto": "61bed2af84535480907d84c24015b93ec21df1418280af77b9e19b6c44b15f29",
+    "praevis-thetadata-core": "c1c872a2cfa35e79d71e95d5ae263e2bdaecb9e17fc79576ad0a9a17e8b68af6",
+    "praevis-thetadata-auth": "379d23cff023334233118187cdb3448f2300a235c64fb113b064bed590608dd5",
+    "praevis-thetadata-arrow": "633dc3a2e879d5c7b94126e2f5b58b1470718478d1ea06a274dccffe64c5a590",
+    "praevis-thetadata-client": "6ba16e88fccbc48e5b1bc8739b7b2c26afc839c90f7e4ce1dfb8fc49bbe127db",
+    "praevis-thetadata-cli": "93bf0da90e61643ae7e404db09b07a025a01ad31e6783d084b36f073766dd18c",
+    "praevis-thetadata-stream": "09707307a145e6e8bc9b242a7b4e7d4015457594fea484e0a4b579cb5dbce1b0",
+})
+
+
+def check_known_good(args: argparse.Namespace) -> int:
+    version, hashes = KNOWN_GOOD
+    for name in CRATES:
+        check_published(name, version, hashes[name])
+    return 0
 
 
 def publish_crates(args: argparse.Namespace) -> int:
     if args.version != workspace_version():
         sys.exit(f"version {args.version} is not the workspace version {workspace_version()}")
+    dist = pathlib.Path(args.dist)
     for name in WAVES[args.wave]:
         if published(name, args.version):
             print(f"{name} {args.version}: already on crates.io, skipped")
-            continue
-        subprocess.run(["cargo", "publish", "--locked", "-p", name], cwd=ROOT, check=True)
+        else:
+            # --no-verify: this job holds the crates.io token and an OIDC
+            # token, so it must not run dependency build scripts and proc
+            # macros. The build job's cargo package already ran the
+            # verification build on these bytes, and compare-crates proved
+            # them identical before the first upload.
+            subprocess.run(["cargo", "publish", "--locked", "--no-verify", "-p", name], cwd=ROOT, check=True)
+        verify_published(name, args.version, dist)
     return 0
 
 
@@ -262,9 +440,19 @@ def main(argv: list[str] | None = None) -> int:
     c = sub.add_parser("publish-crates")
     c.add_argument("--version", required=True)
     c.add_argument("--wave", type=int, choices=sorted(WAVES), required=True)
+    c.add_argument("--dist", required=True, help="the checked release bundle, with the attested .crate files")
+    k = sub.add_parser("package-crates")
+    k.add_argument("--version", required=True)
+    k.add_argument("--out", required=True)
+    m = sub.add_parser("compare-crates")
+    m.add_argument("--version", required=True)
+    m.add_argument("--dist", required=True)
+    sub.add_parser("check-known-good", help="the download checks against a published version (dry runs)")
     args = parser.parse_args(argv)
     return {"check": check, "package-cli": package_cli, "sums": sums, "notes": notes,
-            "publish-crates": publish_crates, "collect-sboms": collect_sboms}[args.command](args)
+            "publish-crates": publish_crates, "collect-sboms": collect_sboms,
+            "package-crates": package_crates, "compare-crates": compare_crates,
+            "check-known-good": check_known_good}[args.command](args)
 
 
 if __name__ == "__main__":

@@ -24,10 +24,15 @@ Terminal).
   library are the only `unsafe` code in what is shipped, and every crate
   forbids new unsafe code; CI enforces it.
 - **Supply chain:** every release artifact is built in an isolated GitHub
-  Actions workflow from a reviewed commit on `main`, with a signed SLSA v1.0
+  Actions workflow from a commit on `main`, merged by pull request after 17
+  required checks passed (no approving review is required: a
+  single-maintainer project), with a signed SLSA v1.0
   Build Level 3 provenance attestation, a CycloneDX SBOM and a SHA-256
-  checksum. Packages reach crates.io and PyPI only by trusted publishing,
-  after the maintainer's approval, with no long-lived tokens anywhere.
+  checksum. From `0.1.5` that includes the crates: **every published
+  artifact has verifiable provenance**, and the `.crate` file crates.io
+  serves is checked to be byte-identical to the attested one. Packages
+  reach crates.io and PyPI only by trusted publishing, after the
+  maintainer's approval, with no long-lived tokens anywhere.
 - **Continuous checks:** RustSec advisories, licences and sources
   (cargo-deny), CodeQL, a workflow security linter (zizmor), OpenSSF
   Scorecard, fuzzing of every decoder of untrusted input, and a test suite
@@ -62,11 +67,11 @@ provenance or SBOM**; review `0.1.3` or later.
 
 | Artifact | Where it is obtained | Names |
 | --- | --- | --- |
-| Rust crates (7) | [crates.io](https://crates.io/search?q=praevis-thetadata) | `praevis-thetadata-proto`, `-core`, `-auth`, `-arrow`, `-client`, `-cli`, `-stream` |
+| Rust crates (7) | [crates.io](https://crates.io/search?q=praevis-thetadata), and from `0.1.5` the GitHub release | `praevis-thetadata-proto`, `-core`, `-auth`, `-arrow`, `-client`, `-cli`, `-stream`; on the release as `praevis-thetadata-<crate>-<version>.crate`, the same files crates.io serves |
 | Python package | [PyPI](https://pypi.org/project/praevis-thetadata/) and the GitHub release | `praevis_thetadata-<version>-cp310-abi3-<platform>.whl`, 8 platforms (Linux glibc and musl, Windows, macOS; x86_64 and arm64) |
 | CLI executables | the GitHub release | `praevis-thetadata-cli-<version>-<target>.zip`/`.tar.gz`, 8 targets |
 | SBOMs (CycloneDX 1.5) | the GitHub release | `praevis-thetadata-<crate>-<version>.cdx.json` (7), `praevis-thetadata-wheel-<version>.cdx.json` |
-| Checksums and signed attestations | the GitHub release | `SHA256SUMS`; `praevis-thetadata-<version>.provenance.sigstore.jsonl`; `praevis-thetadata-cli-<version>.sbom.sigstore.jsonl`; `praevis-thetadata-wheel-<version>.sbom.sigstore.jsonl` |
+| Checksums and signed attestations | the GitHub release | `SHA256SUMS`; `praevis-thetadata-<version>.intoto.jsonl` (provenance; up to `0.1.4` named `.provenance.sigstore.jsonl`); `praevis-thetadata-cli-<version>.sbom.sigstore.jsonl`; `praevis-thetadata-wheel-<version>.sbom.sigstore.jsonl` |
 
 **Supported surface:** auth, core, arrow, the client's query and job API,
 the CLI and the Python package. The proto crate is unstable and the stream
@@ -133,17 +138,20 @@ system's resolver, and on Linux, when the optional session store is used,
 
 | Control | Status | What it gives |
 | --- | --- | --- |
-| **SLSA v1.0 Build Level 3 provenance** for every release artifact and SBOM | In place from `0.1.3` | A signed statement, verifiable offline, that the file was built by `build-release.yml` (an isolated reusable workflow) in this repository, from a named commit and tag, on GitHub-hosted runners |
+| **SLSA v1.0 Build Level 3 provenance** for every release artifact and SBOM | In place from `0.1.3`; the crates from `0.1.5` | A signed statement, verifiable offline, that the file was built by `build-release.yml` (an isolated reusable workflow) in this repository, from a named commit and tag, on GitHub-hosted runners |
+| **Reproducible, verified crates** | In place from `0.1.5` | The seven `.crate` files are packaged in the isolated build and again on a second runner and architecture, and must be byte-identical. Publishing packages them a third time and must match before anything is uploaded. Then each crate is downloaded back from crates.io and must equal the attested file, or the release stops before the GitHub release ([releasing](../releasing.md)) |
 | **CycloneDX SBOMs** | In place from `0.1.3` | The full Rust dependency graph of each crate, the executables and the wheels, attested to the artifacts they describe. Each wheel also carries its own SBOM inside it (`.dist-info/sboms/`, written by maturin), so it travels with the wheel |
 | **SHA-256 checksums** (`SHA256SUMS`) | In place from `0.1.3` | Integrity of every file after transfer |
-| **Trusted publishing** to crates.io and PyPI | In place from `0.1.3` | Publication only from `trusted-publishing.yml`, through OIDC, after the maintainer approves the `crates-io` and `pypi` environments. **No long-lived registry tokens exist**; crates.io refuses token publishing for these crates. PyPI files carry PyPI attestations |
-| **Release gate** | In place | A tag must match the version, be on `main`, with CI green; `v*` tags can be created only by repository admins |
-| **Locked dependencies** (`Cargo.lock`; hash-pinned Python build requirements) | In place | Builds use exactly the reviewed versions (`--locked`) |
-| **cargo-deny** | In place | RustSec advisories (vulnerable, unsound, unmaintained, yanked), licences (permissive allow-list) and sources (crates.io only) fail CI; weekly as well |
+| **Trusted publishing** to crates.io and PyPI | In place from `0.1.3` | Publication only from `trusted-publishing.yml`, through OIDC, after the maintainer approves the `crates-io` environment and then (only once crates.io succeeded) the `pypi` environment. Both environments admit only `v*` tags, and administrators cannot bypass them (`can_admins_bypass: false`). **No long-lived registry tokens exist**; crates.io refuses token publishing for these crates. PyPI files carry PyPI attestations |
+| **Release gate** | In place | A tag must match the version, be on `main`, with CI green |
+| **Release tags** | In place | Ruleset "release tags creation" (id 27825772): only the repository admin role can create a `v*` tag. Ruleset "release tags immutable" (id 27324055): no one, admins included, can delete, move or force-update one (no bypass actors) |
+| **Locked dependencies** (`Cargo.lock`; hash-pinned Python build requirements) | In place | Builds use exactly the locked versions (`--locked`) |
+| **cargo-deny** | In place | RustSec advisories (vulnerable, unsound, unmaintained, yanked) against every crate in the graph, direct or transitive, on every platform (no target list narrows it); licences (permissive allow-list) and sources (crates.io only) fail CI; weekly as well |
 | **Advisories fixed** | In place | Nine RustSec advisories found by the first cargo-deny run (rustls, rustls-webpki, webpki-roots, tokio, pulldown-cmark) were fixed before `0.1.3` |
 | **Pinned GitHub Actions** | In place | Every action is pinned by full commit SHA; zizmor checks for unpinned, impostor or vulnerable actions |
 | **Dependabot** | In place | Weekly grouped update proposals (7-day cooldown) and immediate security updates |
-| **Branch protection** | In place | Pull requests required, required checks, linear history, no force-push or deletion, no bypass |
+| **Branch protection** | In place | Ruleset "main protection" (id 27326370): pull requests required, 17 required checks, linear history, no force-push or deletion, no bypass actors. **0 required approving reviews** |
+| **Separation of duties** | **Process, not a technical control** | The development agents work under the maintainer's own GitHub account (the maintainer's decision; no bot identity). GitHub enforces that the account approves each publishing environment and that release tags cannot be moved, but it cannot tell the agents' actions from the maintainer's. That agents never tag, publish or approve rests on process: the written rules ([AGENTS.md](../../AGENTS.md), [releasing](../releasing.md)) and the maintainer's review of each run |
 
 ## 6. Code assurance
 
@@ -193,7 +201,7 @@ project**:
 **On a connected staging machine:**
 1. **Download** from the GitHub release for the version under review: the
    artifacts you need, the matching SBOMs, `SHA256SUMS`, and the three
-   `*.sigstore.jsonl` bundles.
+   signed bundles (`*.intoto.jsonl` and `*.sbom.sigstore.jsonl`).
 2. **Fetch the Sigstore trusted root** through GitHub's CLI:
    `gh attestation trusted-root > trusted_root.jsonl`.
 3. **Optionally, the Rust sources:** for a build from source, also run
@@ -215,17 +223,20 @@ project**:
 
    ```text
    gh attestation verify <artifact> \
-     --bundle praevis-thetadata-<version>.provenance.sigstore.jsonl \
+     --bundle praevis-thetadata-<version>.intoto.jsonl \
      --custom-trusted-root trusted_root.jsonl \
      --repo Praevis-Quant/praevis-thetadata \
-     --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
+     --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml \
+     --source-ref refs/tags/v<version>
    ```
 
    This checks the signature, the certificate chain to the trusted root,
    the transparency-log inclusion recorded in the bundle, the source
-   repository and the build workflow.
-3. **SBOM attestation** (optional): the same command with the
-   `*.sbom.sigstore.jsonl` bundle and
+   repository, the build workflow and the release tag. Dry runs also
+   attest, from a branch, and a manual run from a tag does not attest, so
+   `--source-ref` accepts only the tag's run.
+3. **SBOM attestation** (optional): the same command (with
+   `--source-ref`) with the `*.sbom.sigstore.jsonl` bundle and
    `--predicate-type https://cyclonedx.org/bom`.
 4. **Install:**
    - **CLI:** extract the archive; it holds one executable and its licence
@@ -272,8 +283,15 @@ Rust).
   SBOMs, and the Windows linker's timestamp. So a reviewer cannot yet
   rebuild a release and compare checksums: the evidence that a file came
   from the tagged source is its signed SLSA provenance, not an independent
-  rebuild. Making builds reproducible is
+  rebuild. **The crates are the exception:** `cargo package` of the tag
+  reproduces each `.crate` byte for byte, checked in every release run and
+  independently for `0.1.4` (all seven crates on crates.io). Making builds reproducible is
   [planned](../ROADMAP.md#reproducible-release-builds-assurance-after-013).
+- **No technical separation between the agents and the maintainer.** The
+  agents act under the maintainer's GitHub account, so the environment
+  approvals and the admin-only tag creation prove that the account acted,
+  not which of them did. No approving code review is required for merges
+  either (0 approvals): changes are gated by the 17 required checks.
 - **GitHub releases are not immutable.** A published release's assets
   could be replaced by an account with write access to releases; the
   checksums and provenance would expose a replaced file, but nothing
@@ -288,7 +306,9 @@ Rust).
   loopback only.
 - **Proxy and TLS inspection constraints** (section 3): no proxy for gRPC;
   no inspection of the login host.
-- **Earlier releases** (`0.1.0`–`0.1.2`) have no provenance or SBOM.
+- **Earlier releases** (`0.1.0`–`0.1.2`) have no provenance or SBOM, and
+  the crates of `0.1.3` and `0.1.4` have no provenance of their own (their
+  executables, wheels and SBOMs do).
 - **Fuzzing coverage** instruments Rust code only; the C libraries rely on
   their own projects' fuzzing.
 - **OpenSSF Best Practices badge:** planned, not yet held.

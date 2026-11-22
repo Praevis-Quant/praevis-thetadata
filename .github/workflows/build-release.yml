@@ -17,6 +17,12 @@ on:
         description: Sign build-provenance and SBOM attestations (not on pull requests).
         required: true
         type: boolean
+    outputs:
+      rust-version:
+        description: >-
+          The exact Rust toolchain that packaged the crates. crates.io publishing
+          uses the same one, so cargo publish packages the same bytes.
+        value: ${{ jobs.crates.outputs.rust-version }}
 
 permissions:
   contents: read
@@ -179,7 +185,7 @@ jobs:
                 -m crates/praevis-thetadata-py/Cargo.toml -o dist
               # The oldest supported Python, in a clean environment, no network.
               /opt/python/cp310-cp310/bin/python -m venv /tmp/smoke
-              /tmp/smoke/bin/python -m pip install --quiet --no-index --find-links dist praevis-thetadata
+              /tmp/smoke/bin/python -m pip install --quiet --no-index dist/praevis_thetadata-*.whl
               /tmp/smoke/bin/python tools/wheel_smoke.py "$VERSION"
               chown -R "$HOST_UID:$HOST_GID" dist target'
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -199,7 +205,7 @@ jobs:
           maturin build --release --locked -m crates/praevis-thetadata-py/Cargo.toml -o dist
           python -m venv "$RUNNER_TEMP/smoke"
           py="$RUNNER_TEMP/smoke/bin/python"; [ -x "$py" ] || py="$RUNNER_TEMP/smoke/Scripts/python.exe"
-          "$py" -m pip install --quiet --no-index --find-links dist praevis-thetadata
+          "$py" -m pip install --quiet --no-index dist/praevis_thetadata-*.whl
           "$py" tools/wheel_smoke.py "$VERSION"
       - name: Check the wheel's platform tag
         run: |
@@ -243,13 +249,67 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+  crates:
+    # The seven published crates as .crate files, packaged in one command in
+    # publish order, so each later crate resolves the earlier ones from the
+    # local package directory. With the verification build. They go into
+    # SHA256SUMS and the provenance like every other artifact, and crates.io
+    # publishing must reproduce them byte for byte (docs/releasing.md).
+    name: Crates (cargo package)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    outputs:
+      rust-version: ${{ steps.toolchain.outputs.version }}
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
+        with:
+          toolchain: stable
+      - id: toolchain
+        run: echo "version=$(rustc --version | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+      - name: Package
+        run: python3 tools/release.py package-crates --version "$VERSION" --out dist
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crates
+          path: dist/*
+          if-no-files-found: error
+
+  crates-reproducible:
+    # The same crates packaged again on another runner and architecture with
+    # the same toolchain: every .crate must be byte-identical, or nothing is
+    # attested or published. Every dry run proves it again.
+    name: Crates are reproducible (another runner)
+    needs: crates
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
+        with:
+          toolchain: ${{ needs.crates.outputs.rust-version }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: crates
+          path: ${{ runner.temp }}/crates
+      - name: Byte-identical
+        run: python3 tools/release.py compare-crates --version "$VERSION" --dist "$RUNNER_TEMP/crates"
+
   collect:
-    # Every artifact and SBOM, their SHA256SUMS, a signed build-provenance
-    # attestation for each, and SBOM attestations binding the executables
-    # and the wheels to their SBOMs. The signed bundles are added to the
-    # release, for verification offline.
+    # Every artifact, crate and SBOM, their SHA256SUMS, a signed
+    # build-provenance attestation for each, and SBOM attestations binding
+    # the executables and the wheels to their SBOMs. The signed bundles are
+    # added to the release, for verification offline.
     name: Checksums and attestations
-    needs: [cli, wheels, sbom]
+    needs: [cli, wheels, sbom, crates, crates-reproducible]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -267,7 +327,7 @@ jobs:
           merge-multiple: true
       - name: SHA256SUMS
         run: python3 tools/release.py sums --version "$VERSION" --dir dist
-      - name: Attest build provenance (every artifact and SBOM)
+      - name: Attest build provenance (every artifact, crate and SBOM)
         id: provenance
         if: inputs.attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
@@ -297,7 +357,9 @@ jobs:
           SBOM_WHEELS: ${{ steps.sbom-wheels.outputs.bundle-path }}
         run: |
           set -euo pipefail
-          cp "$PROVENANCE" "dist/praevis-thetadata-$VERSION.provenance.sigstore.jsonl"
+          # .intoto.jsonl is the suffix OpenSSF Scorecard recognises as
+          # provenance (Signed-Releases); the content is the Sigstore bundle.
+          cp "$PROVENANCE" "dist/praevis-thetadata-$VERSION.intoto.jsonl"
           cp "$SBOM_CLI" "dist/praevis-thetadata-cli-$VERSION.sbom.sigstore.jsonl"
           cp "$SBOM_WHEELS" "dist/praevis-thetadata-wheel-$VERSION.sbom.sigstore.jsonl"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

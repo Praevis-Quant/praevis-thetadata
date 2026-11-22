@@ -1,6 +1,7 @@
 # Build and test dependencies of the Python package in CI (P1 PR 6a): never
-# the vendor package. Regenerate requirements-test.txt with:
-#   uv pip compile --universal --generate-hashes --python-version 3.12 requirements-test.in -o requirements-test.txt
+# the vendor package. Compiled with pip-tools (Dependabot's pip updater
+# recompiles it), on Python 3.12, the version the job uses:
+#   pip-compile --generate-hashes --output-file=requirements-test.txt requirements-test.in
 maturin>=1.9,<2
 pyarrow>=14
 polars>=1.0

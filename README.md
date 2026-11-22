@@ -12,7 +12,7 @@
 
 > Independently maintained Rust client libraries for ThetaData services. This project is not affiliated with, sponsored by, or endorsed by Theta Data Inc. “ThetaData” identifies the service with which this software interoperates.
 
-Rust workspace derived from the ThetaData Python package, originally **1.0.12** and now tracking **1.0.17** ([update research](docs/research/thetadata-1.0.13-1.0.17.md)). The first application is an authentication CLI, backed by an authentication library that other projects can use independently.
+Rust workspace derived from the ThetaData Python package, originally **1.0.12** and now tracking **1.0.18** ([update research](docs/research/thetadata-1.0.13-1.0.17.md), [1.0.18](docs/research/thetadata-1.0.18.md)). The first application is an authentication CLI, backed by an authentication library that other projects can use independently.
 
 See the [auth requirements and ADRs](docs/README.md), [roadmap](docs/ROADMAP.md), [vendor research](docs/research/thetadata-1.0.12.md), and [performance methodology](docs/performance/auth.md). Only authentication is a baselined feature scope; the market-data crates are foundations for later work.
 
@@ -42,10 +42,11 @@ package name, and builds the `praevis-thetadata` executable. Cargo places build 
 the shared root `target/` directory; that does not make the CLI a root package.
 The selected naming and compatibility boundaries are recorded in
 [the naming decision](docs/project-naming.md). The packages are released
-together on crates.io as **`0.1.5`**: `0.1.0`, the first supported release,
-with requests by name (`dispatch`), planner fixes, dependency updates and the
-vendor package's 1.0.18 as the compatibility baseline
-([declared surface](docs/releases.md#010-scope-record-user-2026-11-12)).
+together on crates.io; the latest is **`0.1.4`**: `0.1.0`, the first
+supported release, with requests by name (`dispatch`), planner fixes and
+dependency updates ([declared surface](docs/releases.md#010-scope-record-user-2026-11-12)).
+**`0.1.5` is prepared, not yet published:** the vendor package's 1.0.18 as
+the compatibility baseline ([checklist](docs/crates-io-release-plan.md#015-publication-checklist-prepared-2026-11-21)).
 - **Supported:** auth, core, arrow (with the Parquet sink), the client's
   `query()`, `job()`, `RequestOptions`, generated endpoints and `dispatch`, the CLI and
   the Python package. The library does what one caller asks: no retry,
@@ -57,8 +58,8 @@ vendor package's 1.0.18 as the compatibility baseline
 - **Known gaps** are listed with the release
   ([0.1.0 known gaps](docs/releases.md#known-gaps-shipped-in-010)), among them
   20 vendor wrappers never seen to return data on the test account.
-- **Python:** `praevis-thetadata` `0.1.5` is on PyPI for Python 3.10 or
-  newer, tested in CI on 3.10-3.13 (`pip install praevis-thetadata`). From
+- **Python:** `praevis-thetadata` `0.1.4` is the latest on PyPI (`0.1.5`
+  is prepared), for Python 3.10 or newer, tested in CI on 3.10-3.13 (`pip install praevis-thetadata`). From
   `0.1.3` there are wheels for Linux (glibc and musl), Windows and macOS,
   each on x86_64 and arm64, and prebuilt CLI executables for the same eight
   platforms, all attached to the GitHub release with `SHA256SUMS` and
@@ -68,12 +69,14 @@ vendor package's 1.0.18 as the compatibility baseline
 
 Install from crates.io, for example
 `cargo install praevis-thetadata-cli --locked` or
-`praevis-thetadata-auth = "0.1"`. Publication is manual and owner-approved
-([release plan](docs/crates-io-release-plan.md)); no workflow publishes.
+`praevis-thetadata-auth = "0.1"`. Releases are published only by the
+release workflow, by trusted publishing, after the owner pushes the tag and
+approves the `crates-io` and then the `pypi` environment
+([releasing](docs/releasing.md)); nothing is published by hand.
 
 | Package | Responsibility | Status |
 | --- | --- | --- |
-| `praevis-thetadata-auth` | HTTP authentication, credentials, in-memory sessions; optional (`native-store`) Windows/Linux session persistence | Supported |
+| `praevis-thetadata-auth` | HTTP authentication, credentials, in-memory sessions; optional (`native-store`) Windows, Linux and macOS session persistence | Supported |
 | `praevis-thetadata-cli` (`praevis-thetadata`) | Credential discovery, `auth` (in memory) or `auth --save`, status and logout | Supported (commands, flags, exit codes, JSON output) |
 | `praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for all 100 RPCs | Unstable (exposes generated tonic types) |
 | `praevis-thetadata-core` | Transport-independent prices, timestamps, values, tables | Supported |
@@ -197,7 +200,7 @@ The Windows backend uses the keyring crate's native `CRED_PERSIST_ENTERPRISE` st
 
 **Persistence does not establish server validity.** The supplied Python package provides no token expiry, refresh, validation, or revocation contract. Status therefore reports `validity: "not_checked"`. Re-running `praevis-thetadata auth --save` obtains and saves a new session; a failed login, with or without `--save`, leaves the old record intact. Records saved by earlier versions, which saved on every `auth`, keep working: the identity and v1 format are unchanged. Applications load an existing session explicitly and should prompt for authentication again if the server rejects it. There is no background refresh or saved password. Concurrent successful logins to the same target replace the stored record; the last write wins.
 
-Native persistence supports Windows and Linux. Linux uses a persistent Secret Service collection, so records survive CLI exits and keyring daemon restarts; the collection must be unlocked again when required by the provider. The HTTP authentication API can be used on other platforms; persistence operations return an explicit unsupported-platform error there.
+Native persistence supports Windows (Credential Manager), Linux and macOS (the Keychain, from `0.1.3`). Linux uses a persistent Secret Service collection, so records survive CLI exits and keyring daemon restarts; the collection must be unlocked again when required by the provider. The HTTP authentication API can be used on other platforms; persistence operations return an explicit unsupported-platform error there.
 
 ## How long requests take
 

@@ -41,6 +41,26 @@ affect **current-day requests only**; historical requests are unchanged.
   `new(symbol, start_date, end_date)` with `NaiveDate` dates, as for every
   other wrapper, in place of `Default` and string setters.
 
+## Dependencies
+
+- **rustix 1.1.6**, fixing [RUSTSEC-2026-0486](https://rustsec.org/advisories/RUSTSEC-2026-0486)
+  (build- and test-time only; not in the executables, wheels or the
+  crates' runtime dependencies).
+- **zbus and three related crates are gone from `Cargo.lock`**
+  (RUSTSEC-2026-0370 to -0372, unmaintained). They were listed but never
+  built; the Linux credential store is unchanged.
+
+## Release artifacts
+
+- **The seven crates are attested release artifacts.** Each `.crate` is
+  packaged in the isolated build, reproduced byte for byte on a second
+  runner, included in `SHA256SUMS` and the signed provenance, and attached
+  below. crates.io serves the same files: each was downloaded back after
+  publishing and compared. So the provenance verifies a crate as Cargo
+  downloads it.
+- **The provenance bundle is `praevis-thetadata-0.1.5.intoto.jsonl`**
+  (named `.provenance.sigstore.jsonl` up to `0.1.4`; same content).
+
 ## Not changed
 
 - **The protocol:** 1.0.18's descriptor is byte-identical to 1.0.17's.
@@ -71,10 +91,14 @@ cargo install praevis-thetadata-cli --locked    # or download an executable belo
 ```text
 sha256sum --check --ignore-missing SHA256SUMS
 gh attestation verify <file> --repo Praevis-Quant/praevis-thetadata \
-  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml \
+  --source-ref refs/tags/v0.1.5
 ```
 
-Offline: add `--bundle praevis-thetadata-0.1.5.provenance.sigstore.jsonl
+The same command verifies a crate downloaded from crates.io
+(`https://static.crates.io/crates/<crate>/<crate>-0.1.5.crate`).
+
+Offline: add `--bundle praevis-thetadata-0.1.5.intoto.jsonl
 --custom-trusted-root trusted_root.jsonl` ([how](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.5/docs/releasing.md#verifying-a-release)).
 
 The wheels need CPython 3.10 or newer. The known gaps of `0.1.0` still
@@ -112,7 +136,14 @@ release ([report](https://github.com/Praevis-Quant/praevis-thetadata/blob/v0.1.5
 | `praevis-thetadata-cli-0.1.5.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-cli` crate and the CLI executables |
 | `praevis-thetadata-stream-0.1.5.cdx.json` | SBOM (CycloneDX 1.5), the `praevis-thetadata-stream` crate |
 | `praevis-thetadata-wheel-0.1.5.cdx.json` | SBOM (CycloneDX 1.5), the extension module in every wheel |
+| `praevis-thetadata-proto-0.1.5.crate` | Crate, as published on crates.io |
+| `praevis-thetadata-core-0.1.5.crate` | Crate, as published on crates.io |
+| `praevis-thetadata-auth-0.1.5.crate` | Crate, as published on crates.io |
+| `praevis-thetadata-arrow-0.1.5.crate` | Crate, as published on crates.io |
+| `praevis-thetadata-client-0.1.5.crate` | Crate, as published on crates.io |
+| `praevis-thetadata-cli-0.1.5.crate` | Crate, as published on crates.io |
+| `praevis-thetadata-stream-0.1.5.crate` | Crate, as published on crates.io |
 | `SHA256SUMS` | SHA-256 of every file above |
-| `praevis-thetadata-0.1.5.provenance.sigstore.jsonl` | Signed build-provenance attestation (SLSA v1.0) of every file above, for offline verification |
+| `praevis-thetadata-0.1.5.intoto.jsonl` | Signed build-provenance attestation (SLSA v1.0) of every file above, for offline verification (named `.provenance.sigstore.jsonl` up to `0.1.4`) |
 | `praevis-thetadata-cli-0.1.5.sbom.sigstore.jsonl` | Signed SBOM attestation of the CLI executables |
 | `praevis-thetadata-wheel-0.1.5.sbom.sigstore.jsonl` | Signed SBOM attestation of the wheels |
