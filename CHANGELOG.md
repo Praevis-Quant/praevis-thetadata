@@ -19,6 +19,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Release
+
+- **Attestations come from `actions/attest`** (v4.2.2, pinned by SHA)
+  instead of the deprecated `actions/attest-build-provenance` and
+  `actions/attest-sbom`, which only wrapped it. The predicate types (SLSA
+  provenance v1, CycloneDX), the subjects, the bundles and the verification
+  commands are unchanged.
+
 ### Dependencies
 
 - **url 2.5.9** (from 2.5.8, with form_urlencoded 1.2.3), fixing
