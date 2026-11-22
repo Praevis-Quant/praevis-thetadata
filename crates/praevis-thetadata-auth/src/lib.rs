@@ -136,6 +136,36 @@ pub struct AuthConfig {
     pub allow_insecure: bool,
 }
 
+impl AuthConfig {
+    /// Check the configuration without any I/O or runtime: positive timeouts,
+    /// and an auth URL with a host and no credentials, query or fragment,
+    /// over HTTPS (HTTP only with `allow_insecure`). [`AuthClient::new`]
+    /// runs the same checks; a CLI can report them as argument errors.
+    pub fn validate(&self) -> Result<(), AuthError> {
+        if self.connect_timeout.is_zero() || self.request_timeout.is_zero() {
+            return Err(AuthError::Config("timeouts must be positive"));
+        }
+        let url = reqwest::Url::parse(&self.auth_url)
+            .map_err(|_| AuthError::Config("invalid auth URL"))?;
+        if url.host_str().is_none()
+            || !url.username().is_empty()
+            || url.password().is_some()
+            || url.query().is_some()
+            || url.fragment().is_some()
+        {
+            return Err(AuthError::Config(
+                "URL requires a host and cannot contain credentials, a query, or a fragment",
+            ));
+        }
+        if url.scheme() != "https" && !(url.scheme() == "http" && self.allow_insecure) {
+            return Err(AuthError::Config(
+                "HTTPS required; use allow_insecure only for local testing",
+            ));
+        }
+        Ok(())
+    }
+}
+
 impl Default for AuthConfig {
     fn default() -> Self {
         Self {
@@ -222,26 +252,9 @@ struct AuthResponse {
 
 impl AuthClient {
     pub fn new(config: AuthConfig) -> Result<Self, AuthError> {
-        if config.connect_timeout.is_zero() || config.request_timeout.is_zero() {
-            return Err(AuthError::Config("timeouts must be positive"));
-        }
+        config.validate()?;
         let url = reqwest::Url::parse(&config.auth_url)
             .map_err(|_| AuthError::Config("invalid auth URL"))?;
-        if url.host_str().is_none()
-            || !url.username().is_empty()
-            || url.password().is_some()
-            || url.query().is_some()
-            || url.fragment().is_some()
-        {
-            return Err(AuthError::Config(
-                "URL requires a host and cannot contain credentials, a query, or a fragment",
-            ));
-        }
-        if url.scheme() != "https" && !(url.scheme() == "http" && config.allow_insecure) {
-            return Err(AuthError::Config(
-                "HTTPS required; use allow_insecure only for local testing",
-            ));
-        }
         let http = reqwest::Client::builder()
             .connect_timeout(config.connect_timeout)
             .timeout(config.request_timeout)

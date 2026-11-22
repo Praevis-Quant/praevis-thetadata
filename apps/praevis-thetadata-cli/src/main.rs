@@ -134,11 +134,14 @@ fn run(cli: Cli) -> Result<ExitCode> {
         Env::Prod => Environment::Prod,
         Env::Stage => Environment::Stage,
     };
-    let store = SessionStore::new(&args.profile, environment)?;
+    // An invalid --profile is an argument error: exit 2 (AUTH-L3-013).
+    let store = SessionStore::new(&args.profile, environment)
+        .map_err(|error| UsageError(format!("--profile: {error}")))?;
     if args.save && args.action.is_some() {
-        return Err(
-            UsageError("--save applies only to authentication, not status or logout").into(),
-        );
+        return Err(UsageError(
+            "--save applies only to authentication, not status or logout".into(),
+        )
+        .into());
     }
     if let Some(action) = args.action {
         let mut out = io::stdout().lock();
@@ -211,14 +214,20 @@ fn run(cli: Cli) -> Result<ExitCode> {
             }
         };
     }
-    let credentials = credentials(&args)?;
     let mut config = AuthConfig::default()
         .with_environment(environment)
         .with_request_timeout(Duration::from_secs(args.timeout))
         .with_allow_insecure(args.insecure);
-    if let Some(url) = args.auth_url {
+    if let Some(url) = args.auth_url.clone() {
         config.auth_url = url;
     }
+    // --auth-url, --insecure and --timeout are checked before any credentials
+    // are read or a runtime starts: a configuration error is an argument
+    // error, exit 2 (AUTH-L3-013, AUTH-L3-019).
+    if let Err(error) = config.validate() {
+        return Err(UsageError(error.to_string()).into());
+    }
+    let credentials = credentials(&args)?;
     // Only HTTP authentication needs async execution. Construct the client inside
     // the runtime, and drop the runtime before synchronous persistence/output.
     let session = tokio::runtime::Builder::new_current_thread()
@@ -269,12 +278,13 @@ fn run(cli: Cli) -> Result<ExitCode> {
     Ok(ExitCode::SUCCESS)
 }
 
-/// Argument combinations Clap cannot express; reported with Clap's exit code 2.
+/// Argument errors Clap cannot detect (combinations, the profile name, the
+/// auth configuration); reported with Clap's exit code 2.
 #[derive(Debug)]
-struct UsageError(&'static str);
+struct UsageError(String);
 impl std::fmt::Display for UsageError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.0)
+        f.write_str(&self.0)
     }
 }
 impl Error for UsageError {}
