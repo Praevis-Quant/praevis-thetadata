@@ -60,9 +60,12 @@ The client's `query()` streams settle what this decoder leaves open:
 ## Parquet (feature `parquet`)
 
 `ParquetSink` streams batches into one Parquet file:
-- The file is written as `<name>.partial` and renamed into place by `finish`.
-  An unfinished sink removes its partial file, and an existing target is kept
-  unless `overwrite` is set.
+- The file is written as a new partial file beside the target,
+  `<name>.<pid>-<n>.partial` (unique to the sink, never an existing file or
+  symlink), and moved into place by `finish`. An unfinished sink removes its
+  partial file. Without `overwrite`, an existing target is kept, including
+  one that appears while the sink writes (`finish` then fails with
+  `Exists`); with it, `finish` replaces the target atomically.
 - Compression is ZSTD (level 1 by default) or none, in row groups of up to
   131,072 rows. The Arrow schema, including decimal precision and time zones,
   is stored in the file, so readers get the exact types back.

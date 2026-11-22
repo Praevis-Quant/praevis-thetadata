@@ -117,9 +117,46 @@ fn io(error: std::io::Error) -> SinkError {
     SinkError::Io(error.kind())
 }
 
+/// A partial file's name beside `target`, unique to this process and sink:
+/// `<name>.<pid>-<n>.partial`. Created with `create_new`, so an existing file
+/// or symlink there is never opened, truncated or followed (0.1.5 review F9).
+fn partial_name(target: &Path, attempt: u64) -> Result<PathBuf, SinkError> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let mut name = target
+        .file_name()
+        .ok_or(SinkError::Configuration)?
+        .to_os_string();
+    let n = NEXT.fetch_add(1, Ordering::Relaxed);
+    name.push(format!(".{}-{n}-{attempt}.partial", std::process::id()));
+    Ok(target.with_file_name(name))
+}
+
+/// Move the finished file into place. With `overwrite`, an atomic rename that
+/// replaces the target. Without it, never replace a file that appeared since
+/// `create`: a hard link fails if the target exists. Where the file system has
+/// no hard links, check and rename (not atomic against a concurrent writer).
+fn place(partial: &Path, target: &Path, overwrite: bool) -> Result<(), SinkError> {
+    if overwrite {
+        return std::fs::rename(partial, target).map_err(io);
+    }
+    match std::fs::hard_link(partial, target) {
+        Ok(()) => std::fs::remove_file(partial).map_err(io),
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Err(SinkError::Exists),
+        Err(_) => {
+            if target.exists() {
+                return Err(SinkError::Exists);
+            }
+            std::fs::rename(partial, target).map_err(io)
+        }
+    }
+}
+
 impl ParquetSink {
-    /// Create `<path>.partial` beside `path`. Refuses an existing target
-    /// unless `overwrite` is set; an old `.partial` file is replaced.
+    /// Create a partial file beside `path` (`<name>.<pid>-<n>.partial`, new
+    /// and unique to this sink). Refuses an existing target unless
+    /// `overwrite` is set; without it, `finish` also refuses a target that
+    /// appeared meanwhile.
     pub fn create(path: impl AsRef<Path>, options: ParquetOptions) -> Result<Self, SinkError> {
         if options.row_group_rows == 0
             || options
@@ -132,18 +169,21 @@ impl ParquetSink {
         if !options.overwrite && target.exists() {
             return Err(SinkError::Exists);
         }
-        let mut name = target
-            .file_name()
-            .ok_or(SinkError::Configuration)?
-            .to_os_string();
-        name.push(".partial");
-        let partial = target.with_file_name(name);
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(&partial)
-            .map_err(io)?;
+        let mut attempt = 0;
+        let (partial, file) = loop {
+            let partial = partial_name(&target, attempt)?;
+            match OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&partial)
+            {
+                Ok(file) => break (partial, file),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists && attempt < 8 => {
+                    attempt += 1
+                }
+                Err(e) => return Err(io(e)),
+            }
+        };
         Ok(Self {
             target,
             partial,
@@ -283,10 +323,10 @@ impl ParquetSink {
         let writer = self.writer.take().ok_or(SinkError::Schema)?;
         let metadata = writer.close().map_err(|_| SinkError::Encoding)?;
         let row_groups = metadata.num_row_groups();
-        if self.options.overwrite && self.target.exists() {
-            std::fs::remove_file(&self.target).map_err(io)?;
+        if let Err(error) = place(&self.partial, &self.target, self.options.overwrite) {
+            self.discard();
+            return Err(error);
         }
-        std::fs::rename(&self.partial, &self.target).map_err(io)?;
         self.done = true;
         let bytes = std::fs::metadata(&self.target).map_err(io)?.len();
         Ok(ParquetSummary {

@@ -44,6 +44,18 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   (`cargo tree -p <package> -e normal --target all`), and the release
   fails if a built crate is missing from it.
 
+- **The Parquet sink never replaces or corrupts a file it does not own**
+  (0.1.5 review F9). It wrote to a fixed `<name>.partial`, opened with
+  truncation, so two sinks on one target shared it and the first's
+  finished file could be unreadable; a symlink there was followed and its
+  target truncated; and without `overwrite`, a target that appeared after
+  `create` was still replaced. The partial file is now new and unique to
+  each sink (`<name>.<pid>-<n>.partial`, created with `create_new`), and
+  without `overwrite` `finish` moves it into place only if the target
+  still does not exist (`SinkError::Exists` otherwise; a hard link, so it is
+  atomic where the file system has them). With `overwrite`, the move is one
+  atomic rename. Python's `to_parquet` behaves the same.
+
 ### Release
 
 - **The release pipeline follows the organisation's release standard**

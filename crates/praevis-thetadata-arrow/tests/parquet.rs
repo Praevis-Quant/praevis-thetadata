@@ -172,8 +172,10 @@ fn null_columns_are_held_back_until_typed() {
         int_or_null("b", None, 2),
     ]))
     .unwrap();
-    // Nothing is fixed yet: only the partial file exists.
-    assert_eq!(dir.names(), ["late.parquet.partial"]);
+    // Nothing is fixed yet: only this sink's partial file exists.
+    let names = dir.names();
+    assert_eq!(names.len(), 1, "{names:?}");
+    assert!(names[0].starts_with("late.parquet.") && names[0].ends_with(".partial"));
     sink.write(&batch(vec![
         int_or_null("a", Some(2), 1),
         int_or_null("b", Some(7), 1),
@@ -282,4 +284,65 @@ fn files_are_never_overwritten_by_accident_or_left_partial() {
             Some(SinkError::Configuration)
         );
     }
+}
+
+/// 0.1.5 review F9: a target that appears before `finish` is never replaced
+/// without `overwrite`; two sinks on one target each write their own partial
+/// file; a file or symlink at the old fixed partial name is never touched.
+#[test]
+fn finish_never_replaces_a_new_target_and_sinks_never_share_a_partial_file() {
+    let dir = Dir::new();
+    let path = dir.file("t.parquet");
+    // Appears between create and finish.
+    let mut sink = ParquetSink::create(&path, ParquetOptions::default()).unwrap();
+    sink.write(&decoded(3)).unwrap();
+    std::fs::write(&path, b"someone else's").unwrap();
+    assert_eq!(sink.finish().err(), Some(SinkError::Exists));
+    assert_eq!(std::fs::read(&path).unwrap(), b"someone else's");
+    assert_eq!(dir.names(), ["t.parquet"]);
+    std::fs::remove_file(&path).unwrap();
+
+    // Two sinks on one target: the first finishes, the second is refused,
+    // and the file is the first sink's, complete and readable.
+    let mut first = ParquetSink::create(&path, ParquetOptions::default()).unwrap();
+    let mut second = ParquetSink::create(&path, ParquetOptions::default()).unwrap();
+    first.write(&decoded(5)).unwrap();
+    second.write(&decoded(7)).unwrap();
+    assert_eq!(first.finish().unwrap().rows, 5);
+    assert_eq!(second.finish().err(), Some(SinkError::Exists));
+    assert_eq!(
+        read(&path).iter().map(RecordBatch::num_rows).sum::<usize>(),
+        5
+    );
+    assert_eq!(dir.names(), ["t.parquet"]);
+
+    // With overwrite, the last to finish wins, and both files were whole.
+    let mut first =
+        ParquetSink::create(&path, ParquetOptions::default().with_overwrite(true)).unwrap();
+    let mut second =
+        ParquetSink::create(&path, ParquetOptions::default().with_overwrite(true)).unwrap();
+    first.write(&decoded(2)).unwrap();
+    second.write(&decoded(4)).unwrap();
+    first.finish().unwrap();
+    second.finish().unwrap();
+    assert_eq!(
+        read(&path).iter().map(RecordBatch::num_rows).sum::<usize>(),
+        4
+    );
+    assert_eq!(dir.names(), ["t.parquet"]);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_symlink_at_the_old_partial_name_is_never_followed() {
+    let dir = Dir::new();
+    let victim = dir.file("victim");
+    std::fs::write(&victim, b"precious").unwrap();
+    let path = dir.file("t.parquet");
+    std::os::unix::fs::symlink(&victim, dir.file("t.parquet.partial")).unwrap();
+    let mut sink = ParquetSink::create(&path, ParquetOptions::default()).unwrap();
+    sink.write(&decoded(3)).unwrap();
+    sink.finish().unwrap();
+    assert_eq!(std::fs::read(&victim).unwrap(), b"precious");
+    assert_eq!(read(&path)[0].num_rows(), 3);
 }
