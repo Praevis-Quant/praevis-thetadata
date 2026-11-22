@@ -21,6 +21,23 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Release
 
+- **The release pipeline follows the organisation's release standard**
+  (Praevis-Quant/.github `docs/TRUSTED-PUBLISHING.md`, adopted 2026-11-22,
+  binary variant):
+  - **Job ids:** `gate` and `publish` replace `check` and `publish-crates`;
+    the display names are unchanged.
+  - **The gate** also requires an annotated tag, reads every CI run for the
+    commit, checks that the publishable crates are the release set, and
+    requires a dated CHANGELOG entry and release notes in
+    `docs/releases/vX.Y.Z.md`. That file is the whole release body, and its
+    first heading is the title.
+  - **Signing:** attestations are signed only on a `v*` tag push.
+  - **The GitHub release** is drafted, checked, completed and only then
+    published, and a re-run never replaces an asset.
+  - **Concurrency:** a tag run is never cancelled, and a superseded pull
+    request run is.
+  - **Lockfiles:** a test checks that every lockfile has the workspace
+    version.
 - **Attestations come from `actions/attest`** (v4.2.2, pinned by SHA)
   instead of the deprecated `actions/attest-build-provenance` and
   `actions/attest-sbom`, which only wrapped it. The predicate types (SLSA

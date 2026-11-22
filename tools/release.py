@@ -2,11 +2,13 @@
 
 Standard library only. Subcommands:
 
-- ``check``: the gate before anything is built for a release. On a tag push
-  the tag must be ``v<workspace version>``, the tagged commit must be on
-  ``main``, and CI must have passed on that commit's push to ``main``. Other
-  events (the dry run, pull requests) report the same facts without failing
-  on them. The release-notes draft must exist in every mode.
+- ``check``: the release gate (job ``gate``). On a tag push: an annotated
+  tag ``v<workspace version>``, the tagged commit on ``main``, CI passed on
+  that commit's push to ``main`` (every ``ci.yml`` run for the commit read
+  and filtered here), the publishable workspace crates exactly the release
+  set, a dated ``CHANGELOG.md`` entry and the release notes
+  (``docs/releases/v<version>.md``). Dry runs report the same as warnings
+  and continue. Outputs ``version``, ``publish`` and ``crates``.
 - ``package-cli``: one CLI archive, ``praevis-thetadata-cli-<version>-<target>``
   (``.zip`` on Windows, ``.tar.gz`` elsewhere), with the licence files.
 - ``sums``: ``SHA256SUMS`` over a directory, checked against the expected
@@ -14,7 +16,11 @@ Standard library only. Subcommands:
 - ``collect-sboms``: the CycloneDX SBOMs cargo-cyclonedx wrote next to each
   manifest, renamed for the release: one per published crate (the CLI's
   covers the executables) and one for the wheels' extension module.
-- ``notes``: the GitHub release body from ``docs/release-draft-<version>.md``.
+- ``notes``: the GitHub release body (or ``--title``) from the committed
+  notes: ``docs/releases/v<version>.md`` (whole file; title its first
+  heading), or ``docs/release-draft-<version>.md`` up to 0.1.5.
+- ``github-release``: draft the GitHub release, check it, upload missing
+  assets (never replacing one), check every asset, publish, check again.
 - ``package-crates``: ``cargo package`` of the seven published crates in one
   command, so each later crate resolves the earlier ones from the local
   package directory (nothing is fetched from crates.io for them), copied out
@@ -37,6 +43,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tarfile
@@ -85,20 +92,68 @@ def workspace_version(root: pathlib.Path = ROOT) -> str:
         return tomllib.load(handle)["workspace"]["package"]["version"]
 
 
-def draft(version: str, root: pathlib.Path = ROOT) -> pathlib.Path:
-    return root / "docs" / f"release-draft-{version}.md"
+# Releases whose notes are a docs/release-draft-<version>.md with a "**Body:**"
+# line and the tag as the title. From 0.1.6 the notes are the whole of
+# docs/releases/v<version>.md, titled by its first heading (the release
+# standard); verifiers keep reading the old layout for these versions.
+LEGACY_NOTES = frozenset({"0.1.3", "0.1.4", "0.1.5"})
 
 
-def problems(event: str, ref: str, version: str, on_main: bool, ci_passed: bool | None,
-             has_draft: bool) -> list[str]:
-    """What stops a release. Pure, for the tests."""
+def notes_file(version: str, root: pathlib.Path = ROOT) -> pathlib.Path:
+    if version in LEGACY_NOTES:
+        return root / "docs" / f"release-draft-{version}.md"
+    return root / "docs" / "releases" / f"v{version}.md"
+
+
+def release_notes(version: str, root: pathlib.Path = ROOT) -> tuple[str, str]:
+    """The GitHub release's (title, body) from the committed notes."""
+    text = notes_file(version, root).read_text(encoding="utf-8")
+    if version in LEGACY_NOTES:
+        return f"v{version}", release_body(text)
+    heading = next((line for line in text.splitlines() if line.startswith("# ")), None)
+    if heading is None:
+        raise ValueError(f"{notes_file(version, root).name} has no '# ' heading for the title")
+    return heading[2:].strip(), text
+
+
+def changelog_dated(version: str, changelog: str) -> bool:
+    """Whether CHANGELOG.md has a dated '## [X.Y.Z] - YYYY-MM-DD' entry. Pure."""
+    return re.search(rf"^## \[{re.escape(version)}\] - \d{{4}}-\d{{2}}-\d{{2}}$", changelog, re.M) is not None
+
+
+def ci_succeeded(runs: list[dict]) -> bool:
+    """Whether one of a commit's ci.yml runs is a successful push to main.
+    Every run is read and filtered here, not by the API's status filter,
+    which can miss a successful run (Rust Commons, cargo-libc#44). Pure."""
+    return any(r.get("event") == "push" and r.get("head_branch") == "main" and r.get("conclusion") == "success"
+               for r in runs)
+
+
+def release_set_problems(packages: list[dict], version: str) -> list[str]:
+    """The workspace's publishable crates must be exactly CRATES, all at the
+    release version (cargo metadata packages). Pure."""
+    publishable = {p["name"]: p["version"] for p in packages if p.get("publish") != []}
     found = []
-    if not has_draft:
-        found.append(f"docs/release-draft-{version}.md is missing")
+    if set(publishable) != set(CRATES):
+        found.append(f"publishable crates {sorted(publishable)} are not the release set {sorted(CRATES)}")
+    found += [f"{name} is at {v}, not {version}" for name, v in sorted(publishable.items()) if v != version]
+    return found
+
+
+def problems(event: str, ref: str, version: str, *, on_main: bool, ci_passed: bool | None,
+             notes_exist: bool, dated: bool, annotated: bool | None, release_set: list[str]) -> list[str]:
+    """What stops a release from this run. Pure, for the tests."""
+    found = list(release_set)
+    if not notes_exist:
+        found.append(f"{notes_file(version).relative_to(ROOT)} is missing")
+    if not dated:
+        found.append(f"CHANGELOG.md has no dated '## [{version}] - YYYY-MM-DD' entry")
     if event == "push" and ref.startswith("refs/tags/"):
         tag = ref.removeprefix("refs/tags/")
         if tag != f"v{version}":
             found.append(f"tag {tag} does not match the workspace version {version} (expected v{version})")
+        if annotated is not True:
+            found.append(f"tag {tag} is not an annotated tag")
         if not on_main:
             found.append("the tagged commit is not on main")
         if ci_passed is not True:
@@ -111,16 +166,31 @@ def on_main(sha: str) -> bool:
     return subprocess.run(["git", "merge-base", "--is-ancestor", sha, "origin/main"], cwd=ROOT).returncode == 0
 
 
+def gh_json(path: str):
+    return json.loads(subprocess.run(["gh", "api", path], cwd=ROOT, check=True, capture_output=True, text=True).stdout)
+
+
 def ci_passed(repo: str, sha: str) -> bool | None:
     """Whether ci.yml succeeded on this commit's push to main (None: unknown)."""
     try:
-        out = subprocess.run(
-            ["gh", "api", f"repos/{repo}/actions/workflows/ci.yml/runs?head_sha={sha}&event=push&branch=main",
-             "--jq", "[.workflow_runs[].conclusion]"],
-            cwd=ROOT, check=True, capture_output=True, text=True).stdout
-    except (OSError, subprocess.CalledProcessError):
+        runs = gh_json(f"repos/{repo}/actions/workflows/ci.yml/runs?head_sha={sha}&per_page=100")["workflow_runs"]
+    except (OSError, subprocess.CalledProcessError, KeyError, json.JSONDecodeError):
         return None
-    return "success" in json.loads(out)
+    return ci_succeeded(runs)
+
+
+def tag_annotated(repo: str, tag: str) -> bool | None:
+    """Whether the tag is an annotated tag object, from the API (None: unknown)."""
+    try:
+        return gh_json(f"repos/{repo}/git/ref/tags/{tag}")["object"]["type"] == "tag"
+    except (OSError, subprocess.CalledProcessError, KeyError, json.JSONDecodeError):
+        return None
+
+
+def workspace_packages() -> list[dict]:
+    out = subprocess.run(["cargo", "metadata", "--no-deps", "--locked", "--format-version", "1"],
+                         cwd=ROOT, check=True, capture_output=True, text=True).stdout
+    return json.loads(out)["packages"]
 
 
 def check(args: argparse.Namespace) -> int:
@@ -128,15 +198,25 @@ def check(args: argparse.Namespace) -> int:
     is_tag = args.event == "push" and args.ref.startswith("refs/tags/")
     main = on_main(args.sha) if args.event != "pull_request" else False
     ci = ci_passed(args.repo, args.sha) if is_tag else None
-    found = problems(args.event, args.ref, version, main, ci, draft(version).is_file())
+    annotated = tag_annotated(args.repo, args.ref.removeprefix("refs/tags/")) if is_tag else None
+    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    found = problems(args.event, args.ref, version, on_main=main, ci_passed=ci,
+                     notes_exist=notes_file(version).is_file(), dated=changelog_dated(version, changelog),
+                     annotated=annotated, release_set=release_set_problems(workspace_packages(), version))
     print(f"version={version}")
     print(f"publish={'true' if is_tag and not found else 'false'}")
+    print(f"crates={json.dumps(list(CRATES))}")
+    if is_tag:
+        for line in found:
+            print(f"::error::{line}", file=sys.stderr)
+        return 1 if found else 0
+    # Dry runs (pull requests, manual runs) report what a release would need
+    # and continue; they build and checksum but never sign or publish.
     for line in found:
-        print(f"::error::{line}", file=sys.stderr)
-    if not is_tag:
-        print(f"::notice::dry run ({args.event}): builds and attests only, publishes nothing;"
-              f" version {version}, commit on main: {main}", file=sys.stderr)
-    return 1 if found else 0
+        print(f"::warning::{line}", file=sys.stderr)
+    print(f"::notice::dry run ({args.event}): builds and checksums only, signs and publishes nothing;"
+          f" version {version}, commit on main: {main}", file=sys.stderr)
+    return 0
 
 
 def archive_name(version: str, target: str) -> str:
@@ -276,7 +356,129 @@ def release_body(text: str) -> str:
 
 
 def notes(args: argparse.Namespace) -> int:
-    sys.stdout.write(release_body(draft(args.version).read_text(encoding="utf-8")))
+    title, body = release_notes(args.version)
+    if args.title:
+        print(title)
+    else:
+        sys.stdout.write(body)
+    return 0
+
+
+def release_problems(release: dict, tag: str, title: str, body: str, files: dict[str, tuple[int, str]],
+                     *, published: bool) -> list[str]:
+    """Differences between a GitHub release and what it must be: its tag,
+    title, body, state, and exactly ``files`` (name -> (size, sha256)), each
+    uploaded with that size and digest. GitHub stores the body with trailing
+    whitespace trimmed, so the bodies are compared that way. Pure."""
+    found = []
+    if release.get("tag_name") != tag:
+        found.append(f"tag {release.get('tag_name')!r}, expected {tag!r}")
+    if release.get("name") != title:
+        found.append(f"title {release.get('name')!r}, expected {title!r}")
+    if (release.get("body") or "").rstrip() != body.rstrip():
+        found.append("the body differs from the committed notes")
+    if bool(release.get("draft")) == published:
+        found.append("still a draft" if published else "already published")
+    assets = {a["name"]: a for a in release.get("assets", [])}
+    if set(assets) != set(files):
+        found.append(f"assets differ: missing {sorted(set(files) - set(assets))}, extra {sorted(set(assets) - set(files))}")
+    for name in sorted(set(assets) & set(files)):
+        size, digest = files[name]
+        asset = assets[name]
+        if asset.get("state") != "uploaded" or asset.get("size") != size or asset.get("digest") != f"sha256:{digest}":
+            found.append(f"{name}: uploaded {asset.get('size')} bytes, {asset.get('digest')}; expected {size}, sha256:{digest}")
+    return found
+
+
+def uploads_needed(release: dict, files: dict[str, tuple[int, str]]) -> tuple[list[str], list[str]]:
+    """(files to upload, conflicting assets) for a draft. An existing asset is
+    never replaced: one with the right size and digest is kept, any other is a
+    conflict the owner resolves (by deleting the draft). Pure."""
+    assets = {a["name"]: a for a in release.get("assets", [])}
+    upload, conflicts = [], []
+    for name, (size, digest) in sorted(files.items()):
+        asset = assets.get(name)
+        if asset is None:
+            upload.append(name)
+        elif asset.get("state") != "uploaded" or asset.get("size") != size or asset.get("digest") != f"sha256:{digest}":
+            conflicts.append(name)
+    return upload, conflicts
+
+
+def gh(*args: str, input_path: pathlib.Path | None = None) -> dict | list:
+    command = ["gh", "api", *args] + (["--input", str(input_path)] if input_path else [])
+    out = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True).stdout
+    return json.loads(out) if out.strip() else {}
+
+
+def find_release(repo: str, tag: str) -> dict | None:
+    """The release for the tag, drafts included. The tags endpoint cannot see a
+    draft (a killed create leaves one), so the releases list is read."""
+    page = 1
+    while True:
+        releases = gh(f"repos/{repo}/releases?per_page=100&page={page}")
+        for release in releases:
+            if release.get("tag_name") == tag:
+                return release
+        if len(releases) < 100:
+            return None
+        page += 1
+
+
+def github_release(args: argparse.Namespace) -> int:
+    """Draft, check, upload, check, publish, check. A re-run resumes a draft;
+    a published release is only checked, never modified."""
+    version, repo = args.version, args.repo
+    tag = f"v{version}"
+    title, body = release_notes(version)
+    directory = pathlib.Path(args.dir)
+    files = {p.name: (p.stat().st_size, sha256(p)) for p in sorted(directory.iterdir()) if p.is_file()}
+    gh(f"repos/{repo}/git/ref/tags/{tag}")  # --verify-tag: the tag must already exist
+    prerelease = "-" in version
+    release = find_release(repo, tag)
+    if release is not None and not release.get("draft"):
+        found = release_problems(release, tag, title, body, files, published=True)
+        for line in found:
+            print(f"::error::published release {tag}: {line}", file=sys.stderr)
+        if found:
+            return 1
+        print(f"{tag} is already published and matches; nothing changed")
+        return 0
+    if release is None:
+        release = gh(f"repos/{repo}/releases", "-X", "POST", "-f", f"tag_name={tag}", "-f", f"name={title}",
+                     "-f", f"body={body}", "-F", "draft=true", "-F", f"prerelease={str(prerelease).lower()}")
+        print(f"created draft {release['id']} for {tag}")
+    else:
+        print(f"resuming draft {release['id']} for {tag}")
+    found = [f for f in release_problems(release, tag, title, body, {}, published=False) if not f.startswith("assets differ")]
+    if found:
+        for line in found:
+            print(f"::error::draft {tag}: {line}", file=sys.stderr)
+        return 1
+    upload, conflicts = uploads_needed(release, files)
+    if conflicts:
+        print(f"::error::draft {tag} has assets that differ from the bundle: {conflicts}; delete the draft and re-run",
+              file=sys.stderr)
+        return 1
+    for name in upload:
+        gh(f"https://uploads.github.com/repos/{repo}/releases/{release['id']}/assets?name={name}",
+           "-X", "POST", "-H", "Content-Type: application/octet-stream", input_path=directory / name)
+        print(f"uploaded {name}")
+    release = gh(f"repos/{repo}/releases/{release['id']}")
+    found = release_problems(release, tag, title, body, files, published=False)
+    if found:
+        for line in found:
+            print(f"::error::draft {tag} before publishing: {line}", file=sys.stderr)
+        return 1
+    gh(f"repos/{repo}/releases/{release['id']}", "-X", "PATCH", "-F", "draft=false",
+       "-f", f"make_latest={'false' if prerelease else 'true'}")
+    release = gh(f"repos/{repo}/releases/{release['id']}")
+    found = release_problems(release, tag, title, body, files, published=True)
+    for line in found:
+        print(f"::error::published release {tag}: {line}", file=sys.stderr)
+    if found:
+        return 1
+    print(f"published {tag}: {len(files)} assets checked by name, size and digest")
     return 0
 
 
@@ -437,6 +639,7 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--out", required=True)
     n = sub.add_parser("notes")
     n.add_argument("--version", required=True)
+    n.add_argument("--title", action="store_true", help="print the release title instead of the body")
     c = sub.add_parser("publish-crates")
     c.add_argument("--version", required=True)
     c.add_argument("--wave", type=int, choices=sorted(WAVES), required=True)
@@ -444,6 +647,10 @@ def main(argv: list[str] | None = None) -> int:
     k = sub.add_parser("package-crates")
     k.add_argument("--version", required=True)
     k.add_argument("--out", required=True)
+    g = sub.add_parser("github-release")
+    g.add_argument("--version", required=True)
+    g.add_argument("--dir", required=True, help="every file to attach, already checked against SHA256SUMS")
+    g.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""))
     m = sub.add_parser("compare-crates")
     m.add_argument("--version", required=True)
     m.add_argument("--dist", required=True)
@@ -452,7 +659,7 @@ def main(argv: list[str] | None = None) -> int:
     return {"check": check, "package-cli": package_cli, "sums": sums, "notes": notes,
             "publish-crates": publish_crates, "collect-sboms": collect_sboms,
             "package-crates": package_crates, "compare-crates": compare_crates,
-            "check-known-good": check_known_good}[args.command](args)
+            "check-known-good": check_known_good, "github-release": github_release}[args.command](args)
 
 
 if __name__ == "__main__":

@@ -9,22 +9,75 @@ import release
 
 
 class GateTests(unittest.TestCase):
-    def test_a_matching_tag_on_main_with_green_ci_passes(self):
-        self.assertEqual(release.problems("push", "refs/tags/v0.1.3", "0.1.3", True, True, True), [])
+    OK = dict(on_main=True, ci_passed=True, notes_exist=True, dated=True, annotated=True, release_set=[])
+
+    def test_a_matching_annotated_tag_on_main_with_green_ci_passes(self):
+        self.assertEqual(release.problems("push", "refs/tags/v0.1.6", "0.1.6", **self.OK), [])
 
     def test_a_tag_push_fails_on_each_missing_condition(self):
-        found = release.problems("push", "refs/tags/v0.1.4", "0.1.3", False, None, False)
-        self.assertEqual(len(found), 4, found)
-        self.assertTrue(any("does not match" in f for f in found))
-        self.assertTrue(any("not on main" in f for f in found))
-        self.assertTrue(any("CI has not passed" in f for f in found))
+        found = release.problems("push", "refs/tags/v0.1.7", "0.1.6", on_main=False, ci_passed=None, notes_exist=False,
+                                 dated=False, annotated=False, release_set=["set differs"])
+        self.assertEqual(len(found), 7, found)
+        for text in ("does not match", "not an annotated tag", "not on main", "CI has not passed",
+                     "no dated", "missing", "set differs"):
+            self.assertTrue(any(text in f for f in found), text)
 
-    def test_a_dry_run_needs_only_the_draft(self):
-        self.assertEqual(release.problems("workflow_dispatch", "refs/heads/main", "0.1.3", False, None, True), [])
-        self.assertEqual(len(release.problems("pull_request", "refs/pull/1/merge", "0.1.3", False, None, False)), 1)
+    def test_a_lightweight_or_unknown_tag_is_refused(self):
+        for annotated in (False, None):
+            found = release.problems("push", "refs/tags/v0.1.6", "0.1.6", **{**self.OK, "annotated": annotated})
+            self.assertEqual(found, ["tag v0.1.6 is not an annotated tag"])
 
-    def test_the_workspace_version_has_a_draft(self):
-        self.assertTrue(release.draft(release.workspace_version()).is_file())
+    def test_dry_runs_skip_the_tag_rules(self):
+        self.assertEqual(release.problems("workflow_dispatch", "refs/heads/main", "0.1.6",
+                                          **{**self.OK, "on_main": False, "ci_passed": None, "annotated": None}), [])
+
+    def test_the_changelog_entry_must_be_dated(self):
+        self.assertTrue(release.changelog_dated("0.1.6", "x\n## [0.1.6] - 2026-11-30\n"))
+        self.assertFalse(release.changelog_dated("0.1.6", "## [0.1.6] - pending\n"))
+        self.assertFalse(release.changelog_dated("0.1.6", "## [0.1.60] - 2026-11-30\n"))
+        self.assertTrue(release.changelog_dated(
+            release.workspace_version(), (release.ROOT / "CHANGELOG.md").read_text(encoding="utf-8")))
+
+    def test_ci_counts_only_a_successful_push_to_main(self):
+        run = {"event": "push", "head_branch": "main", "conclusion": "success"}
+        self.assertTrue(release.ci_succeeded([{"conclusion": "failure"}, run]))
+        for other in ({"event": "pull_request"}, {"head_branch": "v0.1.6"}, {"conclusion": None}):
+            self.assertFalse(release.ci_succeeded([{**run, **other}]))
+
+    def test_the_release_set_is_the_publishable_workspace(self):
+        packages = [{"name": n, "version": "0.1.6", "publish": None} for n in release.CRATES]
+        packages.append({"name": "praevis-thetadata-emulator", "version": "0.1.6", "publish": []})
+        self.assertEqual(release.release_set_problems(packages, "0.1.6"), [])
+        self.assertEqual(len(release.release_set_problems(packages[1:], "0.1.6")), 1)
+        packages[0]["version"] = "0.1.5"
+        self.assertEqual(len(release.release_set_problems(packages, "0.1.6")), 1)
+        self.assertEqual(release.release_set_problems(release.workspace_packages(), release.workspace_version()), [])
+
+    def test_the_workspace_version_has_notes(self):
+        self.assertTrue(release.notes_file(release.workspace_version()).is_file())
+        self.assertEqual(release.notes_file("0.1.6"), release.ROOT / "docs" / "releases" / "v0.1.6.md")
+        self.assertEqual(release.notes_file("0.1.5"), release.ROOT / "docs" / "release-draft-0.1.5.md")
+
+
+class LockfileTests(unittest.TestCase):
+    def test_every_lockfile_names_our_crates_at_the_workspace_version(self):
+        # A version bump must update every lockfile that names the workspace's
+        # crates by path, or its locked build fails (release standard lesson:
+        # fuzz/Cargo.lock).
+        import subprocess
+        import tomllib
+        version = release.workspace_version()
+        members = {p["name"] for p in release.workspace_packages()}
+        locks = subprocess.run(["git", "ls-files", "*Cargo.lock", "**/Cargo.lock"], cwd=release.ROOT,
+                               check=True, capture_output=True, text=True).stdout.split()
+        self.assertGreaterEqual(len(locks), 3, locks)
+        for lock in sorted(set(locks)):
+            with open(release.ROOT / lock, "rb") as handle:
+                packages = tomllib.load(handle)["package"]
+            ours = [p for p in packages if p["name"] in members and "source" not in p]
+            with self.subTest(lock):
+                self.assertTrue(ours, lock)
+                self.assertEqual({p["name"]: p["version"] for p in ours if p["version"] != version}, {})
 
 
 class ArtifactTests(unittest.TestCase):
@@ -149,14 +202,14 @@ class NotesTests(unittest.TestCase):
         self.assertIn('"dist/praevis-thetadata-$VERSION.intoto.jsonl"', workflow)
         self.assertNotIn("provenance.sigstore.jsonl", workflow)
         version = release.workspace_version()
-        body = release.release_body(release.draft(version).read_text(encoding="utf-8"))
+        body = release.release_notes(version)[1]
         self.assertIn(f"`praevis-thetadata-{version}.intoto.jsonl`", body)
 
     def test_every_documented_verification_names_the_release_tag(self):
         # Dry runs attest too, from a branch; only --source-ref tells the
         # release's attestation apart for a reproducible .crate.
         docs = [release.ROOT / "docs" / "releasing.md", release.ROOT / "docs" / "security" / "assurance-report.md",
-                release.draft(release.workspace_version())]
+                release.notes_file(release.workspace_version())]
         for doc in docs:
             commands = doc.read_text(encoding="utf-8").split("gh attestation verify ")[1:]
             self.assertTrue(commands, doc)
@@ -167,9 +220,49 @@ class NotesTests(unittest.TestCase):
                 with self.subTest(doc=doc.name, command=text[:50]):
                     self.assertIn("--source-ref refs/tags/v", text)
 
-    def test_the_current_draft_has_a_body(self):
-        body = release.release_body(release.draft(release.workspace_version()).read_text(encoding="utf-8"))
+    def test_the_current_notes_have_a_body(self):
+        title, body = release.release_notes(release.workspace_version())
         self.assertIn("## Install", body)
+        self.assertTrue(title)
+
+    def test_new_notes_are_the_whole_file_titled_by_its_heading(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / "docs" / "releases").mkdir(parents=True)
+            notes = root / "docs" / "releases" / "v0.1.6.md"
+            notes.write_text("# praevis-thetadata 0.1.6\n\nText.\n")
+            self.assertEqual(release.release_notes("0.1.6", root),
+                             ("praevis-thetadata 0.1.6", "# praevis-thetadata 0.1.6\n\nText.\n"))
+            notes.write_text("no heading\n")
+            with self.assertRaises(ValueError):
+                release.release_notes("0.1.6", root)
+
+
+class GitHubReleaseTests(unittest.TestCase):
+    FILES = {"a.crate": (3, "a" * 64), "SHA256SUMS": (10, "b" * 64)}
+
+    def release(self, **extra):
+        assets = [{"name": n, "size": s, "digest": f"sha256:{d}", "state": "uploaded"}
+                  for n, (s, d) in self.FILES.items()]
+        return {"tag_name": "v0.1.6", "name": "T", "body": "Body", "draft": False, "assets": assets, **extra}
+
+    def test_a_matching_published_release_passes(self):
+        self.assertEqual(release.release_problems(self.release(), "v0.1.6", "T", "Body\n", self.FILES,
+                                                  published=True), [])
+
+    def test_each_difference_is_reported(self):
+        bad = self.release(name="X", body="Other", draft=True)
+        bad["assets"][0]["digest"] = "sha256:" + "c" * 64
+        bad["assets"].append({"name": "extra", "size": 1, "digest": "sha256:" + "d" * 64, "state": "uploaded"})
+        found = release.release_problems(bad, "v0.1.6", "T", "Body\n", self.FILES, published=True)
+        self.assertEqual(len(found), 5, found)
+
+    def test_a_draft_uploads_only_missing_files_and_never_replaces_one(self):
+        draft = self.release(draft=True)
+        draft["assets"] = draft["assets"][:1]
+        self.assertEqual(release.uploads_needed(draft, self.FILES), (["SHA256SUMS"], []))
+        draft["assets"][0]["size"] = 4
+        self.assertEqual(release.uploads_needed(draft, self.FILES), (["SHA256SUMS"], ["a.crate"]))
 
 
 if __name__ == "__main__":

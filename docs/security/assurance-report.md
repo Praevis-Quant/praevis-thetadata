@@ -144,7 +144,8 @@ system's resolver, and on Linux, when the optional session store is used,
 | **CycloneDX SBOMs** | In place from `0.1.3` | The full Rust dependency graph of each crate, the executables and the wheels, attested to the artifacts they describe. Each wheel also carries its own SBOM inside it (`.dist-info/sboms/`, written by maturin), so it travels with the wheel |
 | **SHA-256 checksums** (`SHA256SUMS`) | In place from `0.1.3` | Integrity of every file after transfer |
 | **Trusted publishing** to crates.io and PyPI | In place from `0.1.3` | Publication only from `trusted-publishing.yml`, through OIDC, after the maintainer approves the `crates-io` environment and then (only once crates.io succeeded) the `pypi` environment. Both environments admit only `v*` tags, and administrators cannot bypass them (`can_admins_bypass: false`). **No long-lived registry tokens exist**; crates.io refuses token publishing for these crates. PyPI files carry PyPI attestations |
-| **Release gate** | In place | A tag must match the version, be on `main`, with CI green |
+| **Release gate** | In place; extended 2026-11-22 | A tag must be an annotated `v<version>` tag on `main`, with CI green on the commit's push to `main`; the publishable crates must be exactly the release set; the CHANGELOG entry must be dated and the release notes committed |
+| **Release standard** | Adopted 2026-11-22 | The pipeline follows the organisation's release standard ([Praevis-Quant/.github](https://github.com/Praevis-Quant/.github/blob/main/docs/TRUSTED-PUBLISHING.md), the Rust Commons standard with Praevis-Quant additions): signing only on a `v*` tag push, a GitHub release drafted, checked and only then published, never replacing an asset, and a verification of every publication from the outside |
 | **Release tags** | In place | Ruleset "release tags creation" (id 27825772): only the repository admin role can create a `v*` tag. Ruleset "release tags immutable" (id 27324055): no one, admins included, can delete, move or force-update one (no bypass actors) |
 | **Locked dependencies** (`Cargo.lock`; hash-pinned Python build requirements) | In place | Builds use exactly the locked versions (`--locked`) |
 | **cargo-deny** | In place | RustSec advisories (vulnerable, unsound, unmaintained, yanked) against every crate in the graph, direct or transitive, on every platform (no target list narrows it); licences (permissive allow-list) and sources (crates.io only) fail CI; weekly as well |
@@ -233,9 +234,10 @@ project**:
 
    This checks the signature, the certificate chain to the trusted root,
    the transparency-log inclusion recorded in the bundle, the source
-   repository, the build workflow and the release tag. Dry runs also
-   attest, from a branch, and a manual run from a tag does not attest, so
-   `--source-ref` accepts only the tag's run.
+   repository, the build workflow and the release tag. Only a `v*` tag
+   push signs (since 2026-11-22); `--source-ref` is a second safeguard
+   that accepts only the tag's run, should any other attestation exist
+   (earlier dry runs signed from branches).
 3. **SBOM attestation** (optional): the same command (with
    `--source-ref`) with the `*.sbom.sigstore.jsonl` bundle and
    `--predicate-type https://cyclonedx.org/bom`.
