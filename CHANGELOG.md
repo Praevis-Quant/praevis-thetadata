@@ -69,6 +69,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 - **`AuthConfig::validate()`** (auth): the configuration checks
   `AuthClient::new` makes, without I/O or a runtime.
 
+- **Python: a timeout too large for a duration raises `ValueError`, not
+  `PanicException`** (0.1.5 review F11). `timeout=1e20` on `query`, `job`
+  or `to_parquet` panicked in the conversion, and `PanicException` is not
+  caught by `except Exception`. The per-call options now convert as the
+  constructor does, and refuse a value that rounds to zero.
+
 ### Release
 
 - **The release pipeline follows the organisation's release standard**
