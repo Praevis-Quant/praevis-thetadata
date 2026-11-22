@@ -56,6 +56,19 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   atomic where the file system has them). With `overwrite`, the move is one
   atomic rename. Python's `to_parquet` behaves the same.
 
+- **CLI: an invalid `--profile`, `--auth-url`, `--insecure` combination or
+  `--timeout` now exits 2**, the documented code for argument errors
+  (AUTH-L3-013; 0.1.5 review F10). They exited 1, as operational errors.
+  This changes an exit code of the supported CLI to the one its README and
+  requirements always stated. The auth configuration is now checked before
+  credentials are read and before any runtime starts (AUTH-L3-019), so a bad
+  URL is reported as such rather than masked by a credentials error.
+
+### Added
+
+- **`AuthConfig::validate()`** (auth): the configuration checks
+  `AuthClient::new` makes, without I/O or a runtime.
+
 ### Release
 
 - **The release pipeline follows the organisation's release standard**

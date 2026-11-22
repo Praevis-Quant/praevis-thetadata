@@ -156,6 +156,38 @@ async fn enforces_http_timeout() {
 }
 
 #[test]
+fn a_configuration_validates_without_a_runtime() {
+    assert!(AuthConfig::default().validate().is_ok());
+    for url in [
+        "not a url",
+        "http://127.0.0.1/v1",
+        "https://u:p@example.com/v1",
+        "https://example.com/v1?x=1",
+    ] {
+        let config = AuthConfig {
+            auth_url: url.into(),
+            ..Default::default()
+        };
+        assert!(
+            matches!(config.validate(), Err(AuthError::Config(_))),
+            "{url}"
+        );
+    }
+    let local = AuthConfig {
+        auth_url: "http://127.0.0.1/v1".into(),
+        ..Default::default()
+    }
+    .with_allow_insecure(true);
+    assert!(local.validate().is_ok());
+    assert!(matches!(
+        AuthConfig::default()
+            .with_request_timeout(std::time::Duration::ZERO)
+            .validate(),
+        Err(AuthError::Config(_))
+    ));
+}
+
+#[test]
 fn validates_urls_credentials_and_redaction() {
     assert!(
         AuthClient::new(AuthConfig {
