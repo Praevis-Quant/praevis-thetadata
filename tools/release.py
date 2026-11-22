@@ -27,6 +27,8 @@ Standard library only. Subcommands:
   version the crates.io index already lists (a re-run after a failure). After
   each, the crate is downloaded back from crates.io and must equal the
   attested ``.crate`` byte for byte, as must the index's checksum.
+- ``check-known-good``: the same download checks against a version already
+  published (``KNOWN_GOOD``), so a dry run exercises them without a token.
 """
 from __future__ import annotations
 
@@ -286,9 +288,30 @@ def index_path(name: str) -> str:
 USER_AGENT = {"User-Agent": "praevis-thetadata-release"}
 
 
-def fetch(url: str) -> bytes:
-    with urllib.request.urlopen(urllib.request.Request(url, headers=USER_AGENT), timeout=60) as response:
-        return response.read()
+RETRY_DELAYS = (5, 15, 30, 60, 120)  # seconds, between attempts; about four minutes in all
+
+
+def transient(error: Exception) -> bool:
+    """A failure worth retrying: a server error, a timeout or a network error.
+    A 4xx answer (for example 404, not served yet) is the caller's to judge."""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code >= 500
+    return isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError))
+
+
+def fetch(url: str, delays: tuple[int, ...] = RETRY_DELAYS) -> bytes:
+    """GET with bounded retries and backoff on transient failures, so a slow
+    or flaky registry does not fail a release after a crate is published."""
+    for attempt in range(len(delays) + 1):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=USER_AGENT), timeout=60) as response:
+                return response.read()
+        except Exception as error:  # noqa: BLE001 (re-raised unless transient)
+            if not transient(error) or attempt == len(delays):
+                raise
+            print(f"{url}: {error}; retrying in {delays[attempt]} s", file=sys.stderr)
+            time.sleep(delays[attempt])
+    raise AssertionError("unreachable")
 
 
 def index_checksum(name: str, version: str) -> str | None:
@@ -324,8 +347,14 @@ def download_mismatch(name: str, version: str, attested: str, downloaded: bytes 
 
 def verify_published(name: str, version: str, dist: pathlib.Path, attempts: int = 10) -> None:
     """Download the crate back from crates.io and compare it with the attested
-    one; exit on any difference. Retries only while it is not served yet."""
-    attested = sha256(dist / crate_file(name, version))
+    one; exit on any difference."""
+    check_published(name, version, sha256(dist / crate_file(name, version)), attempts)
+
+
+def check_published(name: str, version: str, attested: str, attempts: int = 10) -> None:
+    """crates.io serves ``attested`` for this crate, and its index lists that
+    checksum; exit otherwise. Network failures are retried in ``fetch``; a 403
+    or 404 (not served yet) and a missing index entry, every 30 s."""
     url = f"https://static.crates.io/crates/{name}/{crate_file(name, version)}"
     downloaded = None
     for attempt in range(attempts):
@@ -336,10 +365,37 @@ def verify_published(name: str, version: str, dist: pathlib.Path, attempts: int 
             if error.code not in (403, 404) or attempt == attempts - 1:
                 break
             time.sleep(30)
-    problem = download_mismatch(name, version, attested, downloaded, index_checksum(name, version))
+    index = None
+    for attempt in range(attempts):
+        index = index_checksum(name, version)
+        if index is not None or attempt == attempts - 1:
+            break
+        time.sleep(30)
+    problem = download_mismatch(name, version, attested, downloaded, index)
     if problem:
         sys.exit(f"::error::{problem}")
     print(f"{crate_file(name, version)}: crates.io serves the attested .crate ({attested})")
+
+
+# A published version whose crates.io files are known (its publication
+# record, docs/crates-io-release-plan.md): the dry run checks the download leg
+# of publishing against it, with no token.
+KNOWN_GOOD = ("0.1.4", {
+    "praevis-thetadata-proto": "61bed2af84535480907d84c24015b93ec21df1418280af77b9e19b6c44b15f29",
+    "praevis-thetadata-core": "c1c872a2cfa35e79d71e95d5ae263e2bdaecb9e17fc79576ad0a9a17e8b68af6",
+    "praevis-thetadata-auth": "379d23cff023334233118187cdb3448f2300a235c64fb113b064bed590608dd5",
+    "praevis-thetadata-arrow": "633dc3a2e879d5c7b94126e2f5b58b1470718478d1ea06a274dccffe64c5a590",
+    "praevis-thetadata-client": "6ba16e88fccbc48e5b1bc8739b7b2c26afc839c90f7e4ce1dfb8fc49bbe127db",
+    "praevis-thetadata-cli": "93bf0da90e61643ae7e404db09b07a025a01ad31e6783d084b36f073766dd18c",
+    "praevis-thetadata-stream": "09707307a145e6e8bc9b242a7b4e7d4015457594fea484e0a4b579cb5dbce1b0",
+})
+
+
+def check_known_good(args: argparse.Namespace) -> int:
+    version, hashes = KNOWN_GOOD
+    for name in CRATES:
+        check_published(name, version, hashes[name])
+    return 0
 
 
 def publish_crates(args: argparse.Namespace) -> int:
@@ -350,7 +406,12 @@ def publish_crates(args: argparse.Namespace) -> int:
         if published(name, args.version):
             print(f"{name} {args.version}: already on crates.io, skipped")
         else:
-            subprocess.run(["cargo", "publish", "--locked", "-p", name], cwd=ROOT, check=True)
+            # --no-verify: this job holds the crates.io token and an OIDC
+            # token, so it must not run dependency build scripts and proc
+            # macros. The build job's cargo package already ran the
+            # verification build on these bytes, and compare-crates proved
+            # them identical before the first upload.
+            subprocess.run(["cargo", "publish", "--locked", "--no-verify", "-p", name], cwd=ROOT, check=True)
         verify_published(name, args.version, dist)
     return 0
 
@@ -386,10 +447,12 @@ def main(argv: list[str] | None = None) -> int:
     m = sub.add_parser("compare-crates")
     m.add_argument("--version", required=True)
     m.add_argument("--dist", required=True)
+    sub.add_parser("check-known-good", help="the download checks against a published version (dry runs)")
     args = parser.parse_args(argv)
     return {"check": check, "package-cli": package_cli, "sums": sums, "notes": notes,
             "publish-crates": publish_crates, "collect-sboms": collect_sboms,
-            "package-crates": package_crates, "compare-crates": compare_crates}[args.command](args)
+            "package-crates": package_crates, "compare-crates": compare_crates,
+            "check-known-good": check_known_good}[args.command](args)
 
 
 if __name__ == "__main__":

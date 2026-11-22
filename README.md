@@ -76,7 +76,7 @@ approves the `crates-io` and then the `pypi` environment
 
 | Package | Responsibility | Status |
 | --- | --- | --- |
-| `praevis-thetadata-auth` | HTTP authentication, credentials, in-memory sessions; optional (`native-store`) Windows/Linux session persistence | Supported |
+| `praevis-thetadata-auth` | HTTP authentication, credentials, in-memory sessions; optional (`native-store`) Windows, Linux and macOS session persistence | Supported |
 | `praevis-thetadata-cli` (`praevis-thetadata`) | Credential discovery, `auth` (in memory) or `auth --save`, status and logout | Supported (commands, flags, exit codes, JSON output) |
 | `praevis-thetadata-proto` | Generated protobuf types and gRPC bindings for all 100 RPCs | Unstable (exposes generated tonic types) |
 | `praevis-thetadata-core` | Transport-independent prices, timestamps, values, tables | Supported |
@@ -200,7 +200,7 @@ The Windows backend uses the keyring crate's native `CRED_PERSIST_ENTERPRISE` st
 
 **Persistence does not establish server validity.** The supplied Python package provides no token expiry, refresh, validation, or revocation contract. Status therefore reports `validity: "not_checked"`. Re-running `praevis-thetadata auth --save` obtains and saves a new session; a failed login, with or without `--save`, leaves the old record intact. Records saved by earlier versions, which saved on every `auth`, keep working: the identity and v1 format are unchanged. Applications load an existing session explicitly and should prompt for authentication again if the server rejects it. There is no background refresh or saved password. Concurrent successful logins to the same target replace the stored record; the last write wins.
 
-Native persistence supports Windows and Linux. Linux uses a persistent Secret Service collection, so records survive CLI exits and keyring daemon restarts; the collection must be unlocked again when required by the provider. The HTTP authentication API can be used on other platforms; persistence operations return an explicit unsupported-platform error there.
+Native persistence supports Windows (Credential Manager), Linux and macOS (the Keychain, from `0.1.3`). Linux uses a persistent Secret Service collection, so records survive CLI exits and keyring daemon restarts; the collection must be unlocked again when required by the provider. The HTTP authentication API can be used on other platforms; persistence operations return an explicit unsupported-platform error there.
 
 ## How long requests take
 

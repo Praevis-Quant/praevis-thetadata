@@ -166,7 +166,12 @@ is published is what was attested.
    - **After each crate:** it is downloaded back from `static.crates.io`, and
      its SHA-256 and the index's checksum must equal the attested `.crate`;
      any difference fails the job before the GitHub release. A re-run
-     checks crates already published too.
+     checks crates already published too. Network errors, server errors
+     and a slow index are retried with backoff (about four minutes), so a
+     registry hiccup does not fail a release that has already published.
+   - **`cargo publish --no-verify`:** this job holds the crates.io and OIDC
+     tokens, so it runs no dependency build scripts or proc macros. The
+     build job's packaging ran the verification build on the same bytes.
 2. **`publish-pypi`** (environment `pypi`): **PyPI** by
    [trusted publishing](https://docs.pypi.org/trusted-publishers/), the
    eight wheels with PyPI attestations. No sdist.
@@ -188,7 +193,12 @@ the crates, wheels, checksums, attestations and docs.rs.
 in report-only mode, builds and checks all 16 artifacts, the 7 crates (packaged
 twice, on two runners, and compared) and the 8 SBOMs, writes
 `SHA256SUMS` and attests them, and uploads them as the run's
-`release-<version>` artifact. The publish jobs do not run: they need a tag
+`release-<version>` artifact. Instead of the publish jobs, **`publish-path-check`**
+runs the crates.io job's checks with no environment or token: the build's
+pinned toolchain, the bundle against `SHA256SUMS`, its own packaging against
+the attested crates, and the crates.io download checks against `0.1.4`
+(`check-known-good`). A dispatch from a `v*` tag runs the same without
+attesting. The publish jobs do not run: they need a tag
 push, and the `crates-io` and `pypi` environments admit only `v*` tags anyway. Pull
 requests that change the release tooling run the same dry run, without the
 attestations.
@@ -217,7 +227,8 @@ gh attestation verify praevis-thetadata-cli-0.1.5-x86_64-unknown-linux-musl.tar.
 ```
 
 **Always pass `--source-ref refs/tags/v<version>`.** Dry runs attest too
-(they test the attestation steps), from a branch. Because the crates are
+(they test the attestation steps), from a branch. A manual run from a tag,
+and a pull request, do not attest at all. Because the crates are
 reproducible, a dry run on the tagged commit attests the same `.crate`
 digests as the release. Those attestations are genuine, but they are not the
 release's. `--source-ref` accepts only an attestation made by the tag's run.
@@ -349,6 +360,7 @@ is.
 | Job | Permissions | Environment |
 | --- | --- | --- |
 | `check` | `contents: read`, `actions: read` | — |
+| `publish-path-check` (dry runs only) | `contents: read` | — |
 | `cli`, `wheels`, `sbom`, `crates`, `crates-reproducible` (in `build-release.yml`) | `contents: read` | — |
 | `collect` (in `build-release.yml`; the calling `build` job grants these) | `contents: read`, `id-token: write`, `attestations: write` | — |
 | `publish-crates` | `contents: read`, `id-token: write` | `crates-io` (required reviewer: the user; `v*` tags only; no admin bypass) |

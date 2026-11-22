@@ -145,7 +145,7 @@ system's resolver, and on Linux, when the optional session store is used,
 | **Trusted publishing** to crates.io and PyPI | In place from `0.1.3` | Publication only from `trusted-publishing.yml`, through OIDC, after the maintainer approves the `crates-io` environment and then (only once crates.io succeeded) the `pypi` environment. Both environments admit only `v*` tags, and administrators cannot bypass them (`can_admins_bypass: false`). **No long-lived registry tokens exist**; crates.io refuses token publishing for these crates. PyPI files carry PyPI attestations |
 | **Release gate** | In place | A tag must match the version, be on `main`, with CI green |
 | **Release tags** | In place | Ruleset "release tags creation" (id 27825772): only the repository admin role can create a `v*` tag. Ruleset "release tags immutable" (id 27324055): no one, admins included, can delete, move or force-update one (no bypass actors) |
-| **Locked dependencies** (`Cargo.lock`; hash-pinned Python build requirements) | In place | Builds use exactly the reviewed versions (`--locked`) |
+| **Locked dependencies** (`Cargo.lock`; hash-pinned Python build requirements) | In place | Builds use exactly the locked versions (`--locked`) |
 | **cargo-deny** | In place | RustSec advisories (vulnerable, unsound, unmaintained, yanked) against every crate in the graph, direct or transitive, on every platform (no target list narrows it); licences (permissive allow-list) and sources (crates.io only) fail CI; weekly as well |
 | **Advisories fixed** | In place | Nine RustSec advisories found by the first cargo-deny run (rustls, rustls-webpki, webpki-roots, tokio, pulldown-cmark) were fixed before `0.1.3` |
 | **Pinned GitHub Actions** | In place | Every action is pinned by full commit SHA; zizmor checks for unpinned, impostor or vulnerable actions |
@@ -233,7 +233,8 @@ project**:
    This checks the signature, the certificate chain to the trusted root,
    the transparency-log inclusion recorded in the bundle, the source
    repository, the build workflow and the release tag. Dry runs also
-   attest, from a branch; `--source-ref` accepts only the tag's run.
+   attest, from a branch, and a manual run from a tag does not attest, so
+   `--source-ref` accepts only the tag's run.
 3. **SBOM attestation** (optional): the same command (with
    `--source-ref`) with the `*.sbom.sigstore.jsonl` bundle and
    `--predicate-type https://cyclonedx.org/bom`.

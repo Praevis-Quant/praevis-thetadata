@@ -92,6 +92,35 @@ class PublishTests(unittest.TestCase):
         self.assertIn("index lists", release.download_mismatch(name, version, good, data, "0" * 64))
         self.assertIn("not downloadable", release.download_mismatch(name, version, good, None, None))
 
+    def test_fetch_retries_only_transient_failures(self):
+        import io
+        import urllib.error
+        from unittest import mock
+        calls = []
+
+        def opener(errors):
+            def urlopen(request, timeout):
+                calls.append(1)
+                if errors:
+                    raise errors.pop(0)
+                return io.BytesIO(b"ok")
+            return urlopen
+        with mock.patch("time.sleep"), mock.patch("urllib.request.urlopen",
+                                                   opener([urllib.error.URLError("dns"), urllib.error.HTTPError("u", 503, "x", {}, None)])):
+            self.assertEqual(release.fetch("https://example.invalid", delays=(0, 0, 0)), b"ok")
+        self.assertEqual(len(calls), 3)
+        with mock.patch("time.sleep"), mock.patch("urllib.request.urlopen",
+                                                   opener([urllib.error.HTTPError("u", 404, "x", {}, None)])):
+            with self.assertRaises(urllib.error.HTTPError):
+                release.fetch("https://example.invalid", delays=(0, 0))
+        with mock.patch("time.sleep"), mock.patch("urllib.request.urlopen",
+                                                   opener([urllib.error.URLError("dns")] * 3)):
+            with self.assertRaises(urllib.error.URLError):
+                release.fetch("https://example.invalid", delays=(0, 0))
+
+    def test_the_known_good_version_covers_every_crate(self):
+        self.assertEqual(set(release.KNOWN_GOOD[1]), set(release.CRATES))
+
     def test_crate_mismatches_name_each_difference(self):
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
             for name in release.CRATES:
