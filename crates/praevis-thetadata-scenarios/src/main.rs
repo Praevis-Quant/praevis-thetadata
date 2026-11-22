@@ -460,21 +460,44 @@ async fn anytime(
         return;
     };
     run(out, "busy-above-limit", async {
-        // Hold the account's limit with an all-strike quote each (the
-        // recorded first-row delay), then one more is busy.
+        // A dedicated emulator whose answers stay open (the `hold` test
+        // control), so the account's limit is held until the extra request
+        // has its answer. With the shared emulator the held requests lasted
+        // only the scaled first-row delay, and a slow runner could finish
+        // them first (Windows CI, #242: "expected Busy, got None").
+        let busy = Emulator::start(Config {
+            time_scale: 0.01,
+            hold: Duration::from_secs(30),
+            ..Config::default()
+        });
+        let session = login(Some(&busy.auth_url)).await?;
+        let client = ThetaClient::with_session(
+            ClientConfig::default()
+                .with_endpoint(Some(busy.endpoint.clone()))
+                .with_allow_insecure(true),
+            session,
+        )
+        .await
+        .map_err(|e| format!("connect failed: {e:?}"))?;
         let limit = client.tier().concurrency();
         let held: Vec<_> = (0..limit)
             .map(|_| {
                 let client = client.clone();
                 tokio::spawn(async move {
-                    let all = endpoints::OptionHistoryQuote::new("SPY", day(2024, 6, 21));
-                    let _ = client.query(&all).await;
+                    let _ = client
+                        .query(&endpoints::StockHistoryEod::new("AAPL", week.0, week.1))
+                        .await;
                 })
             })
             .collect();
-        let before = emulator.requests().len();
-        let deadline = Instant::now() + Duration::from_secs(5);
-        while emulator.requests().len() < before + limit && Instant::now() < deadline {
+        let deadline = Instant::now() + Duration::from_secs(20);
+        while busy.requests().len() < limit {
+            if Instant::now() >= deadline {
+                return Err(format!(
+                    "only {} of {limit} held requests arrived",
+                    busy.requests().len()
+                ));
+            }
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
         let extra = client
