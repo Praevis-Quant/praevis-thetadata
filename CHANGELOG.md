@@ -28,6 +28,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   timeout waited for it, 1.5 s against the emulator's delay. It now runs
   with the job's timeout and idle timeout.
 
+- **`praevis-thetadata-stream`: `close()` and drop no longer hang when the
+  event queue is full as the socket ends** (0.1.5 review F5). The reader
+  delivered the final `Disconnected` event, and with `Overflow::Block`
+  every event, with a blocking send, while `close()` or drop waited for the
+  reader to finish. It now waits for queue space only until it is asked to
+  stop. Both overflow modes keep their behaviour otherwise; `Block` still
+  delivers every event while the stream is open.
+
 ### Release
 
 - **The release pipeline follows the organisation's release standard**

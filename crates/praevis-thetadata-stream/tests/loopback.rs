@@ -319,3 +319,55 @@ fn closing_while_data_arrives_finishes_the_close_handshake() {
         assert_eq!(seen.last().map(String::as_str), Some("CLOSE"), "{seen:?}");
     }
 }
+
+/// Runs `f` on its own thread and fails, instead of hanging the test run,
+/// unless it returns within ten seconds.
+fn returns_in_time(what: &str, f: impl FnOnce() + Send + 'static) {
+    let (done, finished) = mpsc::channel();
+    std::thread::spawn(move || {
+        f();
+        let _ = done.send(());
+    });
+    assert!(
+        finished.recv_timeout(Duration::from_secs(10)).is_ok(),
+        "{what} did not return"
+    );
+}
+
+/// A full queue when the socket ends: the reader must not block on the
+/// final Disconnected event (or, with Block, on an event) while close or
+/// drop waits for it (0.1.5 review F5).
+#[test]
+fn close_and_drop_return_when_the_queue_is_full_as_the_socket_ends() {
+    for overflow in [Overflow::DropNewest, Overflow::Block] {
+        for close in [true, false] {
+            let frames: Vec<String> = (0..3).map(|_| QUOTE.to_owned()).collect();
+            let (url, _) = terminal::scripted(frames, 0);
+            let stream = Stream::connect(
+                Options::default()
+                    .with_url(url)
+                    .with_capacity(1)
+                    .with_overflow(overflow),
+            )
+            .unwrap();
+            // The first quote fills the queue; the reader then holds a
+            // second event (Block) or the Disconnected event.
+            let deadline = std::time::Instant::now() + Duration::from_secs(10);
+            while stream.stats().quotes < 1 && std::time::Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            std::thread::sleep(Duration::from_millis(300));
+            let what = format!(
+                "{} with {overflow:?}",
+                if close { "close()" } else { "drop" }
+            );
+            returns_in_time(&what, move || {
+                if close {
+                    stream.close();
+                } else {
+                    drop(stream);
+                }
+            });
+        }
+    }
+}

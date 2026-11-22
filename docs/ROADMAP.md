@@ -438,7 +438,7 @@ are fixed for `0.1.5` (#232); the rest are planned for `0.1.6`, one line
 each: severity, where, fix.
 
 **Must fix (not blocking 0.1.5):**
-- **F5, medium:** stream `close()` and drop hang forever when the queue is full and the socket ends (`crates/praevis-thetadata-stream/src/lib.rs:520,528` with `:471`; the reader blocks sending `Disconnected` while shutdown joins it). Fix: send that event without blocking, and check the stop flag.
+- **F5, medium, fixed for 0.1.6:** stream `close()` and drop hang forever when the queue is full and the socket ends (`crates/praevis-thetadata-stream/src/lib.rs:520,528` with `:471`; the reader blocks sending `Disconnected` while shutdown joins it). Fix: send that event without blocking, and check the stop flag.
 - **F6, medium:** the SBOMs list components not in the artifacts: `openssl`/`openssl-sys` in the CLI, auth, client and wheel SBOMs; `keyring`/`libdbus-sys` in the wheel and client SBOMs (`.github/workflows/build-release.yml:244`, `docs/security/assurance-report.md:141,163`). Fix: SBOMs from the real build graph, or state the limit in the report.
 - **F8, low, fixed for 0.1.6:** a job's timeout does not cover its hidden list-strikes request (`crates/praevis-thetadata-client/src/job.rs:135`; a planned `option_history_quote` with a 0.3 s timeout blocks 1.51 s). Fix: pass the caller's timeout and idle timeout to that request.
 - **F9, low:** Parquet sink file handling (`crates/praevis-thetadata-arrow/src/parquet_sink.rs:132-146, 286-289`): `overwrite=false` still replaces a file that appears meanwhile, two sinks on one target share `<name>.partial`, and a planted symlink there is followed. Fix: a unique temp name opened with `create_new`, and a no-replace rename.
