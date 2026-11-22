@@ -19,6 +19,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Fixed
+
+- **A job's timeout now covers the strike list request its plan makes**
+  (0.1.5 review F8). An all-strike fine `option_history_quote` job lists
+  the expiration's strikes before splitting; that request ran without the
+  job's options, so `job_with` (and Python's planned calls) with a 0.3 s
+  timeout waited for it, 1.5 s against the emulator's delay. It now runs
+  with the job's timeout and idle timeout.
+
 ### Release
 
 - **Attestations come from `actions/attest`** (v4.2.2, pinned by SHA)
