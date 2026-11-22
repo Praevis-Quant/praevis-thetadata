@@ -182,10 +182,46 @@ is published is what was attested.
    (everything after `**Body:**`). Marked latest; a version with a
    pre-release suffix is marked pre-release instead.
 
-**7. Record.** The user reports the result; an agent opens the publication
+**7. Verify publication** (`verify` job, from `0.1.6`): after the GitHub
+release, [`verify-publication.yml`](../.github/workflows/verify-publication.yml)
+checks the release from the outside, read-only (`contents: read`, no
+environment, no OIDC token), with [`tools/verify_publication.py`](../tools/verify_publication.py).
+It runs one leg per release target, each on its own native runner (Windows
+x64 and arm64, Linux glibc and musl on x86_64 and arm64, macOS Intel and
+Apple silicon). Every leg:
+- checks that the release is published and has exactly the 35 expected
+  assets, each matching GitHub's recorded digest;
+- checks `SHA256SUMS` (exactly the 31 artifacts, each matching);
+- verifies every artifact's provenance online and offline (the
+  `.intoto.jsonl` bundle and Sigstore's trusted root) with
+  `--signer-workflow build-release.yml --source-ref refs/tags/v<version>`,
+  and the SBOM attestation of every executable and wheel;
+- runs that platform's downloaded CLI, with no token in its environment:
+  `--version` must print the version.
+
+The Linux x86_64 leg also checks:
+- the release body equals the draft's;
+- each crate's crates.io API checksum, index checksum and download equal
+  the attested `.crate`, and none is yanked;
+- PyPI holds exactly the eight attested wheels;
+- docs.rs built the six library crates. Pending is reported as pending,
+  not as a pass; a failed build fails the leg;
+- a clean `cargo install praevis-thetadata-cli --version =<version>
+  --locked` and `pip install praevis-thetadata==<version>` (retried while
+  the index lags) install and run.
+
+Each leg uploads `publication-proof-<version>-<target>`: `report.json` and
+every attestation verification. The same workflow can be run by hand for
+any published version (Actions → Verify publication), and runs against the
+latest release on pull requests that change it. A failure here comes after
+publishing: nothing is unpublished. Follow
+[When something goes wrong](#when-something-goes-wrong).
+
+**8. Record.** The user reports the result; an agent opens the publication
 record PR (CHANGELOG dated, `releases.md`, the record in
-[the release plan](crates-io-release-plan.md)), with the usual checks of
-the crates, wheels, checksums, attestations and docs.rs.
+[the release plan](crates-io-release-plan.md)). The record cites the
+`verify` job's result and proof artifacts for each target, and adds only
+what the job does not cover, such as the release's behaviour checks.
 
 ## Dry run
 
@@ -366,6 +402,7 @@ is.
 | `publish-crates` | `contents: read`, `id-token: write` | `crates-io` (required reviewer: the user; `v*` tags only; no admin bypass) |
 | `publish-pypi` (after `publish-crates`) | `contents: read`, `id-token: write` | `pypi` (required reviewer: the user; `v*` tags only; no admin bypass) |
 | `github-release` | `contents: write` | — |
+| `verify` (`verify-publication.yml`, after the GitHub release) | `contents: read` | — |
 
 Every action is pinned by full commit SHA. crates.io (all seven crates) and
 PyPI (`praevis-thetadata`) trust only `trusted-publishing.yml`, crates.io

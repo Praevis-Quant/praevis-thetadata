@@ -1,0 +1,88 @@
+name: Verify publication
+
+# Verifies a published release from the outside, as a user would
+# (docs/releasing.md, "Verify publication"): read-only, no environment, no
+# OIDC token. trusted-publishing.yml calls it after the GitHub release; it
+# can also be run by hand for any published version. Each leg downloads every
+# release asset on a native runner, checks SHA256SUMS, verifies every
+# provenance and SBOM attestation for the release tag, and runs that
+# platform's CLI. One leg also checks the release body, crates.io, PyPI,
+# docs.rs and clean installs. Each leg uploads its proof (report.json and
+# every attestation verification) as an artifact.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: The published version, without the v.
+        required: true
+        type: string
+  # A change to the verifier is tested against the latest published release.
+  pull_request:
+    paths:
+      - .github/workflows/verify-publication.yml
+      - tools/verify_publication.py
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The published version to verify, without the v (for example 0.1.5).
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-pc-windows-msvc, runner: windows-latest }
+          - { target: aarch64-pc-windows-msvc, runner: windows-11-arm }
+          - { target: x86_64-unknown-linux-gnu, runner: ubuntu-24.04, registries: true }
+          - { target: aarch64-unknown-linux-gnu, runner: ubuntu-24.04-arm }
+          - { target: x86_64-unknown-linux-musl, runner: ubuntu-24.04 }
+          - { target: aarch64-unknown-linux-musl, runner: ubuntu-24.04-arm }
+          - { target: x86_64-apple-darwin, runner: macos-15-intel }
+          - { target: aarch64-apple-darwin, runner: macos-15 }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ inputs.version || 'latest' }}
+      TARGET: ${{ matrix.target }}
+      REGISTRIES: ${{ matrix.registries && '--registries' || '' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
+        if: matrix.registries
+        with:
+          toolchain: stable
+      - name: Verify
+        # $REGISTRIES is empty or one fixed flag, so it is left unquoted.
+        run: python tools/verify_publication.py --version "$VERSION" --target "$TARGET" --out "$RUNNER_TEMP/proof" $REGISTRIES
+      - name: The result
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/proof/report.json" ]; then
+            python -c "import json,sys; r=json.load(open(sys.argv[1])); print(r['result']); print(json.dumps(r, indent=1))" "$RUNNER_TEMP/proof/report.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: publication-proof-${{ inputs.version || 'latest' }}-${{ matrix.target }}
+          path: ${{ runner.temp }}/proof
+          if-no-files-found: error
+          retention-days: 90
