@@ -235,3 +235,17 @@ jobs:
             gh release create "$tag" "$RUNNER_TEMP"/dist/* --verify-tag --title "$tag" \
               --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
           fi
+
+  verify:
+    # After the GitHub release, from the outside: every asset, checksum and
+    # attestation on each platform's native runner, the CLI run there, and
+    # the registries. Read-only; the publication record cites its proof.
+    name: Verify publication
+    needs: [check, github-release]
+    if: needs.check.outputs.publish == 'true'
+    permissions:
+      contents: read
+    # The documented local form; zizmor suggests a newer "$/" syntax.
+    uses: ./.github/workflows/verify-publication.yml # zizmor: ignore[self-repository]
+    with:
+      version: ${{ needs.check.outputs.version }}

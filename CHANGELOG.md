@@ -26,6 +26,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   `actions/attest-sbom`, which only wrapped it. The predicate types (SLSA
   provenance v1, CycloneDX), the subjects, the bundles and the verification
   commands are unchanged.
+- **Every release is verified from the outside after publishing** (user
+  request 2026-11-22): a `verify` job runs on a native runner for each of
+  the eight release targets. Each leg checks every asset against
+  `SHA256SUMS` and GitHub's digests, verifies every provenance and SBOM
+  attestation for the release tag (online and offline), and runs that
+  platform's CLI. One leg also checks the release body, crates.io and PyPI
+  against the attested files, docs.rs, and clean `cargo install` and
+  `pip install`. The proof is uploaded per target, and publication records
+  cite it ([releasing](docs/releasing.md)).
 
 ### Dependencies
 
