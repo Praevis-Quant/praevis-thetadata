@@ -212,6 +212,31 @@ class GitHubReleaseFlowTests(unittest.TestCase):
         self.write(state)
         self.assertEqual(self.run_release(), 1)
         self.assertEqual({method for method, _ in self.read()["calls"]}, {"GET"})
+class SbomTests(unittest.TestCase):
+    def test_an_sbom_keeps_only_what_the_package_builds(self):
+        def component(name, version):
+            return {"name": name, "version": version, "bom-ref": f"registry#{name}@{version}"}
+        document = {
+            "metadata": {"component": {"name": "pkg", "bom-ref": "path#pkg"}},
+            "components": [component("a", "1.0.0"), component("openssl", "0.10.0"), component("a", "2.0.0")],
+            "dependencies": [{"ref": "path#pkg", "dependsOn": ["registry#a@1.0.0", "registry#openssl@0.10.0"]},
+                             {"ref": "registry#openssl@0.10.0", "dependsOn": []}],
+        }
+        removed = release.limit_sbom(document, {("a", "1.0.0")})
+        self.assertEqual(removed, ["a@2.0.0", "openssl@0.10.0"])
+        self.assertEqual([c["name"] for c in document["components"]], ["a"])
+        self.assertEqual(document["dependencies"], [{"ref": "path#pkg", "dependsOn": ["registry#a@1.0.0"]}])
+        self.assertIn({"name": "praevis-thetadata:sbom:graph", "value": release.GRAPH_METHOD},
+                      document["metadata"]["properties"])
+
+    def test_the_build_graph_follows_each_package_s_own_features(self):
+        # The workspace's unified features put the CLI's native store under
+        # auth; auth's own build has no keyring, and nothing builds OpenSSL.
+        auth = {name for name, _ in release.build_graph("praevis-thetadata-auth")}
+        cli = {name for name, _ in release.build_graph("praevis-thetadata-cli")}
+        self.assertNotIn("keyring", auth)
+        self.assertIn("keyring", cli)
+        self.assertFalse({"openssl", "openssl-sys"} & (auth | cli))
 
 
 class PublishTests(unittest.TestCase):

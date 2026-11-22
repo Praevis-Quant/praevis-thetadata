@@ -102,7 +102,12 @@ of the Rust dependency graph each artifact is built from:
 `praevis-thetadata-<crate>-<version>.cdx.json` for each of the seven
 published crates (the CLI's covers the executables), and
 `praevis-thetadata-wheel-<version>.cdx.json` for the extension module in
-every wheel.
+every wheel. cargo-cyclonedx reads the workspace's `cargo metadata`, where
+features are unified across all members and the lockfile adds crates
+nothing builds. So `collect-sboms` keeps, in each SBOM, only the crates of
+that package's own build for every target (`cargo tree -p <package> -e
+normal --target all`), records that method in the SBOM's metadata, and
+fails if a built crate is missing (from `0.1.6`; 0.1.5 review F6).
 
 **The seven crates** (`crates` job, from `0.1.5`): `cargo package` of the
 published crates in one command, in publish order, so each later crate
