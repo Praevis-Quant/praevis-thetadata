@@ -25,13 +25,11 @@ supported and what is not, and lists the
     vendored D-Bus library with the native store.
   - Neither Python nor `protoc` is needed for the Rust crates.
 
-**Distribution:** the crates are on crates.io; the latest is `0.1.4`
-(`0.1.0` plus planner fixes, requests by name and dependency updates), and
-`0.1.5` (the 1.0.18 baseline) is prepared, not yet published. Pin the
-unstable `praevis-thetadata-proto` and the experimental
-`praevis-thetadata-stream` exactly (`=0.1.4`, or `=0.1.5` once it is
-published). The Python package is on PyPI as `praevis-thetadata` `0.1.4`
-(`pip install praevis-thetadata`). There are wheels only,
+**Distribution:** the crates are on crates.io as `0.1.5` (`0.1.0` plus
+planner fixes, requests by name, dependency updates and the 1.0.18
+baseline). Pin the unstable `praevis-thetadata-proto` and the experimental
+`praevis-thetadata-stream` exactly (`=0.1.5`). The Python package is on
+PyPI as `praevis-thetadata` `0.1.5` (`pip install praevis-thetadata`). There are wheels only,
 no source distribution, for the platforms in the table above. The same
 wheels, prebuilt CLI executables for those platforms, `SHA256SUMS` and a
 build-provenance attestation for each are attached to the GitHub release

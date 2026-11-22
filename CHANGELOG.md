@@ -13,7 +13,7 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 (2026-11-12), both also on PyPI, **`0.1.0`, the first supported
 release (2026-11-13)**, then `0.1.1` and `0.1.2` (both 2026-11-14), and
 `0.1.3` (2026-11-16), the first published by the release workflow, and
-`0.1.4` (2026-11-19). `0.1.5` is prepared, not published. Each release heading covers the entries
+`0.1.4` (2026-11-19) and `0.1.5` (2026-11-22). Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
@@ -27,13 +27,17 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   reqwest, the only path to `url`), so `0.1.5` is not affected; the
   libraries' `url = "2"` requirement already admits 2.5.9 for users.
 
-## [0.1.5] - pending
+## [0.1.5] - 2026-11-22
 
 **The vendor package's 1.0.18 becomes the compatibility baseline. Two
 current-day defaults change; see "Behaviour change" below for the settings
-that keep `0.1.4`'s results.** Prepared, not published: dated at
-publication, which needs the user's tag and approval of the release run.
-See the [release-notes draft](docs/release-draft-0.1.5.md).
+that keep `0.1.4`'s results.** Published by the release workflow (run
+44990591740, tag `v0.1.5` on `3579df8`) after the user approved the
+`crates-io` and then the `pypi` environment: seven crates on crates.io and
+[`praevis-thetadata` 0.1.5](https://pypi.org/project/praevis-thetadata/0.1.5/)
+on PyPI by trusted publishing, and the [GitHub release](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.5)
+with the seven `.crate` files among its 35 assets. See the
+[publication record](docs/crates-io-release-plan.md#publication-record-015).
 
 ### Release
 

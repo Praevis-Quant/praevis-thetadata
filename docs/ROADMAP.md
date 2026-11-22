@@ -75,11 +75,12 @@ The [performance architecture plan](architecture/performance-plan.md)
   - **`0.1.4` was published on 2026-11-19**
     ([record](crates-io-release-plan.md#publication-record-014)): `chrono-tz`,
     unmaintained, replaced by `jiff`; timestamps unchanged.
-  - **`0.1.5` is prepared:** the vendor package's 1.0.18 as the baseline,
-    its two changed current-day defaults (a behaviour change, with the
-    settings that restore `0.1.4`'s results) and the two corporate-action
-    wrappers, not live-verified. Publishing it needs the user's tag and
-    approvals.
+  - **`0.1.5` was published on 2026-11-22**
+    ([record](crates-io-release-plan.md#publication-record-015)): the vendor package's
+    1.0.18 as the baseline, its two changed current-day defaults (a
+    behaviour change, with the settings that restore `0.1.4`'s results),
+    the two corporate-action wrappers (not live-verified), and the crates
+    as attested, reproducible release artifacts.
   - **`0.1.0`, the first supported release, was published on 2026-11-13**
     ([record](crates-io-release-plan.md#publication-record-010)), on
     crates.io and on PyPI as [`praevis-thetadata` 0.1.0](https://pypi.org/project/praevis-thetadata/0.1.0/). It is the
