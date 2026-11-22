@@ -123,6 +123,21 @@ class NotesTests(unittest.TestCase):
         body = release.release_body(release.draft(version).read_text(encoding="utf-8"))
         self.assertIn(f"`praevis-thetadata-{version}.intoto.jsonl`", body)
 
+    def test_every_documented_verification_names_the_release_tag(self):
+        # Dry runs attest too, from a branch; only --source-ref tells the
+        # release's attestation apart for a reproducible .crate.
+        docs = [release.ROOT / "docs" / "releasing.md", release.ROOT / "docs" / "security" / "assurance-report.md",
+                release.draft(release.workspace_version())]
+        for doc in docs:
+            commands = doc.read_text(encoding="utf-8").split("gh attestation verify ")[1:]
+            self.assertTrue(commands, doc)
+            for command in commands:
+                text = command.split("```")[0].split("\n\n")[0]
+                if text.startswith("--bundle` checks"):
+                    continue  # prose about the command, not a command
+                with self.subTest(doc=doc.name, command=text[:50]):
+                    self.assertIn("--source-ref refs/tags/v", text)
+
     def test_the_current_draft_has_a_body(self):
         body = release.release_body(release.draft(release.workspace_version()).read_text(encoding="utf-8"))
         self.assertIn("## Install", body)

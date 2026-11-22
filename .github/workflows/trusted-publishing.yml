@@ -62,8 +62,9 @@ jobs:
   # Publishing: only on a v* tag that passed the gate, after the build,
   # checksums and attestations. crates.io and PyPI each publish from their
   # own job and environment (\`crates-io\`, \`pypi\`: required reviewer, v* tags
-  # only), so the user approves each, and each job holds only what it needs.
-  # The GitHub release follows once both succeeded. Every job re-checks the
+  # only, no administrator bypass), so the user approves each, and each job
+  # holds only what it needs. crates.io goes first; PyPI waits for it to
+  # succeed, and the GitHub release follows PyPI. Every job re-checks the
   # downloaded bundle against SHA256SUMS, and a re-run skips what is
   # already published.
   publish-crates:
@@ -129,8 +130,10 @@ jobs:
         run: python3 tools/release.py publish-crates --version "$VERSION" --wave 4 --dist "$RUNNER_TEMP/dist"
 
   publish-pypi:
+    # Only after crates.io succeeded, including its byte-for-byte checks: a
+    # crate problem then stops the release before anything reaches PyPI.
     name: Publish to PyPI
-    needs: [check, build]
+    needs: [check, build, publish-crates]
     if: needs.check.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30

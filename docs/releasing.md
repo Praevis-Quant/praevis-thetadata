@@ -13,12 +13,31 @@ after the user approves it. No tokens are stored or used.
 | Release-prep PR (version bump, CHANGELOG, `docs/release-draft-<version>.md`, checklist) | An agent opens it; the maintainer merges it when CI is green |
 | Pre-release live check on the merged commit (`scripts/live/run.sh --part anytime`) | The maintainer, on the user's machine |
 | Dry run of the release workflow on `main` (optional, recommended) | The maintainer or the user (Actions → Trusted publishing → Run workflow) |
-| Create and push the tag `v<version>` | **The user** (repository admin). A tag ruleset blocks creating, moving or deleting `v*` tags for everyone else |
-| Approve the `crates-io` and `pypi` environments (two approvals per release) | **The user**, each environment's required reviewer |
+| Create and push the tag `v<version>` | **The user** (repository admin). Ruleset "release tags creation" lets only admins create `v*` tags; ruleset "release tags immutable" stops everyone, admins included, from moving or deleting one |
+| Approve the `crates-io` environment, then the `pypi` environment (two approvals per release) | **The user**, each environment's required reviewer; administrators cannot bypass either |
 | Publication record PR | An agent, after the user reports the release |
 
 **Agents never publish, never create or push `v*` tags, and never approve
 the `crates-io` or `pypi` environment** ([AGENTS.md](../AGENTS.md)).
+
+**The repository settings that enforce this** (read back 2026-11-22):
+
+| Setting | Configuration |
+| --- | --- |
+| Environments `crates-io` and `pypi` | Required reviewer: the user. Deployments only from tags matching `v*`. **Administrators cannot bypass** the protection rules (`can_admins_bypass: false`, since 2026-11-21). Self-review is allowed (`prevent_self_review: false`): the user both pushes the tag and approves |
+| Ruleset "release tags immutable" (id 27324055) | On `refs/tags/v*`, active: blocks deletion, update and non-fast-forward. **No bypass actors**, so it applies to admins too |
+| Ruleset "release tags creation" (id 27825772) | On `refs/tags/v*`, active: blocks creation, with one bypass: the repository admin role. Only admins can create a `v*` tag |
+| Ruleset "main protection" (id 27326370) | On the default branch: changes only by pull request, 17 required status checks, linear history, no deletion or force-push, no bypass actors. **0 required approving reviews** |
+
+**What these controls do and do not separate.** The agents work under the
+maintainer's own GitHub account (the user's decision; there is no bot
+identity). So GitHub enforces that a person with that account clicks
+**Approve** on each environment, and that no one can move a release tag.
+But GitHub cannot tell an agent's actions from the maintainer's: the
+separation between what agents may do (prepare, never tag, publish or
+approve) and what only the maintainer does rests on **process** (these
+instructions, AGENTS.md and review of each run), **not on a technical
+control**.
 
 ## How a release runs
 
@@ -75,6 +94,11 @@ Rust toolchain, and crates.io publishing uses that same toolchain.
   on the x86_64 release runner one crate at a time against crates.io. So
   publishing one crate at a time gives the same bytes as packaging the
   seven together.
+- **Dry run 44924900723 (2026-11-21, on `f6a9a5b`):** the `crates` job
+  (x86_64) and `crates-reproducible` (arm64) agreed on all seven, and a
+  third packaging on another aarch64 machine matched them too. The run
+  produced 35 assets with 31 `SHA256SUMS` entries, and a `.crate`'s
+  provenance verifies.
 
 **4. Checksums and attestations** (`collect` job, still in the reusable
 workflow):
@@ -106,21 +130,29 @@ cannot influence the build or forge its provenance, and a verifier can
 require the signer workflow (below). This is GitHub's documented way to
 reach Build L3 with artifact attestations.
 
-**5. Approval, twice.** Two jobs wait: `publish-crates` for the
-`crates-io` environment and `publish-pypi` for the `pypi` environment. Each
-environment has the user as its required reviewer and admits only `v*`
-tags. The user opens the run (Actions → Trusted publishing → the run for
-the tag), checks it, and chooses **Review deployments**, then approves
-`crates-io` and `pypi` (together, or one at a time). Before approving:
+**5. Approval, twice, in order.** First `publish-crates` waits for the
+`crates-io` environment. `publish-pypi` needs it, so the `pypi` approval is
+requested only after crates.io has published and passed its byte-for-byte
+checks. Each environment has the user as its required reviewer, admits only
+`v*` tags, and cannot be bypassed by an administrator. The user opens the
+run (Actions → Trusted publishing → the run for the tag), checks it, chooses
+**Review deployments** and approves `crates-io`. When `publish-crates` has
+succeeded, **Review deployments** appears again, for `pypi`. Before
+approving `crates-io`:
 - the gate passed for the tag you pushed, on the commit the live check ran on;
-- all 16 build jobs, the SBOM job and the checksums job are green;
+- all 16 build jobs, the two crate jobs (packaging and the reproducibility
+  check), the SBOM job and the checksums job are green;
 - the run is for `refs/tags/v<version>`, not a branch.
 
-Rejecting both, or letting them time out, publishes nothing. Approving
-only one publishes to that registry only; the GitHub release then does not
-run (it needs both), and approving the other later completes the release.
+Before approving `pypi`: `publish-crates` is green, including its last
+lines, `crates.io serves the attested .crate`, for all seven crates.
 
-**6. Publish:** three jobs, each with only the permissions it needs, and
+Rejecting `crates-io`, or letting it time out, publishes nothing, and `pypi`
+is never requested. Rejecting `pypi` after crates.io published leaves the
+crates out and no PyPI release or GitHub release; approving `pypi` in a
+re-run of that job completes the release.
+
+**6. Publish:** three jobs, one after another, each with only the permissions it needs, and
 each first re-checking the downloaded bundle against `SHA256SUMS`, so what
 is published is what was attested.
 1. **`publish-crates`** (environment `crates-io`): **crates.io** by [trusted publishing](https://crates.io/docs/trusted-publishing),
@@ -139,7 +171,7 @@ is published is what was attested.
    [trusted publishing](https://docs.pypi.org/trusted-publishers/), the
    eight wheels with PyPI attestations. No sdist.
 3. **`github-release`** (no environment, only `contents: write`), after both
-   succeeded: **the GitHub release** for the tag: the 16 artifacts, the 7
+   succeeded (so after PyPI, which follows crates.io): **the GitHub release** for the tag: the 16 artifacts, the 7
    crates, the 8 SBOMs, the 3 signed bundles and `SHA256SUMS` (35 assets),
    its notes taken from the body of `docs/release-draft-<version>.md`
    (everything after `**Body:**`). Marked latest; a version with a
@@ -170,16 +202,25 @@ attestations.
 sha256sum --check --ignore-missing SHA256SUMS       # Linux
 shasum -a 256 --check --ignore-missing SHA256SUMS   # macOS
 
-# Provenance: built by this repository's isolated build workflow (any
-# release asset, including the .crate files from 0.1.5)
-gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz \
+# Provenance: built by this repository's isolated build workflow, for the
+# release tag (any release asset, including the .crate files from 0.1.5)
+gh attestation verify praevis-thetadata-cli-0.1.5-x86_64-unknown-linux-musl.tar.gz \
   --repo Praevis-Quant/praevis-thetadata \
-  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml \
+  --source-ref refs/tags/v0.1.5
 
 # The SBOM attestation of an executable or a wheel
-gh attestation verify praevis-thetadata-cli-0.1.3-x86_64-unknown-linux-musl.tar.gz \
-  --repo Praevis-Quant/praevis-thetadata --predicate-type https://cyclonedx.org/bom
+gh attestation verify praevis-thetadata-cli-0.1.5-x86_64-unknown-linux-musl.tar.gz \
+  --repo Praevis-Quant/praevis-thetadata --predicate-type https://cyclonedx.org/bom \
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml \
+  --source-ref refs/tags/v0.1.5
 ```
+
+**Always pass `--source-ref refs/tags/v<version>`.** Dry runs attest too
+(they test the attestation steps), from a branch. Because the crates are
+reproducible, a dry run on the tagged commit attests the same `.crate`
+digests as the release. Those attestations are genuine, but they are not the
+release's. `--source-ref` accepts only an attestation made by the tag's run.
 
 **A crate as crates.io serves it** (from `0.1.5`): the file Cargo downloads
 is the attested one, so its provenance verifies directly.
@@ -188,7 +229,8 @@ is the attested one, so its provenance verifies directly.
 curl -sSfLO https://static.crates.io/crates/praevis-thetadata-core/praevis-thetadata-core-0.1.5.crate
 gh attestation verify praevis-thetadata-core-0.1.5.crate \
   --repo Praevis-Quant/praevis-thetadata \
-  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml \
+  --source-ref refs/tags/v0.1.5
 ```
 
 **Offline** (an enclave with no network): the signed bundles are release
@@ -206,12 +248,13 @@ gh attestation verify praevis-thetadata-cli-0.1.5-x86_64-unknown-linux-musl.tar.
   --bundle praevis-thetadata-0.1.5.intoto.jsonl \
   --custom-trusted-root trusted_root.jsonl \
   --repo Praevis-Quant/praevis-thetadata \
-  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml \
+  --source-ref refs/tags/v0.1.5
 ```
 
 `gh attestation verify --bundle` checks the signature, the certificate
 chain to the trusted root, the transparency-log inclusion recorded in the
-bundle and the workflow identity, without contacting any service. The
+bundle, the workflow identity and the tag, without contacting any service. The
 trusted root changes rarely; refresh it with each transfer.
 
 On PyPI each file shows its attestation (the release workflow as publisher);
@@ -238,13 +281,12 @@ through trusted publishing.
     or compare their unpacked contents), fix it on `main`, and release a
     new version. The tag is not moved.
   - **Before publishing** (the check before wave 1 fails): nothing is on
-    crates.io. Reject or cancel the `pypi` deployment if it is still
-    waiting; if PyPI already published, that version's wheels stay, and the
-    release continues as a new version as above.
+    crates.io, and `pypi` is never requested, so nothing is published
+    anywhere. Continue with a new version as above.
   - **After publishing** (a downloaded crate differs): that crate and the
     ones before it are on crates.io and **cannot be replaced**; the job
-    stops, so the GitHub release is not created, and nobody creates it by
-    hand. Compare the served `.crate` with the attested one. If only the
+    stops, so PyPI is never requested and the GitHub release is not
+    created, and nobody publishes either by hand. Compare the served `.crate` with the attested one. If only the
     archive differs and the sources are the same, the published version is
     sound but has no matching provenance: the publication record says so,
     and the next version restores it. If the sources differ, yank the
@@ -307,10 +349,10 @@ is.
 | Job | Permissions | Environment |
 | --- | --- | --- |
 | `check` | `contents: read`, `actions: read` | — |
-| `cli`, `wheels`, `sbom` (in `build-release.yml`) | `contents: read` | — |
+| `cli`, `wheels`, `sbom`, `crates`, `crates-reproducible` (in `build-release.yml`) | `contents: read` | — |
 | `collect` (in `build-release.yml`; the calling `build` job grants these) | `contents: read`, `id-token: write`, `attestations: write` | — |
-| `publish-crates` | `contents: read`, `id-token: write` | `crates-io` (required reviewer: the user; `v*` tags only) |
-| `publish-pypi` | `contents: read`, `id-token: write` | `pypi` (required reviewer: the user; `v*` tags only) |
+| `publish-crates` | `contents: read`, `id-token: write` | `crates-io` (required reviewer: the user; `v*` tags only; no admin bypass) |
+| `publish-pypi` (after `publish-crates`) | `contents: read`, `id-token: write` | `pypi` (required reviewer: the user; `v*` tags only; no admin bypass) |
 | `github-release` | `contents: write` | — |
 
 Every action is pinned by full commit SHA. crates.io (all seven crates) and

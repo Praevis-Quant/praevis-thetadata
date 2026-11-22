@@ -91,7 +91,8 @@ cargo install praevis-thetadata-cli --locked    # or download an executable belo
 ```text
 sha256sum --check --ignore-missing SHA256SUMS
 gh attestation verify <file> --repo Praevis-Quant/praevis-thetadata \
-  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
+  --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml \
+  --source-ref refs/tags/v0.1.5
 ```
 
 The same command verifies a crate downloaded from crates.io

@@ -1,7 +1,7 @@
 //! Typed requests for every RPC in the protocol descriptor (P1 design §3).
 //!
 //! [`generated`] is produced by `tools/generate_endpoints.py` from the pinned
-//! vendor 1.0.17 inventory (`docs/research/python-1.0.17-inventory.json`) and
+//! vendor 1.0.18 inventory (`docs/research/python-1.0.18-inventory.json`) and
 //! is checked in CI. **Do not edit it by hand.**
 //!
 //! Each request reproduces the vendor Python wrapper's semantics exactly:

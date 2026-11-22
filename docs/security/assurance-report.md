@@ -24,7 +24,9 @@ Terminal).
   library are the only `unsafe` code in what is shipped, and every crate
   forbids new unsafe code; CI enforces it.
 - **Supply chain:** every release artifact is built in an isolated GitHub
-  Actions workflow from a reviewed commit on `main`, with a signed SLSA v1.0
+  Actions workflow from a commit on `main`, merged by pull request after 17
+  required checks passed (no approving review is required: a
+  single-maintainer project), with a signed SLSA v1.0
   Build Level 3 provenance attestation, a CycloneDX SBOM and a SHA-256
   checksum. From `0.1.5` that includes the crates: **every published
   artifact has verifiable provenance**, and the `.crate` file crates.io
@@ -140,14 +142,16 @@ system's resolver, and on Linux, when the optional session store is used,
 | **Reproducible, verified crates** | In place from `0.1.5` | The seven `.crate` files are packaged in the isolated build and again on a second runner and architecture, and must be byte-identical. Publishing packages them a third time and must match before anything is uploaded. Then each crate is downloaded back from crates.io and must equal the attested file, or the release stops before the GitHub release ([releasing](../releasing.md)) |
 | **CycloneDX SBOMs** | In place from `0.1.3` | The full Rust dependency graph of each crate, the executables and the wheels, attested to the artifacts they describe. Each wheel also carries its own SBOM inside it (`.dist-info/sboms/`, written by maturin), so it travels with the wheel |
 | **SHA-256 checksums** (`SHA256SUMS`) | In place from `0.1.3` | Integrity of every file after transfer |
-| **Trusted publishing** to crates.io and PyPI | In place from `0.1.3` | Publication only from `trusted-publishing.yml`, through OIDC, after the maintainer approves the `crates-io` and `pypi` environments. **No long-lived registry tokens exist**; crates.io refuses token publishing for these crates. PyPI files carry PyPI attestations |
-| **Release gate** | In place | A tag must match the version, be on `main`, with CI green; `v*` tags can be created only by repository admins |
+| **Trusted publishing** to crates.io and PyPI | In place from `0.1.3` | Publication only from `trusted-publishing.yml`, through OIDC, after the maintainer approves the `crates-io` environment and then (only once crates.io succeeded) the `pypi` environment. Both environments admit only `v*` tags, and administrators cannot bypass them (`can_admins_bypass: false`). **No long-lived registry tokens exist**; crates.io refuses token publishing for these crates. PyPI files carry PyPI attestations |
+| **Release gate** | In place | A tag must match the version, be on `main`, with CI green |
+| **Release tags** | In place | Ruleset "release tags creation" (id 27825772): only the repository admin role can create a `v*` tag. Ruleset "release tags immutable" (id 27324055): no one, admins included, can delete, move or force-update one (no bypass actors) |
 | **Locked dependencies** (`Cargo.lock`; hash-pinned Python build requirements) | In place | Builds use exactly the reviewed versions (`--locked`) |
 | **cargo-deny** | In place | RustSec advisories (vulnerable, unsound, unmaintained, yanked) against every crate in the graph, direct or transitive, on each of the eight released platforms; licences (permissive allow-list) and sources (crates.io only) fail CI; weekly as well |
 | **Advisories fixed** | In place | Nine RustSec advisories found by the first cargo-deny run (rustls, rustls-webpki, webpki-roots, tokio, pulldown-cmark) were fixed before `0.1.3` |
 | **Pinned GitHub Actions** | In place | Every action is pinned by full commit SHA; zizmor checks for unpinned, impostor or vulnerable actions |
 | **Dependabot** | In place | Weekly grouped update proposals (7-day cooldown) and immediate security updates |
-| **Branch protection** | In place | Pull requests required, required checks, linear history, no force-push or deletion, no bypass |
+| **Branch protection** | In place | Ruleset "main protection" (id 27326370): pull requests required, 17 required checks, linear history, no force-push or deletion, no bypass actors. **0 required approving reviews** |
+| **Separation of duties** | **Process, not a technical control** | The development agents work under the maintainer's own GitHub account (the maintainer's decision; no bot identity). GitHub enforces that the account approves each publishing environment and that release tags cannot be moved, but it cannot tell the agents' actions from the maintainer's. That agents never tag, publish or approve rests on process: the written rules ([AGENTS.md](../../AGENTS.md), [releasing](../releasing.md)) and the maintainer's review of each run |
 
 ## 6. Code assurance
 
@@ -222,14 +226,16 @@ project**:
      --bundle praevis-thetadata-<version>.intoto.jsonl \
      --custom-trusted-root trusted_root.jsonl \
      --repo Praevis-Quant/praevis-thetadata \
-     --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml
+     --signer-workflow Praevis-Quant/praevis-thetadata/.github/workflows/build-release.yml \
+     --source-ref refs/tags/v<version>
    ```
 
    This checks the signature, the certificate chain to the trusted root,
    the transparency-log inclusion recorded in the bundle, the source
-   repository and the build workflow.
-3. **SBOM attestation** (optional): the same command with the
-   `*.sbom.sigstore.jsonl` bundle and
+   repository, the build workflow and the release tag. Dry runs also
+   attest, from a branch; `--source-ref` accepts only the tag's run.
+3. **SBOM attestation** (optional): the same command (with
+   `--source-ref`) with the `*.sbom.sigstore.jsonl` bundle and
    `--predicate-type https://cyclonedx.org/bom`.
 4. **Install:**
    - **CLI:** extract the archive; it holds one executable and its licence
@@ -280,6 +286,11 @@ Rust).
   reproduces each `.crate` byte for byte, checked in every release run and
   independently for `0.1.4` (all seven crates on crates.io). Making builds reproducible is
   [planned](../ROADMAP.md#reproducible-release-builds-assurance-after-013).
+- **No technical separation between the agents and the maintainer.** The
+  agents act under the maintainer's GitHub account, so the environment
+  approvals and the admin-only tag creation prove that the account acted,
+  not which of them did. No approving code review is required for merges
+  either (0 approvals): changes are gated by the 17 required checks.
 - **GitHub releases are not immutable.** A published release's assets
   could be replaced by an account with write access to releases; the
   checksums and provenance would expose a replaced file, but nothing
