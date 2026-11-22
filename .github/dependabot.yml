@@ -33,9 +33,10 @@ updates:
     ignore:
       - dependency-name: "praevis-thetadata-*"
 
-  # The Python package's hash-pinned build and test requirements, compiled by
-  # pip-compile (requirements-test.txt; requirements-matrix-<python>.txt, one
-  # per Python version, each recompiled with the Python its header names).
+  # The Python package's hash-pinned build requirements (requirements-test.txt,
+  # pip-compile on Python 3.12). Dependabot recompiles every lock in a
+  # directory with one Python, the one the first pip-compile header there
+  # names, so each Python's test lock has its own directory below.
   - package-ecosystem: pip
     directory: /crates/praevis-thetadata-py
     schedule:
@@ -45,6 +46,23 @@ updates:
       default-days: 7
     groups:
       python-package:
+        patterns: ["*"]
+
+  # The version matrix's test locks, one directory per Python version, each
+  # recompiled with that version.
+  - package-ecosystem: pip
+    directories:
+      - /crates/praevis-thetadata-py/requirements-matrix/3.10
+      - /crates/praevis-thetadata-py/requirements-matrix/3.11
+      - /crates/praevis-thetadata-py/requirements-matrix/3.12
+      - /crates/praevis-thetadata-py/requirements-matrix/3.13
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      python-matrix:
         patterns: ["*"]
 
   # CI tooling: requirements.in compiled by pip-compile into the hash-pinned

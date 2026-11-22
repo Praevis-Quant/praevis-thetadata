@@ -22,9 +22,11 @@ version = 2
 yanked = "deny"
 # Unmaintained and unsound advisories against every crate in the graph, not
 # only our direct dependencies (cargo-deny's default, "workspace"). The
-# default let RUSTSEC-2026-0486 (rustix 1.1.5, unsound) and RUSTSEC-2026-0370
-# to -0372 (zbus's crates, unmaintained) through, because both are
-# transitive; chrono was caught only because it is a direct dependency.
+# default let RUSTSEC-2026-0486 (rustix 1.1.5, unsound) through, because rustix
+# is transitive; chrono was caught only because it is a direct dependency.
+# (RUSTSEC-2026-0370 to -0372, against zbus's crates, were never visible to
+# cargo-deny under any scope: those crates were only listed in Cargo.lock,
+# never in the resolved graph. Scorecard reads Cargo.lock and saw them.)
 unmaintained = "all"
 unsound = "all"
 # Accepted advisories. Each is time-boxed: its reason must end with

@@ -1,0 +1,14 @@
+# Test dependencies of the Python package for the CI version matrix
+# (Python 3.10-3.13): the wheel is built once per OS by the "Python package"
+# job, so maturin is not needed here. Never the vendor package.
+#
+# One directory per Python version: the versions that resolve differ (numpy,
+# pandas and pyarrow drop Python 3.10 and 3.11), and Dependabot recompiles all
+# the locks in a directory with the single Python named by the first
+# pip-compile header it finds there. Compile on Python 3.12, in this directory:
+#   pip-compile --generate-hashes --strip-extras --output-file=requirements.txt requirements.in
+# The four requirements.in files are identical apart from this version; change
+# them together.
+pyarrow>=14
+polars>=1.0
+pandas>=2.2

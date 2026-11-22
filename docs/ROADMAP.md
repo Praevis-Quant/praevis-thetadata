@@ -430,6 +430,37 @@ The rules for the track:
 - Terminal support does not bypass subscription restrictions or imply
   complete Python parity.
 
+## 0.1.6: findings from the 0.1.5 review (2026-11-22)
+
+From the repository review the user approved on 2026-11-22. F1-F4 and F7
+are fixed for `0.1.5` (#232); the rest are planned for `0.1.6`, one line
+each: severity, where, fix.
+
+**Must fix (not blocking 0.1.5):**
+- **F5, medium:** stream `close()` and drop hang forever when the queue is full and the socket ends (`crates/praevis-thetadata-stream/src/lib.rs:520,528` with `:471`; the reader blocks sending `Disconnected` while shutdown joins it). Fix: send that event without blocking, and check the stop flag.
+- **F6, medium:** the SBOMs list components not in the artifacts: `openssl`/`openssl-sys` in the CLI, auth, client and wheel SBOMs; `keyring`/`libdbus-sys` in the wheel and client SBOMs (`.github/workflows/build-release.yml:244`, `docs/security/assurance-report.md:141,163`). Fix: SBOMs from the real build graph, or state the limit in the report.
+- **F8, low:** a job's timeout does not cover its hidden list-strikes request (`crates/praevis-thetadata-client/src/job.rs:135`; a planned `option_history_quote` with a 0.3 s timeout blocks 1.51 s). Fix: pass the caller's timeout and idle timeout to that request.
+- **F9, low:** Parquet sink file handling (`crates/praevis-thetadata-arrow/src/parquet_sink.rs:132-146, 286-289`): `overwrite=false` still replaces a file that appears meanwhile, two sinks on one target share `<name>.partial`, and a planted symlink there is followed. Fix: a unique temp name opened with `create_new`, and a no-replace rename.
+- **F10, low:** an invalid `--profile` or `--auth-url` exits 1, not the documented 2 (`apps/praevis-thetadata-cli/src/main.rs:137, 286-291`; README, AUTH-L3-013). Fix: map both to the usage-error exit, as `--save` with `status` is.
+- **F11, low:** a huge Python timeout (`timeout=1e20`) raises `PanicException`, which `except Exception` does not catch (`crates/praevis-thetadata-py/src/lib.rs:122`). Fix: `Duration::try_from_secs_f64`, as the constructor does.
+- **F12, low:** claims stronger than the evidence (`docs/security/assurance-report.md`, `tools/check_repository.py:186-196`): no fuzz target for the legacy table decoder (`client/src/decode.rs`) or the gRPC framing parser, and the weekly fuzz run has never run (all 37 runs were pull requests); the unsafe-code check reads only the crate-root attribute; 15 code-scanning alerts are untriaged (two CodeQL "critical", judged false positives). Fix: add the two fuzz targets, count `unsafe` blocks in the check, dismiss or fix the alerts.
+
+**Found while fixing (agent, 2026-11-22):**
+- **Low:** the CLI's credential-order comment names vendor 1.0.12-1.0.17 (`apps/praevis-thetadata-cli/src/main.rs:83`, ADR-0020 / AUTH-L3-025). Fix: check 1.0.18's credential order against the research, and update the comment (or the code, with a decision, if it changed).
+- **Low:** the client README says "Windows and Linux are tested in CI" (`crates/praevis-thetadata-client/README.md:130`); a macOS job runs too. Fix: say what each platform's CI job covers.
+
+**Nice to have:**
+- **Scorecard Vulnerabilities (9 of 10):** an `osv-scanner.toml` ignoring the accepted chrono advisory beside each of the three lockfiles gives 10 (the root alone does not); time-box it like `deny.toml`. Signed-Releases reaches about 2 after `0.1.5` (five-release average) and rises with each release.
+- **`deny.toml` targets:** the eight-target list (asked for in #232) narrows what cargo-deny checks rather than widening it; it passes today without it. Decide whether to keep it. (The comment wrongly said cargo-deny had seen the zbus crates; fixed in #232.)
+- **`tools/release.py` (`cargo publish`):** dependency build scripts run with the registry token in the environment; `--no-verify` there is safe because the build already verified the same bytes.
+- **`tools/release.py` (`index_checksum`):** the index checksum is read once; a slow index would fail a release mid-way (recoverable by re-running the job). Fix: retry it like the download.
+- **Python `BatchIterator`:** shared by two threads, the second got `StopIteration` with 0 of 30 rows delivered. Fix: document it as not shareable, or make it so.
+- **`ThetaClient::query_info()`:** generated request types print the session ID in `Debug`. Fix: redact it.
+- **Settings:** immutable releases are off (planned); the organisation does not require 2FA.
+- **Upstream monitor before tagging:** `0.1.4` was tagged about 7 hours after the scheduled monitor went red, and the gate does not check it. Fix: make the gate (or the checklist) require a green monitor.
+- **Report nits:** the login is HTTP/1.1 only; "no temporary files" overlooks `.partial`.
+- **Done in #232:** the permissions table lists the two crate jobs. Dependabot recompiles each version-matrix lock with its own Python: checked in its source (one Python per directory, from the first pip-compile header), so each lock now has its own directory.
+
 ## Deferred work
 
 **Hardening (proposed `0.1.0-alpha.3`).** Seven items were deferred from
