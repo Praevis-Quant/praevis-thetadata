@@ -11,10 +11,10 @@ cd "$SRC/praevis-thetadata/fuzz"
 # arithmetic mistakes into findings.
 cargo fuzz build -O --debug-assertions
 release=target/x86_64-unknown-linux-gnu/release
-for target in response_data zstd_payload eod_envelope terminal_event; do
+for target in response_data zstd_payload eod_envelope terminal_event legacy_table grpc_framing; do
   cp "$release/$target" "$OUT/"
 done
 "$release/seeds" /tmp/seeds
-for target in response_data zstd_payload eod_envelope terminal_event; do
+for target in response_data zstd_payload eod_envelope terminal_event legacy_table grpc_framing; do
   (cd "/tmp/seeds/$target" && zip -q -r "$OUT/${target}_seed_corpus.zip" .)
 done

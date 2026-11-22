@@ -136,6 +136,32 @@ class UnsafeAttributeTests(unittest.TestCase):
         self.assertEqual(len(audit_unsafe(files.__getitem__, set(files))), 2)
 
 
+class UnsafeSiteTests(unittest.TestCase):
+    def test_only_the_audited_unsafe_sites_are_allowed(self):
+        from check_repository import UNSAFE_SITES, audit_unsafe_sites
+        audited = "#[allow(unsafe_code)] // audited\nfn f() { match unsafe { g() } {} }\n"
+        files = {path: audited for path in UNSAFE_SITES}
+        files["crates/a/src/lib.rs"] = "// unsafe { } in a comment does not count\nfn ok() {}\n"
+        self.assertEqual(audit_unsafe_sites(files.__getitem__, set(files)), [])
+        # 0.1.5 review F12: a second allow in an audited (deny) crate fails.
+        files["crates/praevis-thetadata-client/src/other.rs"] = "#[allow(unsafe_code)]\nunsafe fn h() {}\n"
+        errors = audit_unsafe_sites(files.__getitem__, set(files))
+        self.assertEqual(len(errors), 1)
+        self.assertIn("other.rs", errors[0])
+        files.pop("crates/praevis-thetadata-client/src/other.rs")
+        files[next(iter(UNSAFE_SITES))] += "unsafe impl Send for X {}\n"
+        self.assertEqual(len(audit_unsafe_sites(files.__getitem__, set(files))), 1)
+
+    def test_the_repository_has_exactly_the_audited_sites(self):
+        import re
+        import subprocess
+        from check_repository import ROOT, audit_unsafe_sites
+        files = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True,
+                               check=True).stdout.splitlines()
+        shipped = {f for f in files if re.fullmatch(r"(crates|apps)/[^/]+/src/.+\.rs", f)}
+        self.assertEqual(audit_unsafe_sites(lambda p: (ROOT / p).read_text(encoding="utf-8"), shipped), [])
+
+
 class AdvisoryIgnoreTests(unittest.TestCase):
     def test_accepted_advisories_are_time_boxed(self):
         from check_repository import audit_advisory_ignores

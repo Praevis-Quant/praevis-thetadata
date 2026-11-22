@@ -210,6 +210,59 @@ impl http_body::Body for GuardedBody {
     }
 }
 
+/// Fuzzing (`--cfg fuzzing` only): run [`GuardedBody`] over transport chunks
+/// as tonic polls it, and check its invariants: tonic sees only empty
+/// frames, every parked message fits the limit, is allocated exactly once,
+/// and is taken before the next poll; the body ends after an error.
+#[cfg(fuzzing)]
+pub(crate) fn fuzz_body(chunks: Vec<Bytes>, limit: usize) {
+    use std::collections::VecDeque;
+    struct Chunks(VecDeque<Bytes>);
+    impl http_body::Body for Chunks {
+        type Data = Bytes;
+        type Error = Status;
+        fn poll_frame(
+            mut self: Pin<&mut Self>,
+            _: &mut Context<'_>,
+        ) -> Poll<Option<Result<Frame<Bytes>, Status>>> {
+            Poll::Ready(self.0.pop_front().map(|bytes| Ok(Frame::data(bytes))))
+        }
+    }
+    let parked = ParkedFrame::default();
+    let mut body = GuardedBody::new(
+        Body::new(Chunks(chunks.into())),
+        limit,
+        Failure::default(),
+        parked.clone(),
+    );
+    let mut cx = Context::from_waker(std::task::Waker::noop());
+    loop {
+        match http_body::Body::poll_frame(Pin::new(&mut body), &mut cx) {
+            Poll::Ready(Some(Ok(frame))) => {
+                if let Ok(data) = frame.into_data() {
+                    assert_eq!(&data[..], &EMPTY_FRAME, "tonic sees only empty frames");
+                    let message = parked.take().expect("one parked message per frame");
+                    assert!(
+                        message.len() <= limit,
+                        "a message over the limit was parked"
+                    );
+                    assert_eq!(message.capacity(), message.len(), "one exact allocation");
+                }
+            }
+            Poll::Ready(Some(Err(_))) => {
+                let after = http_body::Body::poll_frame(Pin::new(&mut body), &mut cx);
+                assert!(
+                    matches!(after, Poll::Ready(None)),
+                    "the body ends after an error"
+                );
+                return;
+            }
+            Poll::Ready(None) => return,
+            Poll::Pending => unreachable!("the chunks are always ready"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

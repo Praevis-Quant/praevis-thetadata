@@ -75,6 +75,15 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   caught by `except Exception`. The per-call options now convert as the
   constructor does, and refuse a value that rounds to zero.
 
+- **The assurance claims match the evidence** (0.1.5 review F12):
+  - two new fuzz targets, `legacy_table` (the legacy table decoder) and
+    `grpc_framing` (the gRPC length-prefix framing guard, in fuzzer-chosen
+    transport chunks, with its invariants asserted); they had none;
+  - the repository check now counts every unsafe site in shipped source and
+    allows exactly the two audited ones; it only read the crate-root
+    attributes before;
+  - the report records the weekly fuzz run's first run (2026-11-22).
+
 ### Release
 
 - **The release pipeline follows the organisation's release standard**

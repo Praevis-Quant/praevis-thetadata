@@ -11,6 +11,8 @@ The decoders that read bytes from outside the process are fuzzed with
 | `zstd_payload` | Arbitrary bytes as a zstd-compressed table, with a fuzzed declared size | zstd frame handling (window limit, declared size, truncation) and whatever it decompresses to |
 | `eod_envelope` | Arbitrary bytes as a stock EOD envelope | the client's own bounded envelope parser and its table and numeric EOD decoders |
 | `terminal_event` | Arbitrary UTF-8 as a Theta Terminal WebSocket event | the stream crate's event parser |
+| `legacy_table` | Arbitrary bytes as a `ResponseData` envelope (from `0.1.6`) | the client's legacy table decoder (`decode.rs`): protobuf, zstd within the batch limit, the table |
+| `grpc_framing` | Arbitrary bytes as a gRPC response body, cut into transport chunks of 1 to 16 bytes as the first byte chooses (from `0.1.6`) | the client's length-prefix framing guard (`framing.rs`), with its invariants asserted: tonic sees only empty frames, every message fits the limit, is allocated exactly once and is taken before the next poll, and the body ends after an error |
 
 **Every case must end in `Ok` within the limits or a clean error.** A panic,
 an out-of-bounds access, a leak or a memory blow-up (the fuzzers run with
@@ -19,7 +21,8 @@ small decoder limits and a 2 GiB RSS cap) is a finding.
 **When it runs:**
 - **Pull requests:** about five minutes on the targets the change affects
   (ClusterFuzzLite's code-change mode), with AddressSanitizer.
-- **Weekly:** an hour across every target, with AddressSanitizer.
+- **Weekly:** an hour across every target, with AddressSanitizer (Sundays;
+  the first scheduled run was on 2026-11-22, and passed).
 
 **What is instrumented:** all Rust code, with AddressSanitizer, coverage,
 debug assertions and integer-overflow checks.

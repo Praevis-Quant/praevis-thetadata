@@ -56,6 +56,31 @@ pub mod fuzzing {
             let _ = bounded::decode(response, &limits, None, false);
         }
     }
+
+    /// The legacy table decoder (`decode.rs`) on an untrusted response
+    /// envelope: prost's `ResponseData`, then optional zstd and the table,
+    /// under a small batch limit.
+    pub fn legacy_table(bytes: &[u8]) {
+        use prost::Message;
+        if let Ok(response) = praevis_thetadata_proto::endpoints::ResponseData::decode(bytes) {
+            let _ = crate::decode::decode(response, 1 << 20);
+        }
+    }
+
+    /// The gRPC length-prefix framing guard (`framing.rs`) on untrusted
+    /// bytes, split into transport chunks as the first byte chooses (1 to 16
+    /// bytes each), with a 4 KiB message limit.
+    pub fn grpc_framing(bytes: &[u8]) {
+        let Some((&first, data)) = bytes.split_first() else {
+            return;
+        };
+        let size = usize::from(first % 16) + 1;
+        let chunks = data
+            .chunks(size)
+            .map(tonic::codegen::Bytes::copy_from_slice)
+            .collect();
+        crate::framing::fuzz_body(chunks, 4096);
+    }
 }
 mod job;
 #[cfg(feature = "parquet")]
