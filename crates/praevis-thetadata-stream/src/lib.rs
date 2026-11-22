@@ -517,7 +517,7 @@ fn read(
                 continue;
             }
             Err(_) => {
-                let _ = sender.send(disconnected());
+                deliver(&sender, disconnected(), stop);
                 return;
             }
         };
@@ -525,7 +525,7 @@ fn read(
         let Message::Text(text) = frame else {
             // Pings are answered by tungstenite; nothing else is expected.
             if matches!(frame, Message::Close(_)) {
-                let _ = sender.send(disconnected());
+                deliver(&sender, disconnected(), stop);
                 return;
             }
             continue;
@@ -565,9 +565,31 @@ fn read(
                 Err(TrySendError::Disconnected(_)) => return,
             },
             Overflow::Block => {
-                if sender.send(event).is_err() {
+                if !deliver(&sender, event, stop) {
                     return;
                 }
+            }
+        }
+    }
+}
+
+/// Queue `event`, waiting while the queue is full, but only until a close or
+/// drop asks the reader to stop: a blocking send there would wait for a
+/// caller who is itself waiting for this thread to finish (0.1.5 review F5).
+/// Returns whether the event was queued.
+fn deliver(sender: &SyncSender<Event>, mut event: Event, stop: &AtomicBool) -> bool {
+    let mut pause = Duration::from_micros(50);
+    loop {
+        match sender.try_send(event) {
+            Ok(()) => return true,
+            Err(TrySendError::Disconnected(_)) => return false,
+            Err(TrySendError::Full(back)) => {
+                if stop.load(Ordering::Relaxed) {
+                    return false;
+                }
+                event = back;
+                std::thread::sleep(pause);
+                pause = (pause * 2).min(Duration::from_millis(1));
             }
         }
     }
