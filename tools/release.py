@@ -316,6 +316,45 @@ def compare_crates(args: argparse.Namespace) -> int:
     return 0
 
 
+# How each SBOM's component list is limited to what the artifact is built
+# from (recorded in the SBOM's metadata).
+GRAPH_METHOD = "cargo tree --locked -p <package> -e normal --target all"
+
+
+def build_graph(package: str) -> set[tuple[str, str]]:
+    """(name, version) of every crate in the package's own build, for every
+    target: cargo tree resolves features for this package alone, as building
+    it does, unlike the workspace-wide cargo metadata that cargo-cyclonedx
+    reads (where the CLI's native-store would reach every crate)."""
+    out = subprocess.run(["cargo", "tree", "--locked", "-q", "-p", package, "-e", "normal", "--target", "all",
+                          "--prefix", "none", "--format", "{p}"], cwd=ROOT, check=True, capture_output=True,
+                         text=True).stdout
+    graph = set()
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[1].startswith("v"):
+            graph.add((parts[0], parts[1][1:]))
+    return graph
+
+
+def limit_sbom(document: dict, graph: set[tuple[str, str]]) -> list[str]:
+    """Remove the components (and their dependency entries) that are not in
+    ``graph``; returns the removed ``name@version``s, sorted. Pure."""
+    kept, removed = [], []
+    for component in document.get("components", []):
+        key = (component["name"], component.get("version", ""))
+        (kept if key in graph else removed).append(component)
+    gone = {c["bom-ref"] for c in removed}
+    document["components"] = kept
+    document["dependencies"] = [
+        {**d, "dependsOn": [r for r in d.get("dependsOn", []) if r not in gone]}
+        for d in document.get("dependencies", []) if d["ref"] not in gone
+    ]
+    properties = document["metadata"].setdefault("properties", [])
+    properties.append({"name": "praevis-thetadata:sbom:graph", "value": GRAPH_METHOD})
+    return sorted(f"{c['name']}@{c.get('version', '')}" for c in removed)
+
+
 def collect_sboms(args: argparse.Namespace) -> int:
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -328,6 +367,14 @@ def collect_sboms(args: argparse.Namespace) -> int:
         component = document["metadata"]["component"]
         if component["name"] != package or component.get("version") != args.version:
             sys.exit(f"{source}: describes {component['name']} {component.get('version')}")
+        graph = build_graph(package)
+        removed = limit_sbom(document, graph)
+        listed = {(c["name"], c.get("version", "")) for c in document["components"]}
+        missing = sorted(f"{n}@{v}" for n, v in graph - listed - {(package, args.version)})
+        if missing:
+            sys.exit(f"{source}: built crates missing from the SBOM: {missing}")
+        print(f"{name}: {len(document['components'])} components;"
+              f" removed {len(removed)} not in its build: {', '.join(removed) or 'none'}")
         (out / sbom_name(name, args.version)).write_text(json.dumps(document, indent=1), encoding="utf-8")
     print(f"{len(SBOM_CRATES)} SBOMs")
     return 0

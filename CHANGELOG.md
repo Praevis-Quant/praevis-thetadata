@@ -36,6 +36,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   stop. Both overflow modes keep their behaviour otherwise; `Block` still
   delivers every event while the stream is open.
 
+- **The release SBOMs list exactly what each artifact is built from**
+  (0.1.5 review F6). They were made from the workspace's unified
+  dependency graph, so the auth, client and wheel SBOMs listed `keyring`
+  and D-Bus, and those and the CLI's listed `openssl`, none of which those
+  artifacts contain. Each SBOM is now limited to its package's own build
+  (`cargo tree -p <package> -e normal --target all`), and the release
+  fails if a built crate is missing from it.
+
 ### Release
 
 - **The release pipeline follows the organisation's release standard**
