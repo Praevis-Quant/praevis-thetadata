@@ -288,6 +288,16 @@ fn strike_fixture(
     empty: &'static str,
     rows: i64,
 ) -> (Fixture, std::sync::Arc<std::sync::Mutex<Vec<String>>>) {
+    slow_strike_fixture(strikes, empty, rows, Duration::ZERO)
+}
+
+/// [`strike_fixture`], answering every request after `delay`.
+fn slow_strike_fixture(
+    strikes: &'static [i32],
+    empty: &'static str,
+    rows: i64,
+    delay: Duration,
+) -> (Fixture, std::sync::Arc<std::sync::Mutex<Vec<String>>>) {
     use praevis_thetadata_proto::beta_endpoints::OptionHistoryQuoteRequest;
     use prost::Message;
     let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
@@ -348,6 +358,7 @@ fn strike_fixture(
     });
     let fixture = Fixture::start(Script {
         other: Some(handler),
+        other_delay: delay,
         ..Default::default()
     });
     (fixture, seen)
@@ -397,6 +408,31 @@ async fn all_strike_fine_quotes_split_per_listed_strike_in_strike_order() {
     let default_interval =
         endpoints::OptionHistoryQuote::new("SPY", "2024-06-21").date(day("2024-06-14"));
     assert_eq!(client.job(&default_interval).await.unwrap().parts(), 3);
+}
+
+#[tokio::test]
+async fn a_job_s_timeouts_cover_its_strike_list_request() {
+    // 0.1.5 review F8: the list request a per-strike plan makes ran without
+    // the job's timeout, so a job with a 0.3 s timeout waited 1.5 s here.
+    let (fixture, seen) = slow_strike_fixture(&[54000, 54250], "", 1, Duration::from_millis(1_500));
+    let client = connect_pro(&fixture).await;
+    let request = endpoints::OptionHistoryQuote::new("SPY", day("2024-06-21"))
+        .date(day("2024-06-14"))
+        .interval("tick");
+    // (The idle timeout is passed too, but covers only the waits between
+    // messages once a request streams, not this wait for the first answer.)
+    let options = RequestOptions::default().with_timeout(Some(Duration::from_millis(300)));
+    let started = std::time::Instant::now();
+    let result = client.job_with(&request, options).await;
+    let waited = started.elapsed();
+    assert!(
+        matches!(result, Err(QueryError::Deadline)),
+        "{:?}",
+        result.err()
+    );
+    assert!(waited < Duration::from_secs(1), "{waited:?}");
+    // No quote request was sent: the plan stopped at the list request.
+    assert!(seen.lock().unwrap().is_empty());
 }
 
 #[tokio::test]

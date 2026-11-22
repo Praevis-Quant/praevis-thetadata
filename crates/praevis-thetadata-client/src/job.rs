@@ -121,18 +121,20 @@ fn strike_text(value: i128, scale: u32) -> String {
 
 impl ThetaClient {
     /// The strikes listed for `symbol` and `expiration`, ascending by value,
-    /// as request text. One `option_list_strikes` request. `None` if the
-    /// service lists none or the strikes are not decimals.
+    /// as request text. One `option_list_strikes` request, under the job's
+    /// own timeout and idle timeout (0.1.5 review F8). `None` if the service
+    /// lists none or the strikes are not decimals.
     async fn listed_strikes(
         &self,
         symbol: &str,
         expiration: NaiveDate,
+        options: &RequestOptions,
     ) -> Result<Option<Vec<String>>, QueryError> {
         use praevis_thetadata_arrow::arrow_array::Array;
         use praevis_thetadata_arrow::arrow_array::cast::AsArray;
         use praevis_thetadata_arrow::arrow_array::types::Decimal128Type;
         let batches = match self
-            .query(&OptionListStrikes::new(symbol, expiration))
+            .query_with(&OptionListStrikes::new(symbol, expiration), options.clone())
             .await
         {
             Ok(stream) => stream.collect().await,
@@ -173,7 +175,12 @@ impl ThetaClient {
     /// The parts of `request`: its date split, and for the all-strike fine
     /// quote shape each date part once per listed strike (one extra list
     /// request), in date then ascending strike order.
-    async fn job_parts<E>(&self, request: &E, concurrency: usize) -> Result<Vec<E>, QueryError>
+    async fn job_parts<E>(
+        &self,
+        request: &E,
+        concurrency: usize,
+        options: &RequestOptions,
+    ) -> Result<Vec<E>, QueryError>
     where
         E: Endpoint + Clone + Send + Sync + 'static,
     {
@@ -188,7 +195,10 @@ impl ThetaClient {
         let Some(expiration) = strike_split_expiration(quote).filter(|_| concurrency >= 2) else {
             return Ok(by_date);
         };
-        let Some(strikes) = self.listed_strikes(&quote.symbol, expiration).await? else {
+        let Some(strikes) = self
+            .listed_strikes(&quote.symbol, expiration, options)
+            .await?
+        else {
             return Ok(by_date);
         };
         let mut parts = Vec::with_capacity(by_date.len() * strikes.len());
@@ -251,7 +261,8 @@ impl ThetaClient {
     }
 
     /// [`ThetaClient::job`] with per-call options. Batching, the timeout (per
-    /// part, none unless set) and the idle timeout apply to every part.
+    /// part, none unless set) and the idle timeout apply to every part, and
+    /// the timeouts also to the one list request a per-strike plan makes.
     /// `concurrency` caps the parts running at once (1 to 64, default the
     /// tier's documented limit); the read-ahead window is that many times
     /// `READ_AHEAD`.
@@ -268,7 +279,7 @@ impl ThetaClient {
         let concurrency = options
             .concurrency
             .unwrap_or_else(|| self.tier().concurrency());
-        let parts: VecDeque<E> = self.job_parts(request, concurrency).await?.into();
+        let parts: VecDeque<E> = self.job_parts(request, concurrency, &options).await?.into();
         let active = Arc::new(AtomicUsize::new(0));
         let wake = Arc::new(Notify::new());
         let client = self.clone();

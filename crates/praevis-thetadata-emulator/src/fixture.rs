@@ -213,6 +213,8 @@ pub struct Script {
     /// arrival); empty delays every request.
     pub delay_requests: Vec<usize>,
     pub pause_before: Option<(usize, Duration)>,
+    /// Before answering any RPC handled by `other`.
+    pub other_delay: Duration,
 }
 
 /// Answers one request from `script`.
@@ -228,6 +230,9 @@ pub(crate) async fn serve(
         let Some(handler) = script.other.clone() else {
             return Err(Status::unimplemented("synthetic EOD fixture only"));
         };
+        if !script.other_delay.is_zero() {
+            tokio::time::sleep(script.other_delay).await;
+        }
         let messages = handler(rpc, request)?;
         return Ok(stream(
             messages.into_iter().map(Ok).collect(),
