@@ -949,6 +949,47 @@ mod tests {
         );
     }
     #[test]
+    fn a_frame_that_fits_the_output_chunk_needs_no_window() {
+        // libzstd decodes a frame that records its content size and fits the
+        // 64 KiB output chunk straight into that chunk, allocating no window,
+        // so the window limit does not apply to it (memory stays bounded by
+        // the chunk and the decompressed-bytes limit). Without a recorded
+        // size the same frame needs a window, and the limit refuses it.
+        let table = DataTable {
+            headers: vec!["text".into()],
+            data_table: vec![DataValueList {
+                values: vec![DataValue {
+                    data_type: Some(DataType::Text("SENTINEL".repeat(1024))),
+                }],
+            }],
+        };
+        let bytes = table.encode_to_vec();
+        assert!(bytes.len() > 1 << 10 && bytes.len() < 64 << 10);
+        let limits = DecodeLimits {
+            zstd_window_log: 10,
+            ..Default::default()
+        };
+        let frame = |content_size: bool| {
+            let mut encoder = zstd::stream::Encoder::new(Vec::new(), 1).unwrap();
+            encoder.include_contentsize(content_size).unwrap();
+            if content_size {
+                encoder
+                    .set_pledged_src_size(Some(bytes.len() as u64))
+                    .unwrap();
+            }
+            std::io::Write::write_all(&mut encoder, &bytes).unwrap();
+            let mut data = response(Vec::new(), true);
+            data.compressed_data = encoder.finish().unwrap();
+            data
+        };
+        let batch = decode(frame(true), &limits, None, false).unwrap();
+        assert_eq!(batch.rows().len(), 1);
+        assert_eq!(
+            decode(frame(false), &limits, None, false).unwrap_err(),
+            EodError::Resource("zstd window")
+        );
+    }
+    #[test]
     fn zstd_concatenation_skippable_frames_and_truncation_keep_decode_semantics() {
         let bytes = wire().encode_to_vec();
         let split = bytes.len() / 2;
