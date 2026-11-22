@@ -212,6 +212,7 @@ jobs:
     # only to write the release.
     name: GitHub release
     needs: [gate, publish, publish-pypi]
+    if: needs.gate.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:

@@ -390,23 +390,33 @@ def release_problems(release: dict, tag: str, title: str, body: str, files: dict
     return found
 
 
-def uploads_needed(release: dict, files: dict[str, tuple[int, str]]) -> tuple[list[str], list[str]]:
-    """(files to upload, conflicting assets) for a draft. An existing asset is
-    never replaced: one with the right size and digest is kept, any other is a
-    conflict the owner resolves (by deleting the draft). Pure."""
+def uploads_needed(release: dict, files: dict[str, tuple[int, str]]) -> tuple[list[str], list[int], list[str]]:
+    """(files to upload, asset ids to delete first, conflicting assets) for a
+    draft. A completed asset with the right size and digest is kept. One whose
+    upload never completed (state not "uploaded": an interrupted run) is
+    deleted and uploaded again; that happens only on a draft, which was never
+    public. A completed asset that differs is a conflict the owner resolves
+    (by deleting the draft). Pure."""
     assets = {a["name"]: a for a in release.get("assets", [])}
-    upload, conflicts = [], []
+    upload, stale, conflicts = [], [], []
     for name, (size, digest) in sorted(files.items()):
         asset = assets.get(name)
         if asset is None:
             upload.append(name)
-        elif asset.get("state") != "uploaded" or asset.get("size") != size or asset.get("digest") != f"sha256:{digest}":
+        elif asset.get("state") != "uploaded":
+            stale.append(asset["id"])
+            upload.append(name)
+        elif asset.get("size") != size or asset.get("digest") != f"sha256:{digest}":
             conflicts.append(name)
-    return upload, conflicts
+    return upload, stale, conflicts
+
+
+# The GitHub CLI; tests replace it with a fake (tools/fake_gh.py).
+GH: tuple[str, ...] = ("gh",)
 
 
 def gh(*args: str, input_path: pathlib.Path | None = None) -> dict | list:
-    command = ["gh", "api", *args] + (["--input", str(input_path)] if input_path else [])
+    command = [*GH, "api", *args] + (["--input", str(input_path)] if input_path else [])
     out = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True).stdout
     return json.loads(out) if out.strip() else {}
 
@@ -433,7 +443,11 @@ def github_release(args: argparse.Namespace) -> int:
     title, body = release_notes(version)
     directory = pathlib.Path(args.dir)
     files = {p.name: (p.stat().st_size, sha256(p)) for p in sorted(directory.iterdir()) if p.is_file()}
-    gh(f"repos/{repo}/git/ref/tags/{tag}")  # --verify-tag: the tag must already exist
+    try:  # --verify-tag: the tag must already exist
+        gh(f"repos/{repo}/git/ref/tags/{tag}")
+    except subprocess.CalledProcessError:
+        print(f"::error::tag {tag} does not exist; nothing was created", file=sys.stderr)
+        return 1
     prerelease = "-" in version
     release = find_release(repo, tag)
     if release is not None and not release.get("draft"):
@@ -455,11 +469,15 @@ def github_release(args: argparse.Namespace) -> int:
         for line in found:
             print(f"::error::draft {tag}: {line}", file=sys.stderr)
         return 1
-    upload, conflicts = uploads_needed(release, files)
+    upload, stale, conflicts = uploads_needed(release, files)
     if conflicts:
         print(f"::error::draft {tag} has assets that differ from the bundle: {conflicts}; delete the draft and re-run",
               file=sys.stderr)
         return 1
+    # Only a draft reaches this point; a published release returned above.
+    for asset_id in stale:
+        gh(f"repos/{repo}/releases/assets/{asset_id}", "-X", "DELETE")
+        print(f"deleted incomplete asset {asset_id}")
     for name in upload:
         gh(f"https://uploads.github.com/repos/{repo}/releases/{release['id']}/assets?name={name}",
            "-X", "POST", "-H", "Content-Type: application/octet-stream", input_path=directory / name)

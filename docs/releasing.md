@@ -49,12 +49,19 @@ control**.
 
 ## How a release runs
 
-**1. Tag.** The user tags the commit that passed the live check:
+**1. Tag.** The user tags the commit that passed the live check, with an
+**annotated** tag (`-a`):
 
 ```text
-git tag -a v0.1.3 <commit> -m "praevis-thetadata 0.1.3"
-git push origin v0.1.3
+git tag -a v<version> <commit> -m "praevis-thetadata <version>"
+git push origin v<version>
 ```
+
+A lightweight tag (`git tag v<version>` without `-a`) is refused by the gate,
+and because `v*` tags can never be moved or deleted (ruleset "release tags
+immutable"), it **uses up that version**: the release then needs the next
+version. Check with `git cat-file -t v<version>` (it must print `tag`)
+before pushing.
 
 **2. Gate** (`gate` job, "Release gate"). On a tag push, all of these must
 hold, or the run stops before a build:

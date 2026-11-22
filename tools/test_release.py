@@ -124,6 +124,96 @@ class ArtifactTests(unittest.TestCase):
             self.assertTrue(all(len(line.split("  ")[0]) == 64 for line in lines))
 
 
+class GitHubReleaseFlowTests(unittest.TestCase):
+    """github_release end to end, against tools/fake_gh.py: every gh api call
+    as the job makes it, on a fake that keeps drafts like GitHub and refuses
+    any change to a published release."""
+
+    def setUp(self):
+        import json
+        import os
+        import sys
+        from unittest import mock
+        self.tmp = tempfile.TemporaryDirectory()
+        root = pathlib.Path(self.tmp.name)
+        self.dist = root / "dist"
+        self.dist.mkdir()
+        for name, data in (("a.crate", b"crate"), ("b.whl", b"wheel"), ("SHA256SUMS", b"sums")):
+            (self.dist / name).write_bytes(data)
+        self.state = root / "state.json"
+        self.state.write_text(json.dumps({"tags": ["v0.1.5"], "releases": [], "next_id": 0, "calls": []}))
+        patches = [mock.patch.object(release, "GH", (sys.executable, str(release.ROOT / "tools" / "fake_gh.py"))),
+                   mock.patch.dict(os.environ, {"FAKE_GH_STATE": str(self.state)})]
+        for patch in patches:
+            patch.start()
+            self.addCleanup(patch.stop)
+        self.addCleanup(self.tmp.cleanup)
+
+    def run_release(self) -> int:
+        return release.main(["github-release", "--version", "0.1.5", "--dir", str(self.dist), "--repo", "o/r"])
+
+    def read(self) -> dict:
+        import json
+        return json.loads(self.state.read_text())
+
+    def write(self, state: dict) -> None:
+        import json
+        self.state.write_text(json.dumps(state))
+
+    def test_a_fresh_release_is_drafted_completed_checked_and_published(self):
+        self.assertEqual(self.run_release(), 0)
+        state = self.read()
+        [published] = state["releases"]
+        title, body = release.release_notes("0.1.5")
+        self.assertEqual((published["draft"], published["tag_name"], published["name"], published["body"]),
+                         (False, "v0.1.5", title, body))
+        self.assertEqual(sorted(a["name"] for a in published["assets"]), ["SHA256SUMS", "a.crate", "b.whl"])
+        methods = [method for method, _ in state["calls"]]
+        self.assertEqual(methods, ["GET", "GET", "POST", "POST", "POST", "POST", "GET", "PATCH", "GET"])
+        self.assertTrue(state["calls"][2][1].endswith("/releases"))  # created as a draft first
+        self.assertTrue(all("uploads" not in path or "assets?name=" in path for _, path in state["calls"]))
+
+    def test_a_re_run_after_publishing_changes_nothing(self):
+        self.assertEqual(self.run_release(), 0)
+        state = self.read()
+        state["calls"] = []
+        self.write(state)
+        self.assertEqual(self.run_release(), 0)
+        self.assertEqual({method for method, _ in self.read()["calls"]}, {"GET"})
+
+    def test_a_missing_tag_stops_before_anything_is_created(self):
+        state = self.read()
+        state["tags"] = []
+        self.write(state)
+        self.assertEqual(self.run_release(), 1)
+        self.assertEqual(self.read()["releases"], [])
+
+    def test_a_draft_with_an_interrupted_upload_is_completed(self):
+        title, body = release.release_notes("0.1.5")
+        state = self.read()
+        state["next_id"] = 10
+        state["releases"] = [{"id": 1, "tag_name": "v0.1.5", "name": title, "body": body, "draft": True,
+                              "prerelease": False,
+                              "assets": [{"id": 9, "name": "a.crate", "size": 2, "state": "starter",
+                                          "digest": None}]}]
+        self.write(state)
+        self.assertEqual(self.run_release(), 0)
+        state = self.read()
+        [published] = state["releases"]
+        self.assertFalse(published["draft"])
+        self.assertNotIn(9, [a["id"] for a in published["assets"]])
+        self.assertIn(["DELETE", "repos/o/r/releases/assets/9"], state["calls"])
+
+    def test_a_published_release_that_differs_is_reported_never_changed(self):
+        self.assertEqual(self.run_release(), 0)
+        (self.dist / "a.crate").write_bytes(b"different")
+        state = self.read()
+        state["calls"] = []
+        self.write(state)
+        self.assertEqual(self.run_release(), 1)
+        self.assertEqual({method for method, _ in self.read()["calls"]}, {"GET"})
+
+
 class PublishTests(unittest.TestCase):
     def test_the_waves_cover_the_seven_crates_in_dependency_order(self):
         order = [name for wave in sorted(release.WAVES) for name in release.WAVES[wave]]
@@ -260,9 +350,13 @@ class GitHubReleaseTests(unittest.TestCase):
     def test_a_draft_uploads_only_missing_files_and_never_replaces_one(self):
         draft = self.release(draft=True)
         draft["assets"] = draft["assets"][:1]
-        self.assertEqual(release.uploads_needed(draft, self.FILES), (["SHA256SUMS"], []))
+        draft["assets"][0]["id"] = 7
+        self.assertEqual(release.uploads_needed(draft, self.FILES), (["SHA256SUMS"], [], []))
+        draft["assets"][0]["state"] = "starter"  # an interrupted upload
+        self.assertEqual(release.uploads_needed(draft, self.FILES), (["SHA256SUMS", "a.crate"], [7], []))
+        draft["assets"][0]["state"] = "uploaded"
         draft["assets"][0]["size"] = 4
-        self.assertEqual(release.uploads_needed(draft, self.FILES), (["SHA256SUMS"], ["a.crate"]))
+        self.assertEqual(release.uploads_needed(draft, self.FILES), (["SHA256SUMS"], [], ["a.crate"]))
 
 
 if __name__ == "__main__":
