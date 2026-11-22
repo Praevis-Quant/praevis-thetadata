@@ -116,14 +116,23 @@ fn request_options(
     idle_timeout: Option<f64>,
     concurrency: Option<usize>,
 ) -> PyResult<RequestOptions> {
+    // try_from_secs_f64, as the constructor does: from_secs_f64 panics on a
+    // value too large for a Duration (1e20), and a panic is a PanicException,
+    // which `except Exception` does not catch (0.1.5 review F11). A value that
+    // rounds to zero nanoseconds is refused too.
     let seconds = |name: &str, value: Option<f64>| -> PyResult<Option<Duration>> {
-        match value {
-            None => Ok(None),
-            Some(v) if v.is_finite() && v > 0.0 => Ok(Some(Duration::from_secs_f64(v))),
-            Some(_) => Err(PyValueError::new_err(format!(
-                "{name}: expected a positive number of seconds"
-            ))),
-        }
+        value
+            .map(|v| {
+                Duration::try_from_secs_f64(v)
+                    .ok()
+                    .filter(|d| !d.is_zero())
+                    .ok_or_else(|| {
+                        PyValueError::new_err(format!(
+                            "{name}: expected a positive number of seconds"
+                        ))
+                    })
+            })
+            .transpose()
     };
     if concurrency.is_some_and(|c| !(1..=64).contains(&c)) {
         return Err(PyValueError::new_err("concurrency: expected 1 to 64"));

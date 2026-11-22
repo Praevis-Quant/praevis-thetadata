@@ -131,8 +131,11 @@ class RequestOptionTests(unittest.TestCase):
 
         self.assertEqual(_native._request_options(), (None, None, None))
         self.assertEqual(_native._request_options(2.5, 0.25, 3), (2.5, 0.25, 3))
+        # 1e20 and 1e300 do not fit a Duration: a ValueError, not a panic
+        # (0.1.5 review F11); 1e-12 rounds to zero nanoseconds.
         for bad in ({"timeout": 0}, {"timeout": -1.0}, {"idle_timeout": float("nan")},
-                    {"timeout": float("inf")}, {"concurrency": 0}, {"concurrency": 65}):
+                    {"timeout": float("inf")}, {"timeout": 1e20}, {"idle_timeout": 1e300},
+                    {"timeout": 1e-12}, {"concurrency": 0}, {"concurrency": 65}):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 _native._request_options(**bad)
 
