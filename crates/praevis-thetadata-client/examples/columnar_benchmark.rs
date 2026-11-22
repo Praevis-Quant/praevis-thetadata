@@ -298,7 +298,14 @@ fn workload(columns: usize, rows: usize, frames: Frames) -> Vec<ResponseData> {
                 original_size: bytes.len() as i32,
                 compressed_data: match frames {
                     Frames::Sized => zstd::bulk::compress(&bytes, 3).unwrap(),
-                    Frames::Streaming => zstd::stream::encode_all(bytes.as_slice(), 3).unwrap(),
+                    // Explicitly without a content size: zstd's encode_all
+                    // records it for small inputs from 0.14.4.
+                    Frames::Streaming => {
+                        let mut encoder = zstd::stream::Encoder::new(Vec::new(), 3).unwrap();
+                        encoder.include_contentsize(false).unwrap();
+                        std::io::Write::write_all(&mut encoder, &bytes).unwrap();
+                        encoder.finish().unwrap()
+                    }
                 },
                 compression_description: Some(CompressionDescription { algo: 1, level: 3 }),
                 flat_file_manifest: None,
