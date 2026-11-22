@@ -19,6 +19,14 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ## [Unreleased]
 
+### Dependencies
+
+- **url 2.5.9** (from 2.5.8, with form_urlencoded 1.2.3), fixing
+  RUSTSEC-2026-0592: `Url::origin()` overflowed the stack on deeply nested
+  `blob:` URLs. Nothing here calls it (neither this project's code nor
+  reqwest, the only path to `url`), so `0.1.5` is not affected; the
+  libraries' `url = "2"` requirement already admits 2.5.9 for users.
+
 ## [0.1.5] - pending
 
 **The vendor package's 1.0.18 becomes the compatibility baseline. Two
