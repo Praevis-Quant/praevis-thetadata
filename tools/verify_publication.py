@@ -199,9 +199,10 @@ def check_release(version: str, target: str, out: pathlib.Path, report: dict) ->
 
 
 def check_body(version: str, report: dict) -> None:
-    live = json.loads(run("gh", "api", f"repos/{REPO}/releases/tags/v{version}"))["body"]
-    draft = release.release_body(release.draft(version).read_text(encoding="utf-8"))
-    require(live.rstrip() == draft.rstrip(), "the release body differs from the committed draft")
+    live = json.loads(run("gh", "api", f"repos/{REPO}/releases/tags/v{version}"))
+    title, body = release.release_notes(version)
+    require(live["body"].rstrip() == body.rstrip(), "the release body differs from the committed notes")
+    require(live["name"] == title, f"the release title {live['name']!r} is not {title!r}")
     report["release_body_equals_draft"] = True
     print("release body equals the committed draft")
 

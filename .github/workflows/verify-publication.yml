@@ -22,6 +22,7 @@ on:
     paths:
       - .github/workflows/verify-publication.yml
       - tools/verify_publication.py
+      - tools/release.py
   workflow_dispatch:
     inputs:
       version:

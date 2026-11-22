@@ -23,8 +23,12 @@ The workspace uses Rust edition 2024, currently declares version
 
 **Publishing (user decision 2026-11-15):** releases are published **only**
 by [`.github/workflows/trusted-publishing.yml`](.github/workflows/trusted-publishing.yml), on a
-`v*` tag, after the user approves its `crates-io` and `pypi` environments
-([docs/releasing.md](docs/releasing.md)). crates.io and PyPI use trusted
+`v*` tag, after the user approves its `crates-io` and then its `pypi`
+environment ([docs/releasing.md](docs/releasing.md)). The pipeline follows
+the organisation's release standard,
+[Praevis-Quant/.github `docs/TRUSTED-PUBLISHING.md`](https://github.com/Praevis-Quant/.github/blob/main/docs/TRUSTED-PUBLISHING.md)
+(adopted 2026-11-22, binary variant): keep its job ids, names and rules, and
+record any deliberate difference there as a Praevis-Quant addition. crates.io and PyPI use trusted
 publishing; **no tokens are used**, and crates.io refuses token publishing
 for these crates. Agents:
 - **never publish:** no `cargo publish`, `twine`, `maturin publish` or any
@@ -34,8 +38,14 @@ for these crates. Agents:
   environment,** their reviewers, their deployment policies or the tag
   ruleset, and never name an environment in a workflow that does not exist
   (GitHub would create it unprotected);
-- prepare release PRs (version, CHANGELOG, release-notes draft) and, after
-  the user reports a release, the publication record.
+- prepare release PRs and, after the user reports a release, the
+  publication record. A release-prep PR bumps every version and **every
+  lockfile** naming the workspace crates (`Cargo.lock`, `fuzz/Cargo.lock`,
+  `tools/tls-providers/Cargo.lock`; a test checks them), **dates** the
+  CHANGELOG entry `## [X.Y.Z] - YYYY-MM-DD` with the planned release date
+  (a one-line PR moves it if the tag slips), and adds the release notes as
+  `docs/releases/vX.Y.Z.md`. The whole file is the GitHub release body, and
+  its first heading is the title. The gate refuses a tag without either.
 
 The Rust crate version and the tracked Python version
 are different concepts. The canonical upstream compatibility version is

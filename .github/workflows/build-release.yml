@@ -14,7 +14,7 @@ on:
         required: true
         type: string
       attest:
-        description: Sign build-provenance and SBOM attestations (not on pull requests).
+        description: Sign build-provenance and SBOM attestations (only on a v* tag push).
         required: true
         type: boolean
     outputs:

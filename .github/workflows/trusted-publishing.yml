@@ -1,9 +1,11 @@
 name: Trusted publishing
 
-# How a release runs: docs/releasing.md. A v* tag push builds, attests and
-# (after the user's approvals in the `crates-io` and `pypi` environments) publishes. A
-# manual run (workflow_dispatch) and pull requests that touch the release
-# tooling are dry runs: they build and test everything, and never publish.
+# How a release runs: docs/releasing.md; the organisation's release standard:
+# Praevis-Quant/.github docs/TRUSTED-PUBLISHING.md (binary variant). A v* tag
+# push builds, signs and (after the user's approvals in the `crates-io` and
+# then the `pypi` environment) publishes. A manual run (workflow_dispatch) and
+# pull requests that touch the release tooling are dry runs: they build, test
+# and checksum everything, and never sign or publish.
 
 on:
   push:
@@ -20,13 +22,16 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  group: trusted-publishing-${{ github.ref }}
+  # Only a superseded pull request run is cancelled; a tag run never is.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  check:
-    # On a tag: the tag is v<workspace version>, the commit is on main, and
-    # CI passed on its push to main. Dry runs report and continue.
+  gate:
+    # On a tag: an annotated v<workspace version> tag, on main, with CI green
+    # on the commit's push to main, the publishable crates exactly the release
+    # set, a dated CHANGELOG entry and the committed release notes. Dry runs
+    # report what they found and continue.
     name: Release gate
     runs-on: ubuntu-24.04
     permissions:
@@ -35,6 +40,7 @@ jobs:
     outputs:
       version: ${{ steps.gate.outputs.version }}
       publish: ${{ steps.gate.outputs.publish }}
+      crates: ${{ steps.gate.outputs.crates }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,7 +54,7 @@ jobs:
   build:
     # The isolated, attested build (SLSA Build Level 3): a reusable workflow.
     name: Build
-    needs: check
+    needs: gate
     permissions:
       contents: read
       id-token: write
@@ -56,11 +62,11 @@ jobs:
     # The documented local form; zizmor suggests a newer "$/" syntax.
     uses: ./.github/workflows/build-release.yml # zizmor: ignore[self-repository]
     with:
-      version: ${{ needs.check.outputs.version }}
-      # No attestations on pull requests, nor on a manual run from a tag: then
-      # the only attestations from a v* tag ref are the tag push's, and
-      # verifying with --source-ref refs/tags/v<version> picks out the release.
-      attest: ${{ github.event_name != 'pull_request' && !(github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/')) }}
+      version: ${{ needs.gate.outputs.version }}
+      # Sign only on a v* tag push (the release standard): pull requests and
+      # manual runs build and checksum everything but never sign. Verifying
+      # with --source-ref refs/tags/v<version> stays as a second safeguard.
+      attest: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
 
   # Publishing: only on a v* tag that passed the gate, after the build,
   # checksums and attestations. crates.io and PyPI each publish from their
@@ -70,10 +76,10 @@ jobs:
   # succeed, and the GitHub release follows PyPI. Every job re-checks the
   # downloaded bundle against SHA256SUMS, and a re-run skips what is
   # already published.
-  publish-crates:
+  publish:
     name: Publish to crates.io
-    needs: [check, build]
-    if: needs.check.outputs.publish == 'true'
+    needs: [gate, build]
+    if: needs.gate.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     environment: crates-io
@@ -81,14 +87,14 @@ jobs:
       contents: read
       id-token: write
     env:
-      VERSION: ${{ needs.check.outputs.version }}
+      VERSION: ${{ needs.gate.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-${{ needs.check.outputs.version }}
+          name: release-${{ needs.gate.outputs.version }}
           # Outside the checkout, so cargo publish sees a clean tree.
           path: ${{ runner.temp }}/dist
       - name: The artifacts are the ones checksummed and attested
@@ -135,18 +141,19 @@ jobs:
   publish-path-check:
     # Dry runs only (no environment, no OIDC token, read-only): the publish
     # job's checks, without publishing. The pinned toolchain, the bundle
-    # against SHA256SUMS, the crates packaged here against the attested
+    # against SHA256SUMS, the crates packaged here against the checksummed
     # ones, and the crates.io download checks against a version already
-    # published (tools/release.py KNOWN_GOOD).
+    # published (tools/release.py KNOWN_GOOD). A Praevis-Quant addition to
+    # the release standard.
     name: Publish path (dry run)
-    needs: [check, build]
-    if: needs.check.outputs.publish != 'true'
+    needs: [gate, build]
+    if: needs.gate.outputs.publish != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
     env:
-      VERSION: ${{ needs.check.outputs.version }}
+      VERSION: ${{ needs.gate.outputs.version }}
       RUST_VERSION: ${{ needs.build.outputs.rust-version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -154,7 +161,7 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-${{ needs.check.outputs.version }}
+          name: release-${{ needs.gate.outputs.version }}
           path: ${{ runner.temp }}/dist
       - name: The artifacts are the ones checksummed
         run: cd "$RUNNER_TEMP/dist" && sha256sum --check --strict SHA256SUMS
@@ -165,7 +172,7 @@ jobs:
         run: |
           echo "build's toolchain: $RUST_VERSION"
           test "$(rustc --version | cut -d' ' -f2)" = "$RUST_VERSION"
-      - name: The crates packaged here are the attested ones
+      - name: The crates packaged here are the checksummed ones
         run: python3 tools/release.py compare-crates --version "$VERSION" --dist "$RUNNER_TEMP/dist"
       - name: The crates.io download checks, against a published version
         run: python3 tools/release.py check-known-good
@@ -174,8 +181,8 @@ jobs:
     # Only after crates.io succeeded, including its byte-for-byte checks: a
     # crate problem then stops the release before anything reaches PyPI.
     name: Publish to PyPI
-    needs: [check, build, publish-crates]
-    if: needs.check.outputs.publish == 'true'
+    needs: [gate, build, publish]
+    if: needs.gate.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: pypi
@@ -186,7 +193,7 @@ jobs:
       # In the workspace: the publish action is a container that sees only it.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-${{ needs.check.outputs.version }}
+          name: release-${{ needs.gate.outputs.version }}
           path: dist
       - name: The artifacts are the ones checksummed and attested
         run: cd dist && sha256sum --check --strict SHA256SUMS
@@ -204,48 +211,43 @@ jobs:
     # artifact and SHA256SUMS. No environment and no OIDC token: it needs
     # only to write the release.
     name: GitHub release
-    needs: [check, publish-crates, publish-pypi]
+    needs: [gate, publish, publish-pypi]
+    if: needs.gate.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: write
     env:
-      VERSION: ${{ needs.check.outputs.version }}
+      VERSION: ${{ needs.gate.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-${{ needs.check.outputs.version }}
+          name: release-${{ needs.gate.outputs.version }}
           path: ${{ runner.temp }}/dist
       - name: The artifacts are the ones checksummed and attested
         run: cd "$RUNNER_TEMP/dist" && sha256sum --check --strict SHA256SUMS
-      - name: Create or update the release
+      # Draft first: check tag, title and body against the committed notes,
+      # upload every file, check each by name, size and digest, then publish
+      # and check again. A re-run resumes a draft and never modifies a
+      # published release or replaces an asset.
+      - name: Draft, check, publish and check the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          python3 tools/release.py notes --version "$VERSION" > "$RUNNER_TEMP/notes.md"
-          tag="v$VERSION"
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$RUNNER_TEMP"/dist/* --clobber
-          else
-            flags=(--latest); case "$VERSION" in *-*) flags=(--prerelease --latest=false) ;; esac
-            gh release create "$tag" "$RUNNER_TEMP"/dist/* --verify-tag --title "$tag" \
-              --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
-          fi
+        run: python3 tools/release.py github-release --version "$VERSION" --dir "$RUNNER_TEMP/dist"
 
   verify:
     # After the GitHub release, from the outside: every asset, checksum and
     # attestation on each platform's native runner, the CLI run there, and
     # the registries. Read-only; the publication record cites its proof.
     name: Verify publication
-    needs: [check, github-release]
-    if: needs.check.outputs.publish == 'true'
+    needs: [gate, github-release]
+    if: needs.gate.outputs.publish == 'true'
     permissions:
       contents: read
     # The documented local form; zizmor suggests a newer "$/" syntax.
     uses: ./.github/workflows/verify-publication.yml # zizmor: ignore[self-repository]
     with:
-      version: ${{ needs.check.outputs.version }}
+      version: ${{ needs.gate.outputs.version }}
