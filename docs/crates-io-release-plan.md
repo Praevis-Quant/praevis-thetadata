@@ -13,8 +13,90 @@ the preparation records.
 the `crates-io` and `pypi` environments, and the workflow publishes to crates.io and PyPI
 by trusted publishing and creates the GitHub release with attested
 artifacts. Nothing is published by hand, and no tokens are used. `0.1.3`,
-published on 2026-11-16, is the first release through it, and `0.1.4`
-followed on 2026-11-19.
+published on 2026-11-16, is the first release through it; `0.1.4`
+followed on 2026-11-19 and `0.1.5` on 2026-11-22.
+
+## Publication record: 0.1.5
+
+**Published 2026-11-22 by the release workflow:** run
+[44990591740](https://github.com/Praevis-Quant/praevis-thetadata/actions/runs/44990591740)
+of `trusted-publishing.yml`, on the annotated tag `v0.1.5` (tag object
+`dd0961b2802b`, pushed by the user) on
+`3579df8f70cde169f4c691a99222a68ae07a9ab4` (`main` after #232). The user
+approved `crates-io`, then `pypi` (the first release with PyPI after
+crates.io). All 24 jobs that run on a tag succeeded; the dry-run-only
+`publish-path-check` was skipped, as designed.
+- **Before tagging:** on `3579df8`, CI, Supply chain, Workflow security,
+  Scorecard and Auth performance green; a dry run of the workflow
+  (44989583042) green in all 25 jobs; the pre-release live check
+  `pre-015-anytime-002` clean (Rust 11 passed and 2 skipped, Python 10
+  passed).
+- **The run:** gate and build 05:42–05:56 UTC; then, after the approvals,
+  crates.io 13:47:51–13:48:31, PyPI 13:52:52–13:53:35, GitHub release
+  13:53:38–13:53:51.
+- **No tokens:** crates.io and PyPI accepted only the workflow's OIDC
+  identity.
+
+**The crates, attested and byte-for-byte (new in `0.1.5`), from the run's
+logs:** the `crates` job packaged the seven with Rust 1.100.0 (the hashes
+below); `crates-reproducible` repackaged them on an arm64 runner, "7 crates
+byte-identical"; `publish-crates` installed the same 1.100.0, repackaged
+them before uploading anything, "7 crates byte-identical", and after each
+upload downloaded the crate back, "crates.io serves the attested .crate",
+7 of 7.
+
+**crates.io:** seven crates in the four waves. Checked independently
+(2026-11-22): each `.crate` downloaded from `static.crates.io` is
+byte-identical to the release asset, and its SHA-256 equals both
+`SHA256SUMS` and the index checksum (7/7). None is yanked, and crates.io
+records each as trusted-published from GitHub run 44990591740 on `3579df8`.
+Each crate's provenance verifies (below).
+
+| Crate | Published (UTC) | `.crate` SHA-256 (= attested = index = downloaded) |
+| --- | --- | --- |
+| [`praevis-thetadata-proto`](https://crates.io/crates/praevis-thetadata-proto/0.1.5) | 13:48:08 | `1df22f436964ad8a2ad56dd3d6fef3db95d90f63ff18231a4189faad0303fb3d` |
+| [`praevis-thetadata-core`](https://crates.io/crates/praevis-thetadata-core/0.1.5) | 13:48:11 | `667671a9b62f7ae150f12d1176d8572abced58b60397221fcc3b2644f6c4ffb3` |
+| [`praevis-thetadata-auth`](https://crates.io/crates/praevis-thetadata-auth/0.1.5) | 13:48:13 | `153861ac95f4f92773f4045e87b57d2bd9e1fd866c4e742a3b0e4fdbcf720a32` |
+| [`praevis-thetadata-arrow`](https://crates.io/crates/praevis-thetadata-arrow/0.1.5) | 13:48:15 | `997cc756953ee67cd5ddd70d1404edd8ba9db587c77c69a0a32cbda026f52315` |
+| [`praevis-thetadata-client`](https://crates.io/crates/praevis-thetadata-client/0.1.5) | 13:48:18 | `174f4a301b16cb5b72c55bc3aa9ffe14ac78d0d8fff7022e8377a3b42f5cc74c` |
+| [`praevis-thetadata-cli`](https://crates.io/crates/praevis-thetadata-cli/0.1.5) | 13:48:21 | `ff9efba8976255ebfec02f895b197b00c6864f19e69e9ec47e30d32a4e38a964` |
+| [`praevis-thetadata-stream`](https://crates.io/crates/praevis-thetadata-stream/0.1.5) | 13:48:26 | `cc90bbedb17ff20431245bc027003d287674ba5f5541e21b6d0b4e92f35b0e94` |
+
+**PyPI:** [`praevis-thetadata` 0.1.5](https://pypi.org/project/praevis-thetadata/0.1.5/),
+the latest version: exactly the eight wheels (no sdist), each with the
+SHA-256 in `SHA256SUMS` (8/8), none yanked, uploaded 13:53:14–13:53:31.
+Their PyPI attestation names `trusted-publishing.yml`, environment `pypi`.
+
+**The GitHub release** [v0.1.5](https://github.com/Praevis-Quant/praevis-thetadata/releases/tag/v0.1.5):
+published 13:53:49 UTC, the latest release, not a pre-release, not
+immutable, 35 assets (16 artifacts, 7 crates, 8 SBOMs, `SHA256SUMS`, three
+bundles); `SHA256SUMS`
+`16dd3e708eea94d2779d44c2ce854d698fee8228de60a1be9812bd838a995aa8`. The
+body equals the [draft](release-draft-0.1.5.md)'s (apart from the trailing
+newline GitHub adds).
+
+**Post-publication checks (the agent's sandbox, Linux aarch64, 2026-11-22):**
+- **Checksums:** all 35 assets downloaded; 31/31 `SHA256SUMS` entries pass.
+- **Provenance**, with `--signer-workflow .../build-release.yml
+  --source-ref refs/tags/v0.1.5`: 31/31 online and 31/31 with the
+  `praevis-thetadata-0.1.5.intoto.jsonl` bundle and a trusted root (the
+  offline form), the seven crates included.
+- **SBOM attestations:** 8/8 executables, 8/8 wheels.
+- **The CLI:** the `aarch64-unknown-linux-musl` executable prints
+  `praevis-thetadata 0.1.5`.
+- **docs.rs:** the six library crates built for 0.1.5. The CLI has no
+  library, so docs.rs reports no documentation for it, as for `0.1.4`.
+- **The behaviour change, on the published package** (`pip install
+  praevis-thetadata==0.1.5` from PyPI, `describe()`, no network to the
+  service): `option_history_trade_greeks_all` sends
+  `perf_boost_intraday: Some(true)`, and `None` with
+  `perf_boost_intraday=False`; `stock_history_trade_quote` sends
+  `use_time_based_trade_quote: None`, and `Some(true)` with
+  `use_time_based_trade_quote=True`. `corporate_action_split` and
+  `corporate_action_dividend` each plan one request. 100 endpoints.
+- **Not checked here:** `cargo install praevis-thetadata-cli --locked`
+  from crates.io, and Windows and macOS executables (a verification job
+  across native runners is planned for `0.1.6`).
 
 ## 0.1.5 publication checklist (prepared 2026-11-21)
 
