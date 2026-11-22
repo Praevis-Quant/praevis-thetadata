@@ -146,7 +146,7 @@ system's resolver, and on Linux, when the optional session store is used,
 | **Release gate** | In place | A tag must match the version, be on `main`, with CI green |
 | **Release tags** | In place | Ruleset "release tags creation" (id 27825772): only the repository admin role can create a `v*` tag. Ruleset "release tags immutable" (id 27324055): no one, admins included, can delete, move or force-update one (no bypass actors) |
 | **Locked dependencies** (`Cargo.lock`; hash-pinned Python build requirements) | In place | Builds use exactly the reviewed versions (`--locked`) |
-| **cargo-deny** | In place | RustSec advisories (vulnerable, unsound, unmaintained, yanked) against every crate in the graph, direct or transitive, on each of the eight released platforms; licences (permissive allow-list) and sources (crates.io only) fail CI; weekly as well |
+| **cargo-deny** | In place | RustSec advisories (vulnerable, unsound, unmaintained, yanked) against every crate in the graph, direct or transitive, on every platform (no target list narrows it); licences (permissive allow-list) and sources (crates.io only) fail CI; weekly as well |
 | **Advisories fixed** | In place | Nine RustSec advisories found by the first cargo-deny run (rustls, rustls-webpki, webpki-roots, tokio, pulldown-cmark) were fixed before `0.1.3` |
 | **Pinned GitHub Actions** | In place | Every action is pinned by full commit SHA; zizmor checks for unpinned, impostor or vulnerable actions |
 | **Dependabot** | In place | Weekly grouped update proposals (7-day cooldown) and immediate security updates |

@@ -451,7 +451,6 @@ each: severity, where, fix.
 
 **Nice to have:**
 - **Scorecard Vulnerabilities (9 of 10):** an `osv-scanner.toml` ignoring the accepted chrono advisory beside each of the three lockfiles gives 10 (the root alone does not); time-box it like `deny.toml`. Signed-Releases reaches about 2 after `0.1.5` (five-release average) and rises with each release.
-- **`deny.toml` targets:** the eight-target list (asked for in #232) narrows what cargo-deny checks rather than widening it; it passes today without it. Decide whether to keep it. (The comment wrongly said cargo-deny had seen the zbus crates; fixed in #232.)
 - **`tools/release.py` (`cargo publish`):** dependency build scripts run with the registry token in the environment; `--no-verify` there is safe because the build already verified the same bytes.
 - **`tools/release.py` (`index_checksum`):** the index checksum is read once; a slow index would fail a release mid-way (recoverable by re-running the job). Fix: retry it like the download.
 - **Python `BatchIterator`:** shared by two threads, the second got `StopIteration` with 0 of 30 rows delivered. Fix: document it as not shareable, or make it so.
@@ -459,7 +458,7 @@ each: severity, where, fix.
 - **Settings:** immutable releases are off (planned); the organisation does not require 2FA.
 - **Upstream monitor before tagging:** `0.1.4` was tagged about 7 hours after the scheduled monitor went red, and the gate does not check it. Fix: make the gate (or the checklist) require a green monitor.
 - **Report nits:** the login is HTTP/1.1 only; "no temporary files" overlooks `.partial`.
-- **Done in #232:** the permissions table lists the two crate jobs. Dependabot recompiles each version-matrix lock with its own Python: checked in its source (one Python per directory, from the first pip-compile header), so each lock now has its own directory.
+- **Done in #232:** `deny.toml` has no targets list (so every platform is checked), and its comment no longer says cargo-deny saw the zbus crates. The permissions table lists the two crate jobs. Dependabot recompiles each version-matrix lock with its own Python: checked in its source (one Python per directory, from the first pip-compile header), so each lock now has its own directory.
 
 ## Deferred work
 

@@ -5,16 +5,10 @@
 
 [graph]
 all-features = true
-# Exactly the eight platforms released as CLI executables and wheels
-# (tools/release.py CLI_TARGETS; tools/test_deny_config.py keeps them equal),
-# so each one's platform-specific dependencies (Windows, macOS and Linux
-# keyring backends, for example) are checked.
-targets = [
-    "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc",
-    "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu",
-    "x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl",
-    "x86_64-apple-darwin", "aarch64-apple-darwin",
-]
+# No `targets`: cargo-deny then checks the dependencies of every platform,
+# so each released platform's (the Windows, macOS and Linux keyring backends,
+# for example) is included. A targets list would narrow that, so keep none
+# (tools/test_deny_config.py).
 
 [advisories]
 # The RustSec database, fetched at check time.

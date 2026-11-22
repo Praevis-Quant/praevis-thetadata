@@ -3,14 +3,14 @@ import pathlib
 import tomllib
 import unittest
 
-import release
-
 DENY = tomllib.loads((pathlib.Path(__file__).resolve().parents[1] / "deny.toml").read_text(encoding="utf-8"))
 
 
 class DenyConfig(unittest.TestCase):
-    def test_every_released_platform_is_checked(self):
-        self.assertEqual(sorted(DENY["graph"]["targets"]), sorted(release.CLI_TARGETS))
+    def test_every_platform_is_checked(self):
+        # Without a targets list cargo-deny checks every platform's
+        # dependencies, the released ones included; a list would narrow it.
+        self.assertNotIn("targets", DENY["graph"])
         self.assertTrue(DENY["graph"]["all-features"])
 
     def test_transitive_unmaintained_and_unsound_crates_fail(self):

@@ -71,8 +71,8 @@ See the [release-notes draft](docs/release-draft-0.1.5.md).
   Python version, each in its own directory
   (`requirements-matrix/<python>/requirements.txt`, because Dependabot
   recompiles a directory's locks with a single Python), with the same pins. The live-check runner installs its wheel by path too.
-- **cargo-deny now checks every crate, on each of the eight released
-  platforms,** for unmaintained and unsound advisories. Before, it checked
+- **cargo-deny now checks every crate, on every platform,** for
+  unmaintained and unsound advisories. Before, it checked
   only direct dependencies, which let rustix 1.1.5 through.
 
 ### Changed
