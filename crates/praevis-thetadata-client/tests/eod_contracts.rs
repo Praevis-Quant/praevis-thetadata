@@ -249,11 +249,18 @@ async fn local_faults_before_and_after_delivery_fuse_and_release_single_job() {
         cases.push((name, data, policy, EodError::Resource(expected)));
     }
     let large = table(DataType::Text("SENTINEL".repeat(1024)));
+    // The window limit bounds libzstd's window buffer. A frame that records
+    // its content size and fits the decoder's 64 KiB output chunk is decoded
+    // straight into that chunk with no window buffer, so libzstd does not
+    // check the limit there (zstd 0.14.4's encode_all records the size for
+    // small inputs). Content past the chunk always needs a window, so this
+    // case uses 128 KiB whatever the encoder records.
+    let windowed = table(DataType::Text("SENTINEL".repeat(16 * 1024)));
     let mut policy = default.clone();
     policy.decode.zstd_window_log = 10;
     cases.push((
         "window",
-        support::response(&large, true),
+        support::response(&windowed, true),
         policy,
         EodError::Resource("zstd window"),
     ));
