@@ -89,11 +89,13 @@ impl Credentials {
         Self::from_file_contents(&std::fs::read_to_string(path)?)
     }
     pub fn from_file_contents(contents: &str) -> Result<Self, AuthError> {
+        // A missing line is invalid at once, as an empty one is below: the
+        // same error either way, with no placeholder value in between.
         let mut lines = contents.lines();
-        let credentials = Self::email_password(
-            lines.next().unwrap_or("").trim(),
-            lines.next().unwrap_or("").trim(),
-        );
+        let (Some(email), Some(password)) = (lines.next(), lines.next()) else {
+            return Err(AuthError::InvalidCredentials);
+        };
+        let credentials = Self::email_password(email.trim(), password.trim());
         credentials.validate()?;
         Ok(credentials)
     }

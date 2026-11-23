@@ -203,7 +203,31 @@ fn validates_urls_credentials_and_redaction() {
         })
         .is_err()
     );
-    assert!(Credentials::from_file_contents("test@example.com\n").is_err());
+    // Missing, blank or whitespace-only lines are all InvalidCredentials.
+    for contents in [
+        "",
+        "test@example.com",
+        "test@example.com\n",
+        "\nsecret\n",
+        "test@example.com\n\n",
+        "   \nsecret\n",
+        "test@example.com\n   \n",
+        "\n\n",
+    ] {
+        assert!(
+            matches!(
+                Credentials::from_file_contents(contents),
+                Err(AuthError::InvalidCredentials)
+            ),
+            "{contents:?}"
+        );
+    }
+    let trimmed =
+        Credentials::from_file_contents("  test@example.com  \n  secret  \nextra\n").unwrap();
+    assert!(matches!(
+        trimmed,
+        Credentials::EmailPassword { ref email, ref password } if email == "test@example.com" && password == "secret"
+    ));
     let credentials = Credentials::from_file_contents("test@example.com\r\nsecret\r\n").unwrap();
     assert!(!format!("{credentials:?}").contains("secret"));
     assert!(Credentials::api_key(" ").validate().is_err());
