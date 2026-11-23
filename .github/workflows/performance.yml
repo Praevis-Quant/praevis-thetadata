@@ -3,27 +3,12 @@ name: Auth performance
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      # A fixed choice, resolved to a commit SHA inside the workflow: no
-      # user-supplied ref reaches a checkout. Any other ref can be compared
-      # locally with tools/build_cli_benchmark.py (docs/performance/cli-startup.md).
-      compare_with:
-        description: 'Baseline for a same-runner before/after comparison (none: the single-version baseline only)'
-        required: false
-        type: choice
-        default: none
-        options:
-          - none
-          - latest-release-tag
-          - main
 
 permissions:
   contents: read
 
 jobs:
   baseline:
-    if: github.event_name != 'workflow_dispatch' || inputs.compare_with == 'none'
     name: Baseline (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -53,81 +38,5 @@ jobs:
         with:
           name: auth-performance-${{ runner.os }}-${{ github.sha }}
           path: artifacts/auth-*.json
-          if-no-files-found: error
-          retention-days: 30
-
-  compare:
-    if: github.event_name == 'workflow_dispatch' && inputs.compare_with != 'none'
-    name: Compare startup (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-          path: candidate
-      # The baseline commit, from this repository only. Each choice has its
-      # own step, selected by `if:`; the steps read git or the releases API,
-      # never the input's value, and the checkout below uses the SHA.
-      # Read-only token, no credentials kept, and no cache in this workflow.
-      - name: Baseline is main
-        id: main
-        if: inputs.compare_with == 'main'
-        shell: bash
-        run: |
-          set -euo pipefail
-          sha=$(git -C candidate rev-parse --verify 'refs/remotes/origin/main^{commit}')
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "baseline: main = $sha"
-      - name: Baseline is the latest release
-        id: release
-        if: inputs.compare_with == 'latest-release-tag'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          tag=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)
-          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::unexpected latest release tag"; exit 1; }
-          sha=$(git -C candidate rev-parse --verify "refs/tags/$tag^{commit}")
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "baseline: $tag = $sha"
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          ref: ${{ steps.main.outputs.sha || steps.release.outputs.sha }}
-          path: baseline
-      - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
-        with:
-          toolchain: stable
-      - name: Build before and after with provenance
-        shell: bash
-        env:
-          EXE: ${{ runner.os == 'Windows' && '.exe' || '' }}
-        run: |
-          python candidate/tools/build_cli_benchmark.py --source baseline --output "artifacts/before$EXE"
-          python candidate/tools/build_cli_benchmark.py --source candidate --output "artifacts/after$EXE"
-      - name: Install Linux keyring fixture
-        if: runner.os == 'Linux'
-        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends dbus gnome-keyring
-      - name: Compare release binaries twice
-        shell: bash
-        run: |
-          for repetition in 1 2; do
-            if [ "$RUNNER_OS" = Linux ]; then
-              bash candidate/tools/with-test-keyring.sh python3 candidate/tools/compare_cli_startup.py --before artifacts/before --after artifacts/after --before-provenance artifacts/before.json --after-provenance artifacts/after.json --output "artifacts/comparison-$repetition.json"
-            else
-              python candidate/tools/compare_cli_startup.py --before artifacts/before.exe --after artifacts/after.exe --before-provenance artifacts/before.json --after-provenance artifacts/after.json --output "artifacts/comparison-$repetition.json"
-            fi
-          done
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: startup-comparison-${{ runner.os }}-${{ github.sha }}
-          path: artifacts/*.json
           if-no-files-found: error
           retention-days: 30

@@ -23,7 +23,7 @@ python tools/compare_cli_startup.py --before artifacts/cli-startup/before.exe --
 
 On Linux, build the executables without `.exe`, then prefix each comparison command with `bash tools/with-test-keyring.sh`. That wrapper provides a private D-Bus session and disposable persistent keyring. Build and test first; do not compile or run unrelated workloads during measurements. Under WSL, additionally compare with `--stage-binaries`, which copies both executables byte-for-byte to the host temporary filesystem before timing and records that execution mode. Compare original-path and staged results separately.
 
-The **Auth performance** workflow's manual dispatch has a `compare_with` choice: `none` (the default: the existing single-version baseline only), `latest-release-tag` (the latest GitHub release's tag) or `main`. The workflow resolves the choice to a commit SHA of this repository, checks out that baseline and the selected candidate ref separately, builds both on each Windows/Ubuntu runner, executes two comparisons, and uploads JSON reports. No user-supplied ref reaches a checkout. To compare against any other ref, run the local procedure above with `tools/build_cli_benchmark.py`. A local branch must be pushed before it can be evaluated in hosted Actions as the candidate.
+Run same-runner before/after comparisons locally, using any two source checkouts. Use `tools/build_cli_benchmark.py` to build each revision and record its provenance, then run `tools/compare_cli_startup.py` on both binaries on the same machine. The **Auth performance** workflow records a single-revision baseline on pushes to `main`.
 
 Each comparison uses 100 measured samples per binary/case after five warmups, alternating before/after and after/before ordering. It removes inherited ThetaData credentials, proxy settings, and Tokio worker overrides, and uses a temporary working directory without credential files. The identity fixture is stopped before local-command measurements. Cases are auth/save, saved-session status, missing-session status (exit 3), absent-record logout, help, and version. Logout timing measures the idempotent absent case; the native persistence test separately verifies successful deletion. All created profiles are unique, and cleanup is attempted for every profile even after failure.
 
@@ -53,7 +53,7 @@ All measured medians improved in both runs, generally by about 1.7–2.4 ms. Tai
 
 An additional comparison (`comparison-2.json`) and the chronological post-change baseline overlapped compilation/test activity; retain those artifacts but exclude them from the controlled comparison. The original single-binary benchmark was also run before the source change and afterward. Its non-interleaved readings should not be used to subtract process/keyring costs or claim a causal speedup under changing host load.
 
-Raw local reports, both executables, and provenance sidecars remain under ignored `artifacts/cli-startup/`. This checked-in evaluation preserves the key evidence; the hosted comparison workflow retains complete JSON reports for 30 days. Repeat comparisons on deployment hosts before introducing a latency target.
+Raw local reports, both executables, and provenance sidecars remain under ignored `artifacts/cli-startup/`. This checked-in evaluation preserves the key evidence. Repeat comparisons on deployment hosts before introducing a latency target.
 
 ## Linux/WSL measurements: 2026-10-04
 

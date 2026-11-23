@@ -22,7 +22,7 @@ bash tools/with-test-keyring.sh python3 tools/benchmark_auth.py \
   --binary target/release/praevis-thetadata --samples 30 --output artifacts/auth-linux.json
 ```
 
-The **Auth performance** workflow runs on pushes to `main` and manual dispatch, on Windows and Ubuntu. It uploads the JSON summaries for 30 days. Runtime/functional failures fail the workflow; latency variation does not. Reports remain build artifacts, not committed credentials or benchmark output.
+The **Auth performance** workflow runs on pushes to `main`, on Windows and Ubuntu. It uploads the JSON summaries for 30 days. Runtime/functional failures fail the workflow; latency variation does not. Reports remain build artifacts, not committed credentials or benchmark output.
 
 ## Interpretation
 
