@@ -22,7 +22,9 @@ Terminal).
 **What makes it trustworthy:**
 - **Memory safety:** safe Rust throughout. Two audited calls into zstd's C
   library are the only `unsafe` code in what is shipped, and every crate
-  forbids new unsafe code; CI enforces it.
+  forbids new unsafe code. CI enforces both: crate roots must forbid (or,
+  in the two audited crates, deny) unsafe code, and shipped source must
+  contain exactly those two allowed sites.
 - **Supply chain:** every release artifact is built in an isolated GitHub
   Actions workflow from a commit on `main`, merged by pull request after 17
   required checks passed (no approving review is required: a
@@ -160,8 +162,8 @@ system's resolver, and on Linux, when the optional session store is used,
 | Control | Status | Evidence |
 | --- | --- | --- |
 | **Language** | In place | Rust (memory-safe) for all shipped code; the Python package is a thin layer over the Rust core |
-| **Unsafe code** | In place | Audited: two calls to `ZSTD_getErrorCode` (a numeric lookup, no pointers), each with a SAFETY note. Every crate root forbids or denies `unsafe`, checked in CI |
-| **Fuzzing** | In place | Four cargo-fuzz targets over every decoder of untrusted input (response envelopes, zstd frames, Arrow column decoding, the client's EOD decoders, Terminal events), with AddressSanitizer on ClusterFuzzLite: 5 minutes per pull request, 1 hour weekly. Synthetic seeds only. The C libraries underneath (zstd, ring) are built without instrumentation |
+| **Unsafe code** | In place | Audited: two calls to `ZSTD_getErrorCode` (a numeric lookup, no pointers), each with a SAFETY note. Every crate root forbids or denies `unsafe`, and from `0.1.6` the repository check also counts every `allow(unsafe_code)` and unsafe block, function, impl, extern or trait in shipped source and allows exactly those two sites (before, a second scoped allow in the client or arrow crate would have passed: 0.1.5 review F12). Examples and benchmark harnesses, which are not shipped, use unsafe allocator and OS calls |
+| **Fuzzing** | In place | Six cargo-fuzz targets over every decoder of untrusted input (response envelopes, zstd frames, Arrow column decoding, the client's EOD decoders, Terminal events, and from `0.1.6` the legacy table decoder and the gRPC framing guard, which had none: 0.1.5 review F12), with AddressSanitizer on ClusterFuzzLite: 5 minutes per pull request, 1 hour weekly (first scheduled run 2026-11-22). Synthetic seeds only. The C libraries underneath (zstd, ring) are built without instrumentation |
 | **Static analysis** | In place | CodeQL (default setup, extended suite) on Rust, Python and Actions; clippy with warnings as errors |
 | **Workflow security** | In place | zizmor on every workflow and the Dependabot configuration; findings fail CI |
 | **OpenSSF Scorecard** | In place | Weekly and on `main`; results published and in code scanning |

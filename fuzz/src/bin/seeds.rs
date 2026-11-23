@@ -34,7 +34,23 @@ fn main() {
         }
     }
     write(dir, "response_data", envelopes.clone());
-    write(dir, "eod_envelope", envelopes);
+    write(dir, "eod_envelope", envelopes.clone());
+    write(dir, "legacy_table", envelopes.clone());
+    // gRPC frames: the first byte chooses the chunk size; then length-
+    // prefixed messages (flag 0, big-endian length), one per envelope.
+    let frames = envelopes
+        .iter()
+        .take(8)
+        .enumerate()
+        .map(|(n, envelope)| {
+            let mut frame = vec![n as u8];
+            frame.push(0);
+            frame.extend((envelope.len() as u32).to_be_bytes());
+            frame.extend(envelope);
+            frame
+        })
+        .collect();
+    write(dir, "grpc_framing", frames);
     write(dir, "zstd_payload", payloads);
     let events = [
         r#"{"header":{"type":"STATUS","status":"CONNECTED"}}"#,

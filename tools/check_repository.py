@@ -199,6 +199,34 @@ def audit_unsafe(read, roots):
     return errors
 
 
+# The only unsafe code in shipped source (crates/*/src, apps/*/src): one
+# audited call each, ZSTD_getErrorCode, under a scoped allow. Examples and
+# benchmark harnesses are not shipped and not counted.
+UNSAFE_SITES = {
+    "crates/praevis-thetadata-arrow/src/lib.rs": 1,
+    "crates/praevis-thetadata-client/src/bounded.rs": 1,
+}
+UNSAFE_ALLOW = re.compile(r"#\[allow\(\s*unsafe_code\s*\)\]")
+UNSAFE_USE = re.compile(r"\bunsafe\s*(\{|fn\b|impl\b|extern\b|trait\b)")
+
+
+def audit_unsafe_sites(read, sources):
+    """Shipped source has exactly the audited unsafe sites: each
+    #[allow(unsafe_code)] and each unsafe block, fn, impl, extern or trait is
+    counted (outside // comments), so a second one in a deny crate fails."""
+    errors = []
+    for path in sorted(sources):
+        code = "\n".join(line.split("//", 1)[0] for line in read(path).splitlines())
+        allows, uses = len(UNSAFE_ALLOW.findall(code)), len(UNSAFE_USE.findall(code))
+        expected = UNSAFE_SITES.get(path, 0)
+        if (allows, uses) != (expected, expected):
+            errors.append(f"Unsafe code in {path}: {allows} allow(unsafe_code) and {uses} unsafe uses,"
+                          f" expected {expected} audited")
+    for path in sorted(set(UNSAFE_SITES) - set(sources)):
+        errors.append(f"Audited unsafe site no longer exists: {path}")
+    return errors
+
+
 def audit_advisory_ignores(deny, today):
     """Every accepted advisory in deny.toml is time-boxed and not expired."""
     errors = []
@@ -232,6 +260,8 @@ def main():
     roots = {path for path in files
              if re.fullmatch(r"(crates|apps)/[^/]+/src/(lib|main)\.rs", path)}
     errors.extend(audit_unsafe(lambda path: (ROOT / path).read_text(encoding="utf-8"), roots))
+    shipped = {path for path in files if re.fullmatch(r"(crates|apps)/[^/]+/src/.+\.rs", path)}
+    errors.extend(audit_unsafe_sites(lambda path: (ROOT / path).read_text(encoding="utf-8"), shipped))
     manifest = json.loads((ROOT / "crates/praevis-thetadata-proto/schema/manifest.json").read_text())
     schema_hash = hashlib.sha256((ROOT / "crates/praevis-thetadata-proto/schema/thetadata.bin").read_bytes()).hexdigest()
     if schema_hash != manifest["descriptor_sha256"]:
@@ -263,7 +293,7 @@ def main():
     if errors:
         raise SystemExit("\n".join(errors))
     print(f"Checked {len(files)} tracked files, {len(defined)} requirements, {len(adrs)} ADR origins, "
-          "exhaustive requirement origins, local document links and anchors, package license copies, unsafe-code attributes, time-boxed advisory exceptions, and descriptor integrity.")
+          "exhaustive requirement origins, local document links and anchors, package license copies, unsafe-code attributes and sites, time-boxed advisory exceptions, and descriptor integrity.")
 
 
 if __name__ == "__main__":

@@ -27,7 +27,6 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   job's options, so `job_with` (and Python's planned calls) with a 0.3 s
   timeout waited for it, 1.5 s against the emulator's delay. It now runs
   with the job's timeout and idle timeout.
-
 - **`praevis-thetadata-stream`: `close()` and drop no longer hang when the
   event queue is full as the socket ends** (0.1.5 review F5). The reader
   delivered the final `Disconnected` event, and with `Overflow::Block`
@@ -35,7 +34,6 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   reader to finish. It now waits for queue space only until it is asked to
   stop. Both overflow modes keep their behaviour otherwise; `Block` still
   delivers every event while the stream is open.
-
 - **The release SBOMs list exactly what each artifact is built from**
   (0.1.5 review F6). They were made from the workspace's unified
   dependency graph, so the auth, client and wheel SBOMs listed `keyring`
@@ -43,7 +41,6 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   artifacts contain. Each SBOM is now limited to its package's own build
   (`cargo tree -p <package> -e normal --target all`), and the release
   fails if a built crate is missing from it.
-
 - **The Parquet sink never replaces or corrupts a file it does not own**
   (0.1.5 review F9). It wrote to a fixed `<name>.partial`, opened with
   truncation, so two sinks on one target shared it and the first's
@@ -55,7 +52,6 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   still does not exist (`SinkError::Exists` otherwise; a hard link, so it is
   atomic where the file system has them). With `overwrite`, the move is one
   atomic rename. Python's `to_parquet` behaves the same.
-
 - **CLI: an invalid `--profile`, `--auth-url`, `--insecure` combination or
   `--timeout` now exits 2**, the documented code for argument errors
   (AUTH-L3-013; 0.1.5 review F10). They exited 1, as operational errors.
@@ -63,17 +59,24 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
   requirements always stated. The auth configuration is now checked before
   credentials are read and before any runtime starts (AUTH-L3-019), so a bad
   URL is reported as such rather than masked by a credentials error.
-
-### Added
-
-- **`AuthConfig::validate()`** (auth): the configuration checks
-  `AuthClient::new` makes, without I/O or a runtime.
-
 - **Python: a timeout too large for a duration raises `ValueError`, not
   `PanicException`** (0.1.5 review F11). `timeout=1e20` on `query`, `job`
   or `to_parquet` panicked in the conversion, and `PanicException` is not
   caught by `except Exception`. The per-call options now convert as the
   constructor does, and refuse a value that rounds to zero.
+- **The assurance claims match the evidence** (0.1.5 review F12):
+  - two new fuzz targets, `legacy_table` (the legacy table decoder) and
+    `grpc_framing` (the gRPC length-prefix framing guard, in fuzzer-chosen
+    transport chunks, with its invariants asserted); they had none;
+  - the repository check now counts every unsafe site in shipped source and
+    allows exactly the two audited ones; it only read the crate-root
+    attributes before;
+  - the report records the weekly fuzz run's first run (2026-11-22).
+
+### Added
+
+- **`AuthConfig::validate()`** (auth): the configuration checks
+  `AuthClient::new` makes, without I/O or a runtime.
 
 ### Release
 

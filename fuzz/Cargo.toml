@@ -52,6 +52,20 @@ doc = false
 bench = false
 
 [[bin]]
+name = "legacy_table"
+path = "fuzz_targets/legacy_table.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "grpc_framing"
+path = "fuzz_targets/grpc_framing.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "seeds"
 path = "src/bin/seeds.rs"
 test = false
