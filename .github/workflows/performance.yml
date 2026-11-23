@@ -58,14 +58,44 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
+      # Full history of this repository only: its branches and tags, never a
+      # fork's. The baseline must resolve inside it.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
           path: candidate
+      # Accept only a 40-hex commit SHA present in this repository, or an
+      # existing branch or tag of it; anything else fails before any
+      # checkout or build. The baseline is checked out by the resolved SHA,
+      # never by the raw input. Read-only token, no credentials kept, and no
+      # cache anywhere in this workflow.
+      - name: Validate the baseline ref
+        id: baseline
+        shell: bash
+        env:
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+        run: |
+          set -euo pipefail
+          cd candidate
+          ref="$BASELINE_REF"
+          if [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+            git cat-file -e "$ref^{commit}" 2>/dev/null || { echo "::error::$ref is not a commit in this repository"; exit 1; }
+            sha="$ref"
+          elif git check-ref-format "refs/heads/$ref" && [[ "$ref" != -* ]]; then
+            if sha=$(git rev-parse --verify --quiet "refs/remotes/origin/$ref^{commit}"); then :
+            elif sha=$(git rev-parse --verify --quiet "refs/tags/$ref^{commit}"); then :
+            else echo "::error::no branch or tag named $ref in this repository"; exit 1
+            fi
+          else
+            echo "::error::baseline_ref must be a 40-hex commit SHA or a branch or tag name"; exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "baseline: $ref = $sha"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: ${{ inputs.baseline_ref }}
+          ref: ${{ steps.baseline.outputs.sha }}
           path: baseline
       - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
         with:
