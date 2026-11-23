@@ -13,11 +13,19 @@ Future work and undecided requirements are tracked in [docs/ROADMAP.md](docs/ROA
 (2026-11-12), both also on PyPI, **`0.1.0`, the first supported
 release (2026-11-13)**, then `0.1.1` and `0.1.2` (both 2026-11-14), and
 `0.1.3` (2026-11-16), the first published by the release workflow, and
-`0.1.4` (2026-11-19) and `0.1.5` (2026-11-22). Each release heading covers the entries
+`0.1.4` (2026-11-19) and `0.1.5` (2026-11-22). `0.1.6` is prepared, dated with its planned release day, not yet published. Each release heading covers the entries
 below it, down to the previous release. The Python compatibility baseline is separately
 tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifest.json).
 
 ## [Unreleased]
+
+## [0.1.6] - 2026-11-24
+
+**A patch release: the fixes from the 0.1.5 review, the organisation's
+release standard, and one CLI exit-code correction (a behaviour change,
+below).** Prepared, not yet published; the date is the planned release day,
+updated by a one-line PR if the tag moves. Release notes:
+[docs/releases/v0.1.6.md](docs/releases/v0.1.6.md).
 
 ### Fixed
 
@@ -80,6 +88,12 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Release
 
+- **Version `0.1.6`** across the workspace, with the wheel at `0.1.6`. The
+  READMEs' exact pins for proto and stream move to `=0.1.6`.
+- **The first release under the release standard** (annotated tag, dated
+  CHANGELOG entry, `docs/releases/v0.1.6.md`, draft-first GitHub release,
+  signing on the tag push only, `verify` after publishing;
+  [checklist](docs/crates-io-release-plan.md#016-publication-checklist-prepared-2026-11-23)).
 - **The release pipeline follows the organisation's release standard**
   (Praevis-Quant/.github `docs/TRUSTED-PUBLISHING.md`, adopted 2026-11-22,
   binary variant):
@@ -114,6 +128,9 @@ tracked in [the protocol manifest](crates/praevis-thetadata-proto/schema/manifes
 
 ### Dependencies
 
+- **prost 0.14.6 and zstd 0.14.4** (from 0.14.4 and 0.14.3; Dependabot
+  #233, #234). zstd 0.14.4's `encode_all` records the content size of
+  small frames; the decoder and its limits are unchanged (#239, #240).
 - **url 2.5.9** (from 2.5.8, with form_urlencoded 1.2.3), fixing
   RUSTSEC-2026-0592: `Url::origin()` overflowed the stack on deeply nested
   `blob:` URLs. Nothing here calls it (neither this project's code nor

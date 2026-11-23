@@ -16,6 +16,56 @@ artifacts. Nothing is published by hand, and no tokens are used. `0.1.3`,
 published on 2026-11-16, is the first release through it; `0.1.4`
 followed on 2026-11-19 and `0.1.5` on 2026-11-22.
 
+## 0.1.6 publication checklist (prepared 2026-11-23)
+
+**Not approved for publication yet.** Publishing needs the user's tag and
+approval of the release run ([releasing](releasing.md)). The first release
+under the organisation's release standard (adopted 2026-11-22).
+- **Scope:** the 0.1.5 review's fixes (F5, F6, F8-F12), `AuthConfig::validate()`,
+  and `url` 2.5.9, `prost` 0.14.6 and `zstd` 0.14.4. See the
+  [release notes](releases/v0.1.6.md).
+- **Behaviour change:** CLI argument errors exit 2, not 1, as the README and
+  AUTH-L3-013 always stated.
+- **Unpublished since `0.1.5`:** the 0.1.5 record (#235), the release
+  pipeline changes (#236, #238, #241), the busy-scenario and test fixes
+  (#239, #240, #249), the credentials parser (#250) and the startup
+  workflow's input check (#251).
+
+**Same set as `0.1.5`:** seven crates on crates.io and eight wheels on PyPI
+by trusted publishing; the GitHub release with 35 assets.
+
+**Before tagging:**
+1. **This release PR is merged,** with CI green on `main`, and the upstream
+   monitor green.
+2. **The CHANGELOG date is the tag day.** It says 2026-11-24; if the tag is
+   pushed on another day, a one-line PR updates `## [0.1.6] - YYYY-MM-DD`
+   first. The gate refuses an undated entry.
+3. **The pre-release live check on the commit to be tagged**
+   (`scripts/live/run.sh --part anytime`).
+4. **A dry run** of the release workflow on that commit (Actions → Trusted
+   publishing → Run workflow): all jobs green, including
+   `publish-path-check`. It signs nothing.
+
+**Release:** the user creates an **annotated** tag and checks it before
+pushing: `git tag -a v0.1.6 <commit> -m "praevis-thetadata 0.1.6"`, then
+`git cat-file -t v0.1.6` must print `tag`, then `git push origin v0.1.6`. A
+lightweight tag is refused by the gate and, since `v*` tags are immutable,
+uses up the version. The user approves `crates-io`; after `publish`
+succeeds (including its byte checks), approves `pypi`. The workflow then
+drafts, checks and publishes the GitHub release from
+`docs/releases/v0.1.6.md`, and runs `verify` on all eight platforms.
+
+**After publishing:**
+1. **Checks:** the `verify` job's result and its proof artifacts per target
+   (they cover the assets, `SHA256SUMS`, every provenance and SBOM
+   attestation, each platform's CLI, crates.io, PyPI, docs.rs and clean
+   installs), plus the release's own behaviour checks: `auth --profile
+   ../x` exits 2, and `to_parquet` refuses an existing target without
+   `overwrite`.
+2. **Records:** a "Publication record: 0.1.6" section here citing the
+   `verify` proof, `releases.md` marked released, and README and the user
+   guide naming `0.1.6`.
+
 ## Publication record: 0.1.5
 
 **Published 2026-11-22 by the release workflow:** run

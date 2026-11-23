@@ -46,6 +46,8 @@ together on crates.io; the latest is **`0.1.5`**: `0.1.0`, the first
 supported release, with requests by name (`dispatch`), planner fixes,
 dependency updates and the vendor package's 1.0.18 as the compatibility
 baseline ([declared surface](docs/releases.md#010-scope-record-user-2026-11-12)).
+**`0.1.6` is prepared, not yet published:** the 0.1.5 review's fixes and the
+organisation's release standard ([notes](docs/releases/v0.1.6.md)).
 - **Supported:** auth, core, arrow (with the Parquet sink), the client's
   `query()`, `job()`, `RequestOptions`, generated endpoints and `dispatch`, the CLI and
   the Python package. The library does what one caller asks: no retry,

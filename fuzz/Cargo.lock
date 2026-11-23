@@ -1167,7 +1167,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-arrow"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -1181,7 +1181,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-auth"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "reqwest",
  "serde",
@@ -1191,7 +1191,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-client"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "chrono",
  "heck",
@@ -1211,7 +1211,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-core"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "chrono",
  "jiff",
@@ -1221,7 +1221,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-emulator"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "heck",
  "praevis-thetadata-auth",
@@ -1254,7 +1254,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-proto"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "prost",
  "prost-types",
@@ -1265,7 +1265,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-stream"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "thiserror",
  "tungstenite",

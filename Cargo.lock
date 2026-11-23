@@ -1679,7 +1679,7 @@ checksum = "4a6394b9e965e73d0a289ee54f589087e2c676aedf60885baf52c76b771e4958"
 
 [[package]]
 name = "praevis-thetadata-arrow"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -1693,7 +1693,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-auth"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "dbus-secret-service",
  "keyring",
@@ -1706,7 +1706,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-cli"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "clap",
  "praevis-thetadata-auth",
@@ -1716,7 +1716,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-client"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "chrono",
  "clap",
@@ -1743,7 +1743,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-core"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "chrono",
  "jiff",
@@ -1753,7 +1753,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-emulator"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "heck",
  "praevis-thetadata-auth",
@@ -1774,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-proto"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "prost",
  "prost-types",
@@ -1785,7 +1785,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-py"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -1802,7 +1802,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-scenarios"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "chrono",
  "clap",
@@ -1818,7 +1818,7 @@ dependencies = [
 
 [[package]]
 name = "praevis-thetadata-stream"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "clap",
  "praevis-thetadata-client",

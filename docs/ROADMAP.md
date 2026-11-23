@@ -81,6 +81,10 @@ The [performance architecture plan](architecture/performance-plan.md)
     behaviour change, with the settings that restore `0.1.4`'s results),
     the two corporate-action wrappers (not live-verified), and the crates
     as attested, reproducible release artifacts.
+  - **`0.1.6` is prepared** (planned 2026-11-24): the 0.1.5 review's fixes
+    (F5, F6, F8-F12), the organisation's release standard, and one CLI
+    exit-code correction (argument errors exit 2). Publishing it needs the
+    user's tag and approvals.
   - **`0.1.0`, the first supported release, was published on 2026-11-13**
     ([record](crates-io-release-plan.md#publication-record-010)), on
     crates.io and on PyPI as [`praevis-thetadata` 0.1.0](https://pypi.org/project/praevis-thetadata/0.1.0/). It is the

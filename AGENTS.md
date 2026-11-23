@@ -19,7 +19,7 @@ complete Python compatibility: per-endpoint live evidence is in
 [the coverage table](docs/endpoints/coverage.md).
 
 The workspace uses Rust edition 2024, currently declares version
-`0.1.5`, and sets `publish = ["crates-io"]`.
+`0.1.6`, and sets `publish = ["crates-io"]`.
 
 **Publishing (user decision 2026-11-15):** releases are published **only**
 by [`.github/workflows/trusted-publishing.yml`](.github/workflows/trusted-publishing.yml), on a
