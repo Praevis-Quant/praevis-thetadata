@@ -5,17 +5,25 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      baseline_ref:
-        description: 'Optional baseline Git ref for a same-runner before/after comparison'
+      # A fixed choice, resolved to a commit SHA inside the workflow: no
+      # user-supplied ref reaches a checkout. Any other ref can be compared
+      # locally with tools/build_cli_benchmark.py (docs/performance/cli-startup.md).
+      compare_with:
+        description: 'Baseline for a same-runner before/after comparison (none: the single-version baseline only)'
         required: false
-        type: string
+        type: choice
+        default: none
+        options:
+          - none
+          - latest-release-tag
+          - main
 
 permissions:
   contents: read
 
 jobs:
   baseline:
-    if: github.event_name != 'workflow_dispatch' || inputs.baseline_ref == ''
+    if: github.event_name != 'workflow_dispatch' || inputs.compare_with == 'none'
     name: Baseline (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -49,7 +57,7 @@ jobs:
           retention-days: 30
 
   compare:
-    if: github.event_name == 'workflow_dispatch' && inputs.baseline_ref != ''
+    if: github.event_name == 'workflow_dispatch' && inputs.compare_with != 'none'
     name: Compare startup (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -58,44 +66,41 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      # Full history of this repository only: its branches and tags, never a
-      # fork's. The baseline must resolve inside it.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
           path: candidate
-      # Accept only a 40-hex commit SHA present in this repository, or an
-      # existing branch or tag of it; anything else fails before any
-      # checkout or build. The baseline is checked out by the resolved SHA,
-      # never by the raw input. Read-only token, no credentials kept, and no
-      # cache anywhere in this workflow.
-      - name: Validate the baseline ref
-        id: baseline
+      # The baseline commit, from this repository only. Each choice has its
+      # own step, selected by `if:`; the steps read git or the releases API,
+      # never the input's value, and the checkout below uses the SHA.
+      # Read-only token, no credentials kept, and no cache in this workflow.
+      - name: Baseline is main
+        id: main
+        if: inputs.compare_with == 'main'
         shell: bash
-        env:
-          BASELINE_REF: ${{ inputs.baseline_ref }}
         run: |
           set -euo pipefail
-          cd candidate
-          ref="$BASELINE_REF"
-          if [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
-            git cat-file -e "$ref^{commit}" 2>/dev/null || { echo "::error::$ref is not a commit in this repository"; exit 1; }
-            sha="$ref"
-          elif git check-ref-format "refs/heads/$ref" && [[ "$ref" != -* ]]; then
-            if sha=$(git rev-parse --verify --quiet "refs/remotes/origin/$ref^{commit}"); then :
-            elif sha=$(git rev-parse --verify --quiet "refs/tags/$ref^{commit}"); then :
-            else echo "::error::no branch or tag named $ref in this repository"; exit 1
-            fi
-          else
-            echo "::error::baseline_ref must be a 40-hex commit SHA or a branch or tag name"; exit 1
-          fi
+          sha=$(git -C candidate rev-parse --verify 'refs/remotes/origin/main^{commit}')
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "baseline: $ref = $sha"
+          echo "baseline: main = $sha"
+      - name: Baseline is the latest release
+        id: release
+        if: inputs.compare_with == 'latest-release-tag'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::unexpected latest release tag"; exit 1; }
+          sha=$(git -C candidate rev-parse --verify "refs/tags/$tag^{commit}")
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "baseline: $tag = $sha"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: ${{ steps.baseline.outputs.sha }}
+          ref: ${{ steps.main.outputs.sha || steps.release.outputs.sha }}
           path: baseline
       - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
         with:
