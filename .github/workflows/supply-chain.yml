@@ -24,13 +24,13 @@ jobs:
         with:
           persist-credentials: false
       - name: The workspace (advisories, licences, sources, duplicates)
-        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        uses: EmbarkStudios/cargo-deny-action@70f81531115945ba6eb6b941ec9d39d063438eb9 # v2.1.2
         with:
           command: check
           arguments: --all-features
       # The test crate's own lockfile (never published): advisories only.
       - name: The TLS-provider test crate (advisories)
-        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        uses: EmbarkStudios/cargo-deny-action@70f81531115945ba6eb6b941ec9d39d063438eb9 # v2.1.2
         with:
           manifest-path: tools/tls-providers/Cargo.toml
           command: check
