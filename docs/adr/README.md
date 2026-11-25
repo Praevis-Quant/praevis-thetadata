@@ -12,7 +12,7 @@ Records identify their own date and status. “Accepted” records the implement
 | [0006](0006-cli-runtime-lifecycle.md) | Accepted | Rust enhancement | Initialize a current-thread CLI runtime only for HTTP authentication |
 | [0007](0007-first-market-data-slice.md) | Superseded (2026-11-03, [performance plan](../architecture/performance-plan.md)) | Mixed | Start with one stock EOD history query through the reusable library |
 | [0008](0008-typed-requests-and-presence.md) | Accepted with revisions (beta.1 review, 2026-11-11) | Mixed | Separate typed validation/defaults from wire representation and preserve explicit presence |
-| [0009](0009-market-data-values-and-schema.md) | Accepted with revisions (beta.1 review) | Mixed | Preserve exact values, batch schemas, and explicit empty/partial-result semantics |
+| [0009](0009-market-data-values-and-schema.md) | Accepted with revisions (beta.1 review) | Mixed | Preserve [exact numeric values](../user-guide.md#numeric-output-prices-greeks-and-implied-volatility), batch schemas, and explicit empty/partial-result semantics |
 | [0010](0010-stream-lifecycle-and-resource-bounds.md) | Accepted with revisions (beta.1 review) | Mixed | Define backpressure, terminal errors, timeouts, cancellation, and measured resource limits |
 | [0011](0011-market-data-verification-and-artifact-retention.md) | Accepted (beta.1 review) | Rust enhancement | Use Rust protocol fixtures/benchmarks and recoverable, hash-verified source inputs |
 | [0012](0012-requirements-and-research-traceability.md) | Accepted (beta.1 review) | Rust enhancement | Keep L1/L2 central, place substantial component L3 with its owner, and trace source to verification |

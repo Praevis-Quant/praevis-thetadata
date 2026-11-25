@@ -23,8 +23,10 @@ are attached to the GitHub release.
   interface (`__arrow_c_stream__`, `__arrow_c_array__`). `pyarrow.table(r)`,
   `r.to_polars()` and `r.to_pandas()` import them without copying and without
   one Python object per row.
-- Prices are exact `decimal128(38, 10)`; timestamps are millisecond
-  timestamps with their time zone.
+- Prices, strikes, Greeks and implied volatility sent as price cells are
+  exact `decimal128(38, 10)`. See the [numeric output guide](../../docs/user-guide.md#numeric-output-prices-greeks-and-implied-volatility)
+  for explicit float casts and their effect on precision and missing values.
+  Timestamps are millisecond timestamps with their time zone.
 
 ```python
 import datetime
