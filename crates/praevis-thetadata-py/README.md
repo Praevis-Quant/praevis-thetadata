@@ -57,14 +57,11 @@ timeouts for every call, the vendor-named methods included. Calls are not
 coordinated with each other, so several at once can exceed the plan. A busy
 account raises `QueryFailed` with kind `"busy"`; it is not retried.
 
-`to_parquet` keeps memory flat however large the file. Decimal (price)
-columns get no min/max statistics; every other column does.
-`decimal_statistics=True` writes them for price pushdown in readers, at a
-memory cost that grows with the file. The default works around an upstream
-`parquet` bug
-([apache/arrow-rs#12027](https://github.com/apache/arrow-rs/issues/12027),
-fixed by [#12028](https://github.com/apache/arrow-rs/pull/12028) but not yet
-released).
+`to_parquet` streams results to disk. Footer metadata grows with the number
+of row groups. Decimal (price) columns omit min/max statistics by default.
+Set `decimal_statistics=True` to enable price filter pushdown. Parquet 60.2
+includes [apache/arrow-rs#12028](https://github.com/apache/arrow-rs/pull/12028),
+which prevents decimal statistics from retaining whole batches.
 
 Parameter names are the vendor package's. `pt.describe(...)` shows the wire
 query without sending it, and how many date parts `plan` makes. With `plan`

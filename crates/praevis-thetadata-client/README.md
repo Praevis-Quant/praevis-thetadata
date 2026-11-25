@@ -46,15 +46,12 @@ session from `praevis-thetadata-auth`.
   (`docs/endpoints/coverage.md`).
 - **Parquet output** (feature `parquet`, on by default): `to_parquet` on query
   and job streams. The file appears only once the whole stream is written.
-  Memory stays flat however large the file. For that, decimal (price)
-  columns are written without min/max statistics: the `parquet` writer would
-  otherwise hold each row group's decimal statistics as slices of whole
-  batches until the file closes. Every other column keeps its statistics.
-  `ParquetOptions::decimal_statistics` opts in, at a memory cost that grows
-  with the file. This works around an upstream bug
-  ([apache/arrow-rs#12027](https://github.com/apache/arrow-rs/issues/12027),
-  fixed by [#12028](https://github.com/apache/arrow-rs/pull/12028) but not
-  yet released).
+  Decimal (price) columns omit min/max statistics by default.
+  `ParquetOptions::decimal_statistics` enables them for price filter
+  pushdown. Parquet 60.2 includes
+  [apache/arrow-rs#12028](https://github.com/apache/arrow-rs/pull/12028),
+  which prevents statistics from retaining whole batches. Footer metadata
+  grows with the number of row groups.
 - **Jobs** (`ThetaClient::job`): a request is split by date within the
   vendor's limits (EOD at 366 days, intraday history per day), and the parts
   are merged in order. All-strike tick and 1 s option quote requests are
