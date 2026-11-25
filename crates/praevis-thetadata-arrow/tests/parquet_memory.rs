@@ -1,8 +1,6 @@
-//! The Parquet sink's memory stays flat as the file grows (options phase):
-//! decimal columns are written without min/max statistics by default,
-//! because the `parquet` writer keeps those statistics as slices of the
-//! whole written batch until the file is closed. Own test binary: it
-//! installs a counting allocator.
+//! Verify that row groups retain metadata without pinning whole decimal
+//! batches, whether or not decimal statistics are enabled. This test runs
+//! in its own binary with a counting allocator.
 #![cfg(feature = "parquet")]
 use arrow_array::{ArrayRef, Decimal128Array, Int64Array, RecordBatch};
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
@@ -56,7 +54,7 @@ fn batch() -> RecordBatch {
 }
 
 /// Live heap growth (MiB) from the 20th row group to the 120th, before the
-/// file is closed, and the written file's path.
+/// file is closed.
 fn growth(decimal_statistics: bool, path: &std::path::Path) -> f64 {
     let batch = batch();
     let mut sink = ParquetSink::create(
@@ -81,23 +79,22 @@ fn growth(decimal_statistics: bool, path: &std::path::Path) -> f64 {
 }
 
 #[test]
-fn memory_stays_flat_unless_decimal_statistics_are_asked_for() {
+fn memory_growth_is_bounded_with_and_without_decimal_statistics() {
     let dir = std::env::temp_dir().join(format!("praevis-parquet-memory-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let flat = dir.join("flat.parquet");
     let with_statistics = dir.join("statistics.parquet");
-    // 100 more row groups of 4 decimal columns: flat by default...
+    // Allow growth for 100 row groups of metadata.
     let default_growth = growth(false, &flat);
     assert!(default_growth < 2.0, "default grew {default_growth:.1} MiB");
-    // ...but each row group pins its batch's decimal values with statistics
-    // (up to 2 x 16 B x 16,384 rows x 4 columns = 2 MiB per row group).
+    // Parquet 60.2 copies decimal min/max instead of pinning whole batches.
     let statistics_growth = growth(true, &with_statistics);
     eprintln!(
         "100 row groups: default +{default_growth:.1} MiB, with decimal statistics +{statistics_growth:.1} MiB"
     );
     assert!(
-        statistics_growth > 50.0,
-        "with decimal statistics grew only {statistics_growth:.1} MiB"
+        statistics_growth < 2.0,
+        "with decimal statistics grew {statistics_growth:.1} MiB"
     );
     // The default file has no decimal statistics but keeps the others; the
     // opt-in writes them.

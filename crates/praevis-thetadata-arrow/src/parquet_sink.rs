@@ -13,21 +13,11 @@
 //! column still `Null` when the cap is reached is written as `Null`; if it is
 //! typed later, writing fails with [`SinkError::Schema`].
 //!
-//! **Decimal columns are written without min/max statistics by default**
-//! ([`ParquetOptions::decimal_statistics`]). With them, the `parquet` writer
-//! (60.1) keeps each row group's decimal min/max as slices of the whole
-//! written batch's converted values until the file is closed. That pins up
-//! to 2 × 16 bytes × batch rows per decimal column per row group: memory
-//! that grows with the file (about 31 bytes per row for 4 decimal columns
-//! in 65,536-row batches, measured by `examples/job_memory.rs` in the client
-//! crate). Statistics stay on every
-//! other column, so time and integer filters keep their pushdown.
-//!
-//! This is an upstream bug, reported as apache/arrow-rs#12027 and fixed by
-//! apache/arrow-rs#12028 (merged 2026-11-03, not in a release yet). It
-//! affects decimals with precision above 18; ours are precision 38
-//! ([`crate::PRICE_PRECISION`]). Once a `parquet` release contains the fix,
-//! the default is to be re-measured and statistics re-enabled (ROADMAP).
+//! Decimal columns omit min/max statistics by default. Enable them with
+//! [`ParquetOptions::decimal_statistics`] for price filter pushdown.
+//! Parquet 60.2 includes apache/arrow-rs#12028, which copies decimal min/max
+//! values into row-group metadata. Parquet 60.1 could retain entire batches
+//! through those statistics. Footer metadata still grows with the file.
 use arrow_array::{ArrayRef, RecordBatch, new_null_array};
 use arrow_schema::{DataType, Field, Schema, SchemaRef};
 use parquet::arrow::ArrowWriter;
@@ -51,11 +41,7 @@ pub struct ParquetOptions {
     /// Replace an existing file at the target path (default `false`).
     pub overwrite: bool,
     /// Write min/max statistics for decimal (price) columns too (default
-    /// `false`). Enables readers' pushdown on prices, at a memory cost that
-    /// grows with the file: up to 2 × 16 bytes × batch rows per decimal
-    /// column per row group, held until [`ParquetSink::finish`] (see the
-    /// module documentation; upstream apache/arrow-rs#12027, fixed by
-    /// #12028 but not yet released).
+    /// `false`). Enables readers' price filter pushdown.
     pub decimal_statistics: bool,
 }
 impl Default for ParquetOptions {
