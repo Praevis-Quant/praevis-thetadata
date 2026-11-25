@@ -113,6 +113,7 @@ preserving observed wire data, not inventing those business meanings.
 
 ## Supporting evidence
 
+- [Numeric output and explicit float conversion](../user-guide.md#numeric-output-prices-greeks-and-implied-volatility).
 - [Conversion analysis](../research/thetadata-1.0.12.md#conversion-and-output).
 - [Wire value definitions](../research/thetadata-1.0.12.md#protocol-surface).
 - [Current core representation and tests](../../crates/praevis-thetadata-core/src/lib.rs).
