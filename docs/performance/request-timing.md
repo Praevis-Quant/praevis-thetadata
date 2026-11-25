@@ -110,8 +110,8 @@ of size, and `job()` splits them per strike (above).
   SPY call strike, or two days (26.6M rows), peaked at 103-182 MiB of Rust
   heap; the peak is set by stalls, not by row count. Parquet's footer
   metadata (about 13 KB per row group) and your Python process are extra.
-  To get that, decimal price columns carry no min/max statistics unless you
-  ask for them with `decimal_statistics`.
+  The measurements used the default, which omits decimal min/max
+  statistics. Set `decimal_statistics` to enable them.
 - **Use one login per account.** A second login ends the first session, which then
   fails with `SessionEnded`. Share a client instead: clone it in Rust, or pass
   `existing_authorized_client` in Python. This includes logins from the CLI and

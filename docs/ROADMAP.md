@@ -480,21 +480,16 @@ item 8, **closed on 2026-11-10** with a tested bound
 ([closure](performance/eod-transport-buffering.md#closure-2026-11-10-under-decision-as-beta1-gate)).
 Byte credits stay held until real messages reach the tens of MiB.
 
-**Re-enable Decimal128 Parquet statistics after the upstream fix ships.**
-`ParquetSink` writes no decimal min/max statistics by default. This works
-around an upstream bug: `parquet` 60.1 retains whole batches through those
-statistics ([apache/arrow-rs#12027](https://github.com/apache/arrow-rs/issues/12027)).
-The fix, [apache/arrow-rs#12028](https://github.com/apache/arrow-rs/pull/12028),
-is merged but not yet released
+**Evaluate enabling Decimal128 Parquet statistics by default.**
+The workspace now locks Parquet 60.2.0, which includes
+[apache/arrow-rs#12028](https://github.com/apache/arrow-rs/pull/12028) for
+the whole-batch retention bug in 60.1
 ([record](architecture/options-phase.md#memory-bound-under-w5-planned)).
+Decimal statistics still require an opt-in.
 
-When a `parquet` release containing #12028 ships (60.1.1 or 61):
-1. Bump `parquet`.
-2. Re-run the 140M-row Parquet memory check (`examples/job_memory.rs`).
-3. If memory stays flat, re-enable Decimal128 statistics by default and drop
-   the workaround.
-
-Do not switch to a git dependency in the meantime.
+Re-run the offline 140M-row Parquet memory check (`examples/job_memory.rs`)
+with decimal statistics enabled before changing the default. Account for
+footer metadata growth when evaluating the result.
 
 **Consumer wait strategy for the real-time stream (deferred 2026-11-07).**
 An opt-in spin or spin-then-park wait for `Stream::recv*` could remove the
